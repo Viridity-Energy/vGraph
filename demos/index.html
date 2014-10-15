@@ -1,0 +1,169 @@
+<html>
+
+<head>
+	<meta charset="utf-8">
+ 	<script src="d3.js"></script>
+ 	<script src="jquery.js"></script>
+	<script src="angular.js"></script>
+	<script src="vgraph.js"></script>
+	<link rel="stylesheet" href="vgraph.css" type="text/css" />
+</head>
+<body ng-app="vgraph">
+
+	<h1>Hello World</h1>
+	<h5>Growing Graph</h5>
+	<style>
+		[ng-controller] {
+			display: block;
+			width: 400px;
+			margin: 0px auto;
+		}
+
+		[vgraph-chart] {
+			margin: 10px 30px;
+			padding: 0px 0px 20px 40px;
+			width: 300px;
+			height: 100px;
+		}
+
+		[vgraph-chart] .mat {
+			fill: #ddd;
+		}
+
+		[vgraph-line="line"] {
+			stroke: black;
+    		stroke-width: 2;
+    		fill: none;
+		}
+	</style>
+
+	<div ng-controller="GrowingCtrl">
+		<svg vgraph-chart="box" model="model">
+			<g vgraph-line="line" interval="'x'" 
+				value="'y'" name="someLine"></g>
+			<g vgraph-target="highlight" 
+				point-radius="5"></g>
+		</svg>
+	</div>
+
+	<div ng-controller="StaticCtrl">
+		<svg vgraph-chart="box" model="model">
+			<g vgraph-line="line" interval="'x'" 
+				value="'y'" name="someLine"></g>
+			<g vgraph-target="highlight" 
+				point-radius="5"></g>
+		</svg>
+	</div>
+<script>
+angular.module( 'vgraph' ).controller( 'GrowingCtrl',
+	['$scope', 'BoxModel', 'GraphModel',
+	function( $scope, BoxModel, GraphModel ){
+		var data = [ {x : 0, y : 20}  ],
+			interval,
+			boxModel;
+
+		$scope.line = data;
+		$scope.box = new BoxModel();
+		$scope.model = new GraphModel({
+            x : {
+                scale : function(){
+                    return d3.scale.linear();
+                }
+            },
+            y : {
+                padding : 0.05
+            }
+        });
+
+		interval = setInterval(function(){
+			var min = -1,
+				max = 1,
+				t = Math.random() * (max - min) + min;
+
+			data.push({
+				x : data.length,
+				y : data[data.length-1].y + t
+			});
+
+			$scope.model.setBounds({
+                    min : null,
+                    max : null
+                },{
+                    min : null,
+                    max : null
+                })
+                .setPane({
+                    start : null,
+                    stop : null
+                },{
+                    start : null,
+                    stop : null
+                });
+
+			$scope.$apply();
+		}, 200);
+
+		setTimeout(function(){
+			clearInterval( interval );
+		}, 20000 );
+	}]
+);
+
+angular.module( 'vgraph' ).controller( 'StaticCtrl',
+	['$scope', 'BoxModel', 'GraphModel',
+	function( $scope, BoxModel, GraphModel ){
+		var data = [ {x : 0, y : 20}  ],
+			interval,
+			boxModel;
+
+		$scope.line = data;
+		$scope.box = new BoxModel();
+		$scope.model = new GraphModel({
+            x : {
+                scale : function(){
+                    return d3.scale.linear();
+                }
+            },
+            y : {
+                padding : 0.05
+            }
+        });
+
+		interval = setInterval(function(){
+			var min = -1,
+				max = 1,
+				t = Math.random() * (max - min) + min;
+
+			data.push({
+				x : data.length,
+				y : data[data.length-1].y + t
+			});
+
+			$scope.model.setBounds({
+                    min : 0,
+                    max : 100
+                },{
+                    min : null,
+                    max : null
+                })
+                .setPane({
+                    start : null,
+                    stop : null
+                },{
+                    start : null,
+                    stop : null
+                });
+
+			$scope.$apply();
+		}, 200);
+
+		setTimeout(function(){
+			clearInterval( interval );
+		}, 20000 );
+	}]
+);
+</script>
+
+</body>
+
+</html>

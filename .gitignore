@@ -1,0 +1,10 @@
+.DS_STORE
+.idea
+.idea_modules
+.settings
+.history
+.cache
+.classpath
+.project
+bower_components/
+node_modules/
