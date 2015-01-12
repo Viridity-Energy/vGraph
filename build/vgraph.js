@@ -1860,7 +1860,11 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
                             .duration( 1000 )
                             .attr( 'r', radius )
                             .ease( 'sine' )
-                            .each( 'end', pulse );
+                            .each( 'end', function(){
+                                setTimeout(function(){
+                                    pulse();
+                                }, 5000);
+                            });
                     };
 
                     pulse();
