@@ -4,10 +4,10 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
         'use strict';
 
         return {
-            require : '^vgraphChart',
-            link : function( scope, el, attrs, chart ){
-
-                var dragging = false,
+            require : ['^vgraphChart'],
+            link : function( scope, el, attrs, requirements ){
+                var chart = requirements[0],
+                    dragging = false,
                     dragStart,
                     active,
                     model = chart.model,

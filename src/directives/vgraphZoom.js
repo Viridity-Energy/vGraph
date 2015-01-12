@@ -4,9 +4,10 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
         'use strict';
 
         return {
-            require : '^vgraphChart',
-            link : function( scope, el, attr, chart ){
-                var box = chart.box,
+            require : ['^vgraphChart'],
+            link : function( scope, el, attr, requirements ){
+                var chart = requirements[0],
+                    box = chart.box,
                     dragging = false,
                     zoomed = false,
                     dragStart,

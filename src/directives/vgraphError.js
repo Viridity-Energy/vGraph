@@ -4,9 +4,10 @@ angular.module( 'vgraph' ).directive( 'vgraphError',
         'use strict';
 
         return {
-            require : '^vgraphChart',
-            link : function( scope, el, attrs, chart ){
-                var box = chart.box,
+            require : ['^vgraphChart'],
+            link : function( scope, el, attrs, requirements ){
+                var chart = requirements[0],
+                    box = chart.box,
                     $el = d3.select( el[0] )
                         .attr( 'class', 'error-view' ),
                     $outline = $el.append( 'rect' )

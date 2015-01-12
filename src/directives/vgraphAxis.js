@@ -21,9 +21,10 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
         }
 
         return {
-            require : '^vgraphChart',
-            link : function( scope, el, attrs, chart ){
-                var makeTicks,
+            require : ['^vgraphChart'],
+            link : function( scope, el, attrs, requirements ){
+                var chart = requirements[0],
+                    makeTicks,
                     express,
                     axis = d3.svg.axis(),
                     className= 'axis',

@@ -4,9 +4,10 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
         'use strict';
 
         return {
-            require : '^vgraphChart',
-            link : function( scope, el, attrs, chart ){
-                var model = chart.model,
+            require : ['^vgraphChart'],
+            link : function( scope, el, attrs, requirements ){
+                var chart = requirements[0],
+                    model = chart.model,
                     box = chart.box,
                     $el = d3.select( el[0] )
                         .attr( 'class', 'target' ),

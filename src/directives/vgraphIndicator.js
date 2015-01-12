@@ -4,9 +4,10 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
         'use strict';
 
         return {
-            require : '^vgraphChart',
-            link : function( scope, el, attrs, chart ){
-                var name = attrs.vgraphIndicator,
+            require : ['^vgraphChart'],
+            link : function( scope, el, attrs, requirements ){
+                var chart = requirements[0],
+                    name = attrs.vgraphIndicator,
                     pulse,
                     model = chart.model,
                     radius = scope.$eval( attrs.pointRadius ) || 3,

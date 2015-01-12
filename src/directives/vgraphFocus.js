@@ -4,9 +4,10 @@ angular.module( 'vgraph' ).directive( 'vgraphFocus',
         'use strict';
 
         return {
-            require : '^vgraphChart',
-            link : function( scope, el, attr, chart ){
-                var box = chart.box,
+            require : ['^vgraphChart'],
+            link : function( scope, el, attr, requirements ){
+                var chart = requirements[0],
+                    box = chart.box,
                     $el = d3.select( el[0] ),
                     $focus = $el.append( 'rect' )
                         .attr('class', 'focus')
@@ -76,6 +77,11 @@ angular.module( 'vgraph' ).directive( 'vgraphFocus',
                             }else{
                                 stop = stop - box.innerLeft;
                             }
+
+                            console.log({
+                                'start' : '=' + ( model.x.start.$x + (start/box.innerWidth) * (model.x.stop.$x-model.x.start.$x) ),
+                                'stop' : '=' + ( model.x.start.$x + (stop/box.innerWidth) * (model.x.stop.$x-model.x.start.$x) )
+                            });
 
                             model.setPane(
                                 {

@@ -22,24 +22,22 @@ var concat = require( 'gulp-concat' );
 var uglify = require('gulp-uglifyjs');
 
 // other settings
-var jsSrc = [
+var demoDir = './demos/',
+    jsSrc = [
         './src/init.js',
     	'./src/services/*.js',
     	'./src/directives/*.js'
     ],
+    externals = [
+    ],
     lessSrc = './style/*.less';
 
 gulp.task( 'launch-server', function() {
-    gulp.src('./bower_components/angular/angular.js')
-        .pipe(gulp.dest('./demos/'));
+    externals.forEach(function( src ){
+        gulp.src( src ).pipe( gulp.dest(demoDir) );
+    });
 
-    gulp.src('./bower_components/d3/d3.js')
-        .pipe(gulp.dest('./demos/'));
-
-    gulp.src('./bower_components/jquery/dist/jquery.js')
-        .pipe(gulp.dest('./demos/'));
-
-    server.use(express.static('./demos'));
+    server.use(express.static(demoDir));
     server.listen( 9000 );
 });
 
@@ -48,15 +46,7 @@ gulp.task( 'watch', function(){
     gulp.watch( jsSrc, ['build-js'] );
 });
 
-gulp.task( 'open-server', function(){
-    var options = {
-        url: "http://localhost:9000"
-    };
-    gulp.src("./index.html")
-        .pipe(open("", options));
-});
-
-gulp.task( 'serve', ['watch', 'launch-server', 'open-server'] );
+gulp.task( 'serve', ['build-js', 'build-less', 'watch', 'launch-server'] );
 
 gulp.task('doc', function() {
     gulp.src( jsSrc )

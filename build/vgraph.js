@@ -317,7 +317,7 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             if ( !d ){
                 d = {
                     $interval : this.makeInterval( interval ),
-                    $x : interval
+                    $x : +interval
                 };
 
                 if ( isFinite(v) ){
@@ -411,6 +411,8 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             }
 
             d[ name ] = value;
+
+            return d;
         };
 
         GraphModel.prototype.setError = function( message ){
@@ -537,14 +539,14 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             }
         };
 
-        GraphModel.prototype.dataReady = function(){
+        GraphModel.prototype.dataReady = function( force ){
             var dis = this;
 
             clearTimeout( this.queued );
 
             this.queued = setTimeout(function(){
                 if ( !dis.adjusting ){
-                    dis.adjust();
+                    dis.adjust( force );
                 }
             }, 15);
         };
@@ -684,8 +686,10 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                                     firstMatch = i;
                                 }
 
+                                d.$inPane = true;
                                 return true;
                             }else{
+                                d.$inPane = false;
                                 return false;
                             }
                         });
@@ -752,6 +756,7 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                             //---------
                             r = data.length + ' : ' + this.filtered.length;
 
+                            // how do I issue draw to just a new component
                             if ( r !== this.ratio || force || newPane ){
                                 this.ratio = r;
                                 for( i = 0, c = this.registrations.length; i < c; i++ ){
@@ -761,7 +766,12 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                         }
                     } catch ( ex ){
                         dis.setError( 'Model Failed' );
-                        console.debug( ex );
+                        if ( ex.message ){
+                            console.debug( ex.message );
+                            console.debug( ex.stack );
+                        }else{
+                            console.debug( ex );
+                        }
                     }
 
                     this.adjusting = false;
@@ -803,9 +813,10 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
         }
 
         return {
-            require : '^vgraphChart',
-            link : function( scope, el, attrs, chart ){
-                var makeTicks,
+            require : ['^vgraphChart'],
+            link : function( scope, el, attrs, requirements ){
+                var chart = requirements[0],
+                    makeTicks,
                     express,
                     axis = d3.svg.axis(),
                     className= 'axis',
@@ -1257,38 +1268,38 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
 
         // var chartIds = 0;
         return {
-            controller : function( $scope ){
+            controller : function vGraphChart( $scope ){
                 var // chartId = chartIds++,
                     components = [],
                     references = [],
                     model = $scope.model,
                     box = $scope.box,
-                    ctrl = {
-                        register : function( comp, name ){
-                            components.push( comp );
-                            references.push( name );
-                        },
-                        model : model,
-                        box : box,
-                        x : {
-                            scale : model.x.scale(),
-                            calc : function( p ){
-                                return ctrl.x.scale( model.x.parse(p) );
-                            },
-                            center : function(){
-                                return ( ctrl.x.calc(model.x.min) + ctrl.x.calc(model.x.max) ) / 2;
-                            }
-                        },
-                        y : {
-                            scale : model.y.scale(),
-                            calc : function( p ){
-                                return ctrl.y.scale( model.y.parse(p) );
-                            },
-                            center : function(){
-                                return ( ctrl.y.calc(model.y.min) + ctrl.y.calc(model.y.max) ) / 2;
-                            }
-                        }
-                    };
+                    ctrl = this;
+
+                this.register = function( comp, name ){
+                        components.push( comp );
+                        references.push( name );
+                };
+                this.model = model;
+                this.box = box;
+                this.x = {
+                    scale : model.x.scale(),
+                    calc : function( p ){
+                        return ctrl.x.scale( model.x.parse(p) );
+                    },
+                    center : function(){
+                        return ( ctrl.x.calc(model.x.min) + ctrl.x.calc(model.x.max) ) / 2;
+                    }
+                };
+                this.y = {
+                    scale : model.y.scale(),
+                    calc : function( p ){
+                        return ctrl.y.scale( model.y.parse(p) );
+                    },
+                    center : function(){
+                        return ( ctrl.y.calc(model.y.min) + ctrl.y.calc(model.y.max) ) / 2;
+                    }
+                };
 
                 model.register(function(){
                     var sampledData,
@@ -1321,19 +1332,19 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
 
                     for( i = 0, c = components.length; i < c; i++ ){
                         if ( components[ i ].build ){
-                            components[ i ].build( sampledData );
+                            components[ i ].build( sampledData, model.filtered,  model.data );
                         }
                     }
 
                     for( i = 0, c = components.length; i < c; i++ ){
                         if ( components[ i ].process ){
-                            components[ i ].process( sampledData );
+                            components[ i ].process( sampledData, model.filtered,  model.data );
                         }
                     }
 
                     for( i = 0, c = components.length; i < c; i++ ){
                         if ( components[ i ].finalize ){
-                            components[ i ].finalize( sampledData );
+                            components[ i ].finalize( sampledData, model.filtered,  model.data );
                         }
                     }
                 });
@@ -1410,120 +1421,64 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
     } ]
 );
 
-angular.module( 'vgraph' ).directive( 'vgraphError',
-    [
-    function(){
-        'use strict';
+angular.module( 'vgraph' ).factory( 'vgraphComponent', function(){
+    'use strict';
 
-        return {
-            require : '^vgraphChart',
-            link : function( scope, el, attrs, chart ){
-                var box = chart.box,
-                    $el = d3.select( el[0] )
-                        .attr( 'class', 'error-view' ),
-                    $outline = $el.append( 'rect' )
-                        .attr( 'class', 'outline' ),
-                    $text = $el.append( 'text' );
-
-                scope.model = chart.model;
-                scope.box = box;
-
-                box.register(function(){
-                    $outline.attr( 'transform', 'translate('+box.innerLeft+','+box.innerTop+')' )
-                        .attr( 'width', box.innerWidth )
-                        .attr( 'height', box.innerHeight );
-
-                    $text.attr( 'text-anchor', 'middle' )
-                        .attr( 'x', box.center )
-                        .attr( 'y', box.middle + $text.node().getBBox().height / 2 );
-                });
-
-                scope.$watch( 'model.error', function( err ){
-                    if ( err ){
-                        $el.attr( 'visibility', 'visible' );
-                        $text.text( err );
-                    }else{
-                        $el.attr( 'visibility', 'hidden' );
-                    }
-                });
-            }
-        };
-    } ]
-);
-
-angular.module( 'vgraph' ).directive( 'vgraphFill',
-    [
-    function(){
-        'use strict';
-
-        return {
-            require : '^vgraphChart',
-            link : function( scope, el, attrs, chart ){
-                var name = attrs.name,
-                    $path = d3.select( el[0] ).append('path')
-                        .attr( 'class', 'fill plot-'+name ),
-                    lastLength = 0,
-                    model = chart.model,
-                    valueParse = scope.value,
+	var core = {
+            require : ['^vgraphChart'],
+            link : function( scope, el, attrs, requirements ){
+            	var alias,
+                    chart = requirements[0],
+            		name = attrs.name,
+        			lastLength = 0,
+            		model = chart.model,
+            		valueParse = scope.value,
                     intervalParse = scope.interval,
                     filterParse = scope.filter,
                     history = [],
-                    memory = parseInt( attrs.memory, 10 ) || 10,
-                    line = d3.svg.area()
-                        .defined(function(d){
-                            var y = d[ name ];
-                            return !( isNaN(y) || y === null );
-                        })
-                        .x(function( d ){
-                            return chart.x.scale( d.$interval );
-                        })
-                        .y(function( d ){
-                            return chart.y.scale( d[name] );
-                        })
-                        .y1(function(){
-                            return scope.fillTo === undefined ? chart.y.scale( model.y.start.$min ) :
-                                typeof( scope.fillTo ) === 'object' ?
-                                    chart.y.scale( scope.fillTo.$min ) : chart.y.scale( scope.fillTo );
-                        });
+                    memory = parseInt( attrs.memory, 10 ) || 10;
 
-                if ( typeof(valueParse) === 'string' ){
-                    valueParse = (function( v ){
-                        return function( d ){
-                            return d[ v ] || null;
-                        };
-                    }( valueParse ));
-                }
-
-                if ( typeof(intervalParse) === 'string' ){
-                    intervalParse = (function( v ){
-                        return function( d ){
-                            return d[ v ];
-                        };
-                    }( intervalParse ));
-                }
-
-                chart.register({
-                    finalize : function( data ){
-                        $path.transition()
-                            .duration( model.transitionDuration )
-                            .ease( 'linear' )
-                            .attr( 'd', line(data) );
-                    }
-                });
-
-                scope.$watch('data', function( data ){
-                    if ( data ){
+                function loadData(){
+                	if ( scope.data && valueParse ){
                         model.removePlot( name );
                         lastLength = 0;
 
-                        contentLoad( data );
+                        contentLoad( scope.data );
 
                         chart.model.dataReady( scope );
                     }
+                }
+
+                scope.$watch('interval', function( v ){
+					if ( typeof(v) === 'string' ){
+	                    intervalParse = function( d ){
+	                    	return d[ v ];
+	                    };
+	                }else{
+	                	intervalParse = v;
+	                }
                 });
 
+                scope.$watch('value', function( v ){
+                	if ( typeof(v) === 'string' ){
+                		alias = attrs.alias || v;
+	                    valueParse = function( d ){
+	                    	if ( d[v] !== undefined ){
+	                    		return d[ alias ];
+	                    	}
+	                    	// return undefined implied
+	                    };
+	                }else{
+	                	valueParse = v;
+	                }
+
+	                loadData();
+                });
+
+                scope.$watch('data', loadData);
+
                 scope.$watch('data.length', function( length ){
-                    if ( length ){
+                    if ( length && valueParse ){
                         contentLoad( scope.data );
                     }
                 });
@@ -1561,14 +1516,132 @@ angular.module( 'vgraph' ).directive( 'vgraphFill',
                 }
             },
             scope : {
+                data : '=_undefined_',
+                value : '=value',
+                interval : '=interval',
+                filter : '=filter'
+            }
+        };
+
+	return function( directive, overrides ){
+		var t;
+
+		function F(){}
+
+		F.prototype = core;
+
+		t = new F();
+
+        t.scope = angular.copy( t.scope );
+		t.scope.data = '='+directive;
+
+		angular.forEach( overrides, function( f, key ){
+			var old = t[key];
+
+			if ( old ){
+				if ( angular.isFunction(old) ){
+					t[key] = function(){
+						old.apply( this, arguments );
+						f.apply( this, arguments );
+					};
+				}else{
+					t[key] = f; 
+				}
+			}else{
+				t[key] = f;
+			}
+		});
+
+		return t;
+	};
+});
+angular.module( 'vgraph' ).directive( 'vgraphError',
+    [
+    function(){
+        'use strict';
+
+        return {
+            require : ['^vgraphChart'],
+            link : function( scope, el, attrs, requirements ){
+                var chart = requirements[0],
+                    box = chart.box,
+                    $el = d3.select( el[0] )
+                        .attr( 'class', 'error-view' ),
+                    $outline = $el.append( 'rect' )
+                        .attr( 'class', 'outline' ),
+                    $text = $el.append( 'text' );
+
+                scope.model = chart.model;
+                scope.box = box;
+
+                box.register(function(){
+                    $outline.attr( 'transform', 'translate('+box.innerLeft+','+box.innerTop+')' )
+                        .attr( 'width', box.innerWidth )
+                        .attr( 'height', box.innerHeight );
+
+                    $text.attr( 'text-anchor', 'middle' )
+                        .attr( 'x', box.center )
+                        .attr( 'y', box.middle + $text.node().getBBox().height / 2 );
+                });
+
+                scope.$watch( 'model.error', function( err ){
+                    if ( err ){
+                        $el.attr( 'visibility', 'visible' );
+                        $text.text( err );
+                    }else{
+                        $el.attr( 'visibility', 'hidden' );
+                    }
+                });
+            }
+        };
+    } ]
+);
+
+angular.module( 'vgraph' ).directive( 'vgraphFill',
+    ['vgraphComponent',
+    function( component ){
+        'use strict';
+
+        return component( 'vgraphFill', {
+            link : function( scope, el, attrs, requirements ){
+                var chart = requirements[0],
+                    name = attrs.name,
+                    $path = d3.select( el[0] ).append('path')
+                        .attr( 'class', 'fill plot-'+name ),
+                    line = d3.svg.area()
+                        .defined(function(d){
+                            var y = d[ name ];
+                            return !( isNaN(y) || y === null );
+                        })
+                        .x(function( d ){
+                            return chart.x.scale( d.$interval );
+                        })
+                        .y(function( d ){
+                            return chart.y.scale( d[name] );
+                        })
+                        .y1(function(){
+                            return scope.fillTo === undefined ? 
+                                chart.y.scale( chart.model.y.start.$min ) :
+                                typeof( scope.fillTo ) === 'object' ?
+                                    chart.y.scale( scope.fillTo.$min ) :
+                                    chart.y.scale( scope.fillTo );
+                        });
+
+                chart.register({
+                    finalize : function( data ){
+                        $path.attr( 'd', line(data) );
+                    }
+                });
+            },
+            scope : {
                 data : '=vgraphFill',
                 fillTo : '=fillTo',
                 value : '=value',
                 interval : '=interval',
                 filter : '=filter'
             }
-        };
-    } ]
+        });
+    }]
 );
 
 angular.module( 'vgraph' ).directive( 'vgraphFocus',
@@ -1577,9 +1650,10 @@ angular.module( 'vgraph' ).directive( 'vgraphFocus',
         'use strict';
 
         return {
-            require : '^vgraphChart',
-            link : function( scope, el, attr, chart ){
-                var box = chart.box,
+            require : ['^vgraphChart'],
+            link : function( scope, el, attr, requirements ){
+                var chart = requirements[0],
+                    box = chart.box,
                     $el = d3.select( el[0] ),
                     $focus = $el.append( 'rect' )
                         .attr('class', 'focus')
@@ -1650,6 +1724,11 @@ angular.module( 'vgraph' ).directive( 'vgraphFocus',
                                 stop = stop - box.innerLeft;
                             }
 
+                            console.log({
+                                'start' : '=' + ( model.x.start.$x + (start/box.innerWidth) * (model.x.stop.$x-model.x.start.$x) ),
+                                'stop' : '=' + ( model.x.start.$x + (stop/box.innerWidth) * (model.x.stop.$x-model.x.start.$x) )
+                            });
+
                             model.setPane(
                                 {
                                     'start' : '=' + ( model.x.start.$x + (start/box.innerWidth) * (model.x.stop.$x-model.x.start.$x) ),
@@ -1674,15 +1753,86 @@ angular.module( 'vgraph' ).directive( 'vgraphFocus',
     } ]
 );
 
+angular.module( 'vgraph' ).directive( 'vgraphIcon',
+    ['vgraphComponent',
+    function( component ){
+        'use strict';
+
+        return component( 'vgraphIcon', {
+        	link: function( scope, el, attrs, requirements ){
+        		var i, c,
+        			chart = requirements[0],
+                    root = el[0],
+        			name = attrs.name,
+        			filling = [],
+        			$el = d3.select( root ),
+		        	width = parseInt( $el.attr('width'), 10 ),
+		        	height = parseInt( $el.attr('height'), 10 );
+
+		        root.removeAttribute('width');
+		        root.removeAttribute('height');
+
+		        for( i = 0, c = root.childNodes.length; i < c; i++ ){
+		        	if ( root.childNodes[i].nodeType === 1 ){
+		        		filling.push( root.childNodes[i] );
+		        	}
+		        }
+		        
+		        el.html('');
+
+		        chart.register({
+                    build : function( sampled, pane ){
+                        var data = pane,
+                        	j, k, d,
+                        	x, y,
+			        		ele;
+
+			        	function append(){
+		                	return this.appendChild( filling[j].cloneNode() ); // jshint ignore:line
+		                }
+
+		        		el.html('');
+
+		            	for( i = 0, c = data.length; i < c; i++ ){
+		                	d = data[ i ];
+
+		                	if ( d[name] ){
+		                		x = chart.x.scale( d.$interval );
+                            	y = chart.y.scale( d[name] );
+
+		                		ele = $el.append('g');
+		   						
+		                		for ( j = 0, k = filling.length; j < k; j++ ){
+		                			ele.select( append );
+		                		}
+								
+			                	if ( attrs.showUnder ){
+			                		ele.attr( 'transform', 'translate(' + 
+			                			(x - width/2) + ',' + (y) + 
+			                		')' );
+			                	}else{
+			                		ele.attr( 'transform', 'translate(' + 
+			                			(x - width/2) + ',' + (y - height) + 
+			                		')' );
+			                	}
+		                	}
+		                }
+                    }
+                });
+        	}
+        });
+    }]
+);
 angular.module( 'vgraph' ).directive( 'vgraphIndicator',
     [
     function(){
         'use strict';
 
         return {
-            require : '^vgraphChart',
-            link : function( scope, el, attrs, chart ){
-                var name = attrs.vgraphIndicator,
+            require : ['^vgraphChart'],
+            link : function( scope, el, attrs, requirements ){
+                var chart = requirements[0],
+                    name = attrs.vgraphIndicator,
                     pulse,
                     model = chart.model,
                     radius = scope.$eval( attrs.pointRadius ) || 3,
@@ -1767,10 +1917,10 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
         'use strict';
 
         return {
-            require : '^vgraphChart',
-            link : function( scope, el, attrs, chart ){
-
-                var dragging = false,
+            require : ['^vgraphChart'],
+            link : function( scope, el, attrs, requirements ){
+                var chart = requirements[0],
+                    dragging = false,
                     dragStart,
                     active,
                     model = chart.model,
@@ -1930,23 +2080,16 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
 
 
 angular.module( 'vgraph' ).directive( 'vgraphLine',
-    [
-    function(){
+    ['vgraphComponent',
+    function( component ){
         'use strict';
 
-        return {
-            require : '^vgraphChart',
-            link : function( scope, el, attrs, chart ){
-                var name = attrs.name,
+        return component( 'vgraphLine', {
+            link : function( scope, el, attrs, requirements ){
+                var chart = requirements[0],
+                    name = attrs.name,
                     $path = d3.select( el[0] ).append('path')
                         .attr( 'class', 'line plot-'+name ),
-                    lastLength = 0,
-                    model = chart.model,
-                    valueParse = scope.value,
-                    intervalParse = scope.interval,
-                    filterParse = scope.filter,
-                    history = [],
-                    memory = parseInt( attrs.memory, 10 ) || 10,
                     line = d3.svg.line()
                         .interpolate( 'linear' )
                         .defined(function(d){
@@ -1960,102 +2103,28 @@ angular.module( 'vgraph' ).directive( 'vgraphLine',
                             return chart.y.scale( d[name] );
                         });
 
-                if ( typeof(valueParse) === 'string' ){
-                    valueParse = (function( v ){
-                        return function( d ){
-                            return d[ v ] || null;
-                        };
-                    }( valueParse ));
-                }
-
-                if ( typeof(intervalParse) === 'string' ){
-                    intervalParse = (function( v ){
-                        return function( d ){
-                            return d[ v ];
-                        };
-                    }( intervalParse ));
-                }
-
                 chart.register({
                     finalize : function( data ){
                         var last;
 
-                        $path.transition()
-                            .duration( model.transitionDuration )
-                            .ease( 'linear' )
-                            .attr( 'd', line(data.filter(function(d, i){
-                                var t,
-                                    o = last;
+                        $path.attr( 'd', line(data.filter(function(d, i){
+                            var t,
+                                o = last;
 
-                                last = d[ name ];
+                            last = d[ name ];
 
-                                if ( o !== last ){
-                                    return true;
-                                }else{
-                                    t = data[i+1];
-                                    return !t || t[ name ] !== last;
-                                }
-                            })) );
-                    }
-                }, name);
-
-                scope.$watch('data', function( data ){
-                    if ( data ){
-                        model.removePlot( name );
-                        lastLength = 0;
-
-                        contentLoad( data );
-
-                        chart.model.dataReady( scope );
-                    }
-                });
-
-                scope.$watch('data.length', function( length ){
-                    if ( length ){
-                        contentLoad( scope.data );
-                    }
-                });
-
-                // I make the assumption data is ordered
-                function contentLoad( arr ){
-                    var length = arr.length,
-                        d,
-                        v;
-
-                    if ( length ){
-                        if ( length !== lastLength ){
-                            for( ; lastLength < length; lastLength++ ){
-                                d = scope.data[ lastLength ];
-                                v = valueParse( d );
-
-                                if ( v !== undefined ){
-                                    if ( filterParse ){
-                                        if ( history.length > memory ){
-                                            history.shift();
-                                        }
-
-                                        history.push( v );
-
-                                        model.addPoint( name, intervalParse(d), filterParse(v,history) );
-                                    }else{
-                                        model.addPoint( name, intervalParse(d), v );
-                                    }
-                                }
+                            if ( o !== last ){
+                                return true;
+                            }else{
+                                t = data[i+1];
+                                return !t || t[ name ] !== last;
                             }
-
-                            model.dataReady( scope );
-                        }
+                        })) );
                     }
-                }
-            },
-            scope : {
-                data : '=vgraphLine',
-                value : '=value',
-                interval : '=interval',
-                filter : '=filter'
+                });
             }
-        };
-    } ]
+        });
+    }]
 );
 
 angular.module( 'vgraph' ).directive( 'vgraphLoading',
@@ -2064,9 +2133,10 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
         'use strict';
 
         return {
-            require : '^vgraphChart',
-            link : function( scope, el, attrs, chart ){
-                var pulsing = false,
+            require : ['^vgraphChart'],
+            link : function( scope, el, attrs, requirements ){
+                var chart = requirements[0],
+                    pulsing = false,
                     interval,
                     box = chart.box,
                     text = attrs.vgraphLoading,
@@ -2178,19 +2248,15 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
         'use strict';
 
         return {
-            require : '^vgraphChart',
             link : function( scope, $el ){
                 var el = $el[0],
                     styleEl = document.createElement('style');
 
                 document.body.appendChild( styleEl );
 
-                scope.$on('$destroy', function(){
-                    document.body.removeElement( styleEl );
-                });
-
-                scope.$watch('config', function( config ){
-                    var e,
+                function parseConf(){
+                    var config = scope.config,
+                        e,
                         i, c,
                         els,
                         name,
@@ -2199,6 +2265,7 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                         style = '';
 
                     if ( config ){
+                        // TODO : batch this
                         for( i = 0, c = config.length; i < c; i++ ){
                             conf = config[ i ];
                             name = conf.name;
@@ -2210,7 +2277,7 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
 
                             style += 'path.plot-'+name+' { stroke: '+ conf.color +'; fill: transparent; }' + // the line
                                 'circle.plot-'+name+' { stroke: '+ conf.color +'; fill: '+ conf.color + ';}' + // the dot
-                                '.legend .plot-'+name+' .value { background-color: '+ conf.color + '; }'; // the legend
+                                '.highlight.plot-'+name+' { background-color: '+ conf.color + '; }'; // the legend
 
                             scope[ name ] = conf;
                         }
@@ -2229,7 +2296,14 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                             $compile( e )(scope);
                         }
                     }
+                }
+
+                scope.$on('$destroy', function(){
+                    document.body.removeElement( styleEl );
                 });
+
+                scope.$watch('config', parseConf );
+                scope.$watch('config.length', parseConf );
             },
             scope : {
                 data : '=vgraphMultiLine',
@@ -2245,9 +2319,10 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
         'use strict';
 
         return {
-            require : '^vgraphChart',
-            link : function( scope, el, attrs, chart ){
-                var model = chart.model,
+            require : ['^vgraphChart'],
+            link : function( scope, el, attrs, requirements ){
+                var chart = requirements[0],
+                    model = chart.model,
                     box = chart.box,
                     $el = d3.select( el[0] )
                         .attr( 'class', 'target' ),
@@ -2299,9 +2374,10 @@ angular.module( 'vgraph' ).directive( 'vgraphTooltip',
         'use strict';
 
         return {
-            require : '^vgraphChart',
-            link : function( scope, el, attrs, chart ){
-                var name = attrs.name,
+            require : ['^vgraphChart'],
+            link : function( scope, el, attrs, requirements ){
+                var chart = requirements[0],
+                    name = attrs.name,
                     model = chart.model,
                     formatter = scope.formatter || function( d ){
                         return model.y.format( model.y.parse(d) );
@@ -2355,23 +2431,16 @@ angular.module( 'vgraph' ).directive( 'vgraphTooltip',
 );
 
 angular.module( 'vgraph' ).directive( 'vgraphZone',
-    [
-    function(){
+    ['vgraphComponent',
+    function( component ){
         'use strict';
 
-        return {
-            require : '^vgraphChart',
-            link : function( scope, el, attrs, chart ){
-                var name = attrs.name,
+        return component( 'vgraphZone', {
+            link : function( scope, el, attrs, requirements ){
+                var chart = requirements[0],
+                    name = attrs.name,
                     $path = d3.select( el[0] ).append('path')
                         .attr( 'class', 'line plot-'+name ),
-                    lastLength = 0,
-                    model = chart.model,
-                    valueParse = scope.value,
-                    intervalParse = scope.interval,
-                    filterParse = scope.filter,
-                    history = [],
-                    memory = parseInt( attrs.memory, 10 ) || 10,
                     line = d3.svg.area()
                         .defined(function(d){
                             return d[ name ] === true;
@@ -2386,87 +2455,14 @@ angular.module( 'vgraph' ).directive( 'vgraphZone',
                             return chart.box.innerBottom;
                         });
 
-                if ( typeof(valueParse) === 'string' ){
-                    valueParse = (function( v ){
-                        return function( d ){
-                            return d[ v ] || false;
-                        };
-                    }( valueParse ));
-                }
-
-                if ( typeof(intervalParse) === 'string' ){
-                    intervalParse = (function( v ){
-                        return function( d ){
-                            return d[ v ];
-                        };
-                    }( intervalParse ));
-                }
-
                 chart.register({
                     finalize : function( data ){
-                        $path/*.transition()
-                            .duration( model.transitionDuration )
-                            .ease( 'linear' )
-                            */.attr( 'd', line(data) );
+                        $path.attr( 'd', line(data) );
                     }
                 });
-
-                scope.$watch('data', function( data ){
-                    if ( data ){
-                        model.removePlot( name );
-                        lastLength = 0;
-
-                        contentLoad( data );
-
-                        chart.model.dataReady( scope );
-                    }
-                });
-
-                scope.$watch('data.length', function( length ){
-                    if ( length ){
-                        contentLoad( scope.data );
-                    }
-                });
-
-                // I make the assumption data is ordered
-                function contentLoad( arr ){
-                    var length = arr.length,
-                        d,
-                        v;
-
-                    if ( length ){
-                        if ( length !== lastLength ){
-                            for( ; lastLength < length; lastLength++ ){
-                                d = scope.data[ lastLength ];
-                                v = valueParse( d );
-
-                                if ( v !== undefined ){
-                                    if ( filterParse ){
-                                        if ( history.length > memory ){
-                                            history.shift();
-                                        }
-
-                                        history.push( v );
-
-                                        model.addPoint( name, intervalParse(d), filterParse(v,history) );
-                                    }else{
-                                        model.addPoint( name, intervalParse(d), v );
-                                    }
-                                }
-                            }
-
-                            model.dataReady( scope );
-                        }
-                    }
-                }
-            },
-            scope : {
-                data : '=vgraphZone',
-                value : '=value',
-                interval : '=interval'
             }
-        };
-    } ]
+        });
+    }]
 );
 
 angular.module( 'vgraph' ).directive( 'vgraphZoom',
@@ -2475,9 +2471,10 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
         'use strict';
 
         return {
-            require : '^vgraphChart',
-            link : function( scope, el, attr, chart ){
-                var box = chart.box,
+            require : ['^vgraphChart'],
+            link : function( scope, el, attr, requirements ){
+                var chart = requirements[0],
+                    box = chart.box,
                     dragging = false,
                     zoomed = false,
                     dragStart,

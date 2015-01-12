@@ -4,9 +4,10 @@ angular.module( 'vgraph' ).directive( 'vgraphTooltip',
         'use strict';
 
         return {
-            require : '^vgraphChart',
-            link : function( scope, el, attrs, chart ){
-                var name = attrs.name,
+            require : ['^vgraphChart'],
+            link : function( scope, el, attrs, requirements ){
+                var chart = requirements[0],
+                    name = attrs.name,
                     model = chart.model,
                     formatter = scope.formatter || function( d ){
                         return model.y.format( model.y.parse(d) );

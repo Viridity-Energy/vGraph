@@ -4,9 +4,10 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
         'use strict';
 
         return {
-            require : '^vgraphChart',
-            link : function( scope, el, attrs, chart ){
-                var pulsing = false,
+            require : ['^vgraphChart'],
+            link : function( scope, el, attrs, requirements ){
+                var chart = requirements[0],
+                    pulsing = false,
                     interval,
                     box = chart.box,
                     text = attrs.vgraphLoading,

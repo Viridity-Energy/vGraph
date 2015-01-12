@@ -5,38 +5,38 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
 
         // var chartIds = 0;
         return {
-            controller : function( $scope ){
+            controller : function vGraphChart( $scope ){
                 var // chartId = chartIds++,
                     components = [],
                     references = [],
                     model = $scope.model,
                     box = $scope.box,
-                    ctrl = {
-                        register : function( comp, name ){
-                            components.push( comp );
-                            references.push( name );
-                        },
-                        model : model,
-                        box : box,
-                        x : {
-                            scale : model.x.scale(),
-                            calc : function( p ){
-                                return ctrl.x.scale( model.x.parse(p) );
-                            },
-                            center : function(){
-                                return ( ctrl.x.calc(model.x.min) + ctrl.x.calc(model.x.max) ) / 2;
-                            }
-                        },
-                        y : {
-                            scale : model.y.scale(),
-                            calc : function( p ){
-                                return ctrl.y.scale( model.y.parse(p) );
-                            },
-                            center : function(){
-                                return ( ctrl.y.calc(model.y.min) + ctrl.y.calc(model.y.max) ) / 2;
-                            }
-                        }
-                    };
+                    ctrl = this;
+
+                this.register = function( comp, name ){
+                        components.push( comp );
+                        references.push( name );
+                };
+                this.model = model;
+                this.box = box;
+                this.x = {
+                    scale : model.x.scale(),
+                    calc : function( p ){
+                        return ctrl.x.scale( model.x.parse(p) );
+                    },
+                    center : function(){
+                        return ( ctrl.x.calc(model.x.min) + ctrl.x.calc(model.x.max) ) / 2;
+                    }
+                };
+                this.y = {
+                    scale : model.y.scale(),
+                    calc : function( p ){
+                        return ctrl.y.scale( model.y.parse(p) );
+                    },
+                    center : function(){
+                        return ( ctrl.y.calc(model.y.min) + ctrl.y.calc(model.y.max) ) / 2;
+                    }
+                };
 
                 model.register(function(){
                     var sampledData,
@@ -69,19 +69,19 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
 
                     for( i = 0, c = components.length; i < c; i++ ){
                         if ( components[ i ].build ){
-                            components[ i ].build( sampledData );
+                            components[ i ].build( sampledData, model.filtered,  model.data );
                         }
                     }
 
                     for( i = 0, c = components.length; i < c; i++ ){
                         if ( components[ i ].process ){
-                            components[ i ].process( sampledData );
+                            components[ i ].process( sampledData, model.filtered,  model.data );
                         }
                     }
 
                     for( i = 0, c = components.length; i < c; i++ ){
                         if ( components[ i ].finalize ){
-                            components[ i ].finalize( sampledData );
+                            components[ i ].finalize( sampledData, model.filtered,  model.data );
                         }
                     }
                 });

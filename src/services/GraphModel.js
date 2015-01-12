@@ -217,7 +217,7 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             if ( !d ){
                 d = {
                     $interval : this.makeInterval( interval ),
-                    $x : interval
+                    $x : +interval
                 };
 
                 if ( isFinite(v) ){
@@ -311,6 +311,8 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             }
 
             d[ name ] = value;
+
+            return d;
         };
 
         GraphModel.prototype.setError = function( message ){
@@ -437,14 +439,14 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             }
         };
 
-        GraphModel.prototype.dataReady = function(){
+        GraphModel.prototype.dataReady = function( force ){
             var dis = this;
 
             clearTimeout( this.queued );
 
             this.queued = setTimeout(function(){
                 if ( !dis.adjusting ){
-                    dis.adjust();
+                    dis.adjust( force );
                 }
             }, 15);
         };
@@ -584,8 +586,10 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                                     firstMatch = i;
                                 }
 
+                                d.$inPane = true;
                                 return true;
                             }else{
+                                d.$inPane = false;
                                 return false;
                             }
                         });
@@ -652,6 +656,7 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                             //---------
                             r = data.length + ' : ' + this.filtered.length;
 
+                            // how do I issue draw to just a new component
                             if ( r !== this.ratio || force || newPane ){
                                 this.ratio = r;
                                 for( i = 0, c = this.registrations.length; i < c; i++ ){
@@ -661,7 +666,12 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                         }
                     } catch ( ex ){
                         dis.setError( 'Model Failed' );
-                        console.debug( ex );
+                        if ( ex.message ){
+                            console.debug( ex.message );
+                            console.debug( ex.stack );
+                        }else{
+                            console.debug( ex );
+                        }
                     }
 
                     this.adjusting = false;

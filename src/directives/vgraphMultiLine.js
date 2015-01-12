@@ -4,19 +4,15 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
         'use strict';
 
         return {
-            require : '^vgraphChart',
             link : function( scope, $el ){
                 var el = $el[0],
                     styleEl = document.createElement('style');
 
                 document.body.appendChild( styleEl );
 
-                scope.$on('$destroy', function(){
-                    document.body.removeElement( styleEl );
-                });
-
-                scope.$watch('config', function( config ){
-                    var e,
+                function parseConf(){
+                    var config = scope.config,
+                        e,
                         i, c,
                         els,
                         name,
@@ -25,6 +21,7 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                         style = '';
 
                     if ( config ){
+                        // TODO : batch this
                         for( i = 0, c = config.length; i < c; i++ ){
                             conf = config[ i ];
                             name = conf.name;
@@ -36,7 +33,7 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
 
                             style += 'path.plot-'+name+' { stroke: '+ conf.color +'; fill: transparent; }' + // the line
                                 'circle.plot-'+name+' { stroke: '+ conf.color +'; fill: '+ conf.color + ';}' + // the dot
-                                '.legend .plot-'+name+' .value { background-color: '+ conf.color + '; }'; // the legend
+                                '.highlight.plot-'+name+' { background-color: '+ conf.color + '; }'; // the legend
 
                             scope[ name ] = conf;
                         }
@@ -55,7 +52,14 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                             $compile( e )(scope);
                         }
                     }
+                }
+
+                scope.$on('$destroy', function(){
+                    document.body.removeElement( styleEl );
                 });
+
+                scope.$watch('config', parseConf );
+                scope.$watch('config.length', parseConf );
             },
             scope : {
                 data : '=vgraphMultiLine',
