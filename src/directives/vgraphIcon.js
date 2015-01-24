@@ -6,6 +6,7 @@ angular.module( 'vgraph' ).directive( 'vgraphIcon',
         return component( 'vgraphIcon', {
         	link: function( scope, el, attrs, requirements ){
         		var i, c,
+        			points,
         			chart = requirements[0],
                     root = el[0],
         			name = attrs.name,
@@ -26,42 +27,69 @@ angular.module( 'vgraph' ).directive( 'vgraphIcon',
 		        el.html('');
 
 		        chart.register({
-                    build : function( sampled, pane ){
-                        var data = pane,
-                        	j, k, d,
-                        	x, y,
-			        		ele;
+		        	parse : function( sampled, full ){
+		        		var d,
+		        			v,
+		        			min,
+		        			max;
+
+		        		points = {};
+
+		        		for( i = 0, c = full.length; i < c; i++ ){
+		        			d = full[i];
+		        			v = d[name];
+
+		        			if ( v !== undefined ){
+		        				points[ d.$interval ] = v;
+
+                                if ( min === undefined ){
+                                    min = v;
+                                    max = v;
+                                }else if ( min > v ){
+                                    min = v;
+                                }else if ( max < v ){
+                                    max = v;
+                                }
+		        			}
+		        		}
+
+		        		return {
+		        			min : min,
+		        			max : max
+		        		};
+		        	},
+                    build : function(){
+                        var x, y,
+                        	i, c;
 
 			        	function append(){
-		                	return this.appendChild( filling[j].cloneNode() ); // jshint ignore:line
+		                	return this.appendChild( filling[i].cloneNode() ); // jshint ignore:line
 		                }
 
 		        		el.html('');
 
-		            	for( i = 0, c = data.length; i < c; i++ ){
-		                	d = data[ i ];
+		            	angular.forEach(points, function( v, k ){
+		            		var ele;
 
-		                	if ( d[name] ){
-		                		x = chart.x.scale( d.$interval );
-                            	y = chart.y.scale( d[name] );
+		                	x = chart.x.scale( k );
+                        	y = chart.y.scale( v );
 
-		                		ele = $el.append('g');
-		   						
-		                		for ( j = 0, k = filling.length; j < k; j++ ){
-		                			ele.select( append );
-		                		}
-								
-			                	if ( attrs.showUnder ){
-			                		ele.attr( 'transform', 'translate(' + 
-			                			(x - width/2) + ',' + (y) + 
-			                		')' );
-			                	}else{
-			                		ele.attr( 'transform', 'translate(' + 
-			                			(x - width/2) + ',' + (y - height) + 
-			                		')' );
-			                	}
+	                		ele = $el.append('g');
+	   						
+	                		for ( i = 0, c = filling.length; i < c; i++ ){
+	                			ele.select( append );
+	                		}
+							
+		                	if ( attrs.showUnder ){
+		                		ele.attr( 'transform', 'translate(' + 
+		                			(x - width/2) + ',' + (y) + 
+		                		')' );
+		                	}else{
+		                		ele.attr( 'transform', 'translate(' + 
+		                			(x - width/2) + ',' + (y - height) + 
+		                		')' );
 		                	}
-		                }
+	                	});
                     }
                 });
         	}

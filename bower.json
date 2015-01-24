@@ -1,6 +1,6 @@
 {
   "name": "v-graph",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "main": "build/vgraph.js",
   "ignore": [
     "bower.json"

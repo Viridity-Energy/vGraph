@@ -39,27 +39,12 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
                 };
 
                 model.register(function(){
-                    var sampledData,
+                    var t,
+                        min,
+                        max,
+                        sampledData,
                         i, c,
                         m;
-
-                    ctrl.x.scale.domain([
-                            model.x.start.$interval,
-                            model.x.stop.$interval
-                        ])
-                        .range([
-                            box.innerLeft,
-                            box.innerRight
-                        ]);
-
-                    ctrl.y.scale.domain([
-                            model.y.start.$min,
-                            model.y.stop.$max
-                        ])
-                        .range([
-                            box.innerBottom,
-                            box.innerTop
-                        ]);
 
                     m = parseInt( model.filtered.length / box.innerWidth ) || 1;
 
@@ -68,17 +53,73 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
                     });
 
                     for( i = 0, c = components.length; i < c; i++ ){
+                        if ( components[ i ].parse ){
+                            t = components[ i ].parse( sampledData, model.filtered );
+                            if ( min === undefined ){
+                                min = t.min;
+                                max = t.max;
+                            } else {
+                                if ( min > t.min ){
+                                    min = t.min;
+                                }else if ( max < t.max ){
+                                    max = t.max;
+                                }
+                            }
+                        }
+                    }
+
+                    if ( model.adjustSettings ){
+                        model.adjustSettings(
+                            model.x.stop.$interval - model.x.start.$interval,
+                            max - min,
+                            model.filtered.$last - model.filtered.$first
+                        );
+                    }
+
+                    model.y.top = max;
+                    model.y.bottom = min;
+
+                    if ( model.y.padding ){
+                        t = ( max - min ) * model.y.padding;
+                        max = max + t;
+                        min = min - t;
+                    }
+
+                    model.y.minimum = min;
+                    model.y.maximum = max;
+
+                    ctrl.x.scale
+                        .domain([
+                            model.x.start.$interval,
+                            model.x.stop.$interval
+                        ])
+                        .range([
+                            box.innerLeft,
+                            box.innerRight
+                        ]);
+
+                    ctrl.y.scale
+                        .domain([
+                            min,
+                            max
+                        ])
+                        .range([
+                            box.innerBottom,
+                            box.innerTop
+                        ]);
+
+                    for( i = 0, c = components.length; i < c; i++ ){
                         if ( components[ i ].build ){
                             components[ i ].build( sampledData, model.filtered,  model.data );
                         }
                     }
-
+                    
                     for( i = 0, c = components.length; i < c; i++ ){
                         if ( components[ i ].process ){
                             components[ i ].process( sampledData, model.filtered,  model.data );
                         }
                     }
-
+                    
                     for( i = 0, c = components.length; i < c; i++ ){
                         if ( components[ i ].finalize ){
                             components[ i ].finalize( sampledData, model.filtered,  model.data );

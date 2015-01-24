@@ -250,19 +250,10 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                 this.x.max = d;
             }
 
-            if ( !this.y.min && isFinite(v) ){
-                this.y.min = d;
-                this.y.max = d;
-            }
-
             plot = this.plots[ name ];
             if ( !plot ){
                 this.plots[ name ] = plot = {
                     x : {
-                        min : d,
-                        max : d
-                    },
-                    y : {
                         min : d,
                         max : d
                     }
@@ -272,14 +263,6 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                     this.x.max = d;
                 }else if ( d.$x < this.x.min.$x ){
                     this.x.min = d;
-                }
-
-                if ( isFinite(v) ){
-                    if ( this.y.max.$max < d.$max ){
-                        this.y.max = d;
-                    }else if ( this.y.min.$min > d.$min ){
-                        this.y.min = d;
-                    }
                 }
             }else{
                 if ( plot.x.max.$x < d.$x ){
@@ -293,21 +276,7 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                     if ( d.$x < this.x.min.$x ){
                         this.x.min = d;
                     }
-                }
-
-                if ( isFinite(v) ){
-                    if ( plot.y.max.$max < d.$max ){
-                        plot.y.max = d;
-                        if ( this.y.max.$max < d.$max ){
-                            this.y.max = d;
-                        }
-                    }else if ( plot.y.min.$min > d.$min ){
-                        plot.y.min = d;
-                        if ( this.y.min.$min > d.$min ){
-                            this.y.min = d;
-                        }
-                    }
-                }
+                } 
             }
 
             d[ name ] = value;
@@ -412,7 +381,7 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                 this.y.min = null;
                 this.y.max = null;
 
-                if ( keys.length ){
+                if ( keys.length && this.plots[keys[0]] && this.plots[keys[0]].x && this.plots[keys[0]].y ){
                     this.x.min = this.plots[ keys[0] ].x.min;
                     this.x.max = this.plots[ keys[0] ].x.max;
                     this.y.min = this.plots[ keys[0] ].y.min;
@@ -495,11 +464,8 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                 firstMatch,
                 lastMatch,
                 data = this.data,
-                abs,
                 dx,
-                x = this.x,
-                y = this.y,
-                yMax;
+                x = this.x;
 
             if ( data.length ){
                 this.nexAdjust = function(){
@@ -597,25 +563,8 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                         this.filtered.$first = firstMatch;
                         this.filtered.$last = lastMatch;
                         
-                        if ( !this.filtered.length ){
-                            y.start = y.min;
-                            y.stop = y.max;
-                        }else if ( !y.start ){
-                            newPane = true;
-                            abs = this.findExtemesY( this.filtered );
-
-                            y.start = abs.min;
-                            y.stop = abs.max;
-                        }
-
-                        if ( x.stop && x.start && y.stop && y.start ){
-                            if ( this.adjustSettings ){
-                                this.adjustSettings(
-                                    x.stop.$x - x.start.$x,
-                                    y.stop.$max - y.start.$min,
-                                    this.filtered.$last - this.filtered.$first
-                                );
-                            }
+                        if ( x.stop && x.start ){
+                            
 
                             /*
                             TODO : if really needed
@@ -634,24 +583,6 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                                 };
                             }
                             */
-                            // TODO : this isn't entirely tight, I might need to relook at how the pane gets set
-                            if ( this.y.padding ){
-                                yMax = ( this.y.stop.$max - this.y.start.$min ) * this.y.padding;
-
-                                if ( this.y.start.$shifted === undefined || this.y.start.$shifted !== this.y.start.$min ){
-                                    this.y.start = {
-                                        $shifted : this.y.start.$min - yMax,
-                                        $min : this.y.start.$min - yMax
-                                    };
-                                }
-
-                                if ( this.y.stop.$shifted === undefined || this.y.stop.$shifted !== this.y.stop.$max ){
-                                    this.y.stop = {
-                                        $shifted : this.y.stop.$max + yMax,
-                                        $max : this.y.stop.$max + yMax
-                                    };
-                                }
-                            }
 
                             //---------
                             r = data.length + ' : ' + this.filtered.length;

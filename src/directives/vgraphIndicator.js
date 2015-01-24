@@ -13,20 +13,17 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
                     radius = scope.$eval( attrs.pointRadius ) || 3,
                     outer = scope.$eval( attrs.outerRadius ),
                     $el = d3.select( el[0] )
-                        .attr( 'class', 'leading' )
                         .attr( 'transform', 'translate(1000,1000)' ),
                     $circle = $el.append( 'circle' )
                         .attr( 'class', 'point inner' )
                         .attr( 'r', radius )
                         .attr( 'visibility', 'hidden' ),
-                    $outer;
-
-                if ( outer ){
                     $outer = $el.append( 'circle' )
                         .attr( 'class', 'point outer' )
                         .attr( 'r', radius )
                         .attr( 'visibility', 'hidden' );
 
+                if ( outer ){
                     pulse = function() {
                         $outer.transition()
                             .duration( 1000 )
@@ -38,7 +35,7 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
                             .each( 'end', function(){
                                 setTimeout(function(){
                                     pulse();
-                                }, 5000);
+                                }, 3000);
                             });
                     };
 

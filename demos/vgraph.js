@@ -350,19 +350,10 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                 this.x.max = d;
             }
 
-            if ( !this.y.min && isFinite(v) ){
-                this.y.min = d;
-                this.y.max = d;
-            }
-
             plot = this.plots[ name ];
             if ( !plot ){
                 this.plots[ name ] = plot = {
                     x : {
-                        min : d,
-                        max : d
-                    },
-                    y : {
                         min : d,
                         max : d
                     }
@@ -372,14 +363,6 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                     this.x.max = d;
                 }else if ( d.$x < this.x.min.$x ){
                     this.x.min = d;
-                }
-
-                if ( isFinite(v) ){
-                    if ( this.y.max.$max < d.$max ){
-                        this.y.max = d;
-                    }else if ( this.y.min.$min > d.$min ){
-                        this.y.min = d;
-                    }
                 }
             }else{
                 if ( plot.x.max.$x < d.$x ){
@@ -393,21 +376,7 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                     if ( d.$x < this.x.min.$x ){
                         this.x.min = d;
                     }
-                }
-
-                if ( isFinite(v) ){
-                    if ( plot.y.max.$max < d.$max ){
-                        plot.y.max = d;
-                        if ( this.y.max.$max < d.$max ){
-                            this.y.max = d;
-                        }
-                    }else if ( plot.y.min.$min > d.$min ){
-                        plot.y.min = d;
-                        if ( this.y.min.$min > d.$min ){
-                            this.y.min = d;
-                        }
-                    }
-                }
+                } 
             }
 
             d[ name ] = value;
@@ -512,7 +481,7 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                 this.y.min = null;
                 this.y.max = null;
 
-                if ( keys.length ){
+                if ( keys.length && this.plots[keys[0]] && this.plots[keys[0]].x && this.plots[keys[0]].y ){
                     this.x.min = this.plots[ keys[0] ].x.min;
                     this.x.max = this.plots[ keys[0] ].x.max;
                     this.y.min = this.plots[ keys[0] ].y.min;
@@ -595,11 +564,8 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                 firstMatch,
                 lastMatch,
                 data = this.data,
-                abs,
                 dx,
-                x = this.x,
-                y = this.y,
-                yMax;
+                x = this.x;
 
             if ( data.length ){
                 this.nexAdjust = function(){
@@ -697,25 +663,8 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                         this.filtered.$first = firstMatch;
                         this.filtered.$last = lastMatch;
                         
-                        if ( !this.filtered.length ){
-                            y.start = y.min;
-                            y.stop = y.max;
-                        }else if ( !y.start ){
-                            newPane = true;
-                            abs = this.findExtemesY( this.filtered );
-
-                            y.start = abs.min;
-                            y.stop = abs.max;
-                        }
-
-                        if ( x.stop && x.start && y.stop && y.start ){
-                            if ( this.adjustSettings ){
-                                this.adjustSettings(
-                                    x.stop.$x - x.start.$x,
-                                    y.stop.$max - y.start.$min,
-                                    this.filtered.$last - this.filtered.$first
-                                );
-                            }
+                        if ( x.stop && x.start ){
+                            
 
                             /*
                             TODO : if really needed
@@ -734,24 +683,6 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                                 };
                             }
                             */
-                            // TODO : this isn't entirely tight, I might need to relook at how the pane gets set
-                            if ( this.y.padding ){
-                                yMax = ( this.y.stop.$max - this.y.start.$min ) * this.y.padding;
-
-                                if ( this.y.start.$shifted === undefined || this.y.start.$shifted !== this.y.start.$min ){
-                                    this.y.start = {
-                                        $shifted : this.y.start.$min - yMax,
-                                        $min : this.y.start.$min - yMax
-                                    };
-                                }
-
-                                if ( this.y.stop.$shifted === undefined || this.y.stop.$shifted !== this.y.stop.$max ){
-                                    this.y.stop = {
-                                        $shifted : this.y.stop.$max + yMax,
-                                        $max : this.y.stop.$max + yMax
-                                    };
-                                }
-                            }
 
                             //---------
                             r = data.length + ' : ' + this.filtered.length;
@@ -1302,27 +1233,12 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
                 };
 
                 model.register(function(){
-                    var sampledData,
+                    var t,
+                        min,
+                        max,
+                        sampledData,
                         i, c,
                         m;
-
-                    ctrl.x.scale.domain([
-                            model.x.start.$interval,
-                            model.x.stop.$interval
-                        ])
-                        .range([
-                            box.innerLeft,
-                            box.innerRight
-                        ]);
-
-                    ctrl.y.scale.domain([
-                            model.y.start.$min,
-                            model.y.stop.$max
-                        ])
-                        .range([
-                            box.innerBottom,
-                            box.innerTop
-                        ]);
 
                     m = parseInt( model.filtered.length / box.innerWidth ) || 1;
 
@@ -1331,17 +1247,73 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
                     });
 
                     for( i = 0, c = components.length; i < c; i++ ){
+                        if ( components[ i ].parse ){
+                            t = components[ i ].parse( sampledData, model.filtered );
+                            if ( min === undefined ){
+                                min = t.min;
+                                max = t.max;
+                            } else {
+                                if ( min > t.min ){
+                                    min = t.min;
+                                }else if ( max < t.max ){
+                                    max = t.max;
+                                }
+                            }
+                        }
+                    }
+
+                    if ( model.adjustSettings ){
+                        model.adjustSettings(
+                            model.x.stop.$interval - model.x.start.$interval,
+                            max - min,
+                            model.filtered.$last - model.filtered.$first
+                        );
+                    }
+
+                    model.y.top = max;
+                    model.y.bottom = min;
+
+                    if ( model.y.padding ){
+                        t = ( max - min ) * model.y.padding;
+                        max = max + t;
+                        min = min - t;
+                    }
+
+                    model.y.minimum = min;
+                    model.y.maximum = max;
+
+                    ctrl.x.scale
+                        .domain([
+                            model.x.start.$interval,
+                            model.x.stop.$interval
+                        ])
+                        .range([
+                            box.innerLeft,
+                            box.innerRight
+                        ]);
+
+                    ctrl.y.scale
+                        .domain([
+                            min,
+                            max
+                        ])
+                        .range([
+                            box.innerBottom,
+                            box.innerTop
+                        ]);
+
+                    for( i = 0, c = components.length; i < c; i++ ){
                         if ( components[ i ].build ){
                             components[ i ].build( sampledData, model.filtered,  model.data );
                         }
                     }
-
+                    
                     for( i = 0, c = components.length; i < c; i++ ){
                         if ( components[ i ].process ){
                             components[ i ].process( sampledData, model.filtered,  model.data );
                         }
                     }
-
+                    
                     for( i = 0, c = components.length; i < c; i++ ){
                         if ( components[ i ].finalize ){
                             components[ i ].finalize( sampledData, model.filtered,  model.data );
@@ -1621,13 +1593,38 @@ angular.module( 'vgraph' ).directive( 'vgraphFill',
                         })
                         .y1(function(){
                             return scope.fillTo === undefined ? 
-                                chart.y.scale( chart.model.y.start.$min ) :
+                                chart.y.scale( chart.model.y.bottom ) :
                                 typeof( scope.fillTo ) === 'object' ?
                                     chart.y.scale( scope.fillTo.$min ) :
                                     chart.y.scale( scope.fillTo );
                         });
 
                 chart.register({
+                    parse : function( data ){
+                        var i, c,
+                            v,
+                            min,
+                            max;
+
+                        for( i = 0, c = data.length; i < c; i++ ){
+                            v = data[i][name];
+                            if ( v !== undefined ){
+                                if ( min === undefined ){
+                                    min = v;
+                                    max = v;
+                                }else if ( min > v ){
+                                    min = v;
+                                }else if ( max < v ){
+                                    max = v;
+                                }
+                            }
+                        }
+
+                        return {
+                            min : min,
+                            max : max
+                        };
+                    },
                     finalize : function( data ){
                         $path.attr( 'd', line(data) );
                     }
@@ -1761,6 +1758,7 @@ angular.module( 'vgraph' ).directive( 'vgraphIcon',
         return component( 'vgraphIcon', {
         	link: function( scope, el, attrs, requirements ){
         		var i, c,
+        			points,
         			chart = requirements[0],
                     root = el[0],
         			name = attrs.name,
@@ -1781,42 +1779,69 @@ angular.module( 'vgraph' ).directive( 'vgraphIcon',
 		        el.html('');
 
 		        chart.register({
-                    build : function( sampled, pane ){
-                        var data = pane,
-                        	j, k, d,
-                        	x, y,
-			        		ele;
+		        	parse : function( sampled, full ){
+		        		var d,
+		        			v,
+		        			min,
+		        			max;
+
+		        		points = {};
+
+		        		for( i = 0, c = full.length; i < c; i++ ){
+		        			d = full[i];
+		        			v = d[name];
+
+		        			if ( v !== undefined ){
+		        				points[ d.$interval ] = v;
+
+                                if ( min === undefined ){
+                                    min = v;
+                                    max = v;
+                                }else if ( min > v ){
+                                    min = v;
+                                }else if ( max < v ){
+                                    max = v;
+                                }
+		        			}
+		        		}
+
+		        		return {
+		        			min : min,
+		        			max : max
+		        		};
+		        	},
+                    build : function(){
+                        var x, y,
+                        	i, c;
 
 			        	function append(){
-		                	return this.appendChild( filling[j].cloneNode() ); // jshint ignore:line
+		                	return this.appendChild( filling[i].cloneNode() ); // jshint ignore:line
 		                }
 
 		        		el.html('');
 
-		            	for( i = 0, c = data.length; i < c; i++ ){
-		                	d = data[ i ];
+		            	angular.forEach(points, function( v, k ){
+		            		var ele;
 
-		                	if ( d[name] ){
-		                		x = chart.x.scale( d.$interval );
-                            	y = chart.y.scale( d[name] );
+		                	x = chart.x.scale( k );
+                        	y = chart.y.scale( v );
 
-		                		ele = $el.append('g');
-		   						
-		                		for ( j = 0, k = filling.length; j < k; j++ ){
-		                			ele.select( append );
-		                		}
-								
-			                	if ( attrs.showUnder ){
-			                		ele.attr( 'transform', 'translate(' + 
-			                			(x - width/2) + ',' + (y) + 
-			                		')' );
-			                	}else{
-			                		ele.attr( 'transform', 'translate(' + 
-			                			(x - width/2) + ',' + (y - height) + 
-			                		')' );
-			                	}
+	                		ele = $el.append('g');
+	   						
+	                		for ( i = 0, c = filling.length; i < c; i++ ){
+	                			ele.select( append );
+	                		}
+							
+		                	if ( attrs.showUnder ){
+		                		ele.attr( 'transform', 'translate(' + 
+		                			(x - width/2) + ',' + (y) + 
+		                		')' );
+		                	}else{
+		                		ele.attr( 'transform', 'translate(' + 
+		                			(x - width/2) + ',' + (y - height) + 
+		                		')' );
 		                	}
-		                }
+	                	});
                     }
                 });
         	}
@@ -1838,20 +1863,17 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
                     radius = scope.$eval( attrs.pointRadius ) || 3,
                     outer = scope.$eval( attrs.outerRadius ),
                     $el = d3.select( el[0] )
-                        .attr( 'class', 'leading' )
                         .attr( 'transform', 'translate(1000,1000)' ),
                     $circle = $el.append( 'circle' )
                         .attr( 'class', 'point inner' )
                         .attr( 'r', radius )
                         .attr( 'visibility', 'hidden' ),
-                    $outer;
-
-                if ( outer ){
                     $outer = $el.append( 'circle' )
                         .attr( 'class', 'point outer' )
                         .attr( 'r', radius )
                         .attr( 'visibility', 'hidden' );
 
+                if ( outer ){
                     pulse = function() {
                         $outer.transition()
                             .duration( 1000 )
@@ -1863,7 +1885,7 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
                             .each( 'end', function(){
                                 setTimeout(function(){
                                     pulse();
-                                }, 5000);
+                                }, 3000);
                             });
                     };
 
@@ -2108,6 +2130,31 @@ angular.module( 'vgraph' ).directive( 'vgraphLine',
                         });
 
                 chart.register({
+                    parse : function( data ){
+                        var i, c,
+                            v,
+                            min,
+                            max;
+
+                        for( i = 0, c = data.length; i < c; i++ ){
+                            v = data[i][name];
+                            if ( v !== undefined ){
+                                if ( min === undefined ){
+                                    min = v;
+                                    max = v;
+                                }else if ( min > v ){
+                                    min = v;
+                                }else if ( max < v ){
+                                    max = v;
+                                }
+                            }
+                        }
+
+                        return {
+                            min : min,
+                            max : max
+                        };
+                    },
                     finalize : function( data ){
                         var last;
 
@@ -2312,6 +2359,173 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
             scope : {
                 data : '=vgraphMultiLine',
                 config : '=config'
+            }
+        };
+    } ]
+);
+
+angular.module( 'vgraph' ).directive( 'vgraphStack',
+    [
+    function() {
+        'use strict';
+
+        function makeFill( chart, name, fillTo ){
+            return d3.svg.area()
+                .defined(function(d){
+                    var y = d[ name ];
+                    return !( isNaN(y) || y === null );
+                })
+                .x(function( d ){
+                    return chart.x.scale( d.$interval );
+                })
+                .y(function( d ){
+                    return chart.y.scale( d[name] );
+                })
+                .y1(function( d ){
+                    return chart.y.scale( fillTo ? d[fillTo] : chart.model.y.minimum );
+                });
+        }
+
+        return {
+            require : ['^vgraphChart'],
+            link : function( scope, $el, attrs, requirements ){
+                var chart = requirements[0],
+                    el = $el[0],
+                    styleEl = document.createElement('style'),
+                    lines,
+                    content;
+
+                document.body.appendChild( styleEl );
+
+                scope.$on('$destroy', function(){
+                    document.body.removeElement( styleEl );
+                });
+
+                scope.$watch('config', function( config ){
+                    var last,
+                        e,
+                        i, c,
+                        els,
+                        name,
+                        conf,
+                        html = '',
+                        style = '';
+
+                    if ( config ){
+                        for( i = 0, c = config.length; i < c; i++ ){
+                            conf = config[ i ];
+                            name = conf.name;
+
+                            html += '<path class="plot-'+name+'"'+'></path>';
+
+                            style += 'path.plot-'+name+' { stroke: '+ conf.color +'; fill: '+conf.color+'; }' + // the line
+                                'circle.plot-'+name+' { stroke: '+ conf.color +'; fill: '+ conf.color + ';}' + // the dot
+                                '.legend .plot-'+name+' .value { background-color: '+ conf.color + '; }'; // the legend
+
+                            scope[ name ] = conf;
+                        }
+
+                        d3.select( el ).selectAll( 'g' ).remove();
+
+                        styleEl.innerHTML = style;
+                        els = ( new DOMParser().parseFromString('<g xmlns="http://www.w3.org/2000/svg">'+html+'</g>','image/svg+xml') )
+                            .childNodes[0].childNodes;
+
+                        lines = [];
+
+                        i = 0;
+                        while( els.length ){
+                            e = els[ 0 ];
+
+                            el.appendChild( e );
+                            lines.push({
+                                name : config[i].name,
+                                element : d3.select(e),
+                                fill : makeFill( chart, config[i].name, last )
+                            });
+
+                            last = config[i].name;
+                            i++;
+                        }
+                    }
+                });
+
+                chart.register({
+                    parse : function( data ){
+                        var i, c,
+                            j, co,
+                            name,
+                            last,
+                            d,
+                            v,
+                            t,
+                            min,
+                            max;
+
+                        content = [];
+
+                        if ( lines && lines.length ){
+                            for( i = 0, c = data.length; i < c; i++ ){
+                                last = 0;
+                                v = 0;
+                                d = data[i];
+                                t = {
+                                    $interval : d.$interval
+                                };
+
+                                for( j = 0, co = lines.length; j < co && v === 0; j++ ){
+                                    name = lines[j].name;
+                                    v = d[ name ];
+
+                                    if ( v || v === 0 ){
+                                        if ( min === undefined ){
+                                            min = v;
+                                            max = v;
+                                        }else if ( min > v ){
+                                            min = v;
+                                        }
+                                    }
+
+                                    t[ name ] = v;
+                                }
+
+                                last = v;
+
+                                for( ; j < co; j++ ){
+                                    name = lines[j].name;
+                                    v = d[ name ] || 0;
+
+                                    last = last + v;
+                                    t[ name ] = last;
+                                }
+
+                                if ( last > max ){
+                                    max = last;
+                                }
+
+                                content.push( t );
+                            }
+                        }
+
+                        return {
+                            min : min,
+                            max : max
+                        };
+                    },
+                    finalize : function(){
+                        var i, c,
+                            line;
+
+                        for( i = 0, c = lines.length; i < c; i++ ){
+                            line = lines[ i ];
+
+                            line.element.attr( 'd', line.fill(content) );
+                        }
+                    }
+                });
+            },
+            scope : {
+                config : '=vgraphStack'
             }
         };
     } ]

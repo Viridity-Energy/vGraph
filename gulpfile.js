@@ -55,12 +55,14 @@ gulp.task('doc', function() {
 });
 
 gulp.task( 'concat-less', function(){
+    console.log( lessSrc );
     gulp.src( lessSrc )
 		.pipe( concat('vgraph.less') )
 		.pipe( gulp.dest('./build/') );
 });
 
 gulp.task( 'build-less', ['concat-less'], function (){
+    console.log( 'building less' );
     gulp.src( './build/vgraph.less' )
     	.pipe( less() )
     	.pipe( gulp.dest('./build/') )

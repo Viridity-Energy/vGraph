@@ -23,6 +23,31 @@ angular.module( 'vgraph' ).directive( 'vgraphLine',
                         });
 
                 chart.register({
+                    parse : function( data ){
+                        var i, c,
+                            v,
+                            min,
+                            max;
+
+                        for( i = 0, c = data.length; i < c; i++ ){
+                            v = data[i][name];
+                            if ( v !== undefined ){
+                                if ( min === undefined ){
+                                    min = v;
+                                    max = v;
+                                }else if ( min > v ){
+                                    min = v;
+                                }else if ( max < v ){
+                                    max = v;
+                                }
+                            }
+                        }
+
+                        return {
+                            min : min,
+                            max : max
+                        };
+                    },
                     finalize : function( data ){
                         var last;
 

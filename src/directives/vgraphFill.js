@@ -22,13 +22,38 @@ angular.module( 'vgraph' ).directive( 'vgraphFill',
                         })
                         .y1(function(){
                             return scope.fillTo === undefined ? 
-                                chart.y.scale( chart.model.y.start.$min ) :
+                                chart.y.scale( chart.model.y.bottom ) :
                                 typeof( scope.fillTo ) === 'object' ?
                                     chart.y.scale( scope.fillTo.$min ) :
                                     chart.y.scale( scope.fillTo );
                         });
 
                 chart.register({
+                    parse : function( data ){
+                        var i, c,
+                            v,
+                            min,
+                            max;
+
+                        for( i = 0, c = data.length; i < c; i++ ){
+                            v = data[i][name];
+                            if ( v !== undefined ){
+                                if ( min === undefined ){
+                                    min = v;
+                                    max = v;
+                                }else if ( min > v ){
+                                    min = v;
+                                }else if ( max < v ){
+                                    max = v;
+                                }
+                            }
+                        }
+
+                        return {
+                            min : min,
+                            max : max
+                        };
+                    },
                     finalize : function( data ){
                         $path.attr( 'd', line(data) );
                     }

@@ -26,63 +26,108 @@
         stroke-width: 2;
     }
 
-    [vgraph-loading] .filling {
-        fill : #777;
-        stroke : #ccc;
-    }
-
-    [vgraph-loading] .outline {
-        stroke : #ddd;
-        fill : #999;
-    }
-
-    [vgraph-loading] text {
+    > [vgraph-loading] {
+        .filling {
+            fill : #777;
+            stroke : #ccc;
+        }
+        .outline {
+            stroke : #ddd;
+            fill : #999;
+        }
+        .text {
         // stroke : #00f;
+        }
     }
 
-    [vgraph-error] .outline {
-        stroke : #fdd;
-        fill : #414141;
+    > [vgraph-error] {
+        .outline {
+            stroke : #fdd;
+            fill : #414141;
+        }
+        .text {
+            fill : #c3c4c4;
+            font-size : 24px;
+        }
     }
 
-    [vgraph-error] text {
-        fill : #c3c4c4;
-        font-size : 24px;
+    > [vgraph-zoom] {
+        .shade {
+            opacity: .7;
+            fill : grey;
+            stroke : white;
+            stroke-width: 2;
+        }
+        .focus {
+            cursor : crosshair;
+            opacity: .2;
+            fill : grey;
+        }
+        .focus.zoomed {
+            cursor : move;
+        }
+        .control rect {
+            opacity: 0;
+        }
+        .nub {
+            fill: #eee;
+            stroke: #666;
+        }
+        .control {
+            cursor: pointer;
+        }
     }
 
-    [vgraph-zoom] .shade {
-        opacity: .7;
-        fill : grey;
-        stroke : white;
-        stroke-width: 2;
+    > [vgraph-focus] {
+        .focus {
+            stroke: yellow;
+            fill: white;
+            opacity: .6;
+        }
     }
 
-    [vgraph-zoom] .focus {
-        cursor : crosshair;
-        opacity: .2;
-        fill : grey;
-    }
+    > [vgraph-indicator] {
+        .inner {
+            stroke-width: 0;
+            fill: black;
+        }
+        .outer {
+            stroke-width: 1;
+            stroke: black;
+            fill: transparent;
+        }
 
-    [vgraph-zoom] .focus.zoomed {
-        cursor : move;
-    }
+        &:not([outer-radius]){
+            .outer {
+                -webkit-animation: pulse 3s ease infinite;
+                -moz-animation: pulse 3s ease infinite;
+                animation: pulse 3s ease infinite;
+            }
 
-    [vgraph-zoom] .control rect {
-        opacity: 0;
-    }
-
-    [vgraph-zoom] .nub {
-        fill: #eee;
-        stroke: #666;
-    }
-
-    [vgraph-zoom] .control {
-        cursor: pointer;
-    }
-
-    [vgraph-focus] .focus {
-        stroke: yellow;
-        fill: white;
-        opacity: .6;
+            @-webkit-keyframes pulse {
+                0%, 100% {
+                    transform: scale(2);
+                }
+                50% {
+                    transform: scale(1);
+                }
+            }
+            @-moz-keyframes pulse {
+                0%, 100% {
+                    transform: scale(2);
+                }
+                50% {
+                    transform: scale(1);
+                }
+            }
+            @keyframes pulse {
+                0%, 100% {
+                    transform: scale(2);
+                }
+                50% {
+                    transform: scale(1);
+                }
+            }
+        }
     }
 }
