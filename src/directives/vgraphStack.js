@@ -50,11 +50,15 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                             conf = config[ i ];
                             name = conf.name;
 
-                            html += '<path class="plot-'+name+'"'+'></path>';
+                            if ( conf.className ){
+                                html += '<path class="'+conf.className+'"></path>';
+                            }else{
+                                html += '<path class="plot-'+name+'"></path>';
 
-                            style += 'path.plot-'+name+' { stroke: '+ conf.color +'; fill: '+conf.color+'; }' + // the line
-                                'circle.plot-'+name+' { stroke: '+ conf.color +'; fill: '+ conf.color + ';}' + // the dot
-                                '.legend .plot-'+name+' .value { background-color: '+ conf.color + '; }'; // the legend
+                                style += 'path.plot-'+name+' { stroke: '+ conf.color +'; fill: '+conf.color+'; }' + // the line
+                                    'circle.plot-'+name+' { stroke: '+ conf.color +'; fill: '+ conf.color + ';}' + // the dot
+                                    '.legend .plot-'+name+' .value { background-color: '+ conf.color + '; }'; // the legend
+                            }
 
                             scope[ name ] = conf;
                         }

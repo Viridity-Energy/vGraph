@@ -14,6 +14,8 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                     var config = scope.config,
                         e,
                         i, c,
+                        color,
+                        css,
                         els,
                         name,
                         conf,
@@ -25,16 +27,21 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                         for( i = 0, c = config.length; i < c; i++ ){
                             conf = config[ i ];
                             name = conf.name;
+                            css = conf.className;
+                            color = conf.color;
 
                             html += '<g vgraph-line="data" ' +
+                                ( css ? 'class="'+css+'" ' : '' ) +
                                 'interval="'+name+'.x" ' +
                                 'value="'+name+'.y" ' +
                                 'name="'+name+'"></g>';
 
-                            style += 'path.plot-'+name+' { stroke: '+ conf.color +'; fill: transparent; }' + // the line
-                                'circle.plot-'+name+' { stroke: '+ conf.color +'; fill: '+ conf.color + ';}' + // the dot
-                                '.highlight.plot-'+name+' { background-color: '+ conf.color + '; }'; // the legend
-
+                            if ( color ){
+                                style += 'path.plot-'+name+' { stroke: '+ color +'; fill: transparent; }' + // the line
+                                    'circle.plot-'+name+' { stroke: '+ color +'; fill: '+ color + ';}' + // the dot
+                                    '.highlight.plot-'+name+' { background-color: '+ color + '; }'; // the legend
+                            }
+                            
                             scope[ name ] = conf;
                         }
 
@@ -55,7 +62,7 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                 }
 
                 scope.$on('$destroy', function(){
-                    document.body.removeElement( styleEl );
+                    document.body.removeChild( styleEl );
                 });
 
                 scope.$watch('config', parseConf );

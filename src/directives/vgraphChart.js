@@ -38,6 +38,11 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
                     }
                 };
 
+                box.register(function(){
+                    resize( box );
+                    model.adjust( true );
+                });
+
                 model.register(function(){
                     var t,
                         min,
@@ -130,49 +135,9 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
                 return ctrl;
             },
             link: function ( scope, el ){
-                scope.box.extend({
-                    outerWidth : el.outerWidth( true ),
-                    outerHeight : el.outerHeight( true ),
-                    margin : {
-                        top : el.css('margin-top'),
-                        right : el.css('margin-right'),
-                        bottom : el.css('margin-bottom'),
-                        left : el.css('margin-left')
-                    },
-                    padding : {
-                        top : el.css('padding-top'),
-                        right : el.css('padding-right'),
-                        bottom : el.css('padding-bottom'),
-                        left : el.css('padding-left')
-                    }
-                });
+                scope.box.targetSvg( el );
 
-                el.css('margin', '0')
-                    .css('padding', '0')
-                    .attr( 'width', scope.box.outerWidth )
-                    .attr( 'height', scope.box.outerHeight )
-                    .css({
-                        width : scope.box.outerWidth+'px',
-                        height : scope.box.outerHeight+'px'
-                    });
-
-                d3.select( el[0] ).insert( 'rect',':first-child' )
-                    .attr( 'class', 'mat' )
-                    .attr( 'width', scope.box.innerWidth )
-                    .attr( 'height', scope.box.innerHeight )
-                    .attr( 'transform', 'translate(' +
-                        scope.box.innerLeft + ',' +
-                        scope.box.innerTop + ')'
-                    );
-
-                d3.select( el[0] ).insert( 'rect',':first-child' )
-                    .attr( 'class', 'frame' )
-                    .attr( 'width', scope.box.width )
-                    .attr( 'height', scope.box.height )
-                    .attr( 'transform', 'translate(' +
-                        scope.box.left + ',' +
-                        scope.box.top + ')'
-                    );
+                resize( scope.box, el[0] );
 
                 scope.$watch( 'model.loading', function( loading ){
                     if ( loading ){
@@ -196,5 +161,31 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
                 model : '=model'
             }
         };
-    } ]
+
+        function resize( box, el ){
+            if ( el ){
+                box.$mat = d3.select( el ).insert( 'rect',':first-child' );
+                box.$frame = d3.select( el ).insert( 'rect',':first-child' );
+            }
+
+            if ( box.$mat ){
+                // this isn't the bed way to do it, but since I'm already planning on fixing stuff up, I'm leaving it
+                box.$mat.attr( 'class', 'mat' )
+                    .attr( 'width', box.innerWidth )
+                    .attr( 'height', box.innerHeight )
+                    .attr( 'transform', 'translate(' +
+                        box.innerLeft + ',' +
+                        box.innerTop + ')'
+                    );
+
+                box.$frame.attr( 'class', 'frame' )
+                    .attr( 'width', box.width )
+                    .attr( 'height', box.height )
+                    .attr( 'transform', 'translate(' +
+                        box.left + ',' +
+                        box.top + ')'
+                    );
+            }
+        }
+    }]
 );

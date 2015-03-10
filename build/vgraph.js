@@ -4,33 +4,16 @@ angular.module( 'vgraph' ).factory( 'BoxModel',
     function () {
         'use strict';
 
-        function BoxModel( settings ){
-            this.registrations = [];
-            this.extend( settings || {} );
-        }
-
-        function merge( nVal, oVal ){
-            return nVal !== undefined ? parseInt( nVal ) : oVal;
-        }
-
-        BoxModel.prototype.register = function( cb ){
-            if ( this.ratio ){
-                cb();
-            }
-
-            this.registrations.push( cb );
-        };
-
-        BoxModel.prototype.extend = function( settings ){
+        function extend( model, settings ){
             var i, c,
                 padding = settings.padding,
-                oPadding = this.padding,
+                oPadding = model.padding,
                 margin = settings.margin,
-                oMargin = this.margin;
+                oMargin = model.margin;
 
             // compute the margins
             if ( !oMargin ){
-                this.margin = oMargin = {
+                model.margin = oMargin = {
                     top : 0,
                     right : 0,
                     bottom : 0,
@@ -47,7 +30,7 @@ angular.module( 'vgraph' ).factory( 'BoxModel',
 
             // compute the paddings
             if ( !oPadding ){
-                this.padding = oPadding = {
+                model.padding = oPadding = {
                     top : 0,
                     right : 0,
                     bottom : 0,
@@ -63,31 +46,90 @@ angular.module( 'vgraph' ).factory( 'BoxModel',
             }
 
             // set up the knowns
-            this.outerWidth = merge( settings.outerWidth, this.outerWidth ) || 0;
-            this.outerHeight = merge( settings.outerHeight, this.outerHeight ) || 0;
+            model.outerWidth = merge( settings.outerWidth, model.outerWidth ) || 0;
+            model.outerHeight = merge( settings.outerHeight, model.outerHeight ) || 0;
 
             // where is the box
-            this.top = oMargin.top;
-            this.bottom = this.outerHeight - oMargin.bottom;
-            this.left = oMargin.left;
-            this.right = this.outerWidth - oMargin.right;
+            model.top = oMargin.top;
+            model.bottom = model.outerHeight - oMargin.bottom;
+            model.left = oMargin.left;
+            model.right = model.outerWidth - oMargin.right;
 
-            this.center = ( this.left + this.right ) / 2;
-            this.middle = ( this.top + this.bottom ) / 2;
+            model.center = ( model.left + model.right ) / 2;
+            model.middle = ( model.top + model.bottom ) / 2;
 
-            this.width = this.right - this.left;
-            this.height = this.bottom - this.top;
+            model.width = model.right - model.left;
+            model.height = model.bottom - model.top;
 
             // where are the inners
-            this.innerTop = this.top + oPadding.top;
-            this.innerBottom = this.bottom - oPadding.bottom;
-            this.innerLeft = this.left + oPadding.left;
-            this.innerRight = this.right - oPadding.right;
+            model.innerTop = model.top + oPadding.top;
+            model.innerBottom = model.bottom - oPadding.bottom;
+            model.innerLeft = model.left + oPadding.left;
+            model.innerRight = model.right - oPadding.right;
 
-            this.innerWidth = this.innerRight - this.innerLeft;
-            this.innerHeight = this.innerBottom - this.innerTop;
+            model.innerWidth = model.innerRight - model.innerLeft;
+            model.innerHeight = model.innerBottom - model.innerTop;
 
-            this.ratio = this.outerWidth + ' x ' + this.outerHeight;
+            model.ratio = model.outerWidth + ' x ' + model.outerHeight;
+        }
+
+        function BoxModel( settings ){
+            this.registrations = [];
+            extend( this, settings || {} );
+        }
+
+        function merge( nVal, oVal ){
+            return nVal !== undefined ? parseInt( nVal ) : oVal;
+        }
+
+        BoxModel.prototype.register = function( cb ){
+            if ( this.ratio ){
+                cb();
+            }
+
+            this.registrations.push( cb );
+        };
+
+        BoxModel.prototype.targetSvg = function( $el ){
+            this.$element = $el;
+
+            this.resize();
+        };
+
+        BoxModel.prototype.resize = function(){
+            var i, c,
+                el = this.$element;
+
+            el.attr( 'width', null )
+                .attr( 'height', null );
+
+            el[0].style.cssText = null;
+
+            extend( this, {
+                outerWidth : el.outerWidth( true ),
+                outerHeight : el.outerHeight( true ),
+                margin : {
+                    top : el.css('margin-top'),
+                    right : el.css('margin-right'),
+                    bottom : el.css('margin-bottom'),
+                    left : el.css('margin-left')
+                },
+                padding : {
+                    top : el.css('padding-top'),
+                    right : el.css('padding-right'),
+                    bottom : el.css('padding-bottom'),
+                    left : el.css('padding-left')
+                }
+            });
+
+            el.css('margin', '0')
+                .css('padding', '0')
+                .attr( 'width', this.outerWidth )
+                .attr( 'height', this.outerHeight )
+                .css({
+                    width : this.outerWidth+'px',
+                    height : this.outerHeight+'px'
+                });
 
             for( i = 0, c = this.registrations.length; i < c; i++ ){
                 this.registrations[ i ]();
@@ -1232,6 +1274,11 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
                     }
                 };
 
+                box.register(function(){
+                    resize( box );
+                    model.adjust( true );
+                });
+
                 model.register(function(){
                     var t,
                         min,
@@ -1324,49 +1371,9 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
                 return ctrl;
             },
             link: function ( scope, el ){
-                scope.box.extend({
-                    outerWidth : el.outerWidth( true ),
-                    outerHeight : el.outerHeight( true ),
-                    margin : {
-                        top : el.css('margin-top'),
-                        right : el.css('margin-right'),
-                        bottom : el.css('margin-bottom'),
-                        left : el.css('margin-left')
-                    },
-                    padding : {
-                        top : el.css('padding-top'),
-                        right : el.css('padding-right'),
-                        bottom : el.css('padding-bottom'),
-                        left : el.css('padding-left')
-                    }
-                });
+                scope.box.targetSvg( el );
 
-                el.css('margin', '0')
-                    .css('padding', '0')
-                    .attr( 'width', scope.box.outerWidth )
-                    .attr( 'height', scope.box.outerHeight )
-                    .css({
-                        width : scope.box.outerWidth+'px',
-                        height : scope.box.outerHeight+'px'
-                    });
-
-                d3.select( el[0] ).insert( 'rect',':first-child' )
-                    .attr( 'class', 'mat' )
-                    .attr( 'width', scope.box.innerWidth )
-                    .attr( 'height', scope.box.innerHeight )
-                    .attr( 'transform', 'translate(' +
-                        scope.box.innerLeft + ',' +
-                        scope.box.innerTop + ')'
-                    );
-
-                d3.select( el[0] ).insert( 'rect',':first-child' )
-                    .attr( 'class', 'frame' )
-                    .attr( 'width', scope.box.width )
-                    .attr( 'height', scope.box.height )
-                    .attr( 'transform', 'translate(' +
-                        scope.box.left + ',' +
-                        scope.box.top + ')'
-                    );
+                resize( scope.box, el[0] );
 
                 scope.$watch( 'model.loading', function( loading ){
                     if ( loading ){
@@ -1390,7 +1397,33 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
                 model : '=model'
             }
         };
-    } ]
+
+        function resize( box, el ){
+            if ( el ){
+                box.$mat = d3.select( el ).insert( 'rect',':first-child' );
+                box.$frame = d3.select( el ).insert( 'rect',':first-child' );
+            }
+
+            if ( box.$mat ){
+                // this isn't the bed way to do it, but since I'm already planning on fixing stuff up, I'm leaving it
+                box.$mat.attr( 'class', 'mat' )
+                    .attr( 'width', box.innerWidth )
+                    .attr( 'height', box.innerHeight )
+                    .attr( 'transform', 'translate(' +
+                        box.innerLeft + ',' +
+                        box.innerTop + ')'
+                    );
+
+                box.$frame.attr( 'class', 'frame' )
+                    .attr( 'width', box.width )
+                    .attr( 'height', box.height )
+                    .attr( 'transform', 'translate(' +
+                        box.left + ',' +
+                        box.top + ')'
+                    );
+            }
+        }
+    }]
 );
 
 angular.module( 'vgraph' ).factory( 'vgraphComponent', function(){
@@ -2309,6 +2342,8 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                     var config = scope.config,
                         e,
                         i, c,
+                        color,
+                        css,
                         els,
                         name,
                         conf,
@@ -2320,16 +2355,21 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                         for( i = 0, c = config.length; i < c; i++ ){
                             conf = config[ i ];
                             name = conf.name;
+                            css = conf.className;
+                            color = conf.color;
 
                             html += '<g vgraph-line="data" ' +
+                                ( css ? 'class="'+css+'" ' : '' ) +
                                 'interval="'+name+'.x" ' +
                                 'value="'+name+'.y" ' +
                                 'name="'+name+'"></g>';
 
-                            style += 'path.plot-'+name+' { stroke: '+ conf.color +'; fill: transparent; }' + // the line
-                                'circle.plot-'+name+' { stroke: '+ conf.color +'; fill: '+ conf.color + ';}' + // the dot
-                                '.highlight.plot-'+name+' { background-color: '+ conf.color + '; }'; // the legend
-
+                            if ( color ){
+                                style += 'path.plot-'+name+' { stroke: '+ color +'; fill: transparent; }' + // the line
+                                    'circle.plot-'+name+' { stroke: '+ color +'; fill: '+ color + ';}' + // the dot
+                                    '.highlight.plot-'+name+' { background-color: '+ color + '; }'; // the legend
+                            }
+                            
                             scope[ name ] = conf;
                         }
 
@@ -2350,7 +2390,7 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                 }
 
                 scope.$on('$destroy', function(){
-                    document.body.removeElement( styleEl );
+                    document.body.removeChild( styleEl );
                 });
 
                 scope.$watch('config', parseConf );
@@ -2416,11 +2456,15 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                             conf = config[ i ];
                             name = conf.name;
 
-                            html += '<path class="plot-'+name+'"'+'></path>';
+                            if ( conf.className ){
+                                html += '<path class="'+conf.className+'"></path>';
+                            }else{
+                                html += '<path class="plot-'+name+'"></path>';
 
-                            style += 'path.plot-'+name+' { stroke: '+ conf.color +'; fill: '+conf.color+'; }' + // the line
-                                'circle.plot-'+name+' { stroke: '+ conf.color +'; fill: '+ conf.color + ';}' + // the dot
-                                '.legend .plot-'+name+' .value { background-color: '+ conf.color + '; }'; // the legend
+                                style += 'path.plot-'+name+' { stroke: '+ conf.color +'; fill: '+conf.color+'; }' + // the line
+                                    'circle.plot-'+name+' { stroke: '+ conf.color +'; fill: '+ conf.color + ';}' + // the dot
+                                    '.legend .plot-'+name+' .value { background-color: '+ conf.color + '; }'; // the legend
+                            }
 
                             scope[ name ] = conf;
                         }
