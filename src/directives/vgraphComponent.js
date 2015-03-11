@@ -37,7 +37,7 @@ angular.module( 'vgraph' ).factory( 'vgraphComponent', function(){
                 });
 
                 scope.$watch('value', function( v ){
-                	if ( typeof(v) === 'string' ){
+                    if ( typeof(v) === 'string' ){
                 		alias = attrs.alias || v;
 	                    valueParse = function( d ){
 	                    	if ( d[v] !== undefined ){
@@ -110,7 +110,7 @@ angular.module( 'vgraph' ).factory( 'vgraphComponent', function(){
 		t = new F();
 
         t.scope = angular.copy( t.scope );
-		t.scope.data = '='+directive;
+        t.scope.data = '='+directive;
 
 		angular.forEach( overrides, function( f, key ){
 			var old = t[key];

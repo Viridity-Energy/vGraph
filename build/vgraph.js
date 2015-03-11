@@ -5,8 +5,7 @@ angular.module( 'vgraph' ).factory( 'BoxModel',
         'use strict';
 
         function extend( model, settings ){
-            var i, c,
-                padding = settings.padding,
+            var padding = settings.padding,
                 oPadding = model.padding,
                 margin = settings.margin,
                 oMargin = model.margin;
@@ -1465,7 +1464,7 @@ angular.module( 'vgraph' ).factory( 'vgraphComponent', function(){
                 });
 
                 scope.$watch('value', function( v ){
-                	if ( typeof(v) === 'string' ){
+                    if ( typeof(v) === 'string' ){
                 		alias = attrs.alias || v;
 	                    valueParse = function( d ){
 	                    	if ( d[v] !== undefined ){
@@ -1538,7 +1537,7 @@ angular.module( 'vgraph' ).factory( 'vgraphComponent', function(){
 		t = new F();
 
         t.scope = angular.copy( t.scope );
-		t.scope.data = '='+directive;
+        t.scope.data = '='+directive;
 
 		angular.forEach( overrides, function( f, key ){
 			var old = t[key];
@@ -1600,6 +1599,17 @@ angular.module( 'vgraph' ).directive( 'vgraphError',
             }
         };
     } ]
+);
+
+angular.module( 'vgraph' ).directive( 'vgraphFeed',
+    ['vgraphComponent',
+    function( component ){
+        'use strict';
+
+        return component( 'vgraphFeed', {
+            restrict: 'A'
+        });
+    }]
 );
 
 angular.module( 'vgraph' ).directive( 'vgraphFill',
@@ -2342,8 +2352,9 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                     var config = scope.config,
                         e,
                         i, c,
-                        color,
-                        css,
+                        className,
+                        value,
+                        interval,
                         els,
                         name,
                         conf,
@@ -2355,19 +2366,39 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                         for( i = 0, c = config.length; i < c; i++ ){
                             conf = config[ i ];
                             name = conf.name;
-                            css = conf.className;
-                            color = conf.color;
 
-                            html += '<g vgraph-line="data" ' +
-                                ( css ? 'class="'+css+'" ' : '' ) +
-                                'interval="'+name+'.x" ' +
-                                'value="'+name+'.y" ' +
-                                'name="'+name+'"></g>';
+                            if ( conf.className ){
+                                className = conf.className;
+                            }else{
+                                className = '';//'plot-'+name; that goes on the child
+                                style += 'path.plot-'+name+' { stroke: '+ conf.color +'; fill: transparent; }' + // the line
+                                    'circle.plot-'+name+' { stroke: '+ conf.color +'; fill: '+ conf.color + ';}' + // the dot
+                                    '.highlight.plot-'+name+' { background-color: '+ conf.color + '; }'; // the legend
+                            }
 
-                            if ( color ){
-                                style += 'path.plot-'+name+' { stroke: '+ color +'; fill: transparent; }' + // the line
-                                    'circle.plot-'+name+' { stroke: '+ color +'; fill: '+ color + ';}' + // the dot
-                                    '.highlight.plot-'+name+' { background-color: '+ color + '; }'; // the legend
+                            if ( conf.data ){
+                                value = angular.isFunction( conf.value ) ? name+'.value' : ( conf.value || '\''+name+'\'' );
+                                interval = angular.isFunction( conf.interval ) ? name+'.interval' : ( conf.interval || '\'x\'' );
+
+                                if ( angular.isString(conf.data) ){
+                                    scope[conf.data] = scope.$parent[conf.data];
+                                }else{
+                                    scope[ name ] = conf.data;
+                                    conf.data = name;
+                                }
+
+                                html += '<g class="'+className+'" name="'+name+'"'+
+                                    ' vgraph-line="'+( conf.data || 'data')+'"'+
+                                    ' value="'+ value  +'"'+
+                                    ' interval="'+ interval +'"'+
+                                    ( conf.filter ? ' filter="'+conf.filter+'"' : '' ) +
+                                '></g>';
+                            }else{
+                                html += '<g vgraph-line="data" ' +
+                                    'class="'+className+'" ' +
+                                    'interval="'+name+'.x" ' +
+                                    'value="'+name+'.y" ' +
+                                    'name="'+name+'"></g>';
                             }
                             
                             scope[ name ] = conf;
@@ -2393,8 +2424,7 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                     document.body.removeChild( styleEl );
                 });
 
-                scope.$watch('config', parseConf );
-                scope.$watch('config.length', parseConf );
+                scope.$watchCollection('config', parseConf );
             },
             scope : {
                 data : '=vgraphMultiLine',
@@ -2405,8 +2435,8 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
 );
 
 angular.module( 'vgraph' ).directive( 'vgraphStack',
-    [
-    function() {
+    [ '$compile',
+    function( $compile ) {
         'use strict';
 
         function makeFill( chart, name, fillTo ){
@@ -2437,15 +2467,14 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
 
                 document.body.appendChild( styleEl );
 
-                scope.$on('$destroy', function(){
-                    document.body.removeElement( styleEl );
-                });
-
-                scope.$watch('config', function( config ){
+                function parseConf( config ){
                     var last,
                         e,
                         i, c,
                         els,
+                        className,
+                        value,
+                        interval,
                         name,
                         conf,
                         html = '',
@@ -2457,13 +2486,34 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                             name = conf.name;
 
                             if ( conf.className ){
-                                html += '<path class="'+conf.className+'"></path>';
+                                className = conf.className;
                             }else{
-                                html += '<path class="plot-'+name+'"></path>';
+                                className = 'plot-'+name;
 
                                 style += 'path.plot-'+name+' { stroke: '+ conf.color +'; fill: '+conf.color+'; }' + // the line
                                     'circle.plot-'+name+' { stroke: '+ conf.color +'; fill: '+ conf.color + ';}' + // the dot
                                     '.legend .plot-'+name+' .value { background-color: '+ conf.color + '; }'; // the legend
+                            }
+
+                            if ( conf.data ){
+                                value = angular.isFunction( conf.value ) ? name+'.value' : ( conf.value || '\''+name+'\'' );
+                                interval = angular.isFunction( conf.interval ) ? name+'.interval' : ( conf.interval || '\'x\'' );
+
+                                if ( angular.isString(conf.data) ){
+                                    scope[conf.data] = scope.$parent[conf.data];
+                                }else{
+                                    scope[ name ] = conf.data;
+                                    conf.data = name;
+                                }
+
+                                html += '<path class="'+className+'"'+
+                                        ' vgraph-feed="'+conf.data+'" name="'+name+'"'+
+                                        ' value="'+value+'"'+
+                                        ' interval="'+interval+'"'+
+                                        ( conf.filter ? ' filter="'+conf.filter+'"' : '' ) +
+                                    '></path>';
+                            }else{
+                                html += '<path class="'+className+'"></path>';
                             }
 
                             scope[ name ] = conf;
@@ -2482,6 +2532,9 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                             e = els[ 0 ];
 
                             el.appendChild( e );
+
+                            $compile( e )(scope);
+
                             lines.push({
                                 name : config[i].name,
                                 element : d3.select(e),
@@ -2492,8 +2545,14 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                             i++;
                         }
                     }
-                });
+                }
 
+                scope.$watchCollection('config', parseConf );
+
+                scope.$on('$destroy', function(){
+                    document.body.removeElement( styleEl );
+                });
+                
                 chart.register({
                     parse : function( data ){
                         var i, c,

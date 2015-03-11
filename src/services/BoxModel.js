@@ -4,8 +4,7 @@ angular.module( 'vgraph' ).factory( 'BoxModel',
         'use strict';
 
         function extend( model, settings ){
-            var i, c,
-                padding = settings.padding,
+            var padding = settings.padding,
                 oPadding = model.padding,
                 margin = settings.margin,
                 oMargin = model.margin;

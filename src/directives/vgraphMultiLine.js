@@ -14,8 +14,9 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                     var config = scope.config,
                         e,
                         i, c,
-                        color,
-                        css,
+                        className,
+                        value,
+                        interval,
                         els,
                         name,
                         conf,
@@ -27,19 +28,39 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                         for( i = 0, c = config.length; i < c; i++ ){
                             conf = config[ i ];
                             name = conf.name;
-                            css = conf.className;
-                            color = conf.color;
 
-                            html += '<g vgraph-line="data" ' +
-                                ( css ? 'class="'+css+'" ' : '' ) +
-                                'interval="'+name+'.x" ' +
-                                'value="'+name+'.y" ' +
-                                'name="'+name+'"></g>';
+                            if ( conf.className ){
+                                className = conf.className;
+                            }else{
+                                className = '';//'plot-'+name; that goes on the child
+                                style += 'path.plot-'+name+' { stroke: '+ conf.color +'; fill: transparent; }' + // the line
+                                    'circle.plot-'+name+' { stroke: '+ conf.color +'; fill: '+ conf.color + ';}' + // the dot
+                                    '.highlight.plot-'+name+' { background-color: '+ conf.color + '; }'; // the legend
+                            }
 
-                            if ( color ){
-                                style += 'path.plot-'+name+' { stroke: '+ color +'; fill: transparent; }' + // the line
-                                    'circle.plot-'+name+' { stroke: '+ color +'; fill: '+ color + ';}' + // the dot
-                                    '.highlight.plot-'+name+' { background-color: '+ color + '; }'; // the legend
+                            if ( conf.data ){
+                                value = angular.isFunction( conf.value ) ? name+'.value' : ( conf.value || '\''+name+'\'' );
+                                interval = angular.isFunction( conf.interval ) ? name+'.interval' : ( conf.interval || '\'x\'' );
+
+                                if ( angular.isString(conf.data) ){
+                                    scope[conf.data] = scope.$parent[conf.data];
+                                }else{
+                                    scope[ name ] = conf.data;
+                                    conf.data = name;
+                                }
+
+                                html += '<g class="'+className+'" name="'+name+'"'+
+                                    ' vgraph-line="'+( conf.data || 'data')+'"'+
+                                    ' value="'+ value  +'"'+
+                                    ' interval="'+ interval +'"'+
+                                    ( conf.filter ? ' filter="'+conf.filter+'"' : '' ) +
+                                '></g>';
+                            }else{
+                                html += '<g vgraph-line="data" ' +
+                                    'class="'+className+'" ' +
+                                    'interval="'+name+'.x" ' +
+                                    'value="'+name+'.y" ' +
+                                    'name="'+name+'"></g>';
                             }
                             
                             scope[ name ] = conf;
@@ -65,8 +86,7 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                     document.body.removeChild( styleEl );
                 });
 
-                scope.$watch('config', parseConf );
-                scope.$watch('config.length', parseConf );
+                scope.$watchCollection('config', parseConf );
             },
             scope : {
                 data : '=vgraphMultiLine',
