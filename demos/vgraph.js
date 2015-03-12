@@ -1454,7 +1454,7 @@ angular.module( 'vgraph' ).factory( 'vgraphComponent', function(){
                 }
 
                 scope.$watch('interval', function( v ){
-					if ( typeof(v) === 'string' ){
+                    if ( typeof(v) === 'string' ){
 	                    intervalParse = function( d ){
 	                    	return d[ v ];
 	                    };
@@ -2347,12 +2347,12 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                     styleEl = document.createElement('style');
 
                 document.body.appendChild( styleEl );
-
-                function parseConf(){
-                    var config = scope.config,
-                        e,
+                
+                function parseConf( config ){
+                    var e,
                         i, c,
                         className,
+                        src,
                         value,
                         interval,
                         els,
@@ -2360,7 +2360,7 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                         conf,
                         html = '',
                         style = '';
-
+                    
                     if ( config ){
                         // TODO : batch this
                         for( i = 0, c = config.length; i < c; i++ ){
@@ -2377,18 +2377,20 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                             }
 
                             if ( conf.data ){
-                                value = angular.isFunction( conf.value ) ? name+'.value' : ( conf.value || '\''+name+'\'' );
-                                interval = angular.isFunction( conf.interval ) ? name+'.interval' : ( conf.interval || '\'x\'' );
+                                value = angular.isFunction( conf.value ) ? name+'.value' : '\''+( conf.value || name )+'\'';
+                                interval = angular.isFunction( conf.interval ) ? name+'.interval' : '\''+( conf.interval || 'x' )+'\'';
 
                                 if ( angular.isString(conf.data) ){
+                                    src = conf.data;
                                     scope[conf.data] = scope.$parent[conf.data];
-                                }else{
-                                    scope[ name ] = conf.data;
-                                    conf.data = name;
+                                } else if ( conf.data ) {
+                                    src = name+'.data';
+                                } else {
+                                    src = 'data';
                                 }
-
+                                
                                 html += '<g class="'+className+'" name="'+name+'"'+
-                                    ' vgraph-line="'+( conf.data || 'data')+'"'+
+                                    ' vgraph-line="'+src+'"'+
                                     ' value="'+ value  +'"'+
                                     ' interval="'+ interval +'"'+
                                     ( conf.filter ? ' filter="'+conf.filter+'"' : '' ) +
@@ -2420,11 +2422,11 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                     }
                 }
 
+                scope.$watchCollection('config', parseConf );
+
                 scope.$on('$destroy', function(){
                     document.body.removeChild( styleEl );
                 });
-
-                scope.$watchCollection('config', parseConf );
             },
             scope : {
                 data : '=vgraphMultiLine',
@@ -2473,6 +2475,7 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                         i, c,
                         els,
                         className,
+                        src,
                         value,
                         interval,
                         name,
@@ -2496,18 +2499,20 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                             }
 
                             if ( conf.data ){
-                                value = angular.isFunction( conf.value ) ? name+'.value' : ( conf.value || '\''+name+'\'' );
-                                interval = angular.isFunction( conf.interval ) ? name+'.interval' : ( conf.interval || '\'x\'' );
+                                value = angular.isFunction( conf.value ) ? name+'.value' : '\''+( conf.value || name )+'\'';
+                                interval = angular.isFunction( conf.interval ) ? name+'.interval' : '\''+( conf.interval || 'x' )+'\'';
 
                                 if ( angular.isString(conf.data) ){
+                                    src = conf.data;
                                     scope[conf.data] = scope.$parent[conf.data];
-                                }else{
-                                    scope[ name ] = conf.data;
-                                    conf.data = name;
+                                } else if ( conf.data ) {
+                                    src = name+'.data';
+                                } else {
+                                    src = 'data';
                                 }
 
                                 html += '<path class="'+className+'"'+
-                                        ' vgraph-feed="'+conf.data+'" name="'+name+'"'+
+                                        ' vgraph-feed="'+src+'" name="'+name+'"'+
                                         ' value="'+value+'"'+
                                         ' interval="'+interval+'"'+
                                         ( conf.filter ? ' filter="'+conf.filter+'"' : '' ) +
@@ -2533,6 +2538,7 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
 
                             el.appendChild( e );
 
+                            console.log( html );
                             $compile( e )(scope);
 
                             lines.push({

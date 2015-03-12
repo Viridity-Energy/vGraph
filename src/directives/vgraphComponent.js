@@ -27,7 +27,7 @@ angular.module( 'vgraph' ).factory( 'vgraphComponent', function(){
                 }
 
                 scope.$watch('interval', function( v ){
-					if ( typeof(v) === 'string' ){
+                    if ( typeof(v) === 'string' ){
 	                    intervalParse = function( d ){
 	                    	return d[ v ];
 	                    };

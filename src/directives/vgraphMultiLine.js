@@ -9,12 +9,12 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                     styleEl = document.createElement('style');
 
                 document.body.appendChild( styleEl );
-
-                function parseConf(){
-                    var config = scope.config,
-                        e,
+                
+                function parseConf( config ){
+                    var e,
                         i, c,
                         className,
+                        src,
                         value,
                         interval,
                         els,
@@ -22,7 +22,7 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                         conf,
                         html = '',
                         style = '';
-
+                    
                     if ( config ){
                         // TODO : batch this
                         for( i = 0, c = config.length; i < c; i++ ){
@@ -39,18 +39,20 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                             }
 
                             if ( conf.data ){
-                                value = angular.isFunction( conf.value ) ? name+'.value' : ( conf.value || '\''+name+'\'' );
-                                interval = angular.isFunction( conf.interval ) ? name+'.interval' : ( conf.interval || '\'x\'' );
+                                value = angular.isFunction( conf.value ) ? name+'.value' : '\''+( conf.value || name )+'\'';
+                                interval = angular.isFunction( conf.interval ) ? name+'.interval' : '\''+( conf.interval || 'x' )+'\'';
 
                                 if ( angular.isString(conf.data) ){
+                                    src = conf.data;
                                     scope[conf.data] = scope.$parent[conf.data];
-                                }else{
-                                    scope[ name ] = conf.data;
-                                    conf.data = name;
+                                } else if ( conf.data ) {
+                                    src = name+'.data';
+                                } else {
+                                    src = 'data';
                                 }
-
+                                
                                 html += '<g class="'+className+'" name="'+name+'"'+
-                                    ' vgraph-line="'+( conf.data || 'data')+'"'+
+                                    ' vgraph-line="'+src+'"'+
                                     ' value="'+ value  +'"'+
                                     ' interval="'+ interval +'"'+
                                     ( conf.filter ? ' filter="'+conf.filter+'"' : '' ) +
@@ -82,11 +84,11 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                     }
                 }
 
+                scope.$watchCollection('config', parseConf );
+
                 scope.$on('$destroy', function(){
                     document.body.removeChild( styleEl );
                 });
-
-                scope.$watchCollection('config', parseConf );
             },
             scope : {
                 data : '=vgraphMultiLine',

@@ -37,6 +37,7 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                         i, c,
                         els,
                         className,
+                        src,
                         value,
                         interval,
                         name,
@@ -60,18 +61,20 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                             }
 
                             if ( conf.data ){
-                                value = angular.isFunction( conf.value ) ? name+'.value' : ( conf.value || '\''+name+'\'' );
-                                interval = angular.isFunction( conf.interval ) ? name+'.interval' : ( conf.interval || '\'x\'' );
+                                value = angular.isFunction( conf.value ) ? name+'.value' : '\''+( conf.value || name )+'\'';
+                                interval = angular.isFunction( conf.interval ) ? name+'.interval' : '\''+( conf.interval || 'x' )+'\'';
 
                                 if ( angular.isString(conf.data) ){
+                                    src = conf.data;
                                     scope[conf.data] = scope.$parent[conf.data];
-                                }else{
-                                    scope[ name ] = conf.data;
-                                    conf.data = name;
+                                } else if ( conf.data ) {
+                                    src = name+'.data';
+                                } else {
+                                    src = 'data';
                                 }
 
                                 html += '<path class="'+className+'"'+
-                                        ' vgraph-feed="'+conf.data+'" name="'+name+'"'+
+                                        ' vgraph-feed="'+src+'" name="'+name+'"'+
                                         ' value="'+value+'"'+
                                         ' interval="'+interval+'"'+
                                         ( conf.filter ? ' filter="'+conf.filter+'"' : '' ) +
