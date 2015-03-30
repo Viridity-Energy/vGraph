@@ -5,6 +5,9 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
 
         return {
             require : ['^vgraphChart'],
+            scope : {
+                model : '=model'
+            },
             link : function( scope, el, attrs, requirements ){
                 var chart = requirements[0],
                     name = attrs.vgraphIndicator,
@@ -79,9 +82,6 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
                         }
                     }
                 });
-            },
-            scope : {
-                model : '=model'
             }
         };
     } ]

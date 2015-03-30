@@ -489,7 +489,7 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                             if ( x.$max.charAt(0) === '+' ){
                                 x.$max = parseInt( x.$max.substring(1) , 10 ) + x.$min;
                             }else{
-                                throw 'I gotz nothing';
+                                throw 'Unable to handle shift as string';
                             }
                         }
                         
@@ -508,7 +508,7 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                                 }else if ( x.start.charAt(0) === '=' ){
                                     dx = parseInt( x.start.substring(1) , 10 );
                                 }else{
-                                    throw 'I gotz nothing';
+                                    throw 'Start of pane not properly defined';
                                 }
                             }else{
                                 dx = x.start.$x;
@@ -532,7 +532,7 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                                 }else if ( x.stop.charAt(0) === '=' ){
                                     dx = parseInt( x.stop.substring(1) , 10 );
                                 }else{
-                                    throw 'I gotz nothing';
+                                    throw 'End of pane not properly defined';
                                 }
                             }else{
                                 dx = x.stop.$x;

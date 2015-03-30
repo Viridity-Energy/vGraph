@@ -4,6 +4,10 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
         'use strict';
 
         return {
+            scope : {
+                data : '=vgraphMultiLine',
+                config : '=config'
+            },
             link : function( scope, $el ){
                 var el = $el[0],
                     styleEl = document.createElement('style');
@@ -32,8 +36,8 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                             if ( conf.className ){
                                 className = conf.className;
                             }else{
-                                className = '';//'plot-'+name; that goes on the child
-                                style += 'path.plot-'+name+' { stroke: '+ conf.color +'; fill: transparent; }' + // the line
+                                className = 'plot-'+name;
+                                style += '.plot-'+name+' path { stroke: '+ conf.color +'; fill: transparent; }' + // the line
                                     'circle.plot-'+name+' { stroke: '+ conf.color +'; fill: '+ conf.color + ';}' + // the dot
                                     '.highlight.plot-'+name+' { background-color: '+ conf.color + '; }'; // the legend
                             }
@@ -51,18 +55,18 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                                     src = 'data';
                                 }
                                 
-                                html += '<g class="'+className+'" name="'+name+'"'+
-                                    ' vgraph-line="'+src+'"'+
-                                    ' value="'+ value  +'"'+
+                                html += '<g class="line '+className+'" name="'+name+'"'+
+                                    ' vgraph-line="'+ src +'"'+
+                                    ' value="'+ value +'"'+
                                     ' interval="'+ interval +'"'+
                                     ( conf.filter ? ' filter="'+conf.filter+'"' : '' ) +
                                 '></g>';
                             }else{
-                                html += '<g vgraph-line="data" ' +
-                                    'class="'+className+'" ' +
-                                    'interval="'+name+'.x" ' +
-                                    'value="'+name+'.y" ' +
-                                    'name="'+name+'"></g>';
+                                html += '<g class="line '+className+'" name="'+name+'"'+
+                                    ' vgraph-line="data"' +
+                                    ' value="'+name+'.y"' +
+                                    ' interval="'+name+'.x"' +
+                                '></g>';
                             }
                             
                             scope[ name ] = conf;
@@ -89,10 +93,6 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                 scope.$on('$destroy', function(){
                     document.body.removeChild( styleEl );
                 });
-            },
-            scope : {
-                data : '=vgraphMultiLine',
-                config : '=config'
             }
         };
     } ]

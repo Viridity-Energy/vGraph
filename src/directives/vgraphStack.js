@@ -42,6 +42,7 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                         interval,
                         name,
                         conf,
+                        node,
                         html = '',
                         style = '';
 
@@ -55,7 +56,7 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                             }else{
                                 className = 'plot-'+name;
 
-                                style += 'path.plot-'+name+' { stroke: '+ conf.color +'; fill: '+conf.color+'; }' + // the line
+                                style += '.plot-'+name+' path { stroke: '+ conf.color +'; fill: '+conf.color+'; }' + // the line
                                     'circle.plot-'+name+' { stroke: '+ conf.color +'; fill: '+ conf.color + ';}' + // the dot
                                     '.legend .plot-'+name+' .value { background-color: '+ conf.color + '; }'; // the legend
                             }
@@ -73,16 +74,17 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                                     src = 'data';
                                 }
 
-                                html += '<path class="'+className+'"'+
+                                node = '<path'+
                                         ' vgraph-feed="'+src+'" name="'+name+'"'+
                                         ' value="'+value+'"'+
                                         ' interval="'+interval+'"'+
                                         ( conf.filter ? ' filter="'+conf.filter+'"' : '' ) +
                                     '></path>';
                             }else{
-                                html += '<path class="'+className+'"></path>';
+                                node = '<path></path>';
                             }
 
+                            html += '<g class="fill '+className+'">'+node+'</g>';
                             scope[ name ] = conf;
                         }
 
@@ -104,7 +106,7 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
 
                             lines.push({
                                 name : config[i].name,
-                                element : d3.select(e),
+                                element : d3.select(e.childNodes[0]),
                                 fill : makeFill( chart, config[i].name, last )
                             });
 

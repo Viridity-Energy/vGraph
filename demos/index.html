@@ -41,42 +41,42 @@
     		fill: none;
 		}
 
-		.red {
+		.red path{
 			stroke: red;
     		fill: none;
 		}
 
-		.blue {
+		.blue path{
 			stroke: blue;
 			fill: none;
 		}
 
-		.green {
+		.green path{
 			stroke: green;
 			fill: none;
 		}
 
-		.orange {
+		.orange path{
 			stroke: orange;
 			fill: none;
 		}
 
-		.red-fill {
+		.red.fill path, circle.red {
 			stroke: red;
     		fill: red;
 		}
 
-		.blue-fill {
+		.blue.fill path, circle.blue {
 			stroke: blue;
 			fill: blue;
 		}
 
-		.green-fill {
+		.green.fill path, circle.green {
 			stroke: green;
 			fill: green;
 		}
 
-		.orange-fill {
+		.orange.fill path, circle.orange {
 			stroke: orange;
 			fill: orange;
 		}
@@ -152,6 +152,16 @@
 		</svg>
 	</div>
 
+	<div ng-controller="StackedClassCtrl">
+		<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="box" model="model" version="1.1">
+			<g vgraph-axis="'left'"
+                tick-length="4" tick-padding="-2"></g>
+            <g vgraph-axis="'bottom'"
+                tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+			<g vgraph-stack="config"></g>
+		</svg>
+	</div>
+
 	<h5>Raw Data</h5>
 
 	<div ng-controller="RawCtrl">
@@ -168,6 +178,8 @@
             <g vgraph-axis="'bottom'"
                 tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
 			<g vgraph-stack="config"></g>
+			<g vgraph-target="highlight" point-radius="5" config="config"></g>
+			<g vgraph-interact="highlight"></g>
 		</svg>
 	</div>
 	
@@ -178,6 +190,9 @@
             <g vgraph-axis="'bottom'"
                 tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
 			<g vgraph-multi-line config="config"></g>
+			<g vgraph-multi-indicator config="config"></g>
+			<g vgraph-target="highlight" point-radius="5" config="config"></g>
+			<g vgraph-interact="highlight"></g>
 		</svg>
 		<div>
 			<button ng-click="resize()">Resize</button>
@@ -193,6 +208,7 @@ angular.module( 'vgraph' ).controller( 'ResizeCtrl', [
 			interval,
 			wide = true;
 
+		$scope.highlight = {};
 		$scope.line = data;
 		$scope.box = new BoxModel();
 		$scope.model = new GraphModel({
@@ -565,10 +581,10 @@ angular.module( 'vgraph' ).controller( 'StackedClassCtrl',
             }
         });
 		$scope.config = [
-			{ name : 'y1', className : 'red-fill' },
-			{ name : 'y2', className : 'blue-fill' },
-			{ name : 'y3', className : 'green-fill' },
-			{ name : 'y4', className : 'orange-fill' }
+			{ name : 'y1', className : 'red' },
+			{ name : 'y2', className : 'blue' },
+			{ name : 'y3', className : 'green' },
+			{ name : 'y4', className : 'orange' }
 		];
 
 		for( var i = 0, c = 2000; i < c; i++ ){

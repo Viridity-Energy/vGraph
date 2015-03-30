@@ -5,6 +5,12 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
 
         return {
             require : ['^vgraphChart'],
+            scope : {
+                highlight : '=vgraphInteract',
+                dragStart : '=?dBegin',
+                dragPos : '=?dChange',
+                dragStop : '=?dEnd'
+            },
             link : function( scope, el, attrs, requirements ){
                 var chart = requirements[0],
                     dragging = false,
@@ -153,12 +159,6 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
                 if ( !scope.dragStop ){
                     scope.dragStop = {};
                 }
-            },
-            scope : {
-                highlight : '=vgraphInteract',
-                dragStart : '=dBegin',
-                dragPos : '=dChange',
-                dragStop : '=dEnd'
             }
         };
     }

@@ -9,7 +9,7 @@
         stroke: none;
     }
 
-    > [vgraph-tooltip] {
+    [vgraph-tooltip] {
         opacity: 1;
 
         .outline {
@@ -26,7 +26,15 @@
         stroke-width: 2;
     }
 
-    > [vgraph-loading] {
+    [vgraph-target] {
+        line {
+            stroke-width: 1;
+            stroke: black;
+            fill: transparent;
+        }
+    }
+
+    [vgraph-loading] {
         .filling {
             fill : #777;
             stroke : #ccc;
@@ -40,7 +48,7 @@
         }
     }
 
-    > [vgraph-error] {
+    [vgraph-error] {
         .outline {
             stroke : #fdd;
             fill : #414141;
@@ -51,7 +59,7 @@
         }
     }
 
-    > [vgraph-zoom] {
+    [vgraph-zoom] {
         .shade {
             opacity: .7;
             fill : grey;
@@ -78,7 +86,7 @@
         }
     }
 
-    > [vgraph-focus] {
+    [vgraph-focus] {
         .focus {
             stroke: yellow;
             fill: white;
@@ -86,7 +94,7 @@
         }
     }
 
-    > [vgraph-indicator] {
+    [vgraph-indicator] {
         .inner {
             stroke-width: 0;
             fill: black;

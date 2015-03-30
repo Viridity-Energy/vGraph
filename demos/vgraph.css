@@ -6,74 +6,79 @@
   fill: transparent;
   stroke: none;
 }
-[vgraph-chart] > [vgraph-tooltip] {
+[vgraph-chart] [vgraph-tooltip] {
   opacity: 1;
 }
-[vgraph-chart] > [vgraph-tooltip] .outline {
+[vgraph-chart] [vgraph-tooltip] .outline {
   fill: #fff;
   stroke: #000;
 }
-[vgraph-chart] > [vgraph-tooltip] .label {
+[vgraph-chart] [vgraph-tooltip] .label {
   fill: #000;
 }
 [vgraph-chart] [vgraph-line] path {
   stroke-width: 2;
 }
-[vgraph-chart] > [vgraph-loading] .filling {
+[vgraph-chart] [vgraph-target] line {
+  stroke-width: 1;
+  stroke: black;
+  fill: transparent;
+}
+[vgraph-chart] [vgraph-loading] .filling {
   fill: #777;
   stroke: #ccc;
 }
-[vgraph-chart] > [vgraph-loading] .outline {
+[vgraph-chart] [vgraph-loading] .outline {
   stroke: #ddd;
   fill: #999;
 }
-[vgraph-chart] > [vgraph-error] .outline {
+[vgraph-chart] [vgraph-error] .outline {
   stroke: #fdd;
   fill: #414141;
 }
-[vgraph-chart] > [vgraph-error] .text {
+[vgraph-chart] [vgraph-error] .text {
   fill: #c3c4c4;
   font-size: 24px;
 }
-[vgraph-chart] > [vgraph-zoom] .shade {
+[vgraph-chart] [vgraph-zoom] .shade {
   opacity: .7;
   fill: grey;
   stroke: white;
   stroke-width: 2;
 }
-[vgraph-chart] > [vgraph-zoom] .focus {
+[vgraph-chart] [vgraph-zoom] .focus {
   cursor: crosshair;
   opacity: .2;
   fill: grey;
 }
-[vgraph-chart] > [vgraph-zoom] .focus.zoomed {
+[vgraph-chart] [vgraph-zoom] .focus.zoomed {
   cursor: move;
 }
-[vgraph-chart] > [vgraph-zoom] .control rect {
+[vgraph-chart] [vgraph-zoom] .control rect {
   opacity: 0;
 }
-[vgraph-chart] > [vgraph-zoom] .nub {
+[vgraph-chart] [vgraph-zoom] .nub {
   fill: #eee;
   stroke: #666;
 }
-[vgraph-chart] > [vgraph-zoom] .control {
+[vgraph-chart] [vgraph-zoom] .control {
   cursor: pointer;
 }
-[vgraph-chart] > [vgraph-focus] .focus {
+[vgraph-chart] [vgraph-focus] .focus {
   stroke: yellow;
   fill: white;
   opacity: .6;
 }
-[vgraph-chart] > [vgraph-indicator] .inner {
+[vgraph-chart] [vgraph-indicator] .inner {
   stroke-width: 0;
   fill: black;
 }
-[vgraph-chart] > [vgraph-indicator] .outer {
+[vgraph-chart] [vgraph-indicator] .outer {
   stroke-width: 1;
   stroke: black;
   fill: transparent;
 }
-[vgraph-chart] > [vgraph-indicator]:not([outer-radius]) .outer {
+[vgraph-chart] [vgraph-indicator]:not([outer-radius]) .outer {
   -webkit-animation: pulse 3s ease infinite;
   -moz-animation: pulse 3s ease infinite;
   animation: pulse 3s ease infinite;

@@ -5,8 +5,14 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
 
         return {
             require : ['^vgraphChart'],
+            scope : {
+                target : '=vgraphTarget',
+                pointRadius : '=pointRadius',
+                config : '=?config'
+            },
             link : function( scope, el, attrs, requirements ){
-                var chart = requirements[0],
+                var config,
+                    chart = requirements[0],
                     model = chart.model,
                     box = chart.box,
                     $el = d3.select( el[0] )
@@ -17,26 +23,40 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
                         .attr( 'x2', 0 ),
                     $dots = $el.append( 'g' );
 
+                function parseConf( conf ){
+                    var i, c;
+
+                    config = {};
+
+                    if ( conf ){
+                        for( i = 0, c = conf.length; i <c; i++ ){
+                            config[ conf[i].name ] = conf[i].className;
+                        }
+                    }
+                }
+
                 box.register(function(){
                     $highlight.attr( 'y1', box.innerTop )
                         .attr( 'y2', box.innerBottom );
                 });
 
                 scope.$watch('target.point', function( p ){
-                    var key;
+                    var name,
+                        className;
 
                     if ( p ){ // expect it to be an array
                         $dots.selectAll( 'circle.point' ).remove();
 
                         $el.style( 'visibility', 'visible' )
                             .attr( 'transform', 'translate( ' + chart.x.scale( p.$interval ) + ' , 0 )' );
-
-                        for( key in model.plots ){
-                            if ( p[key] ){
+                        
+                        for( name in model.plots ){
+                            if ( p[name] ){
+                                className = config[name] || 'plot-'+name;
                                 $dots.append( 'circle' )
-                                    .attr( 'class', 'point plot-'+key )
+                                    .attr( 'class', 'point '+className )
                                     .attr( 'x', 0 )
-                                    .attr( 'cy', chart.y.scale(p[key]) )
+                                    .attr( 'cy', chart.y.scale(p[name]) )
                                     .attr( 'r', scope.$eval( attrs.pointRadius ) || 3 );
                             }
                         }
@@ -44,10 +64,8 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
                         $el.style( 'visibility', 'hidden' );
                     }
                 });
-            },
-            scope : {
-                target : '=vgraphTarget',
-                pointRadius : '=pointRadius'
+
+                scope.$watchCollection('config', parseConf );
             }
         };
     } ]
