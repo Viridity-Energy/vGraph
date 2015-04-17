@@ -41,6 +41,26 @@
     		fill: none;
 		}
 
+		line.red{
+			stroke: red;
+    		fill: none;
+		}
+
+		line.blue{
+			stroke: blue;
+			fill: none;
+		}
+
+		line.green{
+			stroke: green;
+			fill: none;
+		}
+
+		line.orange{
+			stroke: orange;
+			fill: none;
+		}
+
 		.red path{
 			stroke: red;
     		fill: none;
@@ -98,7 +118,7 @@
 
 	<div ng-controller="StackedCtrl">
 		<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="box" model="model" version="1.1">
-			<g vgraph-stack="config"></g>
+			<g vgraph-stack config="config"></g>
 		</svg>
 	</div>
 
@@ -158,7 +178,7 @@
                 tick-length="4" tick-padding="-2"></g>
             <g vgraph-axis="'bottom'"
                 tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-			<g vgraph-stack="config"></g>
+			<g vgraph-stack config="config"></g>
 		</svg>
 	</div>
 
@@ -167,6 +187,7 @@
 	<div ng-controller="RawCtrl">
 		<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="box" model="model" version="1.1">
 			<g vgraph-multi-line config="config"></g>
+			<g vgraph-leading config="config"></g>
 		</svg>
 	</div>
 	
@@ -177,7 +198,7 @@
                 tick-length="4" tick-padding="-2"></g>
             <g vgraph-axis="'bottom'"
                 tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-			<g vgraph-stack="config"></g>
+			<g vgraph-stack config="config"></g>
 			<g vgraph-target="highlight" point-radius="5" config="config"></g>
 			<g vgraph-interact="highlight"></g>
 		</svg>
@@ -377,7 +398,7 @@ angular.module( 'vgraph' ).controller( 'MultiCtrl',
 angular.module( 'vgraph' ).controller( 'RawCtrl',
 	['$scope', 'BoxModel', 'GraphModel',
 	function( $scope, BoxModel, GraphModel ){
-		var data = [ { y1 : 10, y2 : 5, y3 : 15, y4 : 8} ],
+		var data = [ { y1 : 15, y2 : 5, y3 : 25, y4 : 35} ],
 			interval,
 			boxModel;
 
@@ -419,8 +440,8 @@ angular.module( 'vgraph' ).controller( 'RawCtrl',
 		}
 
 		$scope.model.setBounds({
-                min : null,
-                max : null
+                min : 0,
+                max : 2500
             },{
                 min : null,
                 max : null

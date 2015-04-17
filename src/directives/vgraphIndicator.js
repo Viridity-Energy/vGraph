@@ -56,7 +56,7 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
 
                             if ( model.point.isValid(d) && d[name] ){
                                 x = chart.x.scale( d.$interval );
-                                y = chart.y.scale( d[name] );
+                                y = chart.y.scale( d['$'+name] || d[name] );
 
                                 $circle.attr( 'visibility', 'visible' );
 

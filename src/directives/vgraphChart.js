@@ -60,15 +60,12 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
                     for( i = 0, c = components.length; i < c; i++ ){
                         if ( components[ i ].parse ){
                             t = components[ i ].parse( sampledData, model.filtered );
-                            if ( min === undefined ){
+                            if ( !min && min !== 0 || min > t.min ){
                                 min = t.min;
+                            }
+
+                            if ( !max && max !== 0 || max < t.max ){
                                 max = t.max;
-                            } else {
-                                if ( min > t.min ){
-                                    min = t.min;
-                                }else if ( max < t.max ){
-                                    max = t.max;
-                                }
                             }
                         }
                     }

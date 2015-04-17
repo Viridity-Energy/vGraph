@@ -16,18 +16,20 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                     return chart.y.scale( d[name] );
                 })
                 .y1(function( d ){
-                    return chart.y.scale( fillTo ? d[fillTo] : chart.model.y.minimum );
+                    return chart.y.scale( d[fillTo] ? d[fillTo] : chart.model.y.minimum );
                 });
         }
 
         return {
             require : ['^vgraphChart'],
+            scope : {
+                config : '=config'
+            },
             link : function( scope, $el, attrs, requirements ){
                 var chart = requirements[0],
                     el = $el[0],
                     styleEl = document.createElement('style'),
-                    lines,
-                    content;
+                    lines;
 
                 document.body.appendChild( styleEl );
 
@@ -107,7 +109,7 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                             lines.push({
                                 name : config[i].name,
                                 element : d3.select(e.childNodes[0]),
-                                fill : makeFill( chart, config[i].name, last )
+                                fill : makeFill( chart, '$'+config[i].name, '$'+last ) // make a function to parse content
                             });
 
                             last = config[i].name;
@@ -119,7 +121,7 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                 scope.$watchCollection('config', parseConf );
 
                 scope.$on('$destroy', function(){
-                    document.body.removeElement( styleEl );
+                    document.body.removeChild( styleEl );
                 });
                 
                 chart.register({
@@ -130,25 +132,18 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                             last,
                             d,
                             v,
-                            t,
                             min,
                             max;
-
-                        content = [];
 
                         if ( lines && lines.length ){
                             for( i = 0, c = data.length; i < c; i++ ){
                                 last = 0;
                                 v = 0;
                                 d = data[i];
-                                t = {
-                                    $interval : d.$interval
-                                };
 
                                 for( j = 0, co = lines.length; j < co && v === 0; j++ ){
                                     name = lines[j].name;
                                     v = d[ name ];
-
                                     if ( v || v === 0 ){
                                         if ( min === undefined ){
                                             min = v;
@@ -157,10 +152,9 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                                             min = v;
                                         }
                                     }
-
-                                    t[ name ] = v;
                                 }
 
+                                d['$'+name] = v;
                                 last = v;
 
                                 for( ; j < co; j++ ){
@@ -168,14 +162,15 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                                     v = d[ name ] || 0;
 
                                     last = last + v;
-                                    t[ name ] = last;
+
+                                    d['$'+name] = last;
                                 }
+
+                                d.$total = last;
 
                                 if ( last > max ){
                                     max = last;
                                 }
-
-                                content.push( t );
                             }
                         }
 
@@ -184,20 +179,17 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                             max : max
                         };
                     },
-                    finalize : function(){
+                    finalize : function( data ){
                         var i, c,
                             line;
 
                         for( i = 0, c = lines.length; i < c; i++ ){
                             line = lines[ i ];
 
-                            line.element.attr( 'd', line.fill(content) );
+                            line.element.attr( 'd', line.fill(data) );
                         }
                     }
                 });
-            },
-            scope : {
-                config : '=vgraphStack'
             }
         };
     } ]

@@ -44,7 +44,7 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
                     var name,
                         className;
 
-                    if ( p ){ // expect it to be an array
+                    if ( p && attrs.noDots === undefined ){ // expect it to be an array
                         $dots.selectAll( 'circle.point' ).remove();
 
                         $el.style( 'visibility', 'visible' )
@@ -56,7 +56,7 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
                                 $dots.append( 'circle' )
                                     .attr( 'class', 'point '+className )
                                     .attr( 'x', 0 )
-                                    .attr( 'cy', chart.y.scale(p[name]) )
+                                    .attr( 'cy', chart.y.scale(p[name]) ) // p['$'+name] : you need to deal with sampling
                                     .attr( 'r', scope.$eval( attrs.pointRadius ) || 3 );
                             }
                         }

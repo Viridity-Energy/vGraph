@@ -1295,15 +1295,12 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
                     for( i = 0, c = components.length; i < c; i++ ){
                         if ( components[ i ].parse ){
                             t = components[ i ].parse( sampledData, model.filtered );
-                            if ( min === undefined ){
+                            if ( !min && min !== 0 || min > t.min ){
                                 min = t.min;
+                            }
+
+                            if ( !max && max !== 0 || max < t.max ){
                                 max = t.max;
-                            } else {
-                                if ( min > t.min ){
-                                    min = t.min;
-                                }else if ( max < t.max ){
-                                    max = t.max;
-                                }
                             }
                         }
                     }
@@ -1949,7 +1946,7 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
 
                             if ( model.point.isValid(d) && d[name] ){
                                 x = chart.x.scale( d.$interval );
-                                y = chart.y.scale( d[name] );
+                                y = chart.y.scale( d['$'+name] || d[name] );
 
                                 $circle.attr( 'visibility', 'visible' );
 
@@ -2147,6 +2144,90 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
 ]);
 
 
+
+angular.module( 'vgraph' ).directive( 'vgraphLeading',
+    [
+    function(){
+        'use strict';
+
+        return {
+            require : ['^vgraphChart'],
+            scope : {
+                config : '=config'
+            },
+            link : function( scope, el, attrs, requirements ){
+                var names,
+                    chart = requirements[0],
+                    $el = d3.select( el[0] );
+
+                function parseConf( config ){
+                    var conf,
+                        i, c;
+                    
+                    names = {};
+
+                    $el.selectAll( 'line' ).remove();
+
+                    if ( config ){
+                        for( i = 0, c = config.length; i < c; i++ ){
+                            conf = config[ i ];
+
+                            names[ conf.name ] = $el.append('line').attr( 'class', conf.className );
+                        }
+                    }
+                }
+
+                scope.$watchCollection('config', parseConf );
+
+                chart.register({
+                    finalize : function(){
+                        var d,
+                            last,
+                            model = chart.model,
+                            points = [];
+
+                        angular.forEach( names, function( el, name ){
+                            if ( model.plots[name] ){
+                                d = model.plots[name].x.max;
+
+                                if ( model.point.isValid(d) && d[name] ){
+                                    points.push({
+                                        el : el,
+                                        x : chart.x.scale( d.$interval ),
+                                        y : chart.y.scale( d['$'+name] || d[name] ) // pick a calculated point first
+                                    });
+                                }
+                            }
+                        });
+
+                        // sort the points form top to bottom
+                        points.sort(function( a, b ){
+                            return a.y - b.y;
+                        });
+
+                        angular.forEach( points, function( p ){
+                            if ( last ){
+                                last.el
+                                    .attr( 'x1', last.x )
+                                    .attr( 'x2', p.x )
+                                    .attr( 'y1', last.y )
+                                    .attr( 'y2', p.y );
+                            }
+
+                            last = p;
+                        });
+
+                        last.el
+                            .attr( 'x1', last.x )
+                            .attr( 'x2', last.x )
+                            .attr( 'y1', last.y )
+                            .attr( 'y2', chart.box.innerBottom );
+                    }
+                });
+            }
+        };
+    } ]
+);
 
 angular.module( 'vgraph' ).directive( 'vgraphLine',
     ['vgraphComponent',
@@ -2516,18 +2597,20 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                     return chart.y.scale( d[name] );
                 })
                 .y1(function( d ){
-                    return chart.y.scale( fillTo ? d[fillTo] : chart.model.y.minimum );
+                    return chart.y.scale( d[fillTo] ? d[fillTo] : chart.model.y.minimum );
                 });
         }
 
         return {
             require : ['^vgraphChart'],
+            scope : {
+                config : '=config'
+            },
             link : function( scope, $el, attrs, requirements ){
                 var chart = requirements[0],
                     el = $el[0],
                     styleEl = document.createElement('style'),
-                    lines,
-                    content;
+                    lines;
 
                 document.body.appendChild( styleEl );
 
@@ -2607,7 +2690,7 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                             lines.push({
                                 name : config[i].name,
                                 element : d3.select(e.childNodes[0]),
-                                fill : makeFill( chart, config[i].name, last )
+                                fill : makeFill( chart, '$'+config[i].name, '$'+last ) // make a function to parse content
                             });
 
                             last = config[i].name;
@@ -2619,7 +2702,7 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                 scope.$watchCollection('config', parseConf );
 
                 scope.$on('$destroy', function(){
-                    document.body.removeElement( styleEl );
+                    document.body.removeChild( styleEl );
                 });
                 
                 chart.register({
@@ -2630,25 +2713,18 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                             last,
                             d,
                             v,
-                            t,
                             min,
                             max;
-
-                        content = [];
 
                         if ( lines && lines.length ){
                             for( i = 0, c = data.length; i < c; i++ ){
                                 last = 0;
                                 v = 0;
                                 d = data[i];
-                                t = {
-                                    $interval : d.$interval
-                                };
 
                                 for( j = 0, co = lines.length; j < co && v === 0; j++ ){
                                     name = lines[j].name;
                                     v = d[ name ];
-
                                     if ( v || v === 0 ){
                                         if ( min === undefined ){
                                             min = v;
@@ -2657,10 +2733,9 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                                             min = v;
                                         }
                                     }
-
-                                    t[ name ] = v;
                                 }
 
+                                d['$'+name] = v;
                                 last = v;
 
                                 for( ; j < co; j++ ){
@@ -2668,14 +2743,15 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                                     v = d[ name ] || 0;
 
                                     last = last + v;
-                                    t[ name ] = last;
+
+                                    d['$'+name] = last;
                                 }
+
+                                d.$total = last;
 
                                 if ( last > max ){
                                     max = last;
                                 }
-
-                                content.push( t );
                             }
                         }
 
@@ -2684,20 +2760,17 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                             max : max
                         };
                     },
-                    finalize : function(){
+                    finalize : function( data ){
                         var i, c,
                             line;
 
                         for( i = 0, c = lines.length; i < c; i++ ){
                             line = lines[ i ];
 
-                            line.element.attr( 'd', line.fill(content) );
+                            line.element.attr( 'd', line.fill(data) );
                         }
                     }
                 });
-            },
-            scope : {
-                config : '=vgraphStack'
             }
         };
     } ]
@@ -2749,7 +2822,7 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
                     var name,
                         className;
 
-                    if ( p ){ // expect it to be an array
+                    if ( p && attrs.noDots === undefined ){ // expect it to be an array
                         $dots.selectAll( 'circle.point' ).remove();
 
                         $el.style( 'visibility', 'visible' )
@@ -2761,7 +2834,7 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
                                 $dots.append( 'circle' )
                                     .attr( 'class', 'point '+className )
                                     .attr( 'x', 0 )
-                                    .attr( 'cy', chart.y.scale(p[name]) )
+                                    .attr( 'cy', chart.y.scale(p[name]) ) // p['$'+name] : you need to deal with sampling
                                     .attr( 'r', scope.$eval( attrs.pointRadius ) || 3 );
                             }
                         }
