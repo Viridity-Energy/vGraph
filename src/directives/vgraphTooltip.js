@@ -5,6 +5,10 @@ angular.module( 'vgraph' ).directive( 'vgraphTooltip',
 
         return {
             require : ['^vgraphChart'],
+            scope : {
+                formatter : '=textFormatter',
+                data : '=vgraphTooltip'
+            },
             link : function( scope, el, attrs, requirements ){
                 var chart = requirements[0],
                     name = attrs.name,
@@ -51,10 +55,6 @@ angular.module( 'vgraph' ).directive( 'vgraphTooltip',
                         $el.style( 'visibility', 'hidden' );
                     }
                 });
-            },
-            scope : {
-                formatter : '=textFormatter',
-                data : '=vgraphTooltip'
             }
         };
     } ]

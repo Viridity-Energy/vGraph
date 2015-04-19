@@ -1761,11 +1761,6 @@ angular.module( 'vgraph' ).directive( 'vgraphFocus',
                                 stop = stop - box.innerLeft;
                             }
 
-                            console.log({
-                                'start' : '=' + ( model.x.start.$x + (start/box.innerWidth) * (model.x.stop.$x-model.x.start.$x) ),
-                                'stop' : '=' + ( model.x.start.$x + (stop/box.innerWidth) * (model.x.stop.$x-model.x.start.$x) )
-                            });
-
                             model.setPane(
                                 {
                                     'start' : '=' + ( model.x.start.$x + (start/box.innerWidth) * (model.x.stop.$x-model.x.start.$x) ),
@@ -2217,11 +2212,17 @@ angular.module( 'vgraph' ).directive( 'vgraphLeading',
                             last = p;
                         });
 
-                        last.el
-                            .attr( 'x1', last.x )
-                            .attr( 'x2', last.x )
-                            .attr( 'y1', last.y )
-                            .attr( 'y2', chart.box.innerBottom );
+                        if ( last ){
+                            $el.style( 'visibility', 'visible' );
+
+                            last.el
+                                .attr( 'x1', last.x )
+                                .attr( 'x2', last.x )
+                                .attr( 'y1', last.y )
+                                .attr( 'y2', chart.box.innerBottom );
+                        }else{
+                            $el.style( 'visibility', 'hidden' );
+                        }
                     }
                 });
             }
@@ -2579,6 +2580,67 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
     } ]
 );
 
+angular.module( 'vgraph' ).directive( 'vgraphMultiTooltip',
+    [ '$compile',
+    function( $compile ) {
+        'use strict';
+
+        return {
+            scope : {
+                config: '=config',
+                formatter: '=textFormatter',
+                data: '=vgraphMultiTooltip'
+            },
+            link : function( scope, $el, attrs ){
+                var el = $el[0];
+
+                function parseConf( config ){
+                    var e,
+                        i, c,
+                        className,
+                        els,
+                        name,
+                        conf,
+                        html = '';
+                    
+                    if ( config ){
+                        for( i = 0, c = config.length; i < c; i++ ){
+                            conf = config[ i ];
+                            name = conf.name;
+
+                            if ( conf.className ){
+                                className = conf.className;
+                            }else{
+                                className = 'plot-'+name;
+                            }
+
+                            html += '<g class="'+className+'" vgraph-tooltip="data" name="'+name+'"' +
+                                ' text-formatter="formatter"' + 
+                                ( attrs.offseX ? ' offset-x="'+attrs.offsetX+'"' : '' ) +
+                                ( attrs.offseY ? ' offset-y="'+attrs.offsetY+'"' : '' ) +
+                                '></g>';
+                        }
+
+                        d3.select( el ).selectAll( 'g' ).remove();
+
+                        els = ( new DOMParser().parseFromString('<g xmlns="http://www.w3.org/2000/svg">'+html+'</g>','image/svg+xml') )
+                            .childNodes[0].childNodes;
+
+                        while( els.length ){
+                            e = els[ 0 ];
+
+                            el.appendChild( e );
+
+                            $compile( e )(scope);
+                        }
+                    }
+                }
+
+                scope.$watchCollection('config', parseConf );
+            }
+        };
+    } ]
+);
 angular.module( 'vgraph' ).directive( 'vgraphStack',
     [ '$compile',
     function( $compile ) {
@@ -2616,6 +2678,7 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
 
                 function parseConf( config ){
                     var last,
+                        lastNode,
                         e,
                         i, c,
                         els,
@@ -2683,7 +2746,13 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                         while( els.length ){
                             e = els[ 0 ];
 
-                            el.appendChild( e );
+                            // I want the first calculated value, lowest on the DOM
+                            if ( last ){
+                                el.insertBefore( e, lastNode );
+                            }else{
+                                el.appendChild( e );
+                            }
+                            lastNode = e;
 
                             $compile( e )(scope);
 
@@ -2856,6 +2925,10 @@ angular.module( 'vgraph' ).directive( 'vgraphTooltip',
 
         return {
             require : ['^vgraphChart'],
+            scope : {
+                formatter : '=textFormatter',
+                data : '=vgraphTooltip'
+            },
             link : function( scope, el, attrs, requirements ){
                 var chart = requirements[0],
                     name = attrs.name,
@@ -2902,10 +2975,6 @@ angular.module( 'vgraph' ).directive( 'vgraphTooltip',
                         $el.style( 'visibility', 'hidden' );
                     }
                 });
-            },
-            scope : {
-                formatter : '=textFormatter',
-                data : '=vgraphTooltip'
             }
         };
     } ]

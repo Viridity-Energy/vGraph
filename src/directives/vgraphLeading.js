@@ -70,11 +70,17 @@ angular.module( 'vgraph' ).directive( 'vgraphLeading',
                             last = p;
                         });
 
-                        last.el
-                            .attr( 'x1', last.x )
-                            .attr( 'x2', last.x )
-                            .attr( 'y1', last.y )
-                            .attr( 'y2', chart.box.innerBottom );
+                        if ( last ){
+                            $el.style( 'visibility', 'visible' );
+
+                            last.el
+                                .attr( 'x1', last.x )
+                                .attr( 'x2', last.x )
+                                .attr( 'y1', last.y )
+                                .attr( 'y2', chart.box.innerBottom );
+                        }else{
+                            $el.style( 'visibility', 'hidden' );
+                        }
                     }
                 });
             }

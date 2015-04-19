@@ -35,6 +35,7 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
 
                 function parseConf( config ){
                     var last,
+                        lastNode,
                         e,
                         i, c,
                         els,
@@ -102,7 +103,13 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                         while( els.length ){
                             e = els[ 0 ];
 
-                            el.appendChild( e );
+                            // I want the first calculated value, lowest on the DOM
+                            if ( last ){
+                                el.insertBefore( e, lastNode );
+                            }else{
+                                el.appendChild( e );
+                            }
+                            lastNode = e;
 
                             $compile( e )(scope);
 
