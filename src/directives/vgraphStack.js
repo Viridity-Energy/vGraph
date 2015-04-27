@@ -1,24 +1,7 @@
 angular.module( 'vgraph' ).directive( 'vgraphStack',
-    [ '$compile',
-    function( $compile ) {
+    [ '$compile', 'ComponentGenerator',
+    function( $compile, ComponentGenerator ) {
         'use strict';
-
-        function makeFill( chart, name, fillTo ){
-            return d3.svg.area()
-                .defined(function(d){
-                    var y = d[ name ];
-                    return !( isNaN(y) || y === null );
-                })
-                .x(function( d ){
-                    return chart.x.scale( d.$interval );
-                })
-                .y(function( d ){
-                    return chart.y.scale( d[name] );
-                })
-                .y1(function( d ){
-                    return chart.y.scale( d[fillTo] ? d[fillTo] : chart.model.y.minimum );
-                });
-        }
 
         return {
             require : ['^vgraphChart'],
@@ -28,109 +11,43 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
             link : function( scope, $el, attrs, requirements ){
                 var chart = requirements[0],
                     el = $el[0],
-                    styleEl = document.createElement('style'),
                     lines;
 
-                document.body.appendChild( styleEl );
-
                 function parseConf( config ){
-                    var last,
-                        lastNode,
-                        e,
-                        i, c,
-                        els,
-                        className,
-                        src,
-                        value,
-                        interval,
-                        name,
-                        conf,
-                        node,
-                        html = '',
-                        style = '';
+                    var i, c,
+                        line;
 
                     if ( config ){
-                        for( i = 0, c = config.length; i < c; i++ ){
-                            conf = config[ i ];
-                            name = conf.name;
+                        d3.select( el ).selectAll( 'path' ).remove();
 
-                            if ( conf.className ){
-                                className = conf.className;
-                            }else{
-                                className = 'plot-'+name;
+                        lines = ComponentGenerator.compileConfig( scope, config, 'fill' );
 
-                                style += '.plot-'+name+' path { stroke: '+ conf.color +'; fill: '+conf.color+'; }' + // the line
-                                    'circle.plot-'+name+' { stroke: '+ conf.color +'; fill: '+ conf.color + ';}' + // the dot
-                                    '.legend .plot-'+name+' .value { background-color: '+ conf.color + '; }'; // the legend
-                            }
-
-                            if ( conf.data ){
-                                value = angular.isFunction( conf.value ) ? name+'.value' : '\''+( conf.value || name )+'\'';
-                                interval = angular.isFunction( conf.interval ) ? name+'.interval' : '\''+( conf.interval || 'x' )+'\'';
-
-                                if ( angular.isString(conf.data) ){
-                                    src = conf.data;
-                                    scope[conf.data] = scope.$parent[conf.data];
-                                } else if ( conf.data ) {
-                                    src = name+'.data';
-                                } else {
-                                    src = 'data';
-                                }
-
-                                node = '<path'+
-                                        ' vgraph-feed="'+src+'" name="'+name+'"'+
-                                        ' value="'+value+'"'+
-                                        ' interval="'+interval+'"'+
-                                        ( conf.filter ? ' filter="'+conf.filter+'"' : '' ) +
-                                    '></path>';
-                            }else{
-                                node = '<path></path>';
-                            }
-
-                            html += '<g class="fill '+className+'">'+node+'</g>';
-                            scope[ name ] = conf;
-                        }
-
-                        d3.select( el ).selectAll( 'g' ).remove();
-
-                        styleEl.innerHTML = style;
-                        els = ( new DOMParser().parseFromString('<g xmlns="http://www.w3.org/2000/svg">'+html+'</g>','image/svg+xml') )
-                            .childNodes[0].childNodes;
-
-                        lines = [];
-
-                        i = 0;
-                        while( els.length ){
-                            e = els[ 0 ];
+                        for( i = 0, c = lines.length; i < c; i++ ){
+                            line = lines[ i ];
 
                             // I want the first calculated value, lowest on the DOM
-                            if ( last ){
-                                el.insertBefore( e, lastNode );
+                            if ( i ){
+                                el.insertBefore( line.element, lines[i-1].element );
+                                line.calc = ComponentGenerator.makeFillCalc(
+                                    chart,
+                                    '$'+line.name,
+                                    '$'+lines[i-1].name
+                                );
                             }else{
-                                el.appendChild( e );
+                                el.appendChild( line.element );
+                                line.calc = ComponentGenerator.makeFillCalc(
+                                    chart,
+                                    '$'+line.name
+                                );
                             }
-                            lastNode = e;
 
-                            $compile( e )(scope);
-
-                            lines.push({
-                                name : config[i].name,
-                                element : d3.select(e.childNodes[0]),
-                                fill : makeFill( chart, '$'+config[i].name, '$'+last ) // make a function to parse content
-                            });
-
-                            last = config[i].name;
-                            i++;
+                            $compile( line.element )(scope);
                         }
                     }
                 }
 
                 scope.$watchCollection('config', parseConf );
 
-                scope.$on('$destroy', function(){
-                    document.body.removeChild( styleEl );
-                });
-                
                 chart.register({
                     parse : function( data ){
                         var i, c,
@@ -192,8 +109,7 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
 
                         for( i = 0, c = lines.length; i < c; i++ ){
                             line = lines[ i ];
-
-                            line.element.attr( 'd', line.fill(data) );
+                            line.$d3.attr( 'd', line.calc(data) );
                         }
                     }
                 });

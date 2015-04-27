@@ -7,7 +7,8 @@ angular.module( 'vgraph' ).directive( 'vgraphTooltip',
             require : ['^vgraphChart'],
             scope : {
                 formatter : '=textFormatter',
-                data : '=vgraphTooltip'
+                data : '=vgraphTooltip',
+                value : '=?value'
             },
             link : function( scope, el, attrs, requirements ){
                 var chart = requirements[0],
@@ -29,29 +30,36 @@ angular.module( 'vgraph' ).directive( 'vgraphTooltip',
                         .attr( 'class', 'label' );
 
                 scope.$watch('data.point', function( data ){
-                    var $y,
+                    var value,
+                        $y,
                         $x,
                         width;
 
-                    if ( data && data[name] ){
-                        $y = chart.y.scale( data[name] );
-                        $x = chart.x.scale( data.$interval ) + xOffset;
-                        $text.text( formatter(data[name],data) );
-                        width = $text.node().getComputedTextLength() + 5; // magic padding... for luls
+                    if ( data ){
+                        value = scope.value ? scope.value(data) : data[name];
 
-                        $el.style( 'visibility', 'visible' );
+                        if ( value !== undefined ){
+                            $y = chart.y.scale( value );
+                            $x = chart.x.scale( data.$interval ) + xOffset;
+                            $text.text( formatter(value,data) );
+                            width = $text.node().getComputedTextLength() + 5; // magic padding... for luls
 
-                        if ( $x + width + 16 < chart.x.scale(model.x.stop.$interval) ){
-                            $el.attr( 'transform', 'translate('+$x+','+($y+yOffset)+')' );
-                            $text.attr( 'transform', 'translate(10,5)' );
-                            $polygon.attr( 'points', '0,15 10,0 '+( width + 10 )+',0 '+( width + 10 )+',30 10,30 0,15' );
-                        }else{
-                            $el.attr( 'transform', 'translate('+($x - xOffset * 2 - width - 10)+','+($y+yOffset)+')' );
-                            $text.attr( 'transform', 'translate(5,5)' );
-                            $polygon.attr( 'points', '0,0 '+width+',0 '+( width+10 )+',15 '+width+',30 0,30 0,0' );
+                            $el.style( 'visibility', 'visible' );
+
+                            // go to the right or the left of the point of interest?
+                            if ( $x + width + 16 < chart.x.scale(model.x.stop.$interval) ){
+                                $el.attr( 'transform', 'translate('+$x+','+($y+yOffset)+')' );
+                                $text.attr( 'transform', 'translate(10,5)' );
+                                $polygon.attr( 'points', '0,15 10,0 '+( width + 10 )+',0 '+( width + 10 )+',30 10,30 0,15' );
+                            }else{
+                                $el.attr( 'transform', 'translate('+($x - xOffset * 2 - width - 10)+','+($y+yOffset)+')' );
+                                $text.attr( 'transform', 'translate(5,5)' );
+                                $polygon.attr( 'points', '0,0 '+width+',0 '+( width+10 )+',15 '+width+',30 0,30 0,0' );
+                            }
                         }
+                    }
 
-                    }else{
+                    if ( value === undefined ){
                         $el.style( 'visibility', 'hidden' );
                     }
                 });

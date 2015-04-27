@@ -1,9 +1,9 @@
 angular.module( 'vgraph' ).directive( 'vgraphIcon',
-    ['vgraphComponent',
-    function( component ){
+    ['ComponentGenerator',
+    function( ComponentGenerator ){
         'use strict';
 
-        return component( 'vgraphIcon', {
+        return ComponentGenerator.generate( 'vgraphIcon', {
         	link: function( scope, el, attrs, requirements ){
         		var i, c,
         			points,
@@ -27,36 +27,12 @@ angular.module( 'vgraph' ).directive( 'vgraphIcon',
 		        el.html('');
 
 		        chart.register({
-		        	parse : function( sampled, full ){
-		        		var d,
-		        			v,
-		        			min,
-		        			max;
-
+		        	parse : function( sampled, data ){
 		        		points = {};
 
-		        		for( i = 0, c = full.length; i < c; i++ ){
-		        			d = full[i];
-		        			v = d[name];
-
-		        			if ( v !== undefined ){
-		        				points[ d.$interval ] = v;
-
-                                if ( min === undefined ){
-                                    min = v;
-                                    max = v;
-                                }else if ( min > v ){
-                                    min = v;
-                                }else if ( max < v ){
-                                    max = v;
-                                }
-		        			}
-		        		}
-
-		        		return {
-		        			min : min,
-		        			max : max
-		        		};
+		        		return ComponentGenerator.parseLimits( data, name, function( d, v ){
+		        			points[ d.$interval ] = v;
+		        		});
 		        	},
                     build : function(){
                         var x, y,

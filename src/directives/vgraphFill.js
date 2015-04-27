@@ -1,9 +1,9 @@
 angular.module( 'vgraph' ).directive( 'vgraphFill',
-    ['vgraphComponent',
-    function( component ){
+    ['ComponentGenerator',
+    function( ComponentGenerator ){
         'use strict';
 
-        return component( 'vgraphFill', {
+        return ComponentGenerator.generate( 'vgraphFill', {
             link : function( scope, el, attrs, requirements ){
                 var chart = requirements[0],
                     name = attrs.name,
@@ -21,6 +21,7 @@ angular.module( 'vgraph' ).directive( 'vgraphFill',
                             return chart.y.scale( d[name] );
                         })
                         .y1(function(){
+                            // TODO : I don't like this...
                             return scope.fillTo === undefined ? 
                                 chart.y.scale( chart.model.y.bottom ) :
                                 typeof( scope.fillTo ) === 'object' ?
@@ -30,29 +31,7 @@ angular.module( 'vgraph' ).directive( 'vgraphFill',
 
                 chart.register({
                     parse : function( data ){
-                        var i, c,
-                            v,
-                            min,
-                            max;
-
-                        for( i = 0, c = data.length; i < c; i++ ){
-                            v = data[i][name];
-                            if ( v !== undefined ){
-                                if ( min === undefined ){
-                                    min = v;
-                                    max = v;
-                                }else if ( min > v ){
-                                    min = v;
-                                }else if ( max < v ){
-                                    max = v;
-                                }
-                            }
-                        }
-
-                        return {
-                            min : min,
-                            max : max
-                        };
+                        return ComponentGenerator.parseLimits( data, name );
                     },
                     finalize : function( data ){
                         $path.attr( 'd', line(data) );

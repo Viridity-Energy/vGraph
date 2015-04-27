@@ -90,9 +90,15 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
                         .attr( 'y', box.middle - 10 )
                         .attr( 'width', width );
 
-                    $text.attr( 'text-anchor', 'middle' )
-                        .attr( 'x', box.center )
-                        .attr( 'y', box.middle + $text.node().getBBox().height / 2 - 2 );
+                    try {
+                        $text.attr( 'text-anchor', 'middle' )
+                            .attr( 'x', box.center )
+                            .attr( 'y', box.middle + $text.node().getBBox().height / 2 - 2 );
+                    }catch( ex ){
+                        $text.attr( 'text-anchor', 'middle' )
+                            .attr( 'x', box.center )
+                            .attr( 'y', box.middle );
+                    }
 
                     if ( !pulsing ){
                         startPulse();

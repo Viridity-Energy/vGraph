@@ -22,9 +22,15 @@ angular.module( 'vgraph' ).directive( 'vgraphError',
                         .attr( 'width', box.innerWidth )
                         .attr( 'height', box.innerHeight );
 
-                    $text.attr( 'text-anchor', 'middle' )
-                        .attr( 'x', box.center )
-                        .attr( 'y', box.middle + $text.node().getBBox().height / 2 );
+                    try {
+                        $text.attr( 'text-anchor', 'middle' )
+                            .attr( 'x', box.center )
+                            .attr( 'y', box.middle + $text.node().getBBox().height / 2 );
+                    }catch( ex ){
+                        $text.attr( 'text-anchor', 'middle' )
+                            .attr( 'x', box.center )
+                            .attr( 'y', box.middle );
+                    }
                 });
 
                 scope.$watch( 'model.error', function( err ){

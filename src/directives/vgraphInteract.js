@@ -12,7 +12,8 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
                 dragStop : '=?dEnd'
             },
             link : function( scope, el, attrs, requirements ){
-                var chart = requirements[0],
+                var sampledData,
+                    chart = requirements[0],
                     dragging = false,
                     dragStart,
                     active,
@@ -28,9 +29,9 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
 
                             if ( !dragging ){
                                 x0 = chart.x.scale.invert( d3.mouse(this)[0] );
-                                p = bisect( model.data, x0, 1 );
+                                p = bisect( sampledData, x0, 1 );
 
-                                highlightOn( this, model.data[p] );
+                                highlightOn( this, sampledData[p] );
                             }
                         })
                         .on( 'mouseout', function( d ){
@@ -133,7 +134,8 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
                     build : function(){
 
                     },
-                    finalize : function(){
+                    finalize : function( data ){
+                        sampledData = data;
                         $rect.attr({
                             'x' : box.innerLeft,
                             'y' : box.innerTop,

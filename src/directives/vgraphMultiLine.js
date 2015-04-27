@@ -1,97 +1,62 @@
 angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
-    [ '$compile',
-    function( $compile ) {
+    [ '$compile', 'ComponentGenerator',
+    function( $compile, ComponentGenerator ) {
         'use strict';
 
         return {
+            require : ['^vgraphChart'],
             scope : {
                 data : '=vgraphMultiLine',
                 config : '=config'
             },
-            link : function( scope, $el ){
-                var el = $el[0],
-                    styleEl = document.createElement('style');
+            link : function( scope, $el, attrs, requirements ){
+                var chart = requirements[0],
+                    el = $el[0],
+                    lines,
+                    names;
 
-                document.body.appendChild( styleEl );
-                
                 function parseConf( config ){
-                    var e,
-                        i, c,
-                        className,
-                        src,
-                        value,
-                        interval,
-                        els,
-                        name,
-                        conf,
-                        html = '',
-                        style = '';
-                    
+                    var i, c,
+                        line;
+
+                    names = [];
+
                     if ( config ){
-                        // TODO : batch this
-                        for( i = 0, c = config.length; i < c; i++ ){
-                            conf = config[ i ];
-                            name = conf.name;
+                        d3.select( el ).selectAll( 'path' ).remove();
 
-                            if ( conf.className ){
-                                className = conf.className;
-                            }else{
-                                className = 'plot-'+name;
-                                style += '.plot-'+name+' path { stroke: '+ conf.color +'; fill: transparent; }' + // the line
-                                    'circle.plot-'+name+' { stroke: '+ conf.color +'; fill: '+ conf.color + ';}' + // the dot
-                                    '.highlight.plot-'+name+' { background-color: '+ conf.color + '; }'; // the legend
-                            }
+                        lines = ComponentGenerator.compileConfig( scope, config, 'line' );
 
-                            if ( conf.data ){
-                                value = angular.isFunction( conf.value ) ? name+'.value' : '\''+( conf.value || name )+'\'';
-                                interval = angular.isFunction( conf.interval ) ? name+'.interval' : '\''+( conf.interval || 'x' )+'\'';
+                        for( i = 0, c = lines.length; i < c; i++ ){
+                            line = lines[ i ];
 
-                                if ( angular.isString(conf.data) ){
-                                    src = conf.data;
-                                    scope[conf.data] = scope.$parent[conf.data];
-                                } else if ( conf.data ) {
-                                    src = name+'.data';
-                                } else {
-                                    src = 'data';
-                                }
-                                
-                                html += '<g class="line '+className+'" name="'+name+'"'+
-                                    ' vgraph-line="'+ src +'"'+
-                                    ' value="'+ value +'"'+
-                                    ' interval="'+ interval +'"'+
-                                    ( conf.filter ? ' filter="'+conf.filter+'"' : '' ) +
-                                '></g>';
-                            }else{
-                                html += '<g class="line '+className+'" name="'+name+'"'+
-                                    ' vgraph-line="data"' +
-                                    ' value="'+name+'.y"' +
-                                    ' interval="'+name+'.x"' +
-                                '></g>';
-                            }
-                            
-                            scope[ name ] = conf;
-                        }
+                            // I want the first calculated value, lowest on the DOM
+                            el.appendChild( line.element );
+                            line.calc = ComponentGenerator.makeLineCalc(
+                                chart,
+                                line.name
+                            );
+                            names.push( line.name );
 
-                        d3.select( el ).selectAll( 'g' ).remove();
-
-                        styleEl.innerHTML = style;
-                        els = ( new DOMParser().parseFromString('<g xmlns="http://www.w3.org/2000/svg">'+html+'</g>','image/svg+xml') )
-                            .childNodes[0].childNodes;
-
-                        while( els.length ){
-                            e = els[ 0 ];
-
-                            el.appendChild( e );
-
-                            $compile( e )(scope);
+                            $compile( line.element )(scope);
                         }
                     }
                 }
 
                 scope.$watchCollection('config', parseConf );
 
-                scope.$on('$destroy', function(){
-                    document.body.removeChild( styleEl );
+                chart.register({
+                    parse : function( data ){
+                        return ComponentGenerator.parseLimits( data, names );
+                    },
+                    finalize : function( data ){
+                        var i, c,
+                            line;
+
+                        for( i = 0, c = lines.length; i < c; i++ ){
+                            line = lines[ i ];
+                            line.$d3.attr( 'd', line.calc(data) );
+                        }
+                    }
                 });
             }
         };

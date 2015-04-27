@@ -1,9 +1,9 @@
 angular.module( 'vgraph' ).directive( 'vgraphFeed',
-    ['vgraphComponent',
-    function( component ){
+    ['ComponentGenerator',
+    function( ComponentGenerator ){
         'use strict';
 
-        return component( 'vgraphFeed', {
+        return ComponentGenerator.generate( 'vgraphFeed', {
             restrict: 'A'
         });
     }]

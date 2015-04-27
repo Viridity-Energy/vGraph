@@ -1,9 +1,9 @@
 angular.module( 'vgraph' ).directive( 'vgraphZone',
-    ['vgraphComponent',
-    function( component ){
+    ['ComponentGenerator',
+    function( ComponentGenerator ){
         'use strict';
 
-        return component( 'vgraphZone', {
+        return ComponentGenerator.generate( 'vgraphZone', {
             link : function( scope, el, attrs, requirements ){
                 var chart = requirements[0],
                     name = attrs.name,
