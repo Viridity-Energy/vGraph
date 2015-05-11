@@ -3,6 +3,77 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
     function(){
         'use strict';
 
+        function bisect( arr, value, func, preSorted ){
+            var idx,
+                val,
+                bottom = 0,
+                top = arr.length - 1;
+
+            if ( !preSorted ){
+                arr.sort(function(a,b){
+                    return func(a) - func(b);
+                });
+            }
+
+            if ( func(arr[bottom]) >= value ){
+                return {
+                    left : bottom,
+                    right : bottom
+                };
+            }
+
+            if ( func(arr[top]) <= value ){
+                return {
+                    left : top,
+                    right : top
+                };
+            }
+
+            if ( arr.length ){
+                while( top - bottom > 1 ){
+                    idx = Math.floor( (top+bottom)/2 );
+                    val = func( arr[idx] );
+
+                    if ( val === value ){
+                        top = idx;
+                        bottom = idx;
+                    }else if ( val > value ){
+                        top = idx;
+                    }else{
+                        bottom = idx;
+                    }
+                }
+
+                // if it is one of the end points, make it that point
+                if ( top !== idx && func(arr[top]) === value ){
+                    return {
+                        left : top,
+                        right : top
+                    };
+                }else if ( bottom !== idx && func(arr[bottom]) === value ){
+                    return {
+                        left : bottom,
+                        right : bottom
+                    };
+                }else{
+                    return {
+                        left : bottom,
+                        right : top
+                    };
+                }
+            }
+        }
+        
+        function getClosest( data, value ){
+            var p = bisect( data, value, function( x ){
+                    return x.$interval;
+                }, true ),
+                l = value - data[p.left].$interval,
+                r = data[p.right].$interval - value;
+
+            return l < r ? p.left : p.right;
+        }
+
         return {
             require : ['^vgraphChart'],
             scope : {
@@ -29,7 +100,7 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
 
                             if ( !dragging ){
                                 x0 = chart.x.scale.invert( d3.mouse(this)[0] );
-                                p = bisect( sampledData, x0, 1 );
+                                p = getClosest( sampledData, x0 );
 
                                 highlightOn( this, sampledData[p] );
                             }
@@ -38,10 +109,7 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
                             if ( !dragging ){
                                 highlightOff( this, d );
                             }
-                        }),
-                    bisect = d3.bisector(function(d) {
-                        return d.$interval;
-                    }).left;
+                        });
 
 
                 function highlightOn( el, d ){
@@ -50,18 +118,29 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
                     scope.$apply(function(){
                         var pos = d3.mouse( el );
 
+                        
+                        if ( scope.highlight.point ){
+                            $(scope.highlight.point.$els).removeClass('active');
+                        }
+
                         scope.highlight.point = d;
                         scope.highlight.position = {
                             x : pos[ 0 ],
                             y : pos[ 1 ]
                         };
 
+                        if ( d ){
+                            $(d.$els).addClass('active');
+                        }
                     });
                 }
 
                 function highlightOff(){
                     active = setTimeout(function(){
                         scope.$apply(function(){
+                            if ( scope.highlight.point ){
+                                $(scope.highlight.point.$els).removeClass('active');
+                            }
                             scope.highlight.point = null;
                         });
                     }, 100);

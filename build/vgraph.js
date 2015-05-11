@@ -368,6 +368,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 	        	for( i = 0, c = comps.length; i < c; i++ ){
 	        		res[i] = {
 	        			name: conf[i].name,
+                        className: conf[i].className,
 	        			element : comps[i],
 	        			$d3 : d3.select( comps[i] )
 	        		};
@@ -1538,6 +1539,227 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
     } ]
 );
 
+angular.module( 'vgraph' ).directive( 'vgraphBar',
+    [ '$compile', 'ComponentGenerator',
+    function( $compile, ComponentGenerator ) {
+        'use strict';
+
+        return {
+            require : ['^vgraphChart'],
+            scope : {
+                config : '=config'
+            },
+            link : function( scope, $el, attrs, requirements ){
+                var chart = requirements[0],
+                    el = $el[0],
+                    minWidth = parseInt(attrs.minWidth),
+                    padding = parseInt(attrs.padding),
+                    mount = d3.select( el ).append('g').attr( 'class', 'mount' ),
+                    lines;
+
+                function makeRect( points, start, stop ){
+                    var e,
+                        els,
+                        j, co,
+                        i,
+                        sum,
+                        line,
+                        counted,
+                        point,
+                        last,
+                        lastY,
+                        y, x1, x2,
+                        $value;
+
+                    for( i = start; i < stop; i++ ){
+                        point = points[i];
+                        if ( point ){
+                            point.$els = [];
+                        }
+                    }
+
+                    for( j = 0, co = lines.length; j < co; j++ ){
+                        line = lines[j];
+                        $value = lines[j].$value;
+                        sum = 0;
+                        counted = 0;
+                        i = start;
+                        els = [];
+
+                        while( i < stop ){
+                            point = points[i];
+
+                            if ( point ){
+                                sum += point[$value];
+                                counted++;
+
+                                last = point;
+                            }
+
+                            i++;
+                        }
+
+                        y = chart.y.scale( sum/counted );
+
+                        if ( x1 ){
+                            e = mount.append('rect')
+                                .attr( 'height', lastY-y );
+                        }else{
+                            x1 = chart.x.scale( points[start].$interval ) + padding;
+                            x2 = chart.x.scale(last.$interval)-padding-x1;
+
+                            e = mount.append('rect')
+                                .attr( 'height', chart.y.scale(chart.model.y.minimum)-y );
+                        }
+
+                        e.attr( 'class', 'bar '+line.className )
+                            .attr( 'x', x1 )
+                            .attr( 'y', y )
+                            .attr( 'width', x2 );
+
+                        e = e[0][0]; // dereference
+                        for( i = start; i < stop; i++ ){
+                            point = points[i];
+                            if ( point ){
+                                point.$els.push( e );
+                                point.$bar = {
+                                    center : (x1 + x2) / 2,
+                                    top : sum / counted
+                                };
+                            }
+                        }
+
+                        lastY = y;
+                    }
+                }
+
+                function parseConf( config ){
+                    var i, c,
+                        line;
+
+                    if ( config ){
+                        d3.select( el ).selectAll( 'path' ).remove();
+
+                        lines = ComponentGenerator.compileConfig( scope, config, 'line' );
+
+                        for( i = 0, c = lines.length; i < c; i++ ){
+                            line = lines[ i ];
+
+                            // I want the first calculated value, lowest on the DOM
+                            line.$value = '$'+line.name;
+
+                            if ( i ){
+                                el.insertBefore( line.element, lines[i-1].element );
+                                line.$bottom = lines[i-1].$value;
+                                line.calc = ComponentGenerator.makeLineCalc(
+                                    chart,
+                                    line.$value,
+                                    line.$bottom
+                                );
+                            }else{
+                                el.appendChild( line.element );
+                                line.calc = ComponentGenerator.makeLineCalc(
+                                    chart,
+                                    line.$value
+                                );
+                            }
+
+                            $compile( line.element )(scope);
+                        }
+                    }
+                }
+
+                scope.$watchCollection('config', parseConf );
+
+                chart.register({
+                    parse : function( data ){
+                        var i, c,
+                            j, co,
+                            name,
+                            last,
+                            d,
+                            v,
+                            min,
+                            max;
+
+                        if ( lines && lines.length ){
+                            for( i = 0, c = data.length; i < c; i++ ){
+                                last = 0;
+                                v = undefined;
+                                d = data[i];
+
+                                for( j = 0, co = lines.length; j < co && v === undefined; j++ ){
+                                    name = lines[j].name;
+                                    v = d[ name ];
+                                    if ( v !== undefined ){
+                                        if ( min === undefined ){
+                                            min = v;
+                                            max = v;
+                                        }else if ( min > v ){
+                                            min = v;
+                                        }
+                                    }
+                                }
+
+                                d['$'+name] = v;
+                                last = v;
+
+                                for( ; j < co; j++ ){
+                                    name = lines[j].name;
+                                    v = d[ name ] || 0;
+
+                                    last = last + v;
+
+                                    d['$'+name] = last;
+                                }
+
+                                d.$total = last;
+
+                                if ( last > max ){
+                                    max = last;
+                                }
+                            }
+                        }
+
+                        return {
+                            min : min,
+                            max : max
+                        };
+                    },
+                    build : function( data ){
+                        var i, c,
+                            next = 0,
+                            start = chart.x.scale( chart.model.x.min.$interval ),
+                            stop = chart.x.scale( chart.model.x.max.$interval ),
+                            totalPixels = stop - start,
+                            //availablePixels = chart.box.innerWidth,
+                            barWidth = padding + minWidth,
+                            totalBars = totalPixels / barWidth,
+                            pointsPerBar = data.length / totalBars;
+
+                        mount.selectAll('rect').remove();
+
+                        for( i = 0, c = data.length; i < c; i = Math.floor(next) ){
+                            next = next + pointsPerBar;
+
+                            makeRect( data, i, next );
+                        }
+                    },
+                    finalize : function( data ){
+                        var i, c,
+                            line;
+
+                        for( i = 0, c = lines.length; i < c; i++ ){
+                            line = lines[ i ];
+                            line.$d3.attr( 'd', line.calc(data) );
+                        }
+                    }
+                });
+            }
+        };
+    } ]
+);
+
 angular.module( 'vgraph' ).directive( 'vgraphChart',
     [
     function(){
@@ -2225,6 +2447,77 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
     function(){
         'use strict';
 
+        function bisect( arr, value, func, preSorted ){
+            var idx,
+                val,
+                bottom = 0,
+                top = arr.length - 1;
+
+            if ( !preSorted ){
+                arr.sort(function(a,b){
+                    return func(a) - func(b);
+                });
+            }
+
+            if ( func(arr[bottom]) >= value ){
+                return {
+                    left : bottom,
+                    right : bottom
+                };
+            }
+
+            if ( func(arr[top]) <= value ){
+                return {
+                    left : top,
+                    right : top
+                };
+            }
+
+            if ( arr.length ){
+                while( top - bottom > 1 ){
+                    idx = Math.floor( (top+bottom)/2 );
+                    val = func( arr[idx] );
+
+                    if ( val === value ){
+                        top = idx;
+                        bottom = idx;
+                    }else if ( val > value ){
+                        top = idx;
+                    }else{
+                        bottom = idx;
+                    }
+                }
+
+                // if it is one of the end points, make it that point
+                if ( top !== idx && func(arr[top]) === value ){
+                    return {
+                        left : top,
+                        right : top
+                    };
+                }else if ( bottom !== idx && func(arr[bottom]) === value ){
+                    return {
+                        left : bottom,
+                        right : bottom
+                    };
+                }else{
+                    return {
+                        left : bottom,
+                        right : top
+                    };
+                }
+            }
+        }
+        
+        function getClosest( data, value ){
+            var p = bisect( data, value, function( x ){
+                    return x.$interval;
+                }, true ),
+                l = value - data[p.left].$interval,
+                r = data[p.right].$interval - value;
+
+            return l < r ? p.left : p.right;
+        }
+
         return {
             require : ['^vgraphChart'],
             scope : {
@@ -2251,7 +2544,7 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
 
                             if ( !dragging ){
                                 x0 = chart.x.scale.invert( d3.mouse(this)[0] );
-                                p = bisect( sampledData, x0, 1 );
+                                p = getClosest( sampledData, x0 );
 
                                 highlightOn( this, sampledData[p] );
                             }
@@ -2260,10 +2553,7 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
                             if ( !dragging ){
                                 highlightOff( this, d );
                             }
-                        }),
-                    bisect = d3.bisector(function(d) {
-                        return d.$interval;
-                    }).left;
+                        });
 
 
                 function highlightOn( el, d ){
@@ -2272,18 +2562,29 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
                     scope.$apply(function(){
                         var pos = d3.mouse( el );
 
+                        
+                        if ( scope.highlight.point ){
+                            $(scope.highlight.point.$els).removeClass('active');
+                        }
+
                         scope.highlight.point = d;
                         scope.highlight.position = {
                             x : pos[ 0 ],
                             y : pos[ 1 ]
                         };
 
+                        if ( d ){
+                            $(d.$els).addClass('active');
+                        }
                     });
                 }
 
                 function highlightOff(){
                     active = setTimeout(function(){
                         scope.$apply(function(){
+                            if ( scope.highlight.point ){
+                                $(scope.highlight.point.$els).removeClass('active');
+                            }
                             scope.highlight.point = null;
                         });
                     }, 100);
@@ -2628,6 +2929,10 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
                     }
                 });
 
+                scope.$on('destroy', function(){
+                    $interval.cancel( interval );
+                });
+                
                 scope.$watch( 'model.loading', function( loading ){
                     $interval.cancel( interval );
 
@@ -3352,3 +3657,111 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
         };
     } ]
 );
+
+(function( $ ){
+    'use strict';
+
+    var rnotwhite = (/\S+/g);
+    var rclass = /[\t\r\n\f]/g;
+
+    if ( $ ){
+        $.fn.addClass = function( value ){
+            var classes, elem, cur, clazz, j, finalValue,
+                proceed = typeof value === 'string' && value,
+                isSVG,
+                i = 0,
+                len = this.length;
+            
+            if ( $.isFunction( value ) ) {
+                return this.each(function( j ) {
+                    $( this ).addClass( value.call( this, j, this.className ) );
+                });
+            }
+            
+            if ( proceed ) {
+                // The disjunction here is for better compressibility (see removeClass)
+                classes = ( value || '' ).match( rnotwhite ) || [];
+                for ( ; i < len; i++ ) {
+                    elem = this[ i ];
+                    isSVG = typeof( elem.className ) !== 'string';
+
+                    cur = elem.nodeType === 1 && ( elem.className ?
+                        ( ' ' + (isSVG ? (elem.getAttribute('class')||'') : elem.className ) + ' ' ).replace( rclass, ' ' ) :
+                        ' '
+                    );
+
+                    if ( cur ) {
+                        j = 0;
+                        while ( (clazz = classes[j++]) ) {
+                            if ( cur.indexOf( ' ' + clazz + ' ' ) < 0 ) {
+                                cur += clazz + ' ';
+                            }
+                        }
+
+                        // only assign if different to avoid unneeded rendering.
+                        finalValue = $.trim( cur );
+                        if ( elem.className !== finalValue ) {
+                            if ( isSVG ){
+                                elem.setAttribute( 'class', finalValue );
+                            }else{
+                                elem.className = finalValue;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return this;
+        };
+
+        $.fn.removeClass = function( value ) {
+            var classes, elem, cur, clazz, j, finalValue,
+                proceed = arguments.length === 0 || typeof value === 'string' && value,
+                isSVG,
+                i = 0,
+                len = this.length;
+
+            if ( $.isFunction( value ) ) {
+                return this.each(function( j ) {
+                    $( this ).removeClass( value.call( this, j, this.className ) );
+                });
+            }
+            if ( proceed ) {
+                classes = ( value || '' ).match( rnotwhite ) || [];
+
+                for ( ; i < len; i++ ) {
+                    elem = this[ i ];
+                    isSVG = typeof( elem.className ) !== 'string';
+                    
+                    // This expression is here for better compressibility (see addClass)
+                    cur = elem.nodeType === 1 && ( elem.className ?
+                        ( ' ' + (isSVG ? (elem.getAttribute('class')||'') : elem.className ) + ' ' ).replace( rclass, ' ' ) :
+                        ''
+                    );
+
+                    if ( cur ) {
+                        j = 0;
+                        while ( (clazz = classes[j++]) ) {
+                            // Remove *all* instances
+                            while ( cur.indexOf( ' ' + clazz + ' ' ) >= 0 ) {
+                                cur = cur.replace( ' ' + clazz + ' ', ' ' );
+                            }
+                        }
+
+                        // only assign if different to avoid unneeded rendering.
+                        finalValue = value ? $.trim( cur ) : '';
+                        if ( elem.className !== finalValue ) {
+                            if ( isSVG ){
+                                elem.setAttribute( 'class', finalValue );
+                            }else{
+                                elem.className = finalValue;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return this;
+        };
+    }
+}( jQuery ));

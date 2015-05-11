@@ -105,6 +105,10 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
                     }
                 });
 
+                scope.$on('destroy', function(){
+                    $interval.cancel( interval );
+                });
+                
                 scope.$watch( 'model.loading', function( loading ){
                     $interval.cancel( interval );
 

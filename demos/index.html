@@ -61,24 +61,28 @@
 			fill: none;
 		}
 
-		.red.fill, circle.red {
+		.red.fill, circle.red, rect.red {
 			stroke: red;
     		fill: red;
 		}
 
-		.blue.fill, circle.blue {
+		.blue.fill, circle.blue, rect.blue {
 			stroke: blue;
 			fill: blue;
 		}
 
-		.green.fill, circle.green {
+		.green.fill, circle.green, rect.green {
 			stroke: green;
 			fill: green;
 		}
 
-		.orange.fill, circle.orange {
+		.orange.fill, circle.orange, rect.orange {
 			stroke: orange;
 			fill: orange;
+		}
+
+		rect.bar.active {
+			opacity: .5;
 		}
 
 		[vgraph-compare] .fill {
@@ -212,6 +216,19 @@
 			<g vgraph-compare config="config"></g>
 			<g vgraph-target="highlight" point-radius="5" config="config"></g>
 			<g vgraph-tooltip="highlight" text-formatter="formatter" value="getCompare"></g>
+			<g vgraph-interact="highlight"></g>
+		</svg>
+	</div>
+
+	<div ng-controller="StackedMultiCtrl">
+		{{ highlight.point.$bar }}
+		<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="box" model="model" version="1.1">
+			<g vgraph-axis="'left'"
+                tick-length="4" tick-padding="-2"></g>
+            <g vgraph-axis="'bottom'"
+                tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+			<g vgraph-bar config="config" padding="2" min-width="4"></g>
+			<g vgraph-tooltip="highlight" text-formatter="formatter" value="getBar"></g>
 			<g vgraph-interact="highlight"></g>
 		</svg>
 	</div>
@@ -631,21 +648,28 @@ angular.module( 'vgraph' ).controller( 'StackedMultiCtrl',
 			{ name : 'y1', className : 'red', data : 'line' },
 			{ name : 'y2', className : 'blue', data : 'line' },
 			{ name : 'y3', className : 'green', data : 'line' },
-			{ name : 'y4', className : 'orange', data : 'line', value : 'diff', interval : 'xDiff' }
+			{ name : 'y4', className : 'orange', data : 'line', value : 'diff'/*, interval : 'xDiff'*/ }
 		];
 
-		for( var i = 0, c = 2000; i < c; i++ ){
+		$scope.formatter = function( value, data ){
+			return data.$bar.top;
+		};
+
+		$scope.getBar = function( data ){
+			return data.$bar.top;
+		};
+
+		for( var i = 250, c = 2000; i < c; i++ ){
 			var counter = 0;
-			var min = -1,
+			var min = 0,
 				max = 1,
-				t = Math.random() * (max - min) + min,
 				p = {
-					x : data.length,
-					y1 : data[data.length-1].y1 + t,
-					y2 : data[data.length-1].y2 + t,
-					y3 : data[data.length-1].y3 + t,
-					xDiff : data.length,
-					diff : data[data.length-1].diff + t
+					x : i,
+					y1 : data[data.length-1].y1 + Math.random() * (max - min) + min,
+					y2 : data[data.length-1].y2 + Math.random() * (max - min) + min,
+					y3 : data[data.length-1].y3 + Math.random() * (max - min) + min,
+					xDiff : i+500,
+					diff : data[data.length-1].diff + Math.random() * (max - min) + min
 				};
 
 			data.push( p );
@@ -653,8 +677,8 @@ angular.module( 'vgraph' ).controller( 'StackedMultiCtrl',
 
 		$scope.model.dataReady( $scope );
 		$scope.model.setBounds({
-                min : null,
-                max : null
+                min : 0,
+                max : 3000
             },{
                 min : null,
                 max : null

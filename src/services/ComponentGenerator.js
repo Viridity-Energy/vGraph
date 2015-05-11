@@ -227,6 +227,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 	        	for( i = 0, c = comps.length; i < c; i++ ){
 	        		res[i] = {
 	        			name: conf[i].name,
+                        className: conf[i].className,
 	        			element : comps[i],
 	        			$d3 : d3.select( comps[i] )
 	        		};
