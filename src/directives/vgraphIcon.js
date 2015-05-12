@@ -4,6 +4,9 @@ angular.module( 'vgraph' ).directive( 'vgraphIcon',
         'use strict';
 
         return ComponentGenerator.generate( 'vgraphIcon', {
+        	scope: {
+        		getValue: '=trueValue'
+        	},
         	link: function( scope, el, attrs, requirements ){
         		var i, c,
         			points,
@@ -12,13 +15,13 @@ angular.module( 'vgraph' ).directive( 'vgraphIcon',
         			name = attrs.name,
         			filling = [],
         			$el = d3.select( root ),
-		        	width = parseInt( $el.attr('width'), 10 ),
-		        	height = parseInt( $el.attr('height'), 10 );
+        			box = $el.node().getBBox();
 
-		        root.removeAttribute('width');
-		        root.removeAttribute('height');
+        		if ( attrs.value === undefined ){
+        			scope.value = name;
+        		}
 
-		        for( i = 0, c = root.childNodes.length; i < c; i++ ){
+        		for( i = 0, c = root.childNodes.length; i < c; i++ ){
 		        	if ( root.childNodes[i].nodeType === 1 ){
 		        		filling.push( root.childNodes[i] );
 		        	}
@@ -28,10 +31,12 @@ angular.module( 'vgraph' ).directive( 'vgraphIcon',
 
 		        chart.register({
 		        	parse : function( sampled, data ){
-		        		points = {};
+		        		points = [];
 
 		        		return ComponentGenerator.parseLimits( data, name, function( d, v ){
-		        			points[ d.$interval ] = v;
+		        			if ( v ){
+		        				points.push( d );
+		        			}
 		        		});
 		        	},
                     build : function(){
@@ -39,16 +44,17 @@ angular.module( 'vgraph' ).directive( 'vgraphIcon',
                         	i, c;
 
 			        	function append(){
-		                	return this.appendChild( filling[i].cloneNode() ); // jshint ignore:line
+		                	return this.appendChild( filling[i].cloneNode(true) ); // jshint ignore:line
 		                }
 
 		        		el.html('');
 
-		            	angular.forEach(points, function( v, k ){
+		            	angular.forEach(points, function( d ){
 		            		var ele;
 
-		                	x = chart.x.scale( k );
-                        	y = chart.y.scale( v );
+		            		// TODO : how do I tell the box I am going to overflow it?
+		                	x = d.$sampled._$interval;
+                        	y = chart.y.scale( scope.getValue(d.$sampled) );
 
 	                		ele = $el.append('g');
 	   						
@@ -58,11 +64,11 @@ angular.module( 'vgraph' ).directive( 'vgraphIcon',
 							
 		                	if ( attrs.showUnder ){
 		                		ele.attr( 'transform', 'translate(' + 
-		                			(x - width/2) + ',' + (y) + 
+		                			(x - box.width/2) + ',' + (y) + 
 		                		')' );
 		                	}else{
 		                		ele.attr( 'transform', 'translate(' + 
-		                			(x - width/2) + ',' + (y - height) + 
+		                			(x - box.width/2) + ',' + (y - box.height) + 
 		                		')' );
 		                	}
 	                	});

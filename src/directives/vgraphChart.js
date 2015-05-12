@@ -45,6 +45,7 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
 
                 model.register(function(){
                     var t,
+                        last,
                         min,
                         max,
                         sampledData,
@@ -54,7 +55,15 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
                     m = parseInt( model.filtered.length / box.innerWidth ) || 1;
 
                     sampledData = model.filtered.filter(function( d, i ){
-                        return model.x.start === d || model.x.stop === d || i % m === 0;
+                        if ( model.x.start === d || model.x.stop === d || i % m === 0 ){
+                            last = d;
+                            d.$sampled = d;
+
+                            return true;
+                        }else{
+                            d.$sampled = last;
+                            return false;
+                        }
                     });
 
                     for( i = 0, c = components.length; i < c; i++ ){

@@ -156,6 +156,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
             		valueParse = scope.value,
                     intervalParse = scope.interval,
                     filterParse = scope.filter,
+                    extraParse = scope.extra,
                     history = [],
                     memory = parseInt( attrs.memory, 10 ) || 10;
 
@@ -184,12 +185,17 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 	                }
                 });
 
+                // alias allows you to send back a different value than you search to qualify
+                scope.$watch('extra', function( parser ){
+                    extraParse = parser;
+                });
+
                 scope.$watch('value', function( v ){
                 	if ( typeof(v) === 'string' ){
                 		alias = attrs.alias || v;
 	                    valueParse = function( d ){
 	                    	if ( d[v] !== undefined ){
-	                    		return d[ alias ];
+                                return d[ alias ];
 	                    	}
 	                    	// return undefined implied
 	                    };
@@ -213,6 +219,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 // I make the assumption data is ordered
                 function contentLoad( arr ){
                     var length = arr.length,
+                        point,
                         d,
                         v;
 
@@ -221,7 +228,6 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                             for( ; lastLength < length; lastLength++ ){
                                 d = scope.data[ lastLength ];
                                 v = valueParse( d );
-
                                 if ( v !== undefined ){
                                     if ( filterParse ){
                                         if ( history.length > memory ){
@@ -230,9 +236,13 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 
                                         history.push( v );
 
-                                        model.addPoint( name, intervalParse(d), filterParse(v,history) );
+                                        point = model.addPoint( name, intervalParse(d), filterParse(v,history) );
                                     }else{
-                                        model.addPoint( name, intervalParse(d), v );
+                                        point = model.addPoint( name, intervalParse(d), v );
+                                    }
+
+                                    if ( extraParse && point ){
+                                        extraParse( d, point );
                                     }
                                 }
                             }
@@ -244,9 +254,10 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
             },
             scope : {
                 data : '=_undefined_',
-                value : '=value',
-                interval : '=interval',
-                filter : '=filter'
+                value : '=?value',
+                interval : '=?interval',
+                filter : '=?filter',
+                extra: '=?extra'
             }
         };
 
@@ -303,14 +314,14 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 								f.apply( this, arguments );
 							};
 						}else{
-							t[key] = f; 
+							t[key] = angular.extend( old, f ); 
 						}
 					}else{
 						t[key] = f;
 					}
 				});
 
-				return t;
+                return t;
 			},
 			makeLineCalc: function( chart, name ){
 	            return d3.svg.line()
@@ -446,12 +457,10 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 
                 if ( angular.isString(names) ){
                 	if ( parser ){
-                		for( i = 0, c = data.length; i < c; i++ ){
+                        for( i = 0, c = data.length; i < c; i++ ){
 	                		d = data[i];
-		                    v = d[names];
+		                    v = parser( d, d[names] );
 		                    if ( v !== undefined ){
-		                    	parser( d, v );
-
 		                        if ( min === undefined ){
 		                            min = v;
 		                            max = v;
@@ -1852,6 +1861,7 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
 
                 model.register(function(){
                     var t,
+                        last,
                         min,
                         max,
                         sampledData,
@@ -1861,7 +1871,15 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
                     m = parseInt( model.filtered.length / box.innerWidth ) || 1;
 
                     sampledData = model.filtered.filter(function( d, i ){
-                        return model.x.start === d || model.x.stop === d || i % m === 0;
+                        if ( model.x.start === d || model.x.stop === d || i % m === 0 ){
+                            last = d;
+                            d.$sampled = d;
+
+                            return true;
+                        }else{
+                            d.$sampled = last;
+                            return false;
+                        }
                     });
 
                     for( i = 0, c = components.length; i < c; i++ ){
@@ -1998,6 +2016,56 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
             }
         }
     }]
+);
+
+angular.module( 'vgraph' ).directive( 'vgraphClassifier',
+    [
+    function() {
+        'use strict';
+
+        // this is greedy as hell, I don't recommend running it on large data groups
+        function runAgainst( className, test, data ){
+            var i, d;
+
+            for( i = data.length-1; i >= 0; i-- ){
+                d = data[i];
+                if ( d.$els.length ){
+                    if ( test(d) ){
+                        $(d.$els).addClass(className);
+                    }else{
+                        $(d.$els).removeClass(className);
+                    }
+                }
+            }
+        }
+
+        return {
+            require : ['^vgraphChart'],
+            scope : {
+                classes : '=vgraphClassifier'
+            },
+            link : function( scope, $el, attrs, requirements ){
+                var chart = requirements[0];
+
+                chart.register({
+                    finalize : function( data ){
+                        var i, c,
+                            className,
+                            func,
+                            classes = scope.classes,
+                            keys = Object.keys(classes);
+
+                        for( i = 0, c = keys.length; i < c; i++ ){
+                            className = keys[i];
+                            func = classes[className];
+
+                            runAgainst( className, func, data );
+                        }
+                    }
+                });
+            }
+        };
+    } ]
 );
 
 angular.module( 'vgraph' ).directive( 'vgraphCompare',
@@ -2334,6 +2402,9 @@ angular.module( 'vgraph' ).directive( 'vgraphIcon',
         'use strict';
 
         return ComponentGenerator.generate( 'vgraphIcon', {
+        	scope: {
+        		getValue: '=trueValue'
+        	},
         	link: function( scope, el, attrs, requirements ){
         		var i, c,
         			points,
@@ -2342,13 +2413,13 @@ angular.module( 'vgraph' ).directive( 'vgraphIcon',
         			name = attrs.name,
         			filling = [],
         			$el = d3.select( root ),
-		        	width = parseInt( $el.attr('width'), 10 ),
-		        	height = parseInt( $el.attr('height'), 10 );
+        			box = $el.node().getBBox();
 
-		        root.removeAttribute('width');
-		        root.removeAttribute('height');
+        		if ( attrs.value === undefined ){
+        			scope.value = name;
+        		}
 
-		        for( i = 0, c = root.childNodes.length; i < c; i++ ){
+        		for( i = 0, c = root.childNodes.length; i < c; i++ ){
 		        	if ( root.childNodes[i].nodeType === 1 ){
 		        		filling.push( root.childNodes[i] );
 		        	}
@@ -2358,10 +2429,12 @@ angular.module( 'vgraph' ).directive( 'vgraphIcon',
 
 		        chart.register({
 		        	parse : function( sampled, data ){
-		        		points = {};
+		        		points = [];
 
 		        		return ComponentGenerator.parseLimits( data, name, function( d, v ){
-		        			points[ d.$interval ] = v;
+		        			if ( v ){
+		        				points.push( d );
+		        			}
 		        		});
 		        	},
                     build : function(){
@@ -2369,16 +2442,17 @@ angular.module( 'vgraph' ).directive( 'vgraphIcon',
                         	i, c;
 
 			        	function append(){
-		                	return this.appendChild( filling[i].cloneNode() ); // jshint ignore:line
+		                	return this.appendChild( filling[i].cloneNode(true) ); // jshint ignore:line
 		                }
 
 		        		el.html('');
 
-		            	angular.forEach(points, function( v, k ){
+		            	angular.forEach(points, function( d ){
 		            		var ele;
 
-		                	x = chart.x.scale( k );
-                        	y = chart.y.scale( v );
+		            		// TODO : how do I tell the box I am going to overflow it?
+		                	x = d.$sampled._$interval;
+                        	y = chart.y.scale( scope.getValue(d.$sampled) );
 
 	                		ele = $el.append('g');
 	   						
@@ -2388,11 +2462,11 @@ angular.module( 'vgraph' ).directive( 'vgraphIcon',
 							
 		                	if ( attrs.showUnder ){
 		                		ele.attr( 'transform', 'translate(' + 
-		                			(x - width/2) + ',' + (y) + 
+		                			(x - box.width/2) + ',' + (y) + 
 		                		')' );
 		                	}else{
 		                		ele.attr( 'transform', 'translate(' + 
-		                			(x - width/2) + ',' + (y - height) + 
+		                			(x - box.width/2) + ',' + (y - box.height) + 
 		                		')' );
 		                	}
 	                	});

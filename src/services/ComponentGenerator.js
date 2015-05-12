@@ -15,6 +15,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
             		valueParse = scope.value,
                     intervalParse = scope.interval,
                     filterParse = scope.filter,
+                    extraParse = scope.extra,
                     history = [],
                     memory = parseInt( attrs.memory, 10 ) || 10;
 
@@ -43,12 +44,17 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 	                }
                 });
 
+                // alias allows you to send back a different value than you search to qualify
+                scope.$watch('extra', function( parser ){
+                    extraParse = parser;
+                });
+
                 scope.$watch('value', function( v ){
                 	if ( typeof(v) === 'string' ){
                 		alias = attrs.alias || v;
 	                    valueParse = function( d ){
 	                    	if ( d[v] !== undefined ){
-	                    		return d[ alias ];
+                                return d[ alias ];
 	                    	}
 	                    	// return undefined implied
 	                    };
@@ -72,6 +78,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 // I make the assumption data is ordered
                 function contentLoad( arr ){
                     var length = arr.length,
+                        point,
                         d,
                         v;
 
@@ -80,7 +87,6 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                             for( ; lastLength < length; lastLength++ ){
                                 d = scope.data[ lastLength ];
                                 v = valueParse( d );
-
                                 if ( v !== undefined ){
                                     if ( filterParse ){
                                         if ( history.length > memory ){
@@ -89,9 +95,13 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 
                                         history.push( v );
 
-                                        model.addPoint( name, intervalParse(d), filterParse(v,history) );
+                                        point = model.addPoint( name, intervalParse(d), filterParse(v,history) );
                                     }else{
-                                        model.addPoint( name, intervalParse(d), v );
+                                        point = model.addPoint( name, intervalParse(d), v );
+                                    }
+
+                                    if ( extraParse && point ){
+                                        extraParse( d, point );
                                     }
                                 }
                             }
@@ -103,9 +113,10 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
             },
             scope : {
                 data : '=_undefined_',
-                value : '=value',
-                interval : '=interval',
-                filter : '=filter'
+                value : '=?value',
+                interval : '=?interval',
+                filter : '=?filter',
+                extra: '=?extra'
             }
         };
 
@@ -162,14 +173,14 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 								f.apply( this, arguments );
 							};
 						}else{
-							t[key] = f; 
+							t[key] = angular.extend( old, f ); 
 						}
 					}else{
 						t[key] = f;
 					}
 				});
 
-				return t;
+                return t;
 			},
 			makeLineCalc: function( chart, name ){
 	            return d3.svg.line()
@@ -305,12 +316,10 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 
                 if ( angular.isString(names) ){
                 	if ( parser ){
-                		for( i = 0, c = data.length; i < c; i++ ){
+                        for( i = 0, c = data.length; i < c; i++ ){
 	                		d = data[i];
-		                    v = d[names];
+		                    v = parser( d, d[names] );
 		                    if ( v !== undefined ){
-		                    	parser( d, v );
-
 		                        if ( min === undefined ){
 		                            min = v;
 		                            max = v;

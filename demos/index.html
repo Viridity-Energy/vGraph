@@ -86,6 +86,23 @@
 			opacity: .5;
 		}
 
+		rect.bar.lower {
+			stroke: black;
+		}
+
+		rect.bar.higher {
+			stroke: grey;
+		}
+
+		rect.bar.newer {
+			stroke: yellow;
+		}
+
+		rect.bar.newest {
+			fill: pink;
+			stroke: pink;
+		}
+
 		[vgraph-compare] .fill {
 			stroke: grey;
 			fill: grey;
@@ -233,7 +250,6 @@
 			<g vgraph-interact="highlight"></g>
 		</svg>
 	</div>
-
 	<div ng-controller="SimpleStackedMultiCtrl">
 		{{ highlight.point.$bar }}
 		<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="box" model="model" version="1.1">
@@ -242,8 +258,15 @@
             <g vgraph-axis="'bottom'"
                 tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
 			<g vgraph-bar config="config" padding="2" min-width="4"></g>
+			<g vgraph-icon="data" 
+				true-value="iconValue"
+				interval="'x'"
+				name="high" show-under="true"
+				extra="extraParser"
+				><text>H</text></g>
 			<g vgraph-tooltip="highlight" text-formatter="formatter" value="getBar"></g>
 			<g vgraph-interact="highlight"></g>
+			<g vgraph-classifier="classTests"></g>
 		</svg>
 	</div>
 <script>
@@ -733,6 +756,31 @@ angular.module( 'vgraph' ).controller( 'SimpleStackedMultiCtrl',
 			{ name : 'y4', className : 'orange', data : 'line', value : 'diff', interval : 'xDiff' }
 		];
 
+		$scope.classTests = {
+			'lower' : function( data ){
+				return data.$total < 300;
+			},
+			'higher' : function( data ){
+				return data.$total > 1000;
+			},
+			'newer' : function( data ){
+				return data.$interval > 2000;
+			},
+			'newest' : function( data ){
+				return data.newest;
+			}
+		};
+
+		$scope.extraParser = function( old, newer ){
+			if ( old.x > 1900 ){
+				newer.newest = true;
+			}
+		};
+
+		$scope.iconValue = function( data ){
+			return data.$total;
+		};
+
 		$scope.formatter = function( value, data ){
 			return data.$bar.top;
 		};
@@ -757,6 +805,10 @@ angular.module( 'vgraph' ).controller( 'SimpleStackedMultiCtrl',
 			data.push( p );
 		}
 
+		data[1749].high = true;
+		data[data.length-1].high = true;
+
+		$scope.data = data;
 		$scope.model.dataReady( $scope );
 		$scope.model.setBounds({
                 min : null,
