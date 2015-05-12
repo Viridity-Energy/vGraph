@@ -194,18 +194,11 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             return interval;
         };
 
-        GraphModel.prototype.addPoint = function( name, interval, value ){
-            var plot,
-                data = this.data,
-                d,
-                v = parseFloat( value );
+        GraphModel.prototype.getPoint = function( interval ){
+            var d;
 
             if ( this.x.massage ){
                 interval = this.x.massage( interval );
-            }
-
-            if ( this.y.massage ){
-                value = this.y.massage( interval );
             }
 
             if ( !interval && interval !== 0 ){
@@ -215,11 +208,33 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             d = this.lookUp[ interval ];
 
             if ( !d ){
+                // TODO : I think this is now over kill, in the next iteration, I'll just have one
                 d = {
-                    $interval : this.makeInterval( interval ),
-                    $x : +interval
+                    $interval: this.makeInterval( interval ),
+                    $x: +interval 
                 };
+            }
 
+            return d;
+        };
+
+        GraphModel.prototype.addPoint = function( name, interval, value ){
+            var plot,
+                data = this.data,
+                d = this.getPoint( interval ),
+                v = parseFloat( value );
+
+            if ( !d ){
+                return;
+            }
+
+            interval = d.$x;
+
+            if ( this.y.massage ){
+                value = this.y.massage( interval );
+            }
+
+            if ( d.$max === undefined ){
                 if ( isFinite(v) ){
                     d.$min = v;
                     d.$max = v;

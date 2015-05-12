@@ -122,7 +122,7 @@
 				value="'y4'" name="someLine4"></g>
 		</svg>
 	</div>
-
+	
 	<div ng-controller="StackedCtrl">
 		<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="box" model="model" version="1.1">
 			<g vgraph-stack config="config"></g>
@@ -250,6 +250,7 @@
 			<g vgraph-interact="highlight"></g>
 		</svg>
 	</div>
+
 	<div ng-controller="SimpleStackedMultiCtrl">
 		{{ highlight.point.$bar }}
 		<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="box" model="model" version="1.1">
@@ -262,13 +263,16 @@
 				true-value="iconValue"
 				interval="'x'"
 				name="high" show-under="true"
-				extra="extraParser"
 				><text>H</text></g>
 			<g vgraph-tooltip="highlight" text-formatter="formatter" value="getBar"></g>
 			<g vgraph-interact="highlight"></g>
-			<g vgraph-classifier="classTests"></g>
+			<g vgraph-classifier="data" 
+				classes="classTests"
+				interval="'x'"
+				value="classParser"></g>
 		</svg>
 	</div>
+
 <script>
 
 angular.module( 'vgraph' ).controller( 'ResizeCtrl', [
@@ -771,7 +775,7 @@ angular.module( 'vgraph' ).controller( 'SimpleStackedMultiCtrl',
 			}
 		};
 
-		$scope.extraParser = function( old, newer ){
+		$scope.classParser = function( old, newer ){
 			if ( old.x > 1900 ){
 				newer.newest = true;
 			}

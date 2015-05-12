@@ -6,21 +6,21 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
         var baseComponent = {
             require : ['^vgraphChart'],
             link : function( scope, el, attrs, requirements ){
-            	var alias,
+            	var chart = requirements[0],
+                    model = chart.model,
+                    ctrl = {
+                        model: model
+                    },
+                    alias,
                     hasData = false,
-                    chart = requirements[0],
-            		name = attrs.name,
-        			lastLength = 0,
-            		model = chart.model,
-            		valueParse = scope.value,
-                    intervalParse = scope.interval,
-                    filterParse = scope.filter,
-                    extraParse = scope.extra,
+                    name = attrs.name,
+                    lastLength = 0,
                     history = [],
                     memory = parseInt( attrs.memory, 10 ) || 10;
 
                 function loadData(){
-                    if ( scope.data && valueParse && (hasData !== scope.data || scope.data.length !== lastLength) ){
+                    if ( scope.data && ctrl.valueParse && 
+                        (hasData !== scope.data || scope.data.length !== lastLength) ){
                         if ( hasData ){ 
                             model.removePlot( name );
                         }
@@ -36,30 +36,34 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 
                 scope.$watch('interval', function( v ){
                     if ( typeof(v) === 'string' ){
-	                    intervalParse = function( d ){
+	                    ctrl.intervalParse = function( d ){
 	                    	return d[ v ];
 	                    };
 	                }else{
-	                	intervalParse = v;
+	                	ctrl.intervalParse = v;
 	                }
                 });
 
                 // alias allows you to send back a different value than you search to qualify
                 scope.$watch('extra', function( parser ){
-                    extraParse = parser;
+                    ctrl.extraParse = parser;
+                });
+
+                scope.$watch('filter', function( parser ){
+                    ctrl.filterParse = parser;
                 });
 
                 scope.$watch('value', function( v ){
                 	if ( typeof(v) === 'string' ){
                 		alias = attrs.alias || v;
-	                    valueParse = function( d ){
+	                    ctrl.valueParse = function( d ){
 	                    	if ( d[v] !== undefined ){
                                 return d[ alias ];
 	                    	}
 	                    	// return undefined implied
 	                    };
 	                }else{
-	                	valueParse = v;
+	                	ctrl.valueParse = v;
 	                }
 
                     loadData();
@@ -70,45 +74,61 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 });
 
                 scope.$watch('data.length', function( length ){
-                	if ( length && valueParse ){
+                	if ( length && ctrl.valueParse ){
                         contentLoad( scope.data );
                     }
                 });
 
+                // so other functions can add points nicely
+
                 // I make the assumption data is ordered
                 function contentLoad( arr ){
-                    var length = arr.length,
-                        point,
-                        d,
-                        v;
+                    var length = arr.length;
 
                     if ( length ){
                         if ( length !== lastLength ){
                             for( ; lastLength < length; lastLength++ ){
-                                d = scope.data[ lastLength ];
-                                v = valueParse( d );
-                                if ( v !== undefined ){
-                                    if ( filterParse ){
-                                        if ( history.length > memory ){
-                                            history.shift();
-                                        }
-
-                                        history.push( v );
-
-                                        point = model.addPoint( name, intervalParse(d), filterParse(v,history) );
-                                    }else{
-                                        point = model.addPoint( name, intervalParse(d), v );
-                                    }
-
-                                    if ( extraParse && point ){
-                                        extraParse( d, point );
-                                    }
-                                }
+                                scope.loadPoint( scope.data[lastLength] );
                             }
 
                             model.dataReady( scope );
                         }
                     }
+                }
+
+                if ( !scope.loadPoint ){
+                    scope.loadPoint = function ( d ){
+                        var v = this.valueParse( d ),
+                            point;
+
+                        if ( v !== undefined ){
+                            if ( this.filterParse ){
+                                if ( history.length > memory ){
+                                    history.shift();
+                                }
+
+                                history.push( v );
+
+                                point = this.model.addPoint( 
+                                    name, 
+                                    this.intervalParse(d), 
+                                    this.filterParse(v,history)
+                                );
+                            }else{
+                                point = this.model.addPoint(
+                                    name,
+                                    this.intervalParse(d),
+                                    v
+                                );
+                            }
+
+                            if ( this.extraParse && point ){
+                                this.extraParse( d, point );
+                            }
+                        }
+                    }.bind( ctrl );
+                }else{
+                    scope.loadPoint = scope.loadPoint.bind( ctrl );
                 }
             },
             scope : {
@@ -179,6 +199,13 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 						t[key] = f;
 					}
 				});
+
+                if ( t.preLink ){
+                    t.link = {
+                        pre : t.preLink,
+                        post: t.link
+                    };
+                }
 
                 return t;
 			},

@@ -1,6 +1,6 @@
 angular.module( 'vgraph' ).directive( 'vgraphClassifier',
-    [
-    function() {
+    ['ComponentGenerator',
+    function( ComponentGenerator ){
         'use strict';
 
         // this is greedy as hell, I don't recommend running it on large data groups
@@ -19,10 +19,19 @@ angular.module( 'vgraph' ).directive( 'vgraphClassifier',
             }
         }
 
-        return {
-            require : ['^vgraphChart'],
+        return ComponentGenerator.generate('vgraphClassifier', {
             scope : {
-                classes : '=vgraphClassifier'
+                classes : '=classes'
+            },
+            preLink : function( scope ){
+                scope.loadPoint = function( d ){
+                    var interval = this.intervalParse(d),
+                        point = this.model.getPoint( interval );
+
+                    if ( point ){
+                        this.valueParse( d, point );
+                    }
+                };
             },
             link : function( scope, $el, attrs, requirements ){
                 var chart = requirements[0];
@@ -44,6 +53,6 @@ angular.module( 'vgraph' ).directive( 'vgraphClassifier',
                     }
                 });
             }
-        };
+        });
     } ]
 );
