@@ -7,6 +7,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
             require : ['^vgraphChart'],
             link : function( scope, el, attrs, requirements ){
             	var alias,
+                    hasData = false,
                     chart = requirements[0],
             		name = attrs.name,
         			lastLength = 0,
@@ -18,8 +19,12 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                     memory = parseInt( attrs.memory, 10 ) || 10;
 
                 function loadData(){
-                	if ( scope.data && valueParse ){
-                        model.removePlot( name );
+                    if ( scope.data && valueParse && (hasData !== scope.data || scope.data.length !== lastLength) ){
+                        if ( hasData ){ 
+                            model.removePlot( name );
+                        }
+                        
+                        hasData = scope.data;
                         lastLength = 0;
 
                         contentLoad( scope.data );
@@ -51,10 +56,12 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 	                	valueParse = v;
 	                }
 
-	                loadData();
+                    loadData();
                 });
 
-                scope.$watch('data', loadData);
+                scope.$watch('data', function(){
+                    loadData();
+                });
 
                 scope.$watch('data.length', function( length ){
                 	if ( length && valueParse ){
@@ -235,6 +242,60 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 
 	        	return res;
 	        },
+            parseStackedLimits: function( data, lines ){
+                var i, c,
+                    j, co,
+                    name,
+                    last,
+                    d,
+                    v,
+                    min,
+                    max;
+
+                if ( lines && lines.length ){
+                    for( i = 0, c = data.length; i < c; i++ ){
+                        last = 0;
+                        v = undefined;
+                        d = data[i];
+
+                        for( j = 0, co = lines.length; j < co && v === undefined; j++ ){
+                            name = lines[j].name;
+                            v = d[ name ];
+                            if ( v !== undefined ){
+                                if ( min === undefined ){
+                                    min = v;
+                                    max = v;
+                                }else if ( min > v ){
+                                    min = v;
+                                }
+                            }
+                        }
+
+                        d['$'+name] = v;
+                        last = v;
+
+                        for( ; j < co; j++ ){
+                            name = lines[j].name;
+                            v = d[ name ] || 0;
+
+                            last = last + v;
+
+                            d['$'+name] = last;
+                        }
+
+                        d.$total = last;
+
+                        if ( last > max ){
+                            max = last;
+                        }
+                    }
+                }
+
+                return {
+                    min : min,
+                    max : max
+                };
+            },
 			parseLimits: function( data, names, parser ){
                 var i, c,
                 	d,

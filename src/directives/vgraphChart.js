@@ -112,6 +112,10 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
                             box.innerTop
                         ]);
 
+                    for( i = 0, c = sampledData.length; i < c; i++ ){
+                        sampledData[i]._$interval = ctrl.x.scale( sampledData[i].$interval );
+                    }
+
                     for( i = 0, c = components.length; i < c; i++ ){
                         if ( components[ i ].build ){
                             components[ i ].build( sampledData, model.filtered,  model.data );

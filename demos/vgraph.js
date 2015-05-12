@@ -148,6 +148,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
             require : ['^vgraphChart'],
             link : function( scope, el, attrs, requirements ){
             	var alias,
+                    hasData = false,
                     chart = requirements[0],
             		name = attrs.name,
         			lastLength = 0,
@@ -159,8 +160,12 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                     memory = parseInt( attrs.memory, 10 ) || 10;
 
                 function loadData(){
-                	if ( scope.data && valueParse ){
-                        model.removePlot( name );
+                    if ( scope.data && valueParse && (hasData !== scope.data || scope.data.length !== lastLength) ){
+                        if ( hasData ){ 
+                            model.removePlot( name );
+                        }
+                        
+                        hasData = scope.data;
                         lastLength = 0;
 
                         contentLoad( scope.data );
@@ -192,10 +197,12 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 	                	valueParse = v;
 	                }
 
-	                loadData();
+                    loadData();
                 });
 
-                scope.$watch('data', loadData);
+                scope.$watch('data', function(){
+                    loadData();
+                });
 
                 scope.$watch('data.length', function( length ){
                 	if ( length && valueParse ){
@@ -376,6 +383,60 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 
 	        	return res;
 	        },
+            parseStackedLimits: function( data, lines ){
+                var i, c,
+                    j, co,
+                    name,
+                    last,
+                    d,
+                    v,
+                    min,
+                    max;
+
+                if ( lines && lines.length ){
+                    for( i = 0, c = data.length; i < c; i++ ){
+                        last = 0;
+                        v = undefined;
+                        d = data[i];
+
+                        for( j = 0, co = lines.length; j < co && v === undefined; j++ ){
+                            name = lines[j].name;
+                            v = d[ name ];
+                            if ( v !== undefined ){
+                                if ( min === undefined ){
+                                    min = v;
+                                    max = v;
+                                }else if ( min > v ){
+                                    min = v;
+                                }
+                            }
+                        }
+
+                        d['$'+name] = v;
+                        last = v;
+
+                        for( ; j < co; j++ ){
+                            name = lines[j].name;
+                            v = d[ name ] || 0;
+
+                            last = last + v;
+
+                            d['$'+name] = last;
+                        }
+
+                        d.$total = last;
+
+                        if ( last > max ){
+                            max = last;
+                        }
+                    }
+                }
+
+                return {
+                    min : min,
+                    max : max
+                };
+            },
 			parseLimits: function( data, names, parser ){
                 var i, c,
                 	d,
@@ -1547,13 +1608,14 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
         return {
             require : ['^vgraphChart'],
             scope : {
-                config : '=config'
+                data: '=?vgraphBar',
+                config: '=config'
             },
             link : function( scope, $el, attrs, requirements ){
                 var chart = requirements[0],
                     el = $el[0],
-                    minWidth = parseInt(attrs.minWidth),
-                    padding = parseInt(attrs.padding),
+                    minWidth = parseInt(attrs.minWidth || 1),
+                    padding = parseInt(attrs.padding || 1),
                     mount = d3.select( el ).append('g').attr( 'class', 'mount' ),
                     lines;
 
@@ -1569,7 +1631,8 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
                         last,
                         lastY,
                         y, x1, x2,
-                        $value;
+                        width,
+                        $valueField;
 
                     for( i = start; i < stop; i++ ){
                         point = points[i];
@@ -1580,7 +1643,7 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
 
                     for( j = 0, co = lines.length; j < co; j++ ){
                         line = lines[j];
-                        $value = lines[j].$value;
+                        $valueField = lines[j].$valueField;
                         sum = 0;
                         counted = 0;
                         i = start;
@@ -1589,8 +1652,8 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
                         while( i < stop ){
                             point = points[i];
 
-                            if ( point ){
-                                sum += point[$value];
+                            if ( point && point[$valueField] !== undefined ){
+                                sum += point[$valueField];
                                 counted++;
 
                                 last = point;
@@ -1599,37 +1662,66 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
                             i++;
                         }
 
-                        y = chart.y.scale( sum/counted );
+                        if ( sum ){
+                            y = chart.y.scale( sum/counted );
 
-                        if ( x1 ){
-                            e = mount.append('rect')
-                                .attr( 'height', lastY-y );
-                        }else{
-                            x1 = chart.x.scale( points[start].$interval ) + padding;
-                            x2 = chart.x.scale(last.$interval)-padding-x1;
+                            if ( x1 === undefined ){
+                                if ( points[start] === last ){
+                                    x1 = last._$interval - minWidth/2;
+                                    x2 = x1 + minWidth;
+                                }else{
+                                    x1 = points[start]._$interval + padding;
+                                    x2 = last._$interval - padding;
+                                }
 
-                            e = mount.append('rect')
-                                .attr( 'height', chart.y.scale(chart.model.y.minimum)-y );
-                        }
+                                if ( x1 < chart.box.innerLeft ){
+                                    x1 = chart.box.innerLeft;
+                                }else if ( points[start-1] && points[start-1]._$interval > x1 ){
+                                    x1 = points[start-1]._$interval + padding;
+                                }
 
-                        e.attr( 'class', 'bar '+line.className )
-                            .attr( 'x', x1 )
-                            .attr( 'y', y )
-                            .attr( 'width', x2 );
+                                if ( x2 > chart.box.innerRight ){
+                                    x2 = chart.box.innerRight;
+                                }else if ( points[i] && points[i]._$interval < x2 ){
+                                    x2 = points[i]._$interval - padding;
+                                }
 
-                        e = e[0][0]; // dereference
-                        for( i = start; i < stop; i++ ){
-                            point = points[i];
-                            if ( point ){
-                                point.$els.push( e );
-                                point.$bar = {
-                                    center : (x1 + x2) / 2,
-                                    top : sum / counted
-                                };
+                                if ( x1 > x2 ){
+                                    width = x1;
+                                    x1 = x2;
+                                    x2 = width;
+                                }
+                                
+                                width = x2 - x1;
                             }
-                        }
 
-                        lastY = y;
+                            if ( lastY === undefined ){
+                                e = mount.append('rect')
+                                    .attr( 'height', chart.y.scale(chart.model.y.minimum) - y );
+                            } else {
+                                e = mount.append('rect')
+                                    .attr( 'height', lastY-y );
+                            }
+
+                            e.attr( 'class', 'bar '+line.className )
+                                .attr( 'y', y )
+                                .attr( 'x', x1 )
+                                .attr( 'width', width );
+
+                            e = e[0][0]; // dereference
+                            for( i = start; i < stop; i++ ){
+                                point = points[i];
+                                if ( point ){
+                                    point.$els.push( e );
+                                    point.$bar = {
+                                        center : (x1 + x2) / 2,
+                                        top : sum / counted
+                                    };
+                                }
+                            }
+
+                            lastY = y;
+                        }
                     }
                 }
 
@@ -1646,21 +1738,21 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
                             line = lines[ i ];
 
                             // I want the first calculated value, lowest on the DOM
-                            line.$value = '$'+line.name;
+                            line.$valueField = '$'+line.name;
 
                             if ( i ){
                                 el.insertBefore( line.element, lines[i-1].element );
-                                line.$bottom = lines[i-1].$value;
+                                line.$bottom = lines[i-1].$valueField;
                                 line.calc = ComponentGenerator.makeLineCalc(
                                     chart,
-                                    line.$value,
+                                    line.$valueField,
                                     line.$bottom
                                 );
                             }else{
                                 el.appendChild( line.element );
                                 line.calc = ComponentGenerator.makeLineCalc(
                                     chart,
-                                    line.$value
+                                    line.$valueField
                                 );
                             }
 
@@ -1673,58 +1765,7 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
 
                 chart.register({
                     parse : function( data ){
-                        var i, c,
-                            j, co,
-                            name,
-                            last,
-                            d,
-                            v,
-                            min,
-                            max;
-
-                        if ( lines && lines.length ){
-                            for( i = 0, c = data.length; i < c; i++ ){
-                                last = 0;
-                                v = undefined;
-                                d = data[i];
-
-                                for( j = 0, co = lines.length; j < co && v === undefined; j++ ){
-                                    name = lines[j].name;
-                                    v = d[ name ];
-                                    if ( v !== undefined ){
-                                        if ( min === undefined ){
-                                            min = v;
-                                            max = v;
-                                        }else if ( min > v ){
-                                            min = v;
-                                        }
-                                    }
-                                }
-
-                                d['$'+name] = v;
-                                last = v;
-
-                                for( ; j < co; j++ ){
-                                    name = lines[j].name;
-                                    v = d[ name ] || 0;
-
-                                    last = last + v;
-
-                                    d['$'+name] = last;
-                                }
-
-                                d.$total = last;
-
-                                if ( last > max ){
-                                    max = last;
-                                }
-                            }
-                        }
-
-                        return {
-                            min : min,
-                            max : max
-                        };
+                        return ComponentGenerator.parseStackedLimits( data, lines );
                     },
                     build : function( data ){
                         var i, c,
@@ -1738,6 +1779,10 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
                             pointsPerBar = data.length / totalBars;
 
                         mount.selectAll('rect').remove();
+
+                        if ( pointsPerBar < 1 ){
+                            pointsPerBar = 1;
+                        }
 
                         for( i = 0, c = data.length; i < c; i = Math.floor(next) ){
                             next = next + pointsPerBar;
@@ -1873,6 +1918,10 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
                             box.innerBottom,
                             box.innerTop
                         ]);
+
+                    for( i = 0, c = sampledData.length; i < c; i++ ){
+                        sampledData[i]._$interval = ctrl.x.scale( sampledData[i].$interval );
+                    }
 
                     for( i = 0, c = components.length; i < c; i++ ){
                         if ( components[ i ].build ){
@@ -3163,18 +3212,20 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                             line = lines[ i ];
 
                             // I want the first calculated value, lowest on the DOM
+                            line.$valueField = '$'+line.name;
+
                             if ( i ){
                                 el.insertBefore( line.element, lines[i-1].element );
                                 line.calc = ComponentGenerator.makeFillCalc(
                                     chart,
-                                    '$'+line.name,
-                                    '$'+lines[i-1].name
+                                    line.$valueField,
+                                    lines[i-1].$valueField
                                 );
                             }else{
                                 el.appendChild( line.element );
                                 line.calc = ComponentGenerator.makeFillCalc(
                                     chart,
-                                    '$'+line.name
+                                    line.$valueField
                                 );
                             }
 
@@ -3187,58 +3238,7 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
 
                 chart.register({
                     parse : function( data ){
-                        var i, c,
-                            j, co,
-                            name,
-                            last,
-                            d,
-                            v,
-                            min,
-                            max;
-
-                        if ( lines && lines.length ){
-                            for( i = 0, c = data.length; i < c; i++ ){
-                                last = 0;
-                                v = 0;
-                                d = data[i];
-
-                                for( j = 0, co = lines.length; j < co && v === 0; j++ ){
-                                    name = lines[j].name;
-                                    v = d[ name ];
-                                    if ( v || v === 0 ){
-                                        if ( min === undefined ){
-                                            min = v;
-                                            max = v;
-                                        }else if ( min > v ){
-                                            min = v;
-                                        }
-                                    }
-                                }
-
-                                d['$'+name] = v;
-                                last = v;
-
-                                for( ; j < co; j++ ){
-                                    name = lines[j].name;
-                                    v = d[ name ] || 0;
-
-                                    last = last + v;
-
-                                    d['$'+name] = last;
-                                }
-
-                                d.$total = last;
-
-                                if ( last > max ){
-                                    max = last;
-                                }
-                            }
-                        }
-
-                        return {
-                            min : min,
-                            max : max
-                        };
+                        return ComponentGenerator.parseStackedLimits( data, lines );
                     },
                     finalize : function( data ){
                         var i, c,
