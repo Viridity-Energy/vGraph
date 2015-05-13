@@ -18,18 +18,20 @@ angular.module( 'vgraph' ).directive( 'vgraphError',
                 scope.box = box;
 
                 box.register(function(){
-                    $outline.attr( 'transform', 'translate('+box.innerLeft+','+box.innerTop+')' )
-                        .attr( 'width', box.innerWidth )
-                        .attr( 'height', box.innerHeight );
-
-                    try {
-                        $text.attr( 'text-anchor', 'middle' )
-                            .attr( 'x', box.center )
-                            .attr( 'y', box.middle + $text.node().getBBox().height / 2 );
-                    }catch( ex ){
-                        $text.attr( 'text-anchor', 'middle' )
-                            .attr( 'x', box.center )
-                            .attr( 'y', box.middle );
+                    if ( box.innerHeight ){
+                        $outline.attr( 'transform', 'translate('+box.innerLeft+','+box.innerTop+')' )
+                            .attr( 'width', box.innerWidth )
+                            .attr( 'height', box.innerHeight );
+                        
+                        try {
+                            $text.attr( 'text-anchor', 'middle' )
+                                .attr( 'x', box.center )
+                                .attr( 'y', box.middle + $text.node().getBBox().height / 2 );
+                        }catch( ex ){
+                            $text.attr( 'text-anchor', 'middle' )
+                                .attr( 'x', box.center )
+                                .attr( 'y', box.middle );
+                        }
                     }
                 });
 

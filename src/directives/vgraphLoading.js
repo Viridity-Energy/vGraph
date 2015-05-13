@@ -27,14 +27,21 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
                         .text( text );
 
                 function startPulse(){
-                    $interval.cancel( interval );
+                    if ( !pulsing ){
+                        pulsing = true;
+                        $interval.cancel( interval );
 
-                    pulse();
-                    interval = $interval( pulse, 4005 );
+                        pulse();
+                        interval = $interval( pulse, 4005 );
+                    }
+                }
+
+                function stopPulse(){
+                    pulsing = false;
+                    $interval.cancel( interval );
                 }
 
                 function pulse() {
-                    pulsing = true;
                     $filling
                         .attr( 'x', function(){
                             return left;
@@ -48,6 +55,7 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
                                 return left;
                             })
                             .attr( 'width', function(){
+                                console.log( 'width', width );
                                 return width;
                             })
                             .ease( 'sine' )
@@ -61,6 +69,7 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
                         .transition()
                             .duration( 1000 )
                             .attr( 'width', function(){
+                                console.log( 'width:2', width );
                                 return width;
                             })
                             .attr( 'x', function(){
@@ -82,35 +91,37 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
                     left = box.innerLeft + box.innerWidth / 5;
                     width = box.innerWidth * 3 / 5;
                     right = left + width;
+                    
+                    if ( width ){
+                        $filling.attr( 'x', left )
+                            .attr( 'y', box.middle - 10 );
 
-                    $filling.attr( 'x', left )
-                        .attr( 'y', box.middle - 10 );
+                        $outline.attr( 'x', left )
+                            .attr( 'y', box.middle - 10 )
+                            .attr( 'width', width );
 
-                    $outline.attr( 'x', left )
-                        .attr( 'y', box.middle - 10 )
-                        .attr( 'width', width );
+                        try {
+                            $text.attr( 'text-anchor', 'middle' )
+                                .attr( 'x', box.center )
+                                .attr( 'y', box.middle + $text.node().getBBox().height / 2 - 2 );
+                        }catch( ex ){
+                            $text.attr( 'text-anchor', 'middle' )
+                                .attr( 'x', box.center )
+                                .attr( 'y', box.middle );
+                        }
 
-                    try {
-                        $text.attr( 'text-anchor', 'middle' )
-                            .attr( 'x', box.center )
-                            .attr( 'y', box.middle + $text.node().getBBox().height / 2 - 2 );
-                    }catch( ex ){
-                        $text.attr( 'text-anchor', 'middle' )
-                            .attr( 'x', box.center )
-                            .attr( 'y', box.middle );
-                    }
-
-                    if ( !pulsing ){
                         startPulse();
+                    } else {
+                        stopPulse();
                     }
                 });
 
-                scope.$on('destroy', function(){
-                    $interval.cancel( interval );
+                scope.$on('$destroy', function(){
+                    stopPulse();
                 });
                 
                 scope.$watch( 'model.loading', function( loading ){
-                    $interval.cancel( interval );
+                    stopPulse();
 
                     if ( loading ){
                         if ( scope.box.ratio ){

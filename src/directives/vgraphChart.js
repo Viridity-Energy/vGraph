@@ -180,7 +180,7 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
                 box.$frame = d3.select( el ).insert( 'rect',':first-child' );
             }
 
-            if ( box.$mat ){
+            if ( box.$mat && box.innerWidth ){
                 // this isn't the bed way to do it, but since I'm already planning on fixing stuff up, I'm leaving it
                 box.$mat.attr( 'class', 'mat' )
                     .attr( 'width', box.innerWidth )

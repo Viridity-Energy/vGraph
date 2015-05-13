@@ -130,13 +130,15 @@ angular.module( 'vgraph' ).factory( 'BoxModel',
                     height : this.outerHeight+'px'
                 });
 
-            for( i = 0, c = this.registrations.length; i < c; i++ ){
-                this.registrations[ i ]();
+            if ( this.innerWidth && this.innerHeight ){
+                for( i = 0, c = this.registrations.length; i < c; i++ ){
+                    this.registrations[ i ]();
+                }
             }
         };
 
         return BoxModel;
-    } ]
+    }]
 );
 
 angular.module( 'vgraph' ).factory( 'ComponentGenerator',
@@ -2045,7 +2047,7 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
                 box.$frame = d3.select( el ).insert( 'rect',':first-child' );
             }
 
-            if ( box.$mat ){
+            if ( box.$mat && box.innerWidth ){
                 // this isn't the bed way to do it, but since I'm already planning on fixing stuff up, I'm leaving it
                 box.$mat.attr( 'class', 'mat' )
                     .attr( 'width', box.innerWidth )
@@ -2268,18 +2270,20 @@ angular.module( 'vgraph' ).directive( 'vgraphError',
                 scope.box = box;
 
                 box.register(function(){
-                    $outline.attr( 'transform', 'translate('+box.innerLeft+','+box.innerTop+')' )
-                        .attr( 'width', box.innerWidth )
-                        .attr( 'height', box.innerHeight );
-
-                    try {
-                        $text.attr( 'text-anchor', 'middle' )
-                            .attr( 'x', box.center )
-                            .attr( 'y', box.middle + $text.node().getBBox().height / 2 );
-                    }catch( ex ){
-                        $text.attr( 'text-anchor', 'middle' )
-                            .attr( 'x', box.center )
-                            .attr( 'y', box.middle );
+                    if ( box.innerHeight ){
+                        $outline.attr( 'transform', 'translate('+box.innerLeft+','+box.innerTop+')' )
+                            .attr( 'width', box.innerWidth )
+                            .attr( 'height', box.innerHeight );
+                        
+                        try {
+                            $text.attr( 'text-anchor', 'middle' )
+                                .attr( 'x', box.center )
+                                .attr( 'y', box.middle + $text.node().getBBox().height / 2 );
+                        }catch( ex ){
+                            $text.attr( 'text-anchor', 'middle' )
+                                .attr( 'x', box.center )
+                                .attr( 'y', box.middle );
+                        }
                     }
                 });
 
@@ -3040,14 +3044,21 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
                         .text( text );
 
                 function startPulse(){
-                    $interval.cancel( interval );
+                    if ( !pulsing ){
+                        pulsing = true;
+                        $interval.cancel( interval );
 
-                    pulse();
-                    interval = $interval( pulse, 4005 );
+                        pulse();
+                        interval = $interval( pulse, 4005 );
+                    }
+                }
+
+                function stopPulse(){
+                    pulsing = false;
+                    $interval.cancel( interval );
                 }
 
                 function pulse() {
-                    pulsing = true;
                     $filling
                         .attr( 'x', function(){
                             return left;
@@ -3061,6 +3072,7 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
                                 return left;
                             })
                             .attr( 'width', function(){
+                                console.log( 'width', width );
                                 return width;
                             })
                             .ease( 'sine' )
@@ -3074,6 +3086,7 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
                         .transition()
                             .duration( 1000 )
                             .attr( 'width', function(){
+                                console.log( 'width:2', width );
                                 return width;
                             })
                             .attr( 'x', function(){
@@ -3095,35 +3108,37 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
                     left = box.innerLeft + box.innerWidth / 5;
                     width = box.innerWidth * 3 / 5;
                     right = left + width;
+                    
+                    if ( width ){
+                        $filling.attr( 'x', left )
+                            .attr( 'y', box.middle - 10 );
 
-                    $filling.attr( 'x', left )
-                        .attr( 'y', box.middle - 10 );
+                        $outline.attr( 'x', left )
+                            .attr( 'y', box.middle - 10 )
+                            .attr( 'width', width );
 
-                    $outline.attr( 'x', left )
-                        .attr( 'y', box.middle - 10 )
-                        .attr( 'width', width );
+                        try {
+                            $text.attr( 'text-anchor', 'middle' )
+                                .attr( 'x', box.center )
+                                .attr( 'y', box.middle + $text.node().getBBox().height / 2 - 2 );
+                        }catch( ex ){
+                            $text.attr( 'text-anchor', 'middle' )
+                                .attr( 'x', box.center )
+                                .attr( 'y', box.middle );
+                        }
 
-                    try {
-                        $text.attr( 'text-anchor', 'middle' )
-                            .attr( 'x', box.center )
-                            .attr( 'y', box.middle + $text.node().getBBox().height / 2 - 2 );
-                    }catch( ex ){
-                        $text.attr( 'text-anchor', 'middle' )
-                            .attr( 'x', box.center )
-                            .attr( 'y', box.middle );
-                    }
-
-                    if ( !pulsing ){
                         startPulse();
+                    } else {
+                        stopPulse();
                     }
                 });
 
-                scope.$on('destroy', function(){
-                    $interval.cancel( interval );
+                scope.$on('$destroy', function(){
+                    stopPulse();
                 });
                 
                 scope.$watch( 'model.loading', function( loading ){
-                    $interval.cancel( interval );
+                    stopPulse();
 
                     if ( loading ){
                         if ( scope.box.ratio ){
@@ -3135,7 +3150,6 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
         };
     } ]
 );
-
 angular.module( 'vgraph' ).directive( 'vgraphMultiIndicator',
     [ '$compile',
     function( $compile ) {

@@ -129,11 +129,13 @@ angular.module( 'vgraph' ).factory( 'BoxModel',
                     height : this.outerHeight+'px'
                 });
 
-            for( i = 0, c = this.registrations.length; i < c; i++ ){
-                this.registrations[ i ]();
+            if ( this.innerWidth && this.innerHeight ){
+                for( i = 0, c = this.registrations.length; i < c; i++ ){
+                    this.registrations[ i ]();
+                }
             }
         };
 
         return BoxModel;
-    } ]
+    }]
 );
