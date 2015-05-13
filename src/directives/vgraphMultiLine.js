@@ -10,20 +10,25 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                 config : '=config'
             },
             link : function( scope, $el, attrs, requirements ){
-                var chart = requirements[0],
+                var childScopes = [],
+                    chart = requirements[0],
                     el = $el[0],
                     lines,
                     names;
 
                 function parseConf( config ){
-                    var i, c,
+                    var $new,
+                        i, c,
                         line;
 
                     names = [];
 
                     if ( config ){
                         d3.select( el ).selectAll( 'path' ).remove();
-
+                        while( childScopes.length ){
+                            childScopes.pop().$destroy();
+                        }
+                        
                         lines = ComponentGenerator.compileConfig( scope, config, 'line' );
 
                         for( i = 0, c = lines.length; i < c; i++ ){
@@ -37,7 +42,10 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                             );
                             names.push( line.name );
 
-                            $compile( line.element )(scope);
+                            $new = scope.$new();
+                            childScopes.push( $new );
+
+                            $compile( line.element )( $new );
                         }
                     }
                 }

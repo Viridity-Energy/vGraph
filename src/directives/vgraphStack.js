@@ -9,18 +9,23 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                 config : '=config'
             },
             link : function( scope, $el, attrs, requirements ){
-                var chart = requirements[0],
+                var childScopes = [],
+                    chart = requirements[0],
                     el = $el[0],
                     lines;
 
                 function parseConf( config ){
-                    var i, c,
+                    var $new,
+                        i, c,
                         line;
 
                     if ( config ){
                         d3.select( el ).selectAll( 'path' ).remove();
 
                         lines = ComponentGenerator.compileConfig( scope, config, 'fill' );
+                        while( childScopes.length ){
+                            childScopes.pop().$destroy();
+                        }
 
                         for( i = 0, c = lines.length; i < c; i++ ){
                             line = lines[ i ];
@@ -30,10 +35,11 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
 
                             if ( i ){
                                 el.insertBefore( line.element, lines[i-1].element );
+                                line.$bottom = lines[i-1].$valueField;
                                 line.calc = ComponentGenerator.makeFillCalc(
                                     chart,
                                     line.$valueField,
-                                    lines[i-1].$valueField
+                                    line.$bottom
                                 );
                             }else{
                                 el.appendChild( line.element );
@@ -43,7 +49,9 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                                 );
                             }
 
-                            $compile( line.element )(scope);
+                            $new = scope.$new();
+                            childScopes.push( $new );
+                            $compile( line.element )( $new );
                         }
                     }
                 }

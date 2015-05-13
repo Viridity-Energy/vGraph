@@ -8,10 +8,12 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiIndicator',
                 config : '=config'
             },
             link : function( scope, $el, attrs ){
-                var el = $el[0];
+                var childScopes = [],
+                    el = $el[0];
 
                 function parseConf( config ){
-                    var e,
+                    var $new,
+                        e,
                         i, c,
                         className,
                         radius = scope.$eval( attrs.pointRadius ) || 3,
@@ -22,6 +24,11 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiIndicator',
                         html = '';
                     
                     if ( config ){
+                        d3.select( el ).selectAll( 'g' ).remove();
+                        while( childScopes.length ){
+                            childScopes.pop().$destroy();
+                        }
+                        
                         for( i = 0, c = config.length; i < c; i++ ){
                             conf = config[ i ];
                             name = conf.name;
@@ -39,8 +46,6 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiIndicator',
                                 '></g>';
                         }
 
-                        d3.select( el ).selectAll( 'g' ).remove();
-
                         els = ( new DOMParser().parseFromString('<g xmlns="http://www.w3.org/2000/svg">'+html+'</g>','image/svg+xml') )
                             .childNodes[0].childNodes;
 
@@ -49,7 +54,10 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiIndicator',
 
                             el.appendChild( e );
 
-                            $compile( e )(scope);
+                            $new = scope.$new();
+                            childScopes.push( $new );
+
+                            $compile( e )( $new );
                         }
                     }
                 }

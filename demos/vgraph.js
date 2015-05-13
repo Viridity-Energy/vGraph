@@ -1663,13 +1663,56 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
                 config: '=config'
             },
             link : function( scope, $el, attrs, requirements ){
-                var chart = requirements[0],
+                var childScopes = [],
+                    chart = requirements[0],
                     el = $el[0],
                     minWidth = parseInt(attrs.minWidth || 1),
                     padding = parseInt(attrs.padding || 1),
                     mount = d3.select( el ).append('g').attr( 'class', 'mount' ),
                     lines;
 
+                function parseConf( config ){
+                    var $new,
+                        i, c,
+                        line;
+
+                    if ( config ){
+                        d3.select( el ).selectAll( 'path' ).remove();
+
+                        lines = ComponentGenerator.compileConfig( scope, config, 'line' );
+                        while( childScopes.length ){
+                            childScopes.pop().$destroy();
+                        }
+
+                        for( i = 0, c = lines.length; i < c; i++ ){
+                            line = lines[ i ];
+
+                            // I want the first calculated value, lowest on the DOM
+                            line.$valueField = '$'+line.name;
+
+                            if ( i ){
+                                el.insertBefore( line.element, lines[i-1].element );
+                                line.$bottom = lines[i-1].$valueField;
+                                line.calc = ComponentGenerator.makeLineCalc(
+                                    chart,
+                                    line.$valueField,
+                                    line.$bottom
+                                );
+                            }else{
+                                el.appendChild( line.element );
+                                line.calc = ComponentGenerator.makeLineCalc(
+                                    chart,
+                                    line.$valueField
+                                );
+                            }
+
+                            $new = scope.$new();
+                            childScopes.push( $new );
+                            $compile( line.element )( $new );
+                        }
+                    }
+                }
+                
                 function makeRect( points, start, stop ){
                     var e,
                         els,
@@ -1772,42 +1815,6 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
                             }
 
                             lastY = y;
-                        }
-                    }
-                }
-
-                function parseConf( config ){
-                    var i, c,
-                        line;
-
-                    if ( config ){
-                        d3.select( el ).selectAll( 'path' ).remove();
-
-                        lines = ComponentGenerator.compileConfig( scope, config, 'line' );
-
-                        for( i = 0, c = lines.length; i < c; i++ ){
-                            line = lines[ i ];
-
-                            // I want the first calculated value, lowest on the DOM
-                            line.$valueField = '$'+line.name;
-
-                            if ( i ){
-                                el.insertBefore( line.element, lines[i-1].element );
-                                line.$bottom = lines[i-1].$valueField;
-                                line.calc = ComponentGenerator.makeLineCalc(
-                                    chart,
-                                    line.$valueField,
-                                    line.$bottom
-                                );
-                            }else{
-                                el.appendChild( line.element );
-                                line.calc = ComponentGenerator.makeLineCalc(
-                                    chart,
-                                    line.$valueField
-                                );
-                            }
-
-                            $compile( line.element )(scope);
                         }
                     }
                 }
@@ -2130,17 +2137,22 @@ angular.module( 'vgraph' ).directive( 'vgraphCompare',
                 config : '=config'
             },
             link : function( scope, $el, attrs, requirements ){
-                var chart = requirements[0],
+                var childScopes = [],
+                    chart = requirements[0],
                     el = $el[0],
                     line1,
                     line2,
                     fill;
 
                 function parseConf( config ){
-                    var lines;
+                    var $new,
+                        lines;
 
                     if ( config && config.length > 1 ){
                         d3.select( el ).selectAll( 'path' ).remove();
+                        while( childScopes.length ){
+                            childScopes.pop().$destroy();
+                        }
 
                         lines = ComponentGenerator.compileConfig( scope, config, 'line' );
 
@@ -2161,8 +2173,11 @@ angular.module( 'vgraph' ).directive( 'vgraphCompare',
                         el.appendChild( line1.element );
                         el.appendChild( line2.element );
 
-                        $compile( line1.element )(scope);
-                        $compile( line2.element )(scope);
+                        $new = scope.$new();
+                        childScopes.push( $new );
+                            
+                        $compile( line1.element )( $new );
+                        $compile( line2.element )( $new );
                     }
                 }
 
@@ -3131,10 +3146,12 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiIndicator',
                 config : '=config'
             },
             link : function( scope, $el, attrs ){
-                var el = $el[0];
+                var childScopes = [],
+                    el = $el[0];
 
                 function parseConf( config ){
-                    var e,
+                    var $new,
+                        e,
                         i, c,
                         className,
                         radius = scope.$eval( attrs.pointRadius ) || 3,
@@ -3145,6 +3162,11 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiIndicator',
                         html = '';
                     
                     if ( config ){
+                        d3.select( el ).selectAll( 'g' ).remove();
+                        while( childScopes.length ){
+                            childScopes.pop().$destroy();
+                        }
+                        
                         for( i = 0, c = config.length; i < c; i++ ){
                             conf = config[ i ];
                             name = conf.name;
@@ -3162,8 +3184,6 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiIndicator',
                                 '></g>';
                         }
 
-                        d3.select( el ).selectAll( 'g' ).remove();
-
                         els = ( new DOMParser().parseFromString('<g xmlns="http://www.w3.org/2000/svg">'+html+'</g>','image/svg+xml') )
                             .childNodes[0].childNodes;
 
@@ -3172,7 +3192,10 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiIndicator',
 
                             el.appendChild( e );
 
-                            $compile( e )(scope);
+                            $new = scope.$new();
+                            childScopes.push( $new );
+
+                            $compile( e )( $new );
                         }
                     }
                 }
@@ -3195,20 +3218,25 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                 config : '=config'
             },
             link : function( scope, $el, attrs, requirements ){
-                var chart = requirements[0],
+                var childScopes = [],
+                    chart = requirements[0],
                     el = $el[0],
                     lines,
                     names;
 
                 function parseConf( config ){
-                    var i, c,
+                    var $new,
+                        i, c,
                         line;
 
                     names = [];
 
                     if ( config ){
                         d3.select( el ).selectAll( 'path' ).remove();
-
+                        while( childScopes.length ){
+                            childScopes.pop().$destroy();
+                        }
+                        
                         lines = ComponentGenerator.compileConfig( scope, config, 'line' );
 
                         for( i = 0, c = lines.length; i < c; i++ ){
@@ -3222,7 +3250,10 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                             );
                             names.push( line.name );
 
-                            $compile( line.element )(scope);
+                            $new = scope.$new();
+                            childScopes.push( $new );
+
+                            $compile( line.element )( $new );
                         }
                     }
                 }
@@ -3260,10 +3291,12 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiTooltip',
                 data: '=vgraphMultiTooltip'
             },
             link : function( scope, $el, attrs ){
-                var el = $el[0];
+                var childScopes = [],
+                    el = $el[0];
 
                 function parseConf( config ){
-                    var e,
+                    var $new,
+                        e,
                         i, c,
                         className,
                         els,
@@ -3272,6 +3305,11 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiTooltip',
                         html = '';
                     
                     if ( config ){
+                        d3.select( el ).selectAll( 'g' ).remove();
+                        while( childScopes.length ){
+                            childScopes.pop().$destroy();
+                        }
+
                         for( i = 0, c = config.length; i < c; i++ ){
                             conf = config[ i ];
                             name = conf.name;
@@ -3289,8 +3327,6 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiTooltip',
                                 '></g>';
                         }
 
-                        d3.select( el ).selectAll( 'g' ).remove();
-
                         els = ( new DOMParser().parseFromString('<g xmlns="http://www.w3.org/2000/svg">'+html+'</g>','image/svg+xml') )
                             .childNodes[0].childNodes;
 
@@ -3299,7 +3335,10 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiTooltip',
 
                             el.appendChild( e );
 
-                            $compile( e )(scope);
+                            $new = scope.$new();
+                            childScopes.push( $new );
+
+                            $compile( e )( $new );
                         }
                     }
                 }
@@ -3320,18 +3359,23 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                 config : '=config'
             },
             link : function( scope, $el, attrs, requirements ){
-                var chart = requirements[0],
+                var childScopes = [],
+                    chart = requirements[0],
                     el = $el[0],
                     lines;
 
                 function parseConf( config ){
-                    var i, c,
+                    var $new,
+                        i, c,
                         line;
 
                     if ( config ){
                         d3.select( el ).selectAll( 'path' ).remove();
 
                         lines = ComponentGenerator.compileConfig( scope, config, 'fill' );
+                        while( childScopes.length ){
+                            childScopes.pop().$destroy();
+                        }
 
                         for( i = 0, c = lines.length; i < c; i++ ){
                             line = lines[ i ];
@@ -3341,10 +3385,11 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
 
                             if ( i ){
                                 el.insertBefore( line.element, lines[i-1].element );
+                                line.$bottom = lines[i-1].$valueField;
                                 line.calc = ComponentGenerator.makeFillCalc(
                                     chart,
                                     line.$valueField,
-                                    lines[i-1].$valueField
+                                    line.$bottom
                                 );
                             }else{
                                 el.appendChild( line.element );
@@ -3354,7 +3399,9 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                                 );
                             }
 
-                            $compile( line.element )(scope);
+                            $new = scope.$new();
+                            childScopes.push( $new );
+                            $compile( line.element )( $new );
                         }
                     }
                 }

@@ -10,13 +10,56 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
                 config: '=config'
             },
             link : function( scope, $el, attrs, requirements ){
-                var chart = requirements[0],
+                var childScopes = [],
+                    chart = requirements[0],
                     el = $el[0],
                     minWidth = parseInt(attrs.minWidth || 1),
                     padding = parseInt(attrs.padding || 1),
                     mount = d3.select( el ).append('g').attr( 'class', 'mount' ),
                     lines;
 
+                function parseConf( config ){
+                    var $new,
+                        i, c,
+                        line;
+
+                    if ( config ){
+                        d3.select( el ).selectAll( 'path' ).remove();
+
+                        lines = ComponentGenerator.compileConfig( scope, config, 'line' );
+                        while( childScopes.length ){
+                            childScopes.pop().$destroy();
+                        }
+
+                        for( i = 0, c = lines.length; i < c; i++ ){
+                            line = lines[ i ];
+
+                            // I want the first calculated value, lowest on the DOM
+                            line.$valueField = '$'+line.name;
+
+                            if ( i ){
+                                el.insertBefore( line.element, lines[i-1].element );
+                                line.$bottom = lines[i-1].$valueField;
+                                line.calc = ComponentGenerator.makeLineCalc(
+                                    chart,
+                                    line.$valueField,
+                                    line.$bottom
+                                );
+                            }else{
+                                el.appendChild( line.element );
+                                line.calc = ComponentGenerator.makeLineCalc(
+                                    chart,
+                                    line.$valueField
+                                );
+                            }
+
+                            $new = scope.$new();
+                            childScopes.push( $new );
+                            $compile( line.element )( $new );
+                        }
+                    }
+                }
+                
                 function makeRect( points, start, stop ){
                     var e,
                         els,
@@ -119,42 +162,6 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
                             }
 
                             lastY = y;
-                        }
-                    }
-                }
-
-                function parseConf( config ){
-                    var i, c,
-                        line;
-
-                    if ( config ){
-                        d3.select( el ).selectAll( 'path' ).remove();
-
-                        lines = ComponentGenerator.compileConfig( scope, config, 'line' );
-
-                        for( i = 0, c = lines.length; i < c; i++ ){
-                            line = lines[ i ];
-
-                            // I want the first calculated value, lowest on the DOM
-                            line.$valueField = '$'+line.name;
-
-                            if ( i ){
-                                el.insertBefore( line.element, lines[i-1].element );
-                                line.$bottom = lines[i-1].$valueField;
-                                line.calc = ComponentGenerator.makeLineCalc(
-                                    chart,
-                                    line.$valueField,
-                                    line.$bottom
-                                );
-                            }else{
-                                el.appendChild( line.element );
-                                line.calc = ComponentGenerator.makeLineCalc(
-                                    chart,
-                                    line.$valueField
-                                );
-                            }
-
-                            $compile( line.element )(scope);
                         }
                     }
                 }

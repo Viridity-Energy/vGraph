@@ -9,17 +9,22 @@ angular.module( 'vgraph' ).directive( 'vgraphCompare',
                 config : '=config'
             },
             link : function( scope, $el, attrs, requirements ){
-                var chart = requirements[0],
+                var childScopes = [],
+                    chart = requirements[0],
                     el = $el[0],
                     line1,
                     line2,
                     fill;
 
                 function parseConf( config ){
-                    var lines;
+                    var $new,
+                        lines;
 
                     if ( config && config.length > 1 ){
                         d3.select( el ).selectAll( 'path' ).remove();
+                        while( childScopes.length ){
+                            childScopes.pop().$destroy();
+                        }
 
                         lines = ComponentGenerator.compileConfig( scope, config, 'line' );
 
@@ -40,8 +45,11 @@ angular.module( 'vgraph' ).directive( 'vgraphCompare',
                         el.appendChild( line1.element );
                         el.appendChild( line2.element );
 
-                        $compile( line1.element )(scope);
-                        $compile( line2.element )(scope);
+                        $new = scope.$new();
+                        childScopes.push( $new );
+                            
+                        $compile( line1.element )( $new );
+                        $compile( line2.element )( $new );
                     }
                 }
 
