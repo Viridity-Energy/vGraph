@@ -3072,7 +3072,6 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
                                 return left;
                             })
                             .attr( 'width', function(){
-                                console.log( 'width', width );
                                 return width;
                             })
                             .ease( 'sine' )
@@ -3086,7 +3085,6 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
                         .transition()
                             .duration( 1000 )
                             .attr( 'width', function(){
-                                console.log( 'width:2', width );
                                 return width;
                             })
                             .attr( 'x', function(){
