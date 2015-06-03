@@ -5,9 +5,9 @@ angular.module( 'vgraph' ).directive( 'vgraphFocus',
 
         return {
             require : ['^vgraphChart'],
-            link : function( scope, el, attr, requirements ){
-                var chart = requirements[0],
-                    box = chart.box,
+            link : function( scope, el, attrs, requirements ){
+                var graph = requirements[0].graph,
+                    box = graph.box,
                     $el = d3.select( el[0] ),
                     $focus = $el.append( 'rect' )
                         .attr('class', 'focus')
@@ -47,22 +47,16 @@ angular.module( 'vgraph' ).directive( 'vgraphFocus',
                 });
 
                 scope.$watch('stop', function( value ){
-                    var length,
-                        firstData,
-                        xDiff,
-                        model = chart.model,
+                    var xDiff,
                         start,
                         stop;
 
-                    if ( value && model.filtered ){
-                        firstData = model.filtered.$first;
-                        length = model.filtered.$last - firstData;
-
+                    if ( value ){
                         $focus.attr( 'visibility', 'hidden' );
 
                         xDiff = Math.abs( value.xDiff );
 
-                        if ( xDiff > 5 ){
+                        if ( xDiff > 3 ){
                             start = value.x0 - xDiff;
                             stop = value.x0 + xDiff;
 
@@ -78,10 +72,10 @@ angular.module( 'vgraph' ).directive( 'vgraphFocus',
                                 stop = stop - box.innerLeft;
                             }
 
-                            model.setPane(
+                            graph.setPane(
                                 {
-                                    'start' : '=' + ( model.x.start.$x + (start/box.innerWidth) * (model.x.stop.$x-model.x.start.$x) ),
-                                    'stop' : '=' + ( model.x.start.$x + (stop/box.innerWidth) * (model.x.stop.$x-model.x.start.$x) )
+                                    'start' : '%' + start/box.innerWidth,
+                                    'stop' : '%' + stop/box.innerWidth
                                 },
                                 {
                                     'start' : null,
@@ -89,7 +83,7 @@ angular.module( 'vgraph' ).directive( 'vgraphFocus',
                                 }
                             );
 
-                            model.adjust( scope );
+                            graph.rerender();
                         }
                     }
                 });

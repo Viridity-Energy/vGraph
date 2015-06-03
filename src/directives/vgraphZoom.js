@@ -4,10 +4,16 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
         'use strict';
 
         return {
+            scope : {
+                target : '=vgraphZoom',
+                min : '=zoomMin',
+                max : '=zoomMax'
+            },
             require : ['^vgraphChart'],
-            link : function( scope, el, attr, requirements ){
-                var chart = requirements[0],
-                    box = chart.box,
+            link : function( scope, el, attrs, requirements ){
+                var graph = requirements[0].graph,
+                    box = graph.box,
+                    target = scope.target,
                     dragging = false,
                     zoomed = false,
                     dragStart,
@@ -30,7 +36,7 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
                     $rightCtrl = $right.append( 'g' )
                         .attr( 'class', 'control' ),
                     $rightDrag;
-
+                
                 function redraw( noApply ){
                     if ( minPos === 0 && maxPos === box.innerWidth ){
                         zoomed = false;
@@ -66,8 +72,7 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
 
                     if ( !noApply ){
                         scope.$apply(function(){
-                            var model = scope.model;
-                            model.setPane(
+                            target.setPane(
                                 {
                                     'start' : '%' + ( minPos / box.innerWidth ),
                                     'stop' : '%' + ( maxPos / box.innerWidth )
@@ -78,7 +83,7 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
                                 }
                             );
 
-                            model.adjust( scope );
+                            target.rerender();
                         });
                     }
                 }
@@ -139,9 +144,7 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
                         dragStart = {
                             mouse : d3.mouse( el[0] )[0],
                             minPos : minPos,
-                            maxPos : maxPos,
-                            min : scope.model.x.start.$x,
-                            max : scope.model.x.stop.$x
+                            maxPos : maxPos
                         };
                         dragging = true;
                     })
@@ -159,8 +162,8 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
                             minPos = dragStart.minPos + dX;
 
                             redraw();
-                        }else if ( dX > 5 ){
-                            // I'm assuming 5 px zoom is way too small
+                        }else if ( dX > 1 ){
+                            // I'm assuming 1 px zoom is way too small
                             // this is a zoom in on an area
                             maxPos = dragStart.mouse + Math.abs(dX);
                             minPos = dragStart.mouse - Math.abs(dX);
@@ -195,29 +198,37 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
                     $focus.attr( 'height', box.innerHeight );
                 });
 
-                scope.model.register(function(){
-                    var x,
-                        model = scope.model,
-                        min,
-                        max;
-
+                target.register(function( pane ){
                     if ( !dragging ){
-                        x = model.x;
-                        min = scope.min === undefined ? x.$min : scope.min;
-                        max = scope.max === undefined ? x.$max : scope.max;
-
-                        minPos = ( (x.start.$x-min) / (max-min) ) * box.innerWidth;
-                        maxPos = ( (x.stop.$x-min) / (max-min) ) * box.innerWidth;
+                        if ( pane.offset ) {
+                            minPos = pane.offset.left * box.innerWidth;
+                            maxPos = pane.offset.right * box.innerWidth;
+                        }else{
+                            minPos = 0;
+                            maxPos = box.innerWidth;
+                        }
 
                         redraw( true );
                     }
                 });
 
-            },
-            scope : {
-                model : '=vgraphZoom',
-                min : '=zoomMin',
-                max : '=zoomMax'
+                /* this is just duplicate functionality
+                view.register({
+                    finalize: function( pane ){
+                        if ( !dragging ){
+                            if ( pane.offset ) {
+                                minPos = box.innerWidth * pane.offset.left;
+                                maxPos = box.innerWidth * pane.offset.right;
+                            }else{
+                                minPos = 0;
+                                maxPos = box.innerWidth;
+                            }
+
+                            redraw( true );
+                        }
+                    }
+                });
+                */
             }
         };
     } ]

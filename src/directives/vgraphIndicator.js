@@ -9,7 +9,8 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
                 model : '=model'
             },
             link : function( scope, el, attrs, requirements ){
-                var chart = requirements[0],
+                var control = attrs.control || 'default',
+                    chart = requirements[0].graph.views[control],
                     name = attrs.vgraphIndicator,
                     pulse,
                     model = chart.model,
@@ -46,7 +47,7 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
                 }
 
                 chart.register({
-                    finalize : function(){
+                    finalize : function( pane ){
                         var d,
                             x,
                             y;
@@ -54,7 +55,7 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
                         if ( model.plots[name] ){
                             d = model.plots[name].x.max;
 
-                            if ( model.point.isValid(d) && d[name] ){
+                            if ( pane.isValid(d) && d[name] ){
                                 x = chart.x.scale( d.$interval );
                                 y = chart.y.scale( d['$'+name] || d[name] );
 

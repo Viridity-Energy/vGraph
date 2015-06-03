@@ -5,7 +5,10 @@ angular.module( 'vgraph' ).directive( 'vgraphZone',
 
         return ComponentGenerator.generate( 'vgraphZone', {
             link : function( scope, el, attrs, requirements ){
-                var chart = requirements[0],
+                var control = attrs.control || 'default',
+                    graph = requirements[0].graph,
+                    chart = graph.views[control],
+                    box = graph.box,
                     name = attrs.name,
                     $path = d3.select( el[0] ).append('path')
                         .attr( 'class', 'line plot-'+name ),
@@ -17,10 +20,10 @@ angular.module( 'vgraph' ).directive( 'vgraphZone',
                             return chart.x.scale( d.$interval );
                         })
                         .y(function(){
-                            return chart.box.innerTop;
+                            return box.innerTop;
                         })
                         .y1(function(){
-                            return chart.box.innerBottom;
+                            return box.innerBottom;
                         });
 
                 chart.register({

@@ -10,8 +10,10 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
                 config: '=config'
             },
             link : function( scope, $el, attrs, requirements ){
-                var childScopes = [],
-                    chart = requirements[0],
+                var control = attrs.control || 'default',
+                    graph = requirements[0].graph,
+                    chart = graph.views[control],
+                    childScopes = [],
                     el = $el[0],
                     minWidth = parseInt(attrs.minWidth || 1),
                     padding = parseInt(attrs.padding || 1),
@@ -60,7 +62,7 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
                     }
                 }
                 
-                function makeRect( points, start, stop ){
+                function makeRect( points, start, stop, pane ){
                     var e,
                         els,
                         j, co,
@@ -115,14 +117,14 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
                                     x2 = last._$interval - padding;
                                 }
 
-                                if ( x1 < chart.box.innerLeft ){
-                                    x1 = chart.box.innerLeft;
+                                if ( x1 < graph.box.innerLeft ){
+                                    x1 = graph.box.innerLeft;
                                 }else if ( points[start-1] && points[start-1]._$interval > x1 ){
                                     x1 = points[start-1]._$interval + padding;
                                 }
 
-                                if ( x2 > chart.box.innerRight ){
-                                    x2 = chart.box.innerRight;
+                                if ( x2 > graph.box.innerRight ){
+                                    x2 = graph.box.innerRight;
                                 }else if ( points[i] && points[i]._$interval < x2 ){
                                     x2 = points[i]._$interval - padding;
                                 }
@@ -138,10 +140,13 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
 
                             if ( lastY === undefined ){
                                 e = mount.append('rect')
-                                    .attr( 'height', chart.y.scale(chart.model.y.minimum) - y );
+                                    .attr( 'height', chart.y.scale(pane.y.minimum) - y );
                             } else {
-                                e = mount.append('rect')
-                                    .attr( 'height', lastY-y );
+                                e = mount.append('rect');
+
+                                if ( lastY > y ){
+                                    e.attr( 'height', lastY-y );
+                                }
                             }
 
                             e.attr( 'class', 'bar '+line.className )
@@ -172,13 +177,12 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
                     parse : function( data ){
                         return ComponentGenerator.parseStackedLimits( data, lines );
                     },
-                    build : function( data ){
+                    build : function( pane, data ){
                         var i, c,
                             next = 0,
-                            start = chart.x.scale( chart.model.x.min.$interval ),
-                            stop = chart.x.scale( chart.model.x.max.$interval ),
+                            start = chart.x.scale( pane.x.min.$interval ),
+                            stop = chart.x.scale( pane.x.max.$interval ),
                             totalPixels = stop - start,
-                            //availablePixels = chart.box.innerWidth,
                             barWidth = padding + minWidth,
                             totalBars = totalPixels / barWidth,
                             pointsPerBar = data.length / totalBars;
@@ -192,10 +196,10 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
                         for( i = 0, c = data.length; i < c; i = Math.floor(next) ){
                             next = next + pointsPerBar;
 
-                            makeRect( data, i, next );
+                            makeRect( data, i, next, pane );
                         }
                     },
-                    finalize : function( data ){
+                    finalize : function( pane, data ){
                         var i, c,
                             line;
 

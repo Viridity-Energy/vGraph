@@ -32,11 +32,11 @@
   stroke: #ddd;
   fill: #999;
 }
-[vgraph-chart] [vgraph-error] .outline {
+[vgraph-chart] [vgraph-message] .outline {
   stroke: #fdd;
   fill: #414141;
 }
-[vgraph-chart] [vgraph-error] .text {
+[vgraph-chart] [vgraph-message] .text {
   fill: #c3c4c4;
   font-size: 24px;
 }

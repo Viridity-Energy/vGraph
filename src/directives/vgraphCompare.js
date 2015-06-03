@@ -9,112 +9,64 @@ angular.module( 'vgraph' ).directive( 'vgraphCompare',
                 config : '=config'
             },
             link : function( scope, $el, attrs, requirements ){
-                var childScopes = [],
-                    chart = requirements[0],
+                var graph = requirements[0].graph,
                     el = $el[0],
-                    line1,
-                    line2,
                     fill;
 
                 function parseConf( config ){
-                    var $new,
-                        lines;
+                    var chart1Ready = false,
+                        chart2Ready = false,
+                        keys = Object.keys(config),
+                        name1 = keys[0],
+                        chart1 = graph.views[config[name1]],
+                        name2 = keys[1],
+                        chart2 = graph.views[config[name2]];
 
-                    if ( config && config.length > 1 ){
-                        d3.select( el ).selectAll( 'path' ).remove();
-                        while( childScopes.length ){
-                            childScopes.pop().$destroy();
+                    function draw(){
+                        fill.$d3.attr( 'd', fill.calc(graph.unified) );
+                        chart1Ready = false;
+                        chart2Ready = false;
+                    }
+
+                    if ( config && keys.length === 2 ){
+                        if( fill ){
+                            fill.$d3.remove();
                         }
-
-                        lines = ComponentGenerator.compileConfig( scope, config, 'line' );
-
-                        line1 = lines[0];
-                        line1.calc = ComponentGenerator.makeLineCalc( chart, config[0].name );
-
-                        line2 = lines[1];
-                        line2.calc = ComponentGenerator.makeLineCalc( chart, config[1].name );
-
+                        
                         fill = {
-                            $d3 : d3.select( el )
-                                .append('path').attr( 
-                                    'class', 'fill '+config[0].className+'-'+config[1].className 
-                                ),
-                            calc : ComponentGenerator.makeFillCalc( chart, config[0].name, config[1].name )
+                            $d3 : d3.select( el ).append('path').attr( 'class', 'fill' ),
+                            calc : ComponentGenerator.makeMyFillCalc( 
+                                chart1, 
+                                name1,
+                                chart2, 
+                                name2,
+                                function( node, y1, y2 ){
+                                    node.$compare = {
+                                        middle : ( y1 + y2 ) / 2,
+                                        difference : Math.abs( y1 - y2 )
+                                    };
+                                }
+                            )
                         };
 
-                        el.appendChild( line1.element );
-                        el.appendChild( line2.element );
+                        // this isn't entirely right... It will be forced to call twice
+                        chart1.register({
+                            finalize : function(){
+                                chart1Ready = true;
+                                draw();
+                            }
+                        });
 
-                        $new = scope.$new();
-                        childScopes.push( $new );
-                            
-                        $compile( line1.element )( $new );
-                        $compile( line2.element )( $new );
+                        chart2.register({
+                            finalize : function(){
+                                chart2Ready = true;
+                                draw();
+                            }
+                        });
                     }
                 }
 
                 scope.$watchCollection('config', parseConf );
-
-                chart.register({
-                    parse : function( data ){
-                        var i, c,
-                            d,
-                            v1,
-                            v2,
-                            min,
-                            max;
-
-                        for( i = 0, c = data.length; i < c; i++ ){
-                            d = data[i];
-
-                            v1 = d[line1.name];
-                            v2 = d[line2.name];
-
-                            d.$compare = {
-                                middle : ( v1 + v2 ) / 2,
-                                difference : Math.abs( v1 - v2 )
-                            };
-
-                            if ( v1 < v2 ){
-                                if ( min === undefined ){
-                                    min = v1;
-                                    max = v2;
-                                }else{
-                                    if ( min > v1 ){
-                                        min = v1;
-                                    }
-
-                                    if ( max < v2 ){
-                                        max = v2;
-                                    }
-                                }
-                            }else{
-                                if ( min === undefined ){
-                                    min = v2;
-                                    max = v1;
-                                }else{
-                                    if ( min > v2 ){
-                                        min = v2;
-                                    }
-
-                                    if ( max < v1 ){
-                                        max = v1;
-                                    }
-                                }
-                            }
-                        }
-
-                        return {
-                            min: min,
-                            max : max
-                        };
-                    },
-                    finalize : function( data ){
-                        line1.$d3.attr( 'd', line1.calc(data) );
-                        line2.$d3.attr( 'd', line2.calc(data) );
-                        fill.$d3.attr( 'd', fill.calc(data) );
-                    }
-                });
             }
         };
     } ]

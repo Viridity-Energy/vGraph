@@ -10,7 +10,8 @@ angular.module( 'vgraph' ).directive( 'vgraphIcon',
         	link: function( scope, el, attrs, requirements ){
         		var i, c,
         			points,
-        			chart = requirements[0],
+        			control = attrs.control || 'default',
+                    chart = requirements[0].graph.views[control],
                     root = el[0],
         			name = attrs.name,
         			filling = [],
@@ -54,7 +55,7 @@ angular.module( 'vgraph' ).directive( 'vgraphIcon',
 
 		            		// TODO : how do I tell the box I am going to overflow it?
 		                	x = d.$sampled._$interval;
-                        	y = chart.y.scale( scope.getValue(d.$sampled) );
+		                	y = chart.y.scale( scope.getValue(d.$sampled) );
 
 	                		ele = $el.append('g');
 	   						

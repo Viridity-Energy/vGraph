@@ -9,8 +9,10 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                 config : '=config'
             },
             link : function( scope, $el, attrs, requirements ){
-                var childScopes = [],
-                    chart = requirements[0],
+                var control = attrs.control || 'default',
+                    graph = requirements[0].graph,
+                    chart = graph.views[control],
+                    childScopes = [],
                     el = $el[0],
                     lines;
 
@@ -36,14 +38,15 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                             if ( i ){
                                 el.insertBefore( line.element, lines[i-1].element );
                                 line.$bottom = lines[i-1].$valueField;
-                                line.calc = ComponentGenerator.makeFillCalc(
+                                line.calc = ComponentGenerator.makeMyFillCalc(
                                     chart,
                                     line.$valueField,
+                                    chart,
                                     line.$bottom
                                 );
                             }else{
                                 el.appendChild( line.element );
-                                line.calc = ComponentGenerator.makeFillCalc(
+                                line.calc = ComponentGenerator.makeMyFillCalc(
                                     chart,
                                     line.$valueField
                                 );
@@ -62,13 +65,13 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                     parse : function( data ){
                         return ComponentGenerator.parseStackedLimits( data, lines );
                     },
-                    finalize : function( data ){
+                    finalize : function(){
                         var i, c,
                             line;
 
                         for( i = 0, c = lines.length; i < c; i++ ){
                             line = lines[ i ];
-                            line.$d3.attr( 'd', line.calc(data) );
+                            line.$d3.attr( 'd', line.calc(graph.unified) );
                         }
                     }
                 });

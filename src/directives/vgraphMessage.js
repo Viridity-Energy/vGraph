@@ -1,4 +1,4 @@
-angular.module( 'vgraph' ).directive( 'vgraphError',
+angular.module( 'vgraph' ).directive( 'vgraphMessage',
     [
     function(){
         'use strict';
@@ -6,16 +6,13 @@ angular.module( 'vgraph' ).directive( 'vgraphError',
         return {
             require : ['^vgraphChart'],
             link : function( scope, el, attrs, requirements ){
-                var chart = requirements[0],
-                    box = chart.box,
+                var graph = requirements[0].graph,
+                    box = graph.box,
                     $el = d3.select( el[0] )
                         .attr( 'class', 'error-view' ),
                     $outline = $el.append( 'rect' )
                         .attr( 'class', 'outline' ),
                     $text = $el.append( 'text' );
-
-                scope.model = chart.model;
-                scope.box = box;
 
                 box.register(function(){
                     if ( box.innerHeight ){
@@ -35,14 +32,19 @@ angular.module( 'vgraph' ).directive( 'vgraphError',
                     }
                 });
 
-                scope.$watch( 'model.error', function( err ){
-                    if ( err ){
-                        $el.attr( 'visibility', 'visible' );
-                        $text.text( err );
-                    }else{
-                        $el.attr( 'visibility', 'hidden' );
+                scope.$watch(
+                    function(){
+                        return graph.message;
+                    }, 
+                    function( msg ){
+                        if ( msg ){
+                            $el.attr( 'visibility', 'visible' );
+                            $text.text( msg );
+                        }else{
+                            $el.attr( 'visibility', 'hidden' );
+                        }
                     }
-                });
+                );
             }
         };
     } ]

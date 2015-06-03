@@ -6,11 +6,11 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
         return {
             require : ['^vgraphChart'],
             link : function( scope, el, attrs, requirements ){
-                var chart = requirements[0],
+                var graph = requirements[0].graph,
                     pulsing = false,
                     interval,
-                    box = chart.box,
-                    text = attrs.vgraphLoading,
+                    box = graph.box,
+                    text = attrs.vgraphLoading || 'Loading Data',
                     left,
                     width,
                     right,
@@ -27,6 +27,8 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
                         .text( text );
 
                 function startPulse(){
+                    $el.attr( 'visibility', 'visible' );
+
                     if ( !pulsing ){
                         pulsing = true;
                         $interval.cancel( interval );
@@ -37,6 +39,8 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
                 }
 
                 function stopPulse(){
+                    $el.attr( 'visibility', 'hidden' );
+
                     pulsing = false;
                     $interval.cancel( interval );
                 }
@@ -83,8 +87,6 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
                             .ease( 'sine' );
                 }
 
-                scope.model = chart.model;
-
                 box.register(function(){
                     left = box.innerLeft + box.innerWidth / 5;
                     width = box.innerWidth * 3 / 5;
@@ -118,15 +120,20 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
                     stopPulse();
                 });
                 
-                scope.$watch( 'model.loading', function( loading ){
-                    stopPulse();
+                scope.$watch(
+                    function(){
+                        return graph.loading;
+                    }, 
+                    function( loading ){
+                        stopPulse();
 
-                    if ( loading ){
-                        if ( scope.box.ratio ){
-                            startPulse();
+                        if ( loading ){
+                            if ( box.ratio ){
+                                startPulse();
+                            }
                         }
                     }
-                });
+                );
             }
         };
     } ]

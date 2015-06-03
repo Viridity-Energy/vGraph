@@ -5,7 +5,8 @@ angular.module( 'vgraph' ).directive( 'vgraphLine',
 
         return ComponentGenerator.generate( 'vgraphLine', {
             link : function( scope, el, attrs, requirements ){
-                var chart = requirements[0],
+                var control = attrs.control || 'default',
+                    chart = requirements[0].graph.views[control],
                     name = attrs.name,
                     $path = d3.select( el[0] ).append('path')
                         .attr( 'class', 'line plot-'+name ),
@@ -15,7 +16,7 @@ angular.module( 'vgraph' ).directive( 'vgraphLine',
                     parse : function( data ){
                         return ComponentGenerator.parseLimits( data, name );
                     },
-                    finalize : function( data ){
+                    finalize : function( pane, data ){
                         var last;
 
                         // TODO : what the heck is this filter about?

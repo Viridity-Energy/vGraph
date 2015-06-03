@@ -3,34 +3,41 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
     function () {
         'use strict';
 
+        function forEach( data, method, context ){
+            var i, c;
+
+            if ( data ){
+                if ( data.forEach ){
+                    data.forEach( method, context );
+                }else if ( data.length ){
+                    for( i = 0, c = data.length; i < c; i++ ){
+                        method.call( context, data[i], i );
+                    }
+                }
+            }
+        }
+
         var baseComponent = {
             require : ['^vgraphChart'],
             link : function( scope, el, attrs, requirements ){
-            	var chart = requirements[0],
+            	var control = attrs.control || 'default',
+                    chart = requirements[0].graph.views[control],
                     model = chart.model,
                     ctrl = {
                         model: model
                     },
                     alias,
-                    hasData = false,
                     name = attrs.name,
-                    lastLength = 0,
                     history = [],
                     memory = parseInt( attrs.memory, 10 ) || 10;
 
-                function loadData(){
-                    if ( scope.data && ctrl.valueParse && 
-                        (hasData !== scope.data || scope.data.length !== lastLength) ){
-                        if ( hasData ){ 
-                            model.removePlot( name );
+                function contentLoad(){
+                    var i, c;
+
+                    if ( scope.data && ctrl.valueParse ){
+                        for( i = 0, c = scope.data.length; i < c; i++ ){
+                            scope.loadPoint( scope.data[i] );
                         }
-                        
-                        hasData = scope.data;
-                        lastLength = 0;
-
-                        contentLoad( scope.data );
-
-                        chart.model.dataReady( scope );
                     }
                 }
 
@@ -66,35 +73,16 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 	                	ctrl.valueParse = v;
 	                }
 
-                    loadData();
+                    contentLoad();
                 });
 
                 scope.$watch('data', function(){
-                    loadData();
+                    contentLoad();
                 });
 
-                scope.$watch('data.length', function( length ){
-                	if ( length && ctrl.valueParse ){
-                        contentLoad( scope.data );
-                    }
+                scope.$watch('data.length', function(){
+                	contentLoad();
                 });
-
-                // so other functions can add points nicely
-
-                // I make the assumption data is ordered
-                function contentLoad( arr ){
-                    var length = arr.length;
-
-                    if ( length ){
-                        if ( length !== lastLength ){
-                            for( ; lastLength < length; lastLength++ ){
-                                scope.loadPoint( scope.data[lastLength] );
-                            }
-
-                            model.dataReady( scope );
-                        }
-                    }
-                }
 
                 if ( !scope.loadPoint ){
                     scope.loadPoint = function ( d ){
@@ -166,9 +154,18 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 ' vgraph-feed="'+src+'" name="'+name+'"'+
                 ' value="'+value+'"'+
                 ' interval="'+interval+'"'+
+                ' control="'+(conf.control||'default')+'"'+
                 ( conf.filter ? ' filter="'+conf.filter+'"' : '' ) +
             '></path>';
 	    }
+
+        function isNumeric( v ){
+            if ( Number.isFinite ){
+                return Number.isFinite(v) && !Number.isNaN(v);
+            }else{
+                return isFinite(v) && !isNaN(v);
+            }
+        }
 
         return {
         	generate : function( directive, overrides ){
@@ -214,7 +211,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 	                .interpolate( 'linear' )
 	                .defined(function(d){
 	                    var y = d[ name ];
-	                    return !( isNaN(y) || y === null );
+	                    return isNumeric(y);
 	                })
 	                .x(function( d ){
 	                    return chart.x.scale( d.$interval );
@@ -223,22 +220,95 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 	                    return chart.y.scale( d[name] );
 	                });
 	        },
-			makeFillCalc: function( chart, name, fillTo ){
+			makeFillCalc: function( chart1, top, chart2, bottom, extend ){
+                if ( !chart2 ){
+                    chart2 = chart1;
+                }
+
 	            return d3.svg.area()
 	                .defined(function(d){
-	                    var y = d[ name ];
-	                    return !( isNaN(y) || y === null );
+	                    var y1 = d[chart1.name][ top ];
+
+	                    if ( isNumeric(y1) ){
+                            if ( extend ){
+                                extend( d, d[chart1.name][top], d[chart2.name][bottom] );
+                            }
+                            return true;
+                        }else{
+                            return false;
+                        }
 	                })
 	                .x(function( d ){
-	                    return chart.x.scale( d.$interval );
+	                    return chart1.x.scale( d[chart1.name].$interval );
 	                })
 	                .y(function( d ){
-	                    return chart.y.scale( d[name] );
+	                    return chart1.y.scale( d[chart1.name][top] );
 	                })
 	                .y1(function( d ){
-	                    return chart.y.scale( d[fillTo] ? d[fillTo] : chart.model.y.minimum );
+	                    return chart2.y.scale( bottom && d[chart2.name][bottom] ? d[chart2.name][bottom] : chart2.model.y.minimum );
 	                });
 	        },
+            // I don't want to do this, but I need to for now
+            makeMyFillCalc: function( chart1, top, chart2, bottom, extend ){
+                if ( !chart2 ){
+                    chart2 = chart1;
+                }
+
+                function isDefined( d ){
+                    var y1 = d[chart1.name][ top ];
+
+                    if ( isNumeric(y1) ){
+                        if ( extend ){
+                            extend( d, d[chart1.name][top], d[chart2.name][bottom] );
+                        }
+                        return true;
+                    }else{
+                        return false;
+                    }
+                }
+
+                function xCalc( d ){
+                    return d[chart1.name]._$interval;
+                }
+
+                function yCalc( d ){
+                    return chart1.y.scale( d[chart1.name][top] );
+                }
+
+                function y1Calc( d ){
+                    return chart2.y.scale( bottom && d[chart2.name][bottom] ? d[chart2.name][bottom] : chart2.pane.y.minimum );
+                }
+
+                return function areaCalc(data) {
+                    var segments = [],
+                        points0 = [],
+                        points1 = [];
+
+                    function segment() {
+                        segments.push('M', points1.join('L'), 'L', points0.reverse().join('L'), 'Z');
+                    }
+
+                    forEach( data, function( d ){
+                        var x;
+
+                        if (isDefined(d)) {
+                            x = xCalc( d );
+                            points0.push( x+','+yCalc(d) );
+                            points1.push( x+','+y1Calc(d) );
+                        } else if (points0.length) {
+                            segment();
+                            points0 = [];
+                            points1 = [];
+                        }
+                    });
+
+                    if ( points0.length ){
+                        segment();
+                    }
+
+                    return segments.length ? segments.join('') : null;
+                };
+            },
 	        decodeConfig: function( $scope, conf, type ){
 	        	var i, c,
 	        		res = [];
@@ -274,7 +344,8 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 	        			name: conf[i].name,
                         className: conf[i].className,
 	        			element : comps[i],
-	        			$d3 : d3.select( comps[i] )
+	        			$d3 : d3.select( comps[i] ),
+                        $conf: conf[i]
 	        		};
 	        	}
 
@@ -346,7 +417,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                         for( i = 0, c = data.length; i < c; i++ ){
 	                		d = data[i];
 		                    v = parser( d, d[names] );
-		                    if ( v !== undefined ){
+		                    if ( isNumeric(v) ){
 		                        if ( min === undefined ){
 		                            min = v;
 		                            max = v;
@@ -362,7 +433,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 		for( i = 0, c = data.length; i < c; i++ ){
 	                		d = data[i];
 		                    v = d[names];
-		                    if ( v !== undefined ){
+		                    if ( isNumeric(v) ){
 		                    	if ( min === undefined ){
 		                            min = v;
 		                            max = v;

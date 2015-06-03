@@ -5,7 +5,8 @@ angular.module( 'vgraph' ).directive( 'vgraphFill',
 
         return ComponentGenerator.generate( 'vgraphFill', {
             link : function( scope, el, attrs, requirements ){
-                var chart = requirements[0],
+                var control = attrs.control || 'default',
+                    chart = requirements[0].graph.views[control],
                     name = attrs.name,
                     $path = d3.select( el[0] ).append('path')
                         .attr( 'class', 'fill plot-'+name ),

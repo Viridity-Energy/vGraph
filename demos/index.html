@@ -17,19 +17,26 @@
 		[ng-controller] {
 			display : inline-block;
 			width: 800;
-			height: 220;
+			height: 280;
+			margin: 10px 0;
 		}
 
 		[vgraph-chart] {
 			margin: 10px 30px;
-			padding: 0px 0px 20px 40px;
+			padding: 20px 40px;
 			width: 740;
-			height: 180;
+			height: 220;
 		}
 
 		.narrow [vgraph-chart] {
 			width: 340;
 			height: 90;
+		}
+
+		.grid-on .top line,
+		.grid-on .right line {
+		    stroke: #626262;
+		    stroke-width: 1;
 		}
 
 		[vgraph-chart] .mat {
@@ -109,183 +116,484 @@
 		}
 	</style>
 
-	<h5>Standard</h5>
-	<div ng-controller="FloodCtrl">
-		<svg vgraph-chart="box" model="model">
-			<g vgraph-line="line" interval="'x'" 
-				value="'y1'" name="someLine1"></g>
-			<g vgraph-line="line" interval="'x'" 
-				value="'y2'" name="someLine2"></g>
-			<g vgraph-line="line" interval="'x'" 
-				value="'y3'" name="someLine3"></g>
-			<g vgraph-line="line" interval="'x'" 
-				value="'y4'" name="someLine4"></g>
-		</svg>
-	</div>
-	
-	<div ng-controller="StackedCtrl">
-		<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="box" model="model" version="1.1">
-			<g vgraph-stack config="config"></g>
-		</svg>
-	</div>
+	<article ng-controller="AppCtrl">
+		<section class="controls">
+			<label>Simple<input type='checkbox' ng-checked="simple" ng-click="simple = !simple"/></label>
+			<label>Loading<input type='checkbox' ng-checked="loading" ng-click="loading = !loading"/></label>
+			<label>Growing<input type='checkbox' ng-checked="growing" ng-click="growing = !growing"/></label>
+			<label>Stacked<input type='checkbox' ng-checked="stacked" ng-click="stacked = !stacked"/></label>
+			<label>Standard<input type='checkbox' ng-checked="standard" ng-click="standard = !standard"/></label>
+			<label>Raw<input type='checkbox' ng-checked="raw" ng-click="raw = !raw"/></label>
+			<label>Classed<input type='checkbox' ng-checked="classed" ng-click="classed = !classed"/></label>
+			<label>Bar<input type='checkbox' ng-checked="bar" ng-click="bar = !bar"/></label>
+			<label>Compare<input type='checkbox' ng-checked="compare" ng-click="compare = !compare"/></label>
+			<label>MultiAxis<input type='checkbox' ng-checked="multiAxis" ng-click="multiAxis = !multiAxis"/></label>
+			<label>Zooming<input type='checkbox' ng-checked="zoom" ng-click="zoom = !zoom"/></label>
+		</section>
 
-	<div ng-controller="SpeedCtrl">
-		<svg vgraph-chart="box" model="model">
-			<g vgraph-line="line" interval="'x'" 
-				value="'y1'" name="someLine1"></g>
-			<g vgraph-line="line" interval="'x'" 
-				value="'y2'" name="someLine2"></g>
-			<g vgraph-line="line" interval="'x'" 
-				value="'y3'" name="someLine3"></g>
-			<g vgraph-line="line" interval="'x'" 
-				value="'y4'" name="someLine4"></g>
-		</svg>
-	</div>
+		<section ng-if="simple">
+			<h5>Simple</h5>
+			<div ng-controller="FloodCtrl">
+				<svg vgraph-chart="graph" model="model">
+					<g vgraph-axis="'left'"
+		                tick-length="4" tick-padding="-2"></g>
+		            <g vgraph-axis="'bottom'"
+		                tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+					
+					<g vgraph-line="line" interval="'x'" 
+						value="'y1'" name="someLine1"></g>
+					<g vgraph-line="line" interval="'x'" 
+						value="'y2'" name="someLine2"></g>
+					<g vgraph-line="line" interval="'x'" 
+						value="'y3'" name="someLine3"></g>
+					<g vgraph-line="line" interval="'x'" 
+						value="'y4'" name="someLine4"></g>
 
-	<div ng-controller="GrowingCtrl">
-		<svg vgraph-chart="box" model="model">
-			<g vgraph-axis="'left'"
-                tick-length="4" tick-padding="-2"></g>
-            <g vgraph-axis="'bottom'"
-                tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-			<g vgraph-line="line" interval="'x'" 
-				value="'y'" name="someLine"></g>
-			<g vgraph-indicator="someLine"
-				point-radius="5"></g>
-		</svg>
-	</div>
+					<g vgraph-target="highlight" point-radius="10"></g>
+					<g vgraph-interact="highlight"></g>
+				</svg>
+			</div>
+		</section>
 
-	<div ng-controller="StaticCtrl">
-		<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="box" model="model" version="1.1">
-			<g vgraph-axis="'left'"
-                tick-length="4" tick-padding="-2"></g>
-            <g vgraph-axis="'bottom'"
-                tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-			<g vgraph-line="line" interval="'x'" 
-				value="'y'" name="someLine"></g>
-			<g vgraph-indicator="someLine"
-				outer-radius="10"
-				point-radius="5"></g>
-		</svg>
-	</div>
+		<section ng-if="loading">
+			<h5>Loading</h5>
+			<div ng-controller="LoadingCtrl">
+				<svg vgraph-chart="graph" model="model">
+					<g vgraph-axis="'left'"
+		                tick-length="4" tick-padding="-2"></g>
+		            <g vgraph-axis="'bottom'"
+		                tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+					
+					<g vgraph-loading></g>
+					
+					<g vgraph-line="line" interval="'x'" 
+						value="'y1'" name="someLine1"></g>
+					<g vgraph-line="line" interval="'x'" 
+						value="'y2'" name="someLine2"></g>
+					<g vgraph-line="line" interval="'x'" 
+						value="'y3'" name="someLine3"></g>
+					<g vgraph-line="line" interval="'x'" 
+						value="'y4'" name="someLine4"></g>
 
-	<div ng-controller="MultiCtrl">
-		<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="box" model="model" version="1.1">
-			<g vgraph-axis="'left'"
-                tick-length="4" tick-padding="-2"></g>
-            <g vgraph-axis="'bottom'"
-                tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-			<g vgraph-multi-line="line" config="config"></g>
-		</svg>
-	</div>
+					<g vgraph-message></g>
+				</svg>
+			</div>
+		</section>
 
-	<div ng-controller="StackedClassCtrl">
-		<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="box" model="model" version="1.1">
-			<g vgraph-axis="'left'"
-                tick-length="4" tick-padding="-2"></g>
-            <g vgraph-axis="'bottom'"
-                tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-			<g vgraph-stack config="config"></g>
-		</svg>
-	</div>
+		<section ng-if="growing">
+			<h5>Growing</h5>
+			<div ng-controller="GrowingCtrl">
+				<svg vgraph-chart="graph" model="model">
+					<g vgraph-axis="'left'"
+		                tick-length="4" tick-padding="-2"></g>
+		            <g vgraph-axis="'bottom'"
+		                tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
 
-	<h5>Raw Data</h5>
+					<g vgraph-line="line" interval="'x'" 
+						value="'y'" name="someLine"></g>
+					<g vgraph-indicator="someLine"
+						point-radius="5"></g>
+				</svg>
+			</div>
+		</section>
 
-	<div ng-controller="RawCtrl">
-		<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="box" model="model" version="1.1">
-			<g vgraph-multi-line config="config"></g>
-			<g vgraph-leading config="config"></g>
-		</svg>
-	</div>
-	
-	<h5>Classed - Multi Data Sources</h5>
-	<div ng-controller="StackedMultiCtrl">
-		<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="box" model="model" version="1.1">
-			<g vgraph-axis="'left'"
-                tick-length="4" tick-padding="-2"></g>
-            <g vgraph-axis="'bottom'"
-                tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-			<g vgraph-stack config="config"></g>
-			<g vgraph-target="highlight" point-radius="5" config="config"></g>
-			<g vgraph-interact="highlight"></g>
-		</svg>
-	</div>
-	
-	<div ng-controller="ResizeCtrl">
-		<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="box" model="model" version="1.1">
-			<g vgraph-axis="'left'"
-                tick-length="4" tick-padding="-2"></g>
-            <g vgraph-axis="'bottom'"
-                tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-			<g vgraph-multi-line config="config"></g>
-			<g vgraph-multi-indicator config="config"></g>
-			<g vgraph-target="highlight" point-radius="5" config="config"></g>
-			<g vgraph-interact="highlight"></g>
-		</svg>
-		<div>
-			<button ng-click="resize()">Resize</button>
-		</div>
-	</div>
+		<section ng-if="stacked">
+			<h5>Stacked</h5>
+			<div ng-controller="StackedCtrl">
+				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" model="model" version="1.1">
+					<g vgraph-stack config="config"></g>
+				</svg>
+			</div>
+		</section>
 
-	<h5>Other Stuff</h5>
-	<div ng-controller="MixerCtrl">
-		{{ highlight.point.$compare }}
-		<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="box" model="model" version="1.1">
-			<g vgraph-compare config="config"></g>
-			<g vgraph-target="highlight" point-radius="5" config="config"></g>
-			<g vgraph-tooltip="highlight" text-formatter="formatter" value="getCompare"></g>
-			<g vgraph-interact="highlight"></g>
-		</svg>
-	</div>
+		<section ng-if="standard">
+			<h5>Standard</h5>
+			
+			<div ng-controller="SpeedCtrl">
+				<svg vgraph-chart="graph" model="model">
+					<g vgraph-line="line" interval="'x'" 
+						value="'y1'" name="someLine1"></g>
+					<g vgraph-line="line" interval="'x'" 
+						value="'y2'" name="someLine2"></g>
+					<g vgraph-line="line" interval="'x'" 
+						value="'y3'" name="someLine3"></g>
+					<g vgraph-line="line" interval="'x'" 
+						value="'y4'" name="someLine4"></g>
+				</svg>
+			</div>
 
-	<div ng-controller="StackedMultiCtrl">
-		{{ highlight.point.$bar }}
-		<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="box" model="model" version="1.1">
-			<g vgraph-axis="'left'"
-                tick-length="4" tick-padding="-2"></g>
-            <g vgraph-axis="'bottom'"
-                tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-			<g vgraph-bar config="config" padding="2" min-width="4"></g>
-			<g vgraph-tooltip="highlight" text-formatter="formatter" value="getBar"></g>
-			<g vgraph-interact="highlight"></g>
-		</svg>
-	</div>
+			<div ng-controller="StaticCtrl">
+				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" model="model" version="1.1">
+					<g vgraph-axis="'left'"
+		                tick-length="4" tick-padding="-2"></g>
+		            <g vgraph-axis="'bottom'"
+		                tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+					<g vgraph-line="line" interval="'x'" 
+						value="'y'" name="someLine"></g>
+					<g vgraph-indicator="someLine"
+						outer-radius="10"
+						point-radius="5"></g>
+				</svg>
+			</div>
 
-	<div ng-controller="SimpleStackedMultiCtrl">
-		{{ highlight.point.$bar }}
-		<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="box" model="model" version="1.1">
-			<g vgraph-axis="'left'"
-                tick-length="4" tick-padding="-2"></g>
-            <g vgraph-axis="'bottom'"
-                tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-			<g vgraph-bar config="config" padding="2" min-width="4"></g>
-			<g vgraph-icon="data" 
-				true-value="iconValue"
-				interval="'x'"
-				name="high" show-under="true"
-				><text>H</text></g>
-			<g vgraph-tooltip="highlight" text-formatter="formatter" value="getBar"></g>
-			<g vgraph-interact="highlight"></g>
-			<g vgraph-classifier="data" 
-				classes="classTests"
-				interval="'x'"
-				value="classParser"></g>
-		</svg>
-	</div>
+			<div ng-controller="MultiCtrl">
+				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" model="model" version="1.1">
+					<g vgraph-axis="'left'"
+		                tick-length="4" tick-padding="-2"></g>
+		            <g vgraph-axis="'bottom'"
+		                tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+					<g vgraph-multi-line="line" config="config"></g>
+				</svg>
+			</div>
 
+			<div ng-controller="StackedClassCtrl">
+				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" model="model" version="1.1">
+					<g vgraph-axis="'left'"
+		                tick-length="4" tick-padding="-2"></g>
+		            <g vgraph-axis="'bottom'"
+		                tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+					<g vgraph-stack config="config"></g>
+				</svg>
+			</div>
+		</section>
+
+		<section ng-if="raw">
+			<h5>Raw Data</h5>
+
+			<div ng-controller="RawCtrl">
+				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" model="model" version="1.1">
+					<g vgraph-multi-line config="config"></g>
+					<g vgraph-leading config="config"></g>
+				</svg>
+			</div>
+		</section>
+
+		<section ng-if="classed">
+			<h5>Classed - Multi Data Sources</h5>
+			<div ng-controller="StackedMultiCtrl">
+				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" model="model" version="1.1">
+					<g vgraph-axis="'left'"
+		                tick-length="4" tick-padding="-2"></g>
+		            <g vgraph-axis="'bottom'"
+		                tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+					<g vgraph-stack config="config"></g>
+					<g vgraph-target="highlight" point-radius="5" config="{'default':config}"></g>
+					<g vgraph-interact="highlight"></g>
+				</svg>
+			</div>
+			
+			<div ng-controller="ResizeCtrl">
+				<span ng-repeat="conf in config">|{{highlight.point.default[conf.name]}}|</span>
+				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" model="model" version="1.1">
+					<g vgraph-axis="'left'"
+		                tick-length="4" tick-padding="-2"></g>
+		            <g vgraph-axis="'bottom'"
+		                tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+					<g vgraph-multi-line config="config"></g>
+					<g vgraph-multi-indicator config="config"></g>
+					<g vgraph-target="highlight" point-radius="5" config="{'default':config}"></g>
+					<g vgraph-interact="highlight"></g>
+				</svg>
+				<div>
+					<button ng-click="resize()">Resize</button>
+				</div>
+			</div>
+		</section>
+
+		<section ng-if="compare">
+			<h5>Other Stuff</h5>
+			<div ng-controller="MixerCtrl">
+				{{ highlight.point.$compare }}
+				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" model="model" version="1.1">
+					<g vgraph-compare config="{y_1:'default',y_2:'default'}"></g>
+					<g vgraph-multi-line config="config"></g>
+					<g vgraph-target="highlight" point-radius="5" config="{default:config}"></g>
+					<g vgraph-tooltip="highlight" text-formatter="formatter" value="getCompare"></g>
+					<g vgraph-interact="highlight"></g>
+				</svg>
+			</div>
+		</section>
+
+		<section ng-if="bar">
+			<div ng-controller="StackedMultiCtrl">
+				{{ highlight.point.default.$bar }}
+				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" model="model" version="1.1">
+					<g vgraph-axis="'left'"
+		                tick-length="4" tick-padding="-2"></g>
+		            <g vgraph-axis="'bottom'"
+		                tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+					<g vgraph-bar config="config" padding="2" min-width="4"></g>
+					<g vgraph-tooltip="highlight" text-formatter="formatter" value="getBar"></g>
+					<g vgraph-interact="highlight"></g>
+				</svg>
+			</div>
+
+			<div ng-controller="SimpleStackedMultiCtrl">
+				{{ highlight.point.default.$bar }}
+				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" model="model" version="1.1">
+					<g vgraph-axis="'left'"
+		                tick-length="4" tick-padding="-2"></g>
+		            <g vgraph-axis="'bottom'"
+		                tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+					<g vgraph-bar config="config" padding="2" min-width="4"></g>
+					<g vgraph-icon="data" 
+						true-value="iconValue"
+						interval="'x'"
+						name="high" show-under="true"
+						><text>H</text></g>
+					<g vgraph-tooltip="highlight" text-formatter="formatter" value="getBar"></g>
+					<g vgraph-interact="highlight"></g>
+					<g vgraph-classifier="data" 
+						classes="classTests"
+						interval="'x'"
+						value="classParser"></g>
+				</svg>
+			</div>
+		</section>
+
+		<section ng-if="multiAxis">
+			<h5>Multi Axis</h5>
+			<div ng-controller="MultiAxisCtrl" class='grid-on'>
+				({{highlight.point.firstModel.$interval}},{{highlight.point.firstModel.firstLine}}) : 
+				({{highlight.point.secondModel.$interval}},{{highlight.point.secondModel.secondLine}})
+				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" 
+					model="{ firstModel:firstModel, secondModel:secondModel }" version="1.1">
+					<g vgraph-axis="'left'" control="firstModel"
+		                tick-length="4" tick-padding="-2"></g>
+		            <g vgraph-axis="'bottom'" control="firstModel"
+		                tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+		            <g vgraph-axis="'right'" control="secondModel"
+		                tick-length="4" tick-padding="-2"></g>
+		            <g vgraph-axis="'top'" control="secondModel"
+		                tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+					<g vgraph-line="line" interval="'x'" control="firstModel"
+						value="'y1'" name="firstLine"></g>
+					<g vgraph-line="line" interval="'x2'" control="secondModel"
+						value="'y2'" name="secondLine"></g>
+					<g vgraph-target="highlight" point-radius="5"
+						config="{firstModel:[{name:'firstLine',className:'blue'}], secondModel:[{name:'secondLine',className:'red'}]}"></g>
+					<g vgraph-interact="highlight"></g>
+				</svg>
+			</div>
+		</section>
+
+		<section ng-if="zoom">
+			<h5>Zooming</h5>
+			<div ng-controller="MultiAxisCtrl" class='grid-on'>
+				({{highlight.point.firstModel.$interval}},{{highlight.point.firstModel.firstLine}}) : 
+				({{highlight.point.secondModel.$interval}},{{highlight.point.secondModel.secondLine}})
+				<svg vgraph-chart="graph" 
+					model="{ firstModel:firstModel, secondModel:secondModel }">
+					<g vgraph-axis="'left'" control="firstModel"
+		                tick-length="4" tick-padding="-2"></g>
+		            <g vgraph-axis="'bottom'" control="firstModel"
+		                tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+		            <g vgraph-axis="'right'" control="secondModel"
+		                tick-length="4" tick-padding="-2"></g>
+		            <g vgraph-axis="'top'" control="secondModel"
+		                tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+					
+					<g vgraph-line="line" interval="'x'" control="firstModel"
+						value="'y1'" name="firstLine"></g>
+					<g vgraph-line="line" interval="'x2'" control="secondModel"
+						value="'y2'" name="secondLine"></g>
+
+					<g vgraph-target="highlight" point-radius="5"
+						config="{firstModel:[{name:'firstLine',className:'blue'}], secondModel:[{name:'secondLine',className:'red'}]}"></g>
+
+					<g vgraph-focus="dragPos" lose-focus="dragStop"></g>
+					<g vgraph-interact="highlight" d-begin="dragStart" d-change="dragPos" d-end="dragStop"></g>
+				</svg>
+
+				<svg class="zoom" vgraph-chart="zoom" model="graphModel">
+                    <g vgraph-axis="'bottom'" control="firstModel"
+                        tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+                    <g vgraph-axis="'top'" control="secondModel"
+		                tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+
+		            <g vgraph-multi-line config="config"></g>
+
+                    <g vgraph-zoom="graph" control="firstModel"></g>
+                </svg>
+			</div>
+		</section>
+	</article>
 <script>
 
+angular.module( 'vgraph' ).controller( 'AppCtrl', [
+	'$scope',
+	function( $scope ){
+		$scope.foo = 'bar';
+	}]
+);
+
+angular.module( 'vgraph' ).controller( 'FloodCtrl',
+	['$scope', 'GraphModel', 'LinearModel',
+	function( $scope, GraphModel, LinearModel ){
+		var data = [ {x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40}  ],
+			interval,
+			boxModel;
+
+		$scope.highlight = {};
+		$scope.line = data;
+		$scope.graph = new GraphModel();
+		$scope.model = new LinearModel({
+            x : {
+                scale : function(){
+                    return d3.scale.linear();
+                }
+            },
+            y : {
+                padding : 0.05
+            }
+        });
+
+		for( var i = 0, c = 20; i < c; i++ ){
+			var counter = 0;
+			var min = -1,
+				max = 1,
+				t = Math.random() * (max - min) + min;
+
+			data.push({
+				x : data.length,
+				y1 : data[data.length-1].y1 + t,
+				y2 : data[data.length-1].y2 + t,
+				y3 : data[data.length-1].y3 + t,
+				y4 : data[data.length-1].y4 + t
+			});
+		}
+		
+		$scope.graph.setBounds({
+                min : null,
+                max : null
+            },{
+                min : null,
+                max : null
+            })
+            .setPane({
+                start : null,
+                stop : null
+            },{
+                start : null,
+                stop : null
+            });
+	}]
+);
+
+angular.module( 'vgraph' ).controller( 'LoadingCtrl',
+	['$scope', 'GraphModel', 'LinearModel',
+	function( $scope, GraphModel, LinearModel ){
+		var data = [];
+
+		$scope.graph = new GraphModel();
+		$scope.model = new LinearModel({
+            x : {
+                scale : function(){
+                    return d3.scale.linear();
+                }
+            },
+            y : {
+                padding : 0.05
+            }
+        });
+		$scope.line = data;
+		
+		$scope.graph.setBounds({
+                min : null,
+                max : null
+            },{
+                min : null,
+                max : null
+            })
+            .setPane({
+                start : null,
+                stop : null
+            },{
+                start : null,
+                stop : null
+            });
+
+        setTimeout(function(){
+        	$scope.$apply(function(){
+        		$scope.graph.message = 'This Go Boom - Sample';
+        	});
+        }, 1000);
+
+        setTimeout(function(){
+        	$scope.model.setError('--==model error==--');
+        }, 2000);
+
+        setTimeout(function(){
+        	$scope.$apply(function(){
+        		var data = [];
+
+        		$scope.graph.message = null;
+        		$scope.line = data;
+
+	        	data.push({x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40});
+
+	        	for( var i = 0, c = 2000; i < c; i++ ){
+					var counter = 0;
+					var min = -1,
+						max = 1,
+						t = Math.random() * (max - min) + min;
+
+					data.push({
+						x : data.length,
+						y1 : data[data.length-1].y1 + t,
+						y2 : data[data.length-1].y2 + t,
+						y3 : data[data.length-1].y3 + t,
+						y4 : data[data.length-1].y4 + t
+					});
+				}
+			});
+        }, 3000);
+
+        setTimeout(function(){
+        	$scope.$apply(function(){
+        		$scope.model.reset();
+			});
+        }, 4000);
+
+        setTimeout(function(){
+        	$scope.$apply(function(){
+        		var data = [];
+        		
+        		$scope.graph.message = null;
+        		$scope.line = data;
+
+	        	data.push({x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40});
+
+	        	for( var i = 0, c = 2000; i < c; i++ ){
+					var counter = 0;
+					var min = -1,
+						max = 1,
+						t = Math.random() * (max - min) + min;
+
+					data.push({
+						x : data.length,
+						y1 : data[data.length-1].y1 + t,
+						y2 : data[data.length-1].y2 + t,
+						y3 : data[data.length-1].y3 + t,
+						y4 : data[data.length-1].y4 + t
+					});
+				}
+			});
+        }, 5000);
+	}]
+);
+
 angular.module( 'vgraph' ).controller( 'ResizeCtrl', [
-	'$scope', '$element', 'BoxModel', 'GraphModel',
-	function( $scope, $element, BoxModel, GraphModel ){
+	'$scope', '$element', 'GraphModel', 'LinearModel',
+	function( $scope, $element, GraphModel, LinearModel ){
 		var data = [ { x : 0, y_line_1 : 10, y_line_2 : 5, y_line_3 : 15, y_line_4 : 8} ],
 			interval,
 			wide = true;
 
 		$scope.highlight = {};
 		$scope.line = data;
-		$scope.box = new BoxModel();
-		$scope.model = new GraphModel({
+		$scope.graph = new GraphModel();
+		$scope.model = new LinearModel({
             x : {
                 scale : function(){
                     return d3.scale.linear();
@@ -306,7 +614,7 @@ angular.module( 'vgraph' ).controller( 'ResizeCtrl', [
 			}
 
 			console.log( 'resizing...' );
-			$scope.box.resize();
+			$scope.graph.box.resize();
 		};
 
 		$scope.config = [
@@ -334,68 +642,16 @@ angular.module( 'vgraph' ).controller( 'ResizeCtrl', [
 	}]
 );
 
-angular.module( 'vgraph' ).controller( 'FloodCtrl',
-	['$scope', 'BoxModel', 'GraphModel',
-	function( $scope, BoxModel, GraphModel ){
-		var data = [ {x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40}  ],
-			interval,
-			boxModel;
-
-		$scope.line = data;
-		$scope.box = new BoxModel();
-		$scope.model = new GraphModel({
-            x : {
-                scale : function(){
-                    return d3.scale.linear();
-                }
-            },
-            y : {
-                padding : 0.05
-            }
-        });
-
-		for( var i = 0, c = 2000; i < c; i++ ){
-			var counter = 0;
-			var min = -1,
-				max = 1,
-				t = Math.random() * (max - min) + min;
-
-			data.push({
-				x : data.length,
-				y1 : data[data.length-1].y1 + t,
-				y2 : data[data.length-1].y2 + t,
-				y3 : data[data.length-1].y3 + t,
-				y4 : data[data.length-1].y4 + t
-			});
-		}
-		
-		$scope.model.setBounds({
-                min : null,
-                max : null
-            },{
-                min : null,
-                max : null
-            })
-            .setPane({
-                start : null,
-                stop : null
-            },{
-                start : null,
-                stop : null
-            });
-	}]
-);
-
 angular.module( 'vgraph' ).controller( 'MultiCtrl',
-	['$scope', 'BoxModel', 'GraphModel',
-	function( $scope, BoxModel, GraphModel ){
+	['$scope', 'GraphModel', 'LinearModel',
+	function( $scope, GraphModel, LinearModel ){
 		var data = [ { y1 : 10, y2 : 5, y3 : 15, y4 : 8} ],
 			interval,
 			boxModel;
 
 		$scope.line = data;
-		$scope.box = new BoxModel();
-		$scope.model = new GraphModel({
+		$scope.graph = new GraphModel();
+		$scope.model = new LinearModel({
             x : {
                 scale : function(){
                     return d3.scale.linear();
@@ -455,7 +711,7 @@ angular.module( 'vgraph' ).controller( 'MultiCtrl',
 		}
 
 		$scope.model.dataReady( $scope );
-		$scope.model.setBounds({
+		$scope.graph.setBounds({
                 min : null,
                 max : null
             },{
@@ -473,15 +729,15 @@ angular.module( 'vgraph' ).controller( 'MultiCtrl',
 );
 
 angular.module( 'vgraph' ).controller( 'MixerCtrl',
-	['$scope', 'BoxModel', 'GraphModel',
-	function( $scope, BoxModel, GraphModel ){
+	['$scope', 'GraphModel', 'LinearModel',
+	function( $scope, GraphModel, LinearModel ){
 		var data = [ { y1 : 15, y2 : 5, y3 : 25, y4 : 35} ],
 			interval,
 			boxModel;
 
 		$scope.line = data;
-		$scope.box = new BoxModel();
-		$scope.model = new GraphModel({
+		$scope.graph = new GraphModel();
+		$scope.model = new LinearModel({
             x : {
                 scale : function(){
                     return d3.scale.linear();
@@ -492,12 +748,12 @@ angular.module( 'vgraph' ).controller( 'MixerCtrl',
             }
         });
 
-		$scope.formatter = function( value, data ){
-			return data.$compare.difference;
+		$scope.formatter = function( value, data, point ){
+			return point.$compare.difference;
 		};
 
-		$scope.getCompare = function( data ){
-			return data.$compare.middle;
+		$scope.getCompare = function( point ){
+			return point.$compare.middle;
 		};
 
         // x is the interval, y is the function pulling the value
@@ -523,7 +779,7 @@ angular.module( 'vgraph' ).controller( 'MixerCtrl',
 			data.push( p );
 		}
 
-		$scope.model.setBounds({
+		$scope.graph.setBounds({
                 min : 0,
                 max : 2500
             },{
@@ -541,15 +797,15 @@ angular.module( 'vgraph' ).controller( 'MixerCtrl',
 );
 
 angular.module( 'vgraph' ).controller( 'RawCtrl',
-	['$scope', 'BoxModel', 'GraphModel',
-	function( $scope, BoxModel, GraphModel ){
+	['$scope', 'GraphModel', 'LinearModel',
+	function( $scope, GraphModel, LinearModel ){
 		var data = [ { y1 : 15, y2 : 5, y3 : 25, y4 : 35} ],
 			interval,
 			boxModel;
 
 		$scope.line = data;
-		$scope.box = new BoxModel();
-		$scope.model = new GraphModel({
+		$scope.graph = new GraphModel();
+		$scope.model = new LinearModel({
             x : {
                 scale : function(){
                     return d3.scale.linear();
@@ -584,7 +840,7 @@ angular.module( 'vgraph' ).controller( 'RawCtrl',
 			data.push( p );
 		}
 
-		$scope.model.setBounds({
+		$scope.graph.setBounds({
                 min : 0,
                 max : 2500
             },{
@@ -602,15 +858,15 @@ angular.module( 'vgraph' ).controller( 'RawCtrl',
 );
 
 angular.module( 'vgraph' ).controller( 'StackedCtrl',
-	['$scope', 'BoxModel', 'GraphModel',
-	function( $scope, BoxModel, GraphModel ){
+	['$scope', 'GraphModel', 'LinearModel',
+	function( $scope, GraphModel, LinearModel ){
 		var data = [ { y1 : 10, y2 : 5, y3 : 15, y4 : 8} ],
 			interval,
 			boxModel;
 
 		$scope.line = data;
-		$scope.box = new BoxModel();
-		$scope.model = new GraphModel({
+		$scope.graph = new GraphModel();
+		$scope.model = new LinearModel({
             x : {
                 scale : function(){
                     return d3.scale.linear();
@@ -649,7 +905,7 @@ angular.module( 'vgraph' ).controller( 'StackedCtrl',
 		}
 
 		$scope.model.dataReady( $scope );
-		$scope.model.setBounds({
+		$scope.graph.setBounds({
                 min : null,
                 max : null
             },{
@@ -667,15 +923,15 @@ angular.module( 'vgraph' ).controller( 'StackedCtrl',
 );
 
 angular.module( 'vgraph' ).controller( 'StackedMultiCtrl',
-	['$scope', 'BoxModel', 'GraphModel',
-	function( $scope, BoxModel, GraphModel ){
+	['$scope', 'GraphModel', 'LinearModel',
+	function( $scope, GraphModel, LinearModel ){
 		var data = [ { y1 : 10, y2 : 5, y3 : 15, diff : 8} ],
 			interval,
 			boxModel;
 
 		$scope.line = data;
-		$scope.box = new BoxModel();
-		$scope.model = new GraphModel({
+		$scope.graph = new GraphModel();
+		$scope.model = new LinearModel({
             x : {
                 scale : function(){
                     return d3.scale.linear();
@@ -697,7 +953,7 @@ angular.module( 'vgraph' ).controller( 'StackedMultiCtrl',
 		};
 
 		$scope.getBar = function( data ){
-			return data.$bar.top;
+			return data.default.$bar.top;
 		};
 
 		for( var i = 250, c = 2000; i < c; i++ ){
@@ -717,7 +973,7 @@ angular.module( 'vgraph' ).controller( 'StackedMultiCtrl',
 		}
 
 		$scope.model.dataReady( $scope );
-		$scope.model.setBounds({
+		$scope.graph.setBounds({
                 min : 0,
                 max : 3000
             },{
@@ -735,15 +991,15 @@ angular.module( 'vgraph' ).controller( 'StackedMultiCtrl',
 );
 
 angular.module( 'vgraph' ).controller( 'SimpleStackedMultiCtrl',
-	['$scope', 'BoxModel', 'GraphModel',
-	function( $scope, BoxModel, GraphModel ){
+	['$scope', 'GraphModel', 'LinearModel',
+	function( $scope, GraphModel, LinearModel ){
 		var data = [ { y1 : 10, y2 : 5, y3 : 15, diff : 8} ],
 			interval,
 			boxModel;
 
 		$scope.line = data;
-		$scope.box = new BoxModel();
-		$scope.model = new GraphModel({
+		$scope.graph = new GraphModel();
+		$scope.model = new LinearModel({
             x : {
                 scale : function(){
                     return d3.scale.linear();
@@ -782,7 +1038,9 @@ angular.module( 'vgraph' ).controller( 'SimpleStackedMultiCtrl',
 		};
 
 		$scope.iconValue = function( data ){
-			return data.$total;
+			if ( data ){
+				return data.$total;
+			}
 		};
 
 		$scope.formatter = function( value, data ){
@@ -790,7 +1048,7 @@ angular.module( 'vgraph' ).controller( 'SimpleStackedMultiCtrl',
 		};
 
 		$scope.getBar = function( data ){
-			return data.$bar.top;
+			return data.default.$bar.top;
 		};
 
 		for( var i = 250, c = 2000; i < c; i++ ){
@@ -814,7 +1072,7 @@ angular.module( 'vgraph' ).controller( 'SimpleStackedMultiCtrl',
 
 		$scope.data = data;
 		$scope.model.dataReady( $scope );
-		$scope.model.setBounds({
+		$scope.graph.setBounds({
                 min : null,
                 max : null
             },{
@@ -832,15 +1090,15 @@ angular.module( 'vgraph' ).controller( 'SimpleStackedMultiCtrl',
 );
 
 angular.module( 'vgraph' ).controller( 'StackedClassCtrl',
-	['$scope', 'BoxModel', 'GraphModel',
-	function( $scope, BoxModel, GraphModel ){
+	['$scope', 'GraphModel', 'LinearModel',
+	function( $scope, GraphModel, LinearModel ){
 		var data = [ { y1 : 10, y2 : 5, y3 : 15, y4 : 8} ],
 			interval,
 			boxModel;
 
 		$scope.line = data;
-		$scope.box = new BoxModel();
-		$scope.model = new GraphModel({
+		$scope.graph = new GraphModel();
+		$scope.model = new LinearModel({
             x : {
                 scale : function(){
                     return d3.scale.linear();
@@ -879,7 +1137,7 @@ angular.module( 'vgraph' ).controller( 'StackedClassCtrl',
 		}
 
 		$scope.model.dataReady( $scope );
-		$scope.model.setBounds({
+		$scope.graph.setBounds({
                 min : null,
                 max : null
             },{
@@ -897,15 +1155,15 @@ angular.module( 'vgraph' ).controller( 'StackedClassCtrl',
 );
 
 angular.module( 'vgraph' ).controller( 'SpeedCtrl',
-	['$scope', 'BoxModel', 'GraphModel',
-	function( $scope, BoxModel, GraphModel ){
+	['$scope', 'GraphModel', 'LinearModel',
+	function( $scope, GraphModel, LinearModel ){
 		var data = [ {x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40}  ],
 			interval,
 			boxModel;
 
 		$scope.line = data;
-		$scope.box = new BoxModel();
-		$scope.model = new GraphModel({
+		$scope.graph = new GraphModel();
+		$scope.model = new LinearModel({
             x : {
                 scale : function(){
                     return d3.scale.linear();
@@ -930,7 +1188,7 @@ angular.module( 'vgraph' ).controller( 'SpeedCtrl',
 				y4 : data[data.length-1].y4 + t
 			});
 
-			$scope.model.setBounds({
+			$scope.graph.setBounds({
                     min : null,
                     max : null
                 },{
@@ -955,15 +1213,15 @@ angular.module( 'vgraph' ).controller( 'SpeedCtrl',
 );
 
 angular.module( 'vgraph' ).controller( 'GrowingCtrl',
-	['$scope', 'BoxModel', 'GraphModel',
-	function( $scope, BoxModel, GraphModel ){
+	['$scope', 'GraphModel', 'LinearModel',
+	function( $scope, GraphModel, LinearModel ){
 		var data = [ {x : 0, y : 20}  ],
 			interval,
 			boxModel;
 
 		$scope.line = data;
-		$scope.box = new BoxModel();
-		$scope.model = new GraphModel({
+		$scope.graph = new GraphModel();
+		$scope.model = new LinearModel({
             x : {
                 scale : function(){
                     return d3.scale.linear();
@@ -984,9 +1242,63 @@ angular.module( 'vgraph' ).controller( 'GrowingCtrl',
 				y : data[data.length-1].y + t
 			});
 
-			$scope.model.setBounds({
+			$scope.graph.setBounds({
                     min : null,
                     max : null
+                },{
+                    min : null,
+                    max : null
+                })
+                .setPane({
+                    start : null,
+                    stop : null
+                },{
+                    start : null,
+                    stop : null
+                });
+
+			$scope.$apply();
+		}, 20);
+
+		setTimeout(function(){
+			clearInterval( interval );
+		}, 20000 ); // 20 seconds
+	}]
+);
+
+angular.module( 'vgraph' ).controller( 'StaticCtrl',
+	['$scope', 'GraphModel', 'LinearModel',
+	function( $scope, GraphModel, LinearModel ){
+		var data = [ {x : 0, y : 20}  ],
+			interval,
+			boxModel;
+
+		$scope.line = data;
+		$scope.graph = new GraphModel();
+		$scope.model = new LinearModel({
+            x : {
+                scale : function(){
+                    return d3.scale.linear();
+                }
+            },
+            y : {
+                padding : 0.05
+            }
+        });
+
+		interval = setInterval(function(){
+			var min = -1,
+				max = 1,
+				t = Math.random() * (max - min) + min;
+
+			data.push({
+				x : data.length,
+				y : data[data.length-1].y + t
+			});
+
+			$scope.graph.setBounds({
+                    min : 0,
+                    max : 1000
                 },{
                     min : null,
                     max : null
@@ -1008,16 +1320,42 @@ angular.module( 'vgraph' ).controller( 'GrowingCtrl',
 	}]
 );
 
-angular.module( 'vgraph' ).controller( 'StaticCtrl',
-	['$scope', 'BoxModel', 'GraphModel',
-	function( $scope, BoxModel, GraphModel ){
-		var data = [ {x : 0, y : 20}  ],
+angular.module( 'vgraph' ).controller( 'MultiAxisCtrl',
+	['$scope', 'GraphModel', 'LinearModel', 'DataCollection',
+	function( $scope, GraphModel, LinearModel, DataCollection ){
+		var data = [ {x : 0, x2: 150, y1 : 20, y2 : 400}  ],
 			interval,
 			boxModel;
 
+		/*
+		<g vgraph-line="line" interval="'x'" control="firstModel"
+			value="'y1'" name="firstLine"></g>
+		<g vgraph-line="line" interval="'x2'" control="secondModel"
+			value="'y2'" name="secondLine"></g>
+		*/
+		$scope.config = [
+			{ 
+				name : 'firstLine',
+				data: data,
+				className : 'red', 
+				control: 'firstModel',
+				interval: 'x',
+				value: 'y1'
+			},
+			{ 
+				name : 'secondLine',
+				data: data,
+				className : 'blue',
+				control: 'secondModel',
+				interval: 'x2',
+				value: 'y2'
+			}
+		];
+
 		$scope.line = data;
-		$scope.box = new BoxModel();
-		$scope.model = new GraphModel({
+		$scope.graph = new GraphModel();
+		$scope.zoom = new GraphModel();
+		$scope.firstModel = new LinearModel({
             x : {
                 scale : function(){
                     return d3.scale.linear();
@@ -1027,20 +1365,51 @@ angular.module( 'vgraph' ).controller( 'StaticCtrl',
                 padding : 0.05
             }
         });
+		$scope.secondModel = new LinearModel({
+            x : {
+                scale : function(){
+                    return d3.scale.linear();
+                }
+            },
+            y : {
+                padding : 0.05
+            }
+        });
+		$scope.graphModel = new DataCollection({
+			'firstModel': $scope.firstModel,
+			'secondModel': $scope.secondModel
+		});
 
+		var counter = 0;
 		interval = setInterval(function(){
 			var min = -1,
-				max = 1,
-				t = Math.random() * (max - min) + min;
+				max = 1;
 
 			data.push({
 				x : data.length,
-				y : data[data.length-1].y + t
+				x2 : data.length + 150,
+				y1 : data[data.length-1].y1 + (Math.random() * (max - min) + min),
+				y2 : data[data.length-1].y2 + (Math.random() * (max - min) + min)
 			});
 
-			$scope.model.setBounds({
-                    min : 0,
-                    max : 1000
+			$scope.graph.setBounds({
+                    min : null,
+                    max : null
+                },{
+                    min : null,
+                    max : null
+                })
+                .setPane({
+                    start : null,
+                    stop : null
+                },{
+                    start : null,
+                    stop : null
+                });
+
+            $scope.zoom.setBounds({
+                    min : null,
+                    max : null
                 },{
                     min : null,
                     max : null

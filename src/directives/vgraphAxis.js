@@ -21,14 +21,21 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
         }
 
         return {
+            scope : {
+                orient : '=vgraphAxis',
+                adjust : '=axisAdjust',
+                rotation : '=tickRotation'
+            },
             require : ['^vgraphChart'],
             link : function( scope, el, attrs, requirements ){
-                var chart = requirements[0],
+                var control = attrs.control || 'default',
+                    graph = requirements[0].graph,
+                    chart = graph.views[control],
                     makeTicks,
                     express,
                     axis = d3.svg.axis(),
                     className= 'axis',
-                    box = chart.box,
+                    box = graph.box,
                     model = chart.model,
                     labelOffset = 0,
                     tickRotation = null,
@@ -100,7 +107,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                             var axisMaxMin;
 
                             $el.attr( 'class', className + ' x top' )
-                                .attr( 'transform', 'translate('+box.left+','+box.top+')' )
+                                .attr( 'transform', 'translate('+box.left+','+(box.top-tickLength)+')' )
                                 .attr( 'width', box.width )
                                 .attr( 'height', box.padding.top );
 
@@ -123,7 +130,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                             if ( ticks ){
                                 axis.orient('top')
                                     .tickFormat( model.x.format )
-                                    .innerTickSize( -box.innerHeight + tickLength + tickMargin )
+                                    .innerTickSize( -(box.innerHeight + tickLength + tickMargin) )
                                     .outerTickSize( 0 )
                                     .tickPadding( tickPadding + tickLength + tickMargin )
                                     .scale( chart.x.scale );
@@ -267,13 +274,87 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                         break;
 
                     case 'right' :
+                        express = function(){
+                            var axisMaxMin;
+                            
+                            $el.attr( 'class', className + ' y right' )
+                                .attr( 'transform',
+                                    'translate('+tickLength+','+box.top+')'
+                                )
+                                .attr( 'width', box.padding.right )
+                                .attr( 'height', box.height );
+
+                            $axisLabelWrap.attr( 'transform',
+                                'translate('+box.padding.right+','+box.height+') rotate( -90 )'
+                            );
+
+                            if ( $axisLabel ){
+                                $axisLabel.attr( 'text-anchor', 'middle' )
+                                    .attr( 'x', box.height / 2 )
+                                    .attr( 'y', -labelOffset );
+                            }
+
+                            if ( tickMargin ){
+                                $tickMargin
+                                    .attr( 'height', box.innerHeight )
+                                    .attr( 'width', tickMargin )
+                                    .attr( 'x', -tickMargin )
+                                    .attr( 'y', 0 );
+                            }
+
+                            $tickMarks.attr( 'transform', 'translate(-'+box.padding.right+','+(-box.top)+')' );
+
+                            if ( ticks ){
+                                axis.orient('right')
+                                    .tickFormat( model.y.format )
+                                    .innerTickSize( -(box.innerWidth + tickLength + tickMargin) )
+                                    .outerTickSize( 0 )
+                                    .tickPadding( tickPadding + tickLength + tickMargin )
+                                    .scale( chart.y.scale );
+
+                                if ( model.y.tick.interval ){
+                                    axis.ticks(
+                                        model.y.tick.interval,
+                                        model.y.tick.step
+                                    );
+                                }
+
+                                $ticks.attr('transform', 'translate('+(box.innerRight)+','+(-box.top)+')')
+                                    .call( axis );
+
+                                $ticks.select('.domain').attr( 'transform', 'translate('+( tickLength + tickMargin )+',0)' );
+
+                                if ( labelEndpoints ){
+                                    axisMaxMin = $el.selectAll('g.axis-cap').data( chart.y.scale.domain() );
+
+                                    axisMaxMin.enter().append('g').attr('class', function(d,i){
+                                            return 'axis-cap ' + ( i ? 'axis-max' : 'axis-min' );
+                                        })
+                                        .append('text');
+
+                                    axisMaxMin.exit().remove();
+
+                                    axisMaxMin.attr('transform', function( d ){
+                                            return 'translate(0,' + ( chart.y.scale(d) - box.margin.top ) + ')';
+                                        })
+                                        .select( 'text' )
+                                            .text( function(d) {
+                                                var v = model.y.format( d );
+                                                return ('' + v).match('NaN') ? '' : v;
+                                            })
+                                            .attr( 'dy', '.25em')
+                                            .attr( 'x', box.padding.left - axis.tickPadding() )
+                                            .attr( 'text-anchor', 'end');
+                                }
+                            }
+                        };
                         break;
 
 
                     case 'left' :
-                        var axisMaxMin;
-
                         express = function(){
+                            var axisMaxMin;
+
                             $el.attr( 'class', className + ' y left' )
                                 .attr( 'transform',
                                     'translate('+box.left+','+box.top+')'
@@ -399,6 +480,13 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                             change,
                             boundry = {};
 
+                        if ( graph.loading ){
+                            $el.attr( 'visibility', 'hidden' );
+                            return;
+                        }else{
+                            $el.attr( 'visibility', '' );
+                        }
+
                         $tickMarks.selectAll('line').remove();
 
                         for( i = 0, c = ticks.length; i < c; i++ ){
@@ -459,11 +547,6 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                         }
                     }
                 }, 'axis-'+scope.orient);
-            },
-            scope : {
-                orient : '=vgraphAxis',
-                adjust : '=axisAdjust',
-                rotation : '=tickRotation'
             }
         };
     } ]

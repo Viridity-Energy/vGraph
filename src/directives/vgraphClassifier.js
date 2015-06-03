@@ -34,10 +34,11 @@ angular.module( 'vgraph' ).directive( 'vgraphClassifier',
                 };
             },
             link : function( scope, $el, attrs, requirements ){
-                var chart = requirements[0];
+                var control = attrs.control || 'default',
+                    chart = requirements[0].graph.views[control];
 
                 chart.register({
-                    finalize : function( data ){
+                    finalize : function( pane, data ){
                         var i, c,
                             className,
                             func,

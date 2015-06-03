@@ -9,9 +9,11 @@ angular.module( 'vgraph' ).directive( 'vgraphLeading',
                 config : '=config'
             },
             link : function( scope, el, attrs, requirements ){
-                var names,
-                    chart = requirements[0],
-                    $el = d3.select( el[0] );
+                var control = attrs.control || 'default',
+                    graph = requirements[0].graph,
+                    chart = graph.views[control],
+                    $el = d3.select( el[0] ),
+                    names;
 
                 function parseConf( config ){
                     var conf,
@@ -33,7 +35,7 @@ angular.module( 'vgraph' ).directive( 'vgraphLeading',
                 scope.$watchCollection('config', parseConf );
 
                 chart.register({
-                    finalize : function(){
+                    finalize : function( pane ){
                         var d,
                             last,
                             model = chart.model,
@@ -43,7 +45,7 @@ angular.module( 'vgraph' ).directive( 'vgraphLeading',
                             if ( model.plots[name] ){
                                 d = model.plots[name].x.max;
 
-                                if ( model.point.isValid(d) && d[name] ){
+                                if ( pane.isValid(d) && d[name] ){
                                     points.push({
                                         el : el,
                                         x : chart.x.scale( d.$interval ),
@@ -77,7 +79,7 @@ angular.module( 'vgraph' ).directive( 'vgraphLeading',
                                 .attr( 'x1', last.x )
                                 .attr( 'x2', last.x )
                                 .attr( 'y1', last.y )
-                                .attr( 'y2', chart.box.innerBottom );
+                                .attr( 'y2', graph.box.innerBottom );
                         }else{
                             $el.style( 'visibility', 'hidden' );
                         }
