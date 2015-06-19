@@ -49,7 +49,9 @@ angular.module( 'vgraph' ).directive( 'vgraphFocus',
                 scope.$watch('stop', function( value ){
                     var xDiff,
                         start,
-                        stop;
+                        stop,
+                        offset,
+                        currentWidth;
 
                     if ( value ){
                         $focus.attr( 'visibility', 'hidden' );
@@ -72,10 +74,13 @@ angular.module( 'vgraph' ).directive( 'vgraphFocus',
                                 stop = stop - box.innerLeft;
                             }
 
+                            offset = graph.getPrimaryView().pane.offset;
+                            currentWidth = box.innerWidth * offset.right - box.innerWidth * offset.left;
+                            
                             graph.setPane(
                                 {
-                                    'start' : '%' + start/box.innerWidth,
-                                    'stop' : '%' + stop/box.innerWidth
+                                    'start' : '%' + ( box.innerWidth * offset.left + start / box.innerWidth * currentWidth ) / box.innerWidth,
+                                    'stop' : '%' + ( box.innerWidth * offset.right - (box.innerWidth-stop) / box.innerWidth * currentWidth ) / box.innerWidth
                                 },
                                 {
                                     'start' : null,

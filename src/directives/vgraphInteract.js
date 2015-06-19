@@ -38,6 +38,7 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
                                     point[name] = view.getSampledClosest(x0);
                                 });
                                 */
+
                                 point = graph.unified.getClosest(pos);
                                 highlightOn( this, point );
                             }

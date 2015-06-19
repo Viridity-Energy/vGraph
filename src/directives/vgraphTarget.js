@@ -28,7 +28,9 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
 
                     if ( conf ){
                         for( i = 0, c = conf.length; i <c; i++ ){
-                            config[ conf[i].name ] = conf[i].className;
+                            if ( conf[i] ){
+                                config[ conf[i].name ] = conf[i].className;
+                            }
                         }
                     }
 
@@ -77,7 +79,7 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
                                     $dots.selectAll( 'circle.point.'+chartName ).remove();
 
                                     $el.style( 'visibility', 'visible' )
-                                        .attr( 'transform', 'translate( ' + chart.x.scale( p.$interval ) + ' , 0 )' );
+                                        .attr( 'transform', 'translate(' + chart.x.scale( p.$interval ) + ',0)' );
                                     
                                     for( name in model.plots ){
                                         if ( p[name] ){
@@ -91,6 +93,7 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
                                     }
                                 }else{
                                     $el.style( 'visibility', 'hidden' );
+                                    $dots.selectAll( 'circle.point.'+chartName ).remove();
                                 }
                             });
 

@@ -136,9 +136,16 @@
 			<div ng-controller="FloodCtrl">
 				<svg vgraph-chart="graph" model="model">
 					<g vgraph-axis="'left'"
+						axis-label="'foo'"
+		                label-offset="50"
+		                tick-length="4" tick-padding="-2"></g>
+		            <g vgraph-axis="'right'"
+						axis-label="'bar'"
+						label-offset="40"
 		                tick-length="4" tick-padding="-2"></g>
 		            <g vgraph-axis="'bottom'"
-		                tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+		            	axis-label="woot"
+						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
 					
 					<g vgraph-line="line" interval="'x'" 
 						value="'y1'" name="someLine1"></g>
@@ -308,7 +315,10 @@
 					<g vgraph-compare config="{y_1:'default',y_2:'default'}"></g>
 					<g vgraph-multi-line config="config"></g>
 					<g vgraph-target="highlight" point-radius="5" config="{default:config}"></g>
-					<g vgraph-tooltip="highlight" text-formatter="formatter" value="getCompare"></g>
+					<g vgraph-tooltip="highlight" 
+						text-formatter="formatter" 
+						value="getCompare"
+						y-value="getPosition"></g>
 					<g vgraph-interact="highlight"></g>
 				</svg>
 			</div>
@@ -428,11 +438,16 @@ angular.module( 'vgraph' ).controller( 'AppCtrl', [
 );
 
 angular.module( 'vgraph' ).controller( 'FloodCtrl',
-	['$scope', 'GraphModel', 'LinearModel',
-	function( $scope, GraphModel, LinearModel ){
+	['$scope', '$timeout', 'GraphModel', 'LinearModel',
+	function( $scope, $timeout, GraphModel, LinearModel ){
 		var data = [ {x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40}  ],
 			interval,
 			boxModel;
+
+		$scope.woot = 'Hello';
+		$timeout(function(){
+			$scope.woot = 'World';
+		},2000);
 
 		$scope.highlight = {};
 		$scope.line = data;
@@ -749,11 +764,15 @@ angular.module( 'vgraph' ).controller( 'MixerCtrl',
         });
 
 		$scope.formatter = function( value, data, point ){
-			return point.$compare.difference;
+			return point.$compare.value.difference;
 		};
 
 		$scope.getCompare = function( point ){
-			return point.$compare.middle;
+			return point.$compare;
+		};
+
+		$scope.getPosition = function( point ){
+			return point.$compare.position.middle;
 		};
 
         // x is the interval, y is the function pulling the value

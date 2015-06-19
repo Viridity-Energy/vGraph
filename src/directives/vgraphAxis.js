@@ -81,8 +81,11 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
 
                 if ( attrs.axisLabel ){
                     $axisLabel = $axisLabelWrap.append( 'text' )
-                        .attr( 'class', 'axis-label label' )
-                        .text( scope.$eval(attrs.axisLabel) );
+                        .attr( 'class', 'axis-label label' );
+
+                    scope.$parent.$watch(attrs.axisLabel, function( label ){
+                        $axisLabel.text( label );
+                    });
                 }
 
                 makeTicks = function(){
@@ -257,7 +260,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                                 }
 
                                 if ( tickRotation ){
-				// TODO : these settings styles be a hash
+				                    // TODO : these settings styles be a hash
                                     $ticks.selectAll('.tick text')
                                         .attr( 'transform', function(){
                                             return 'translate(0,' + d3.select(this).attr('y') + ') rotate(' + tickRotation + ',0,0)';
@@ -285,12 +288,12 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                                 .attr( 'height', box.height );
 
                             $axisLabelWrap.attr( 'transform',
-                                'translate('+box.padding.right+','+box.height+') rotate( -90 )'
+                                'translate('+(box.right-box.padding.right)+','+box.height+') rotate( 90 )'
                             );
 
                             if ( $axisLabel ){
                                 $axisLabel.attr( 'text-anchor', 'middle' )
-                                    .attr( 'x', box.height / 2 )
+                                    .attr( 'x', -(box.height / 2) )
                                     .attr( 'y', -labelOffset );
                             }
 
@@ -472,6 +475,9 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                             }
                         }
                     },
+                    loading: function(){
+                        $el.attr( 'visibility', 'hidden' );
+                    },
                     finalize : function(){
                         var valid,
                             t,
@@ -480,12 +486,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                             change,
                             boundry = {};
 
-                        if ( graph.loading ){
-                            $el.attr( 'visibility', 'hidden' );
-                            return;
-                        }else{
-                            $el.attr( 'visibility', '' );
-                        }
+                        $el.attr( 'visibility', '' );
 
                         $tickMarks.selectAll('line').remove();
 

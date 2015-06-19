@@ -84,16 +84,18 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
         };
 
         GraphModel.prototype.render = function( waiting ){
-            var hasViews,
+            var hasViews = 0,
                 graph = this,
                 primary = this.getPrimaryView(),
                 unified = new IndexedData();
 
-            angular.forEach( waiting, function( view ){
-                hasViews = true;
+            angular.forEach( this.views, function( view ){
                 view.preRender( graph, unified );
             });
 
+            // TODO : not empty
+            hasViews = Object.keys(waiting).length;
+            
             if ( hasViews ){
                 this.unified = unified;
                 this.loading = !unified.length;
@@ -179,28 +181,40 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             }.bind(this));
         };
 
-        GraphModel.prototype.setBounds = function( x, y ){
+        GraphModel.prototype.setBounds = function( x, y, view ){
             this.bounds = {
                 x : x,
                 y : y
             };
 
-            angular.forEach(this.views, function(view){
-                view.pane.setBounds( x, y );
-            });
+            if ( view ){
+                if ( this.views[view] ){
+                    this.views[view].pane.setBounds( x, y );
+                }
+            }else{
+                angular.forEach(this.views, function(view){
+                    view.pane.setBounds( x, y );
+                });
+            }
 
             return this;
         };
 
-        GraphModel.prototype.setPane = function( x, y ){
+        GraphModel.prototype.setPane = function( x, y, view ){
             this.pane = {
                 x : x,
                 y : y
             };
 
-            angular.forEach(this.views, function(view){
-                view.pane.setPane( x, y );
-            });
+            if ( view ){
+                if ( this.views[view] ){
+                    this.views[view].pane.setPane( x, y );
+                }
+            }else{
+                angular.forEach(this.views, function(view){
+                    view.pane.setPane( x, y );
+                });
+            }
 
             return this;
         };

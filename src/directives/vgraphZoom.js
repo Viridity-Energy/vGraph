@@ -27,6 +27,7 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
                     $leftCtrl = $left.append( 'g' )
                         .attr( 'class', 'control' ),
                     $leftDrag,
+                    $leftNub,
                     $focus = $el.append( 'rect' )
                         .attr( 'class', 'focus' ),
                     $right = $el.append( 'g' )
@@ -35,7 +36,8 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
                         .attr( 'class', 'shade' ),
                     $rightCtrl = $right.append( 'g' )
                         .attr( 'class', 'control' ),
-                    $rightDrag;
+                    $rightDrag,
+                    $rightNub;
                 
                 function redraw( noApply ){
                     if ( minPos === 0 && maxPos === box.innerWidth ){
@@ -88,7 +90,7 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
                     }
                 }
 
-                $leftCtrl.append( 'path' )
+                $leftNub = $leftCtrl.append( 'path' )
                     .attr( 'd', 'M-0.5,23.33A6,6 0 0 0 -6.5,29.33V40.66A6,6 0 0 0 -0.5,46.66ZM-2.5,31.33V38.66M-4.5,31.33V38.66')
                     .attr('transform', 'translate(0,-9)') // to vertically center nub on mini-graph
                     .attr( 'class', 'nub' );
@@ -97,7 +99,7 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
                     .attr( 'width', '10' )
                     .attr( 'transform', 'translate(-10,0)' );
 
-                $rightCtrl.append( 'path' )
+                $rightNub = $rightCtrl.append( 'path' )
                     .attr( 'd', 'M0.5,23.33A6,6 0 0 1 6.5,29.33V40.66A6,6 0 0 1 0.5,46.66ZM2.5,31.33V38.66M4.5,31.33V38.66')
                     .attr('transform', 'translate(0,-9)') // to vertically center nub on mini-graph
                     .attr( 'class', 'nub' );
@@ -117,7 +119,6 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
                     })
                     .on('drag', function(){
                         minPos = d3.mouse( el[0] )[0];
-
                         redraw();
                     })
                 );
@@ -132,7 +133,6 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
                     })
                     .on('drag', function(){
                         maxPos = d3.mouse( el[0] )[0];
-
                         redraw();
                     })
                 );
@@ -188,6 +188,9 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
                             box.innerLeft + ',' +
                             box.innerTop + ')'
                         );
+
+                    $rightNub.attr('transform', 'translate(0,'+(box.innerHeight/2 - 30)+')');
+                    $leftNub.attr('transform', 'translate(0,'+(box.innerHeight/2 - 30)+')');
 
                     $leftShade.attr( 'height', box.innerHeight );
                     $rightShade.attr( 'height', box.innerHeight );

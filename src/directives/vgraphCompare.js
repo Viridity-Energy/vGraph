@@ -40,10 +40,17 @@ angular.module( 'vgraph' ).directive( 'vgraphCompare',
                                 name1,
                                 chart2, 
                                 name2,
-                                function( node, y1, y2 ){
+                                function( node, v1, v2, y1, y2 ){
                                     node.$compare = {
-                                        middle : ( y1 + y2 ) / 2,
-                                        difference : Math.abs( y1 - y2 )
+                                        value: {
+                                            middle : ( v1 + v2 ) / 2,
+                                            difference : Math.abs( v1 - v2 ),
+                                        },
+                                        position: {
+                                            middle: ( y1 + y2 ) / 2,
+                                            top: y1,
+                                            bottom: y2
+                                        }
                                     };
                                 }
                             )

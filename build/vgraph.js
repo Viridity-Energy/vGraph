@@ -142,8 +142,8 @@ angular.module( 'vgraph' ).factory( 'BoxModel',
 );
 
 angular.module( 'vgraph' ).factory( 'ComponentGenerator',
-    [
-    function () {
+    ['$timeout',
+    function ($timeout) {
         'use strict';
 
         function forEach( data, method, context ){
@@ -172,15 +172,30 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                     alias,
                     name = attrs.name,
                     history = [],
-                    memory = parseInt( attrs.memory, 10 ) || 10;
+                    memory = parseInt( attrs.memory, 10 ) || 10,
+                    timeout;
+
+                function preLoad(){
+                    if ( !timeout ){
+                        timeout = $timeout(function(){
+                            contentLoad();
+                            timeout = null;
+                        }, 30);
+                    }
+                }
 
                 function contentLoad(){
                     var i, c;
 
                     if ( scope.data && ctrl.valueParse ){
-                        for( i = 0, c = scope.data.length; i < c; i++ ){
+                        if ( !scope.data._lastRead ){
+                            scope.data._lastRead = {};
+                        }
+
+                        for( i = scope.data._lastRead[name] || 0, c = scope.data.length; i < c; i++ ){
                             scope.loadPoint( scope.data[i] );
                         }
+                        scope.data._lastRead[name] = c;
                     }
                 }
 
@@ -216,16 +231,12 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 	                	ctrl.valueParse = v;
 	                }
 
-                    contentLoad();
+                    preLoad();
                 });
 
-                scope.$watch('data', function(){
-                    contentLoad();
-                });
+                scope.$watch('data', preLoad);
 
-                scope.$watch('data.length', function(){
-                	contentLoad();
-                });
+                scope.$watch('data.length', preLoad);
 
                 if ( !scope.loadPoint ){
                     scope.loadPoint = function ( d ){
@@ -370,10 +381,11 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 
 	            return d3.svg.area()
 	                .defined(function(d){
-	                    var y1 = d[chart1.name][ top ];
+	                    var y1 = d[chart1.name][ top ],
+                            y2 = !bottom || d[chart2.name] && isNumeric(d[chart2.name][bottom]);
 
-	                    if ( isNumeric(y1) ){
-                            if ( extend ){
+	                    if ( isNumeric(y1) && y2 ){
+                            if ( extend && bottom ){
                                 extend( d, d[chart1.name][top], d[chart2.name][bottom] );
                             }
                             return true;
@@ -388,7 +400,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 	                    return chart1.y.scale( d[chart1.name][top] );
 	                })
 	                .y1(function( d ){
-	                    return chart2.y.scale( bottom && d[chart2.name][bottom] ? d[chart2.name][bottom] : chart2.model.y.minimum );
+	                    return chart2.y.scale( bottom ? d[chart2.name][bottom] : chart2.model.y.minimum );
 	                });
 	        },
             // I don't want to do this, but I need to for now
@@ -398,12 +410,11 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 }
 
                 function isDefined( d ){
-                    var y1 = d[chart1.name][ top ];
+                    var y1 = d[chart1.name][ top ],
+                        y2 = !bottom || d[chart2.name] && isNumeric(d[chart2.name][bottom]);
 
-                    if ( isNumeric(y1) ){
-                        if ( extend ){
-                            extend( d, d[chart1.name][top], d[chart2.name][bottom] );
-                        }
+                    if ( isNumeric(y1) && y2 ){
+                        
                         return true;
                     }else{
                         return false;
@@ -414,12 +425,20 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                     return d[chart1.name]._$interval;
                 }
 
-                function yCalc( d ){
-                    return chart1.y.scale( d[chart1.name][top] );
+                function v1Get( d ){
+                    return d[chart1.name][top];
                 }
 
-                function y1Calc( d ){
-                    return chart2.y.scale( bottom && d[chart2.name][bottom] ? d[chart2.name][bottom] : chart2.pane.y.minimum );
+                function y1Calc( v ){
+                    return chart1.y.scale( v );
+                }
+
+                function v2Get( d ){
+                    return bottom && d[chart2.name][bottom] ? d[chart2.name][bottom] : chart2.pane.y.minimum;
+                }
+
+                function y2Calc( v ){
+                    return chart2.y.scale( v );
                 }
 
                 return function areaCalc(data) {
@@ -432,12 +451,25 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                     }
 
                     forEach( data, function( d ){
-                        var x;
+                        var x,
+                            v1,
+                            v2,
+                            y1,
+                            y2;
 
                         if (isDefined(d)) {
+                            v1 = v1Get( d );
+                            v2 = v2Get( d );
+                            y1 = y1Calc( v1 );
+                            y2 = y1Calc( v2 );
                             x = xCalc( d );
-                            points0.push( x+','+yCalc(d) );
-                            points1.push( x+','+y1Calc(d) );
+                            
+                            if ( extend ){
+                                extend( d, v1, v2, y1, y2, x );
+                            }
+
+                            points0.push( x+','+y1Calc(v1) );
+                            points1.push( x+','+y2Calc(v2) );
                         } else if (points0.length) {
                             segment();
                             points0 = [];
@@ -510,23 +542,19 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                         v = undefined;
                         d = data[i];
 
-                        for( j = 0, co = lines.length; j < co && v === undefined; j++ ){
-                            name = lines[j].name;
-                            v = d[ name ];
-                            if ( v !== undefined ){
-                                if ( min === undefined ){
-                                    min = v;
-                                    max = v;
-                                }else if ( min > v ){
-                                    min = v;
-                                }
-                            }
+                        name = lines[0].name;
+                        v = d[ name ] || 0;
+                        if ( min === undefined ){
+                            min = v;
+                            max = v;
+                        }else if ( min > v ){
+                            min = v;
                         }
 
                         d['$'+name] = v;
                         last = v;
 
-                        for( ; j < co; j++ ){
+                        for( j = 1, co = lines.length; j < co; j++ ){
                             name = lines[j].name;
                             v = d[ name ] || 0;
 
@@ -730,16 +758,18 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
         };
 
         GraphModel.prototype.render = function( waiting ){
-            var hasViews,
+            var hasViews = 0,
                 graph = this,
                 primary = this.getPrimaryView(),
                 unified = new IndexedData();
 
-            angular.forEach( waiting, function( view ){
-                hasViews = true;
+            angular.forEach( this.views, function( view ){
                 view.preRender( graph, unified );
             });
 
+            // TODO : not empty
+            hasViews = Object.keys(waiting).length;
+            
             if ( hasViews ){
                 this.unified = unified;
                 this.loading = !unified.length;
@@ -825,28 +855,40 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             }.bind(this));
         };
 
-        GraphModel.prototype.setBounds = function( x, y ){
+        GraphModel.prototype.setBounds = function( x, y, view ){
             this.bounds = {
                 x : x,
                 y : y
             };
 
-            angular.forEach(this.views, function(view){
-                view.pane.setBounds( x, y );
-            });
+            if ( view ){
+                if ( this.views[view] ){
+                    this.views[view].pane.setBounds( x, y );
+                }
+            }else{
+                angular.forEach(this.views, function(view){
+                    view.pane.setBounds( x, y );
+                });
+            }
 
             return this;
         };
 
-        GraphModel.prototype.setPane = function( x, y ){
+        GraphModel.prototype.setPane = function( x, y, view ){
             this.pane = {
                 x : x,
                 y : y
             };
 
-            angular.forEach(this.views, function(view){
-                view.pane.setPane( x, y );
-            });
+            if ( view ){
+                if ( this.views[view] ){
+                    this.views[view].pane.setPane( x, y );
+                }
+            }else{
+                angular.forEach(this.views, function(view){
+                    view.pane.setPane( x, y );
+                });
+            }
 
             return this;
         };
@@ -1827,8 +1869,11 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
 
                 if ( attrs.axisLabel ){
                     $axisLabel = $axisLabelWrap.append( 'text' )
-                        .attr( 'class', 'axis-label label' )
-                        .text( scope.$eval(attrs.axisLabel) );
+                        .attr( 'class', 'axis-label label' );
+
+                    scope.$parent.$watch(attrs.axisLabel, function( label ){
+                        $axisLabel.text( label );
+                    });
                 }
 
                 makeTicks = function(){
@@ -2003,7 +2048,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                                 }
 
                                 if ( tickRotation ){
-				// TODO : these settings styles be a hash
+				                    // TODO : these settings styles be a hash
                                     $ticks.selectAll('.tick text')
                                         .attr( 'transform', function(){
                                             return 'translate(0,' + d3.select(this).attr('y') + ') rotate(' + tickRotation + ',0,0)';
@@ -2031,12 +2076,12 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                                 .attr( 'height', box.height );
 
                             $axisLabelWrap.attr( 'transform',
-                                'translate('+box.padding.right+','+box.height+') rotate( -90 )'
+                                'translate('+(box.right-box.padding.right)+','+box.height+') rotate( 90 )'
                             );
 
                             if ( $axisLabel ){
                                 $axisLabel.attr( 'text-anchor', 'middle' )
-                                    .attr( 'x', box.height / 2 )
+                                    .attr( 'x', -(box.height / 2) )
                                     .attr( 'y', -labelOffset );
                             }
 
@@ -2218,6 +2263,9 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                             }
                         }
                     },
+                    loading: function(){
+                        $el.attr( 'visibility', 'hidden' );
+                    },
                     finalize : function(){
                         var valid,
                             t,
@@ -2226,12 +2274,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                             change,
                             boundry = {};
 
-                        if ( graph.loading ){
-                            $el.attr( 'visibility', 'hidden' );
-                            return;
-                        }else{
-                            $el.attr( 'visibility', '' );
-                        }
+                        $el.attr( 'visibility', '' );
 
                         $tickMarks.selectAll('line').remove();
 
@@ -2694,10 +2737,17 @@ angular.module( 'vgraph' ).directive( 'vgraphCompare',
                                 name1,
                                 chart2, 
                                 name2,
-                                function( node, y1, y2 ){
+                                function( node, v1, v2, y1, y2 ){
                                     node.$compare = {
-                                        middle : ( y1 + y2 ) / 2,
-                                        difference : Math.abs( y1 - y2 )
+                                        value: {
+                                            middle : ( v1 + v2 ) / 2,
+                                            difference : Math.abs( v1 - v2 ),
+                                        },
+                                        position: {
+                                            middle: ( y1 + y2 ) / 2,
+                                            top: y1,
+                                            bottom: y2
+                                        }
                                     };
                                 }
                             )
@@ -2840,7 +2890,9 @@ angular.module( 'vgraph' ).directive( 'vgraphFocus',
                 scope.$watch('stop', function( value ){
                     var xDiff,
                         start,
-                        stop;
+                        stop,
+                        offset,
+                        currentWidth;
 
                     if ( value ){
                         $focus.attr( 'visibility', 'hidden' );
@@ -2863,10 +2915,13 @@ angular.module( 'vgraph' ).directive( 'vgraphFocus',
                                 stop = stop - box.innerLeft;
                             }
 
+                            offset = graph.getPrimaryView().pane.offset;
+                            currentWidth = box.innerWidth * offset.right - box.innerWidth * offset.left;
+                            
                             graph.setPane(
                                 {
-                                    'start' : '%' + start/box.innerWidth,
-                                    'stop' : '%' + stop/box.innerWidth
+                                    'start' : '%' + ( box.innerWidth * offset.left + start / box.innerWidth * currentWidth ) / box.innerWidth,
+                                    'stop' : '%' + ( box.innerWidth * offset.right - (box.innerWidth-stop) / box.innerWidth * currentWidth ) / box.innerWidth
                                 },
                                 {
                                     'start' : null,
@@ -3098,6 +3153,7 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
                                     point[name] = view.getSampledClosest(x0);
                                 });
                                 */
+
                                 point = graph.unified.getClosest(pos);
                                 highlightOn( this, point );
                             }
@@ -3920,7 +3976,9 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
 
                     if ( conf ){
                         for( i = 0, c = conf.length; i <c; i++ ){
-                            config[ conf[i].name ] = conf[i].className;
+                            if ( conf[i] ){
+                                config[ conf[i].name ] = conf[i].className;
+                            }
                         }
                     }
 
@@ -3969,7 +4027,7 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
                                     $dots.selectAll( 'circle.point.'+chartName ).remove();
 
                                     $el.style( 'visibility', 'visible' )
-                                        .attr( 'transform', 'translate( ' + chart.x.scale( p.$interval ) + ' , 0 )' );
+                                        .attr( 'transform', 'translate(' + chart.x.scale( p.$interval ) + ',0)' );
                                     
                                     for( name in model.plots ){
                                         if ( p[name] ){
@@ -3983,6 +4041,7 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
                                     }
                                 }else{
                                     $el.style( 'visibility', 'hidden' );
+                                    $dots.selectAll( 'circle.point.'+chartName ).remove();
                                 }
                             });
 
@@ -4012,16 +4071,18 @@ angular.module( 'vgraph' ).directive( 'vgraphTooltip',
         return {
             require : ['^vgraphChart'],
             scope : {
-                formatter : '=textFormatter',
-                data : '=vgraphTooltip',
-                value : '=?value'
+                formatter: '=textFormatter',
+                data: '=vgraphTooltip',
+                value: '=?value',
+                position: '=?yValue'
             },
             link : function( scope, el, attrs, requirements ){
                 var control = attrs.control || 'default',
-                    chart = requirements[0].graph.views[control],
+                    graph = requirements[0].graph,
+                    chart = graph.views[control],
                     name = attrs.name,
-                    model = chart.model,
                     formatter = scope.formatter || function( d ){
+                        var model = chart.model;
                         return model.y.format( model.y.parse(d) );
                     },
                     xOffset = parseInt(attrs.offsetX) || 0,
@@ -4048,15 +4109,15 @@ angular.module( 'vgraph' ).directive( 'vgraphTooltip',
                         value = scope.value ? scope.value(point) : data[name];
 
                         if ( value !== undefined ){
-                            $y = chart.y.scale( value );
-                            $x = chart.x.scale( data.$interval ) + xOffset;
+                            $y = ( scope.position ? scope.position(point) : chart.y.scale(value) );
+                            $x = point.$index + xOffset;
                             $text.text( formatter(value,data,point) );
                             width = $text.node().getComputedTextLength() + 5; // magic padding... for luls
 
                             $el.style( 'visibility', 'visible' );
 
                             // go to the right or the left of the point of interest?
-                            if ( $x + width + 16 < chart.x.scale(chart.pane.x.stop.$interval) ){
+                            if ( $x + width + 16 < graph.box.innerRight ){
                                 $el.attr( 'transform', 'translate('+$x+','+($y+yOffset)+')' );
                                 $text.attr( 'transform', 'translate(10,5)' );
                                 $polygon.attr( 'points', '0,15 10,0 '+( width + 10 )+',0 '+( width + 10 )+',30 10,30 0,15' );
@@ -4144,6 +4205,7 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
                     $leftCtrl = $left.append( 'g' )
                         .attr( 'class', 'control' ),
                     $leftDrag,
+                    $leftNub,
                     $focus = $el.append( 'rect' )
                         .attr( 'class', 'focus' ),
                     $right = $el.append( 'g' )
@@ -4152,7 +4214,8 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
                         .attr( 'class', 'shade' ),
                     $rightCtrl = $right.append( 'g' )
                         .attr( 'class', 'control' ),
-                    $rightDrag;
+                    $rightDrag,
+                    $rightNub;
                 
                 function redraw( noApply ){
                     if ( minPos === 0 && maxPos === box.innerWidth ){
@@ -4205,7 +4268,7 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
                     }
                 }
 
-                $leftCtrl.append( 'path' )
+                $leftNub = $leftCtrl.append( 'path' )
                     .attr( 'd', 'M-0.5,23.33A6,6 0 0 0 -6.5,29.33V40.66A6,6 0 0 0 -0.5,46.66ZM-2.5,31.33V38.66M-4.5,31.33V38.66')
                     .attr('transform', 'translate(0,-9)') // to vertically center nub on mini-graph
                     .attr( 'class', 'nub' );
@@ -4214,7 +4277,7 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
                     .attr( 'width', '10' )
                     .attr( 'transform', 'translate(-10,0)' );
 
-                $rightCtrl.append( 'path' )
+                $rightNub = $rightCtrl.append( 'path' )
                     .attr( 'd', 'M0.5,23.33A6,6 0 0 1 6.5,29.33V40.66A6,6 0 0 1 0.5,46.66ZM2.5,31.33V38.66M4.5,31.33V38.66')
                     .attr('transform', 'translate(0,-9)') // to vertically center nub on mini-graph
                     .attr( 'class', 'nub' );
@@ -4234,7 +4297,6 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
                     })
                     .on('drag', function(){
                         minPos = d3.mouse( el[0] )[0];
-
                         redraw();
                     })
                 );
@@ -4249,7 +4311,6 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
                     })
                     .on('drag', function(){
                         maxPos = d3.mouse( el[0] )[0];
-
                         redraw();
                     })
                 );
@@ -4305,6 +4366,9 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
                             box.innerLeft + ',' +
                             box.innerTop + ')'
                         );
+
+                    $rightNub.attr('transform', 'translate(0,'+(box.innerHeight/2 - 30)+')');
+                    $leftNub.attr('transform', 'translate(0,'+(box.innerHeight/2 - 30)+')');
 
                     $leftShade.attr( 'height', box.innerHeight );
                     $rightShade.attr( 'height', box.innerHeight );

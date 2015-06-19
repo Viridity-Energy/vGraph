@@ -6,16 +6,18 @@ angular.module( 'vgraph' ).directive( 'vgraphTooltip',
         return {
             require : ['^vgraphChart'],
             scope : {
-                formatter : '=textFormatter',
-                data : '=vgraphTooltip',
-                value : '=?value'
+                formatter: '=textFormatter',
+                data: '=vgraphTooltip',
+                value: '=?value',
+                position: '=?yValue'
             },
             link : function( scope, el, attrs, requirements ){
                 var control = attrs.control || 'default',
-                    chart = requirements[0].graph.views[control],
+                    graph = requirements[0].graph,
+                    chart = graph.views[control],
                     name = attrs.name,
-                    model = chart.model,
                     formatter = scope.formatter || function( d ){
+                        var model = chart.model;
                         return model.y.format( model.y.parse(d) );
                     },
                     xOffset = parseInt(attrs.offsetX) || 0,
@@ -42,15 +44,15 @@ angular.module( 'vgraph' ).directive( 'vgraphTooltip',
                         value = scope.value ? scope.value(point) : data[name];
 
                         if ( value !== undefined ){
-                            $y = chart.y.scale( value );
-                            $x = chart.x.scale( data.$interval ) + xOffset;
+                            $y = ( scope.position ? scope.position(point) : chart.y.scale(value) );
+                            $x = point.$index + xOffset;
                             $text.text( formatter(value,data,point) );
                             width = $text.node().getComputedTextLength() + 5; // magic padding... for luls
 
                             $el.style( 'visibility', 'visible' );
 
                             // go to the right or the left of the point of interest?
-                            if ( $x + width + 16 < chart.x.scale(chart.pane.x.stop.$interval) ){
+                            if ( $x + width + 16 < graph.box.innerRight ){
                                 $el.attr( 'transform', 'translate('+$x+','+($y+yOffset)+')' );
                                 $text.attr( 'transform', 'translate(10,5)' );
                                 $polygon.attr( 'points', '0,15 10,0 '+( width + 10 )+',0 '+( width + 10 )+',30 10,30 0,15' );
