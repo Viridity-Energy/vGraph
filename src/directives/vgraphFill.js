@@ -1,11 +1,19 @@
 angular.module( 'vgraph' ).directive( 'vgraphFill',
-    ['ComponentGenerator',
-    function( ComponentGenerator ){
+    ['$compile', 'ComponentGenerator',
+    function( $compile, ComponentGenerator ){
         'use strict';
 
         return ComponentGenerator.generate( 'vgraphFill', {
+            scope : {
+                data : '=vgraphFill',
+                fillTo : '=fillTo',
+                value : '=value',
+                interval : '=interval',
+                filter : '=filter'
+            },
             link : function( scope, el, attrs, requirements ){
-                var control = attrs.control || 'default',
+                var ele,
+                    control = attrs.control || 'default',
                     chart = requirements[0].graph.views[control],
                     name = attrs.name,
                     $path = d3.select( el[0] ).append('path')
@@ -21,30 +29,42 @@ angular.module( 'vgraph' ).directive( 'vgraphFill',
                         .y(function( d ){
                             return chart.y.scale( d[name] );
                         })
-                        .y1(function(){
+                        .y1(function( d ){
                             // TODO : I don't like this...
-                            return scope.fillTo === undefined ? 
-                                chart.y.scale( chart.model.y.bottom ) :
-                                typeof( scope.fillTo ) === 'object' ?
+                            var fillTo = scope.fillTo,
+                                v;
+                            
+                            v = fillTo === undefined ? 
+                                chart.y.scale( chart.pane.y.minimum ) :
+                                typeof( fillTo ) === 'object' ?
                                     chart.y.scale( scope.fillTo.$min ) :
-                                    chart.y.scale( scope.fillTo );
+                                typeof( fillTo ) === 'string' ?
+                                    chart.y.scale( d[fillTo] ) :
+                                    chart.y.scale( fillTo );
+                            
+                            return v;
                         });
 
+                if ( typeof(scope.fillTo) === 'string' ){
+                    ele = ComponentGenerator.svgCompile(
+                        '<g vgraph-feed="data" name="'+scope.fillTo+
+                            '" value="fillTo'+
+                            '" interval="interval'+
+                            '" control="'+control+'"></g>'
+                    )[0];
+                    el[0].appendChild( ele );
+
+                    $compile( ele )( scope );
+                }
+
                 chart.register({
-                    parse : function( data ){
+                    parse : function( pane, data ){
                         return ComponentGenerator.parseLimits( data, name );
                     },
-                    finalize : function( data ){
+                    finalize : function( pane, data ){
                         $path.attr( 'd', line(data) );
                     }
                 });
-            },
-            scope : {
-                data : '=vgraphFill',
-                fillTo : '=fillTo',
-                value : '=value',
-                interval : '=interval',
-                filter : '=filter'
             }
         });
     }]

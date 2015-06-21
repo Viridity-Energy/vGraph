@@ -160,6 +160,31 @@
 					<g vgraph-interact="highlight"></g>
 				</svg>
 			</div>
+
+			<div ng-controller="FloodCtrl">
+				<svg vgraph-chart="graph" model="model">
+					<g vgraph-axis="'left'"
+						axis-label="'foo'"
+		                label-offset="50"
+		                tick-length="4" tick-padding="-2"></g>
+		            <g vgraph-axis="'right'"
+						axis-label="'bar'"
+						label-offset="40"
+		                tick-length="4" tick-padding="-2"></g>
+		            <g vgraph-axis="'bottom'"
+		            	axis-label="woot"
+						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+					
+					<g vgraph-fill="line" interval="'x'" 
+						value="'y1'" name="someLine1"></g>
+					<g vgraph-fill="line" interval="'x'"
+						fill-to="'y2'" 
+						value="'y4'" name="someLine2"></g>
+
+					<g vgraph-target="highlight" point-radius="5"></g>
+					<g vgraph-interact="highlight"></g>
+				</svg>
+			</div>
 		</section>
 
 		<section ng-if="loading">

@@ -225,7 +225,6 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 	                    	if ( d[v] !== undefined ){
                                 return d[ alias ];
 	                    	}
-	                    	// return undefined implied
 	                    };
 	                }else{
 	                	ctrl.valueParse = v;
@@ -235,7 +234,6 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 });
 
                 scope.$watch('data', preLoad);
-
                 scope.$watch('data.length', preLoad);
 
                 if ( !scope.loadPoint ){
@@ -282,12 +280,15 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
             }
         };
 
-        function decode( $scope, conf, type ){
+        function decode( $scope, conf, type, tag ){
         	var name = conf.name,
                 value,
                 interval,
                 src;
 
+            if ( !tag ){
+                tag = 'path';
+            }
             // I'm just expecting conf.className is defined in the future.
             // I will be removing the dynamic styles in the future
             $scope[ name ] = conf;
@@ -304,13 +305,13 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 src = 'data';
             }
 
-            return '<path class="'+type+' '+conf.className+'"'+
+            return '<'+tag+' class="'+type+' '+conf.className+'"'+
                 ' vgraph-feed="'+src+'" name="'+name+'"'+
                 ' value="'+value+'"'+
                 ' interval="'+interval+'"'+
                 ' control="'+(conf.control||'default')+'"'+
                 ( conf.filter ? ' filter="'+conf.filter+'"' : '' ) +
-            '></path>';
+            '></'+tag+'>';
 	    }
 
         function isNumeric( v ){
@@ -508,11 +509,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 	        	}
 
 	        	res = this.decodeConfig( $scope, conf, type );
-	        	comps = (new DOMParser().parseFromString(
-	        		'<g xmlns="http://www.w3.org/2000/svg">' +
-	        			res.join('') +
-	        		'</g>','image/svg+xml'
-	        	)).childNodes[0].childNodes; // the wrapping g
+	        	comps = this.svgCompile( res.join('') );
 
 	        	for( i = 0, c = comps.length; i < c; i++ ){
 	        		res[i] = {
@@ -526,6 +523,13 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 
 	        	return res;
 	        },
+            svgCompile: function( svgHtml ){
+                return (new DOMParser().parseFromString(
+                    '<g xmlns="http://www.w3.org/2000/svg">' +
+                        svgHtml +
+                    '</g>','image/svg+xml'
+                )).childNodes[0].childNodes;
+            },
             parseStackedLimits: function( data, lines ){
                 var i, c,
                     j, co,
@@ -2788,13 +2792,21 @@ angular.module( 'vgraph' ).directive( 'vgraphFeed',
 );
 
 angular.module( 'vgraph' ).directive( 'vgraphFill',
-    ['ComponentGenerator',
-    function( ComponentGenerator ){
+    ['$compile', 'ComponentGenerator',
+    function( $compile, ComponentGenerator ){
         'use strict';
 
         return ComponentGenerator.generate( 'vgraphFill', {
+            scope : {
+                data : '=vgraphFill',
+                fillTo : '=fillTo',
+                value : '=value',
+                interval : '=interval',
+                filter : '=filter'
+            },
             link : function( scope, el, attrs, requirements ){
-                var control = attrs.control || 'default',
+                var ele,
+                    control = attrs.control || 'default',
                     chart = requirements[0].graph.views[control],
                     name = attrs.name,
                     $path = d3.select( el[0] ).append('path')
@@ -2810,30 +2822,42 @@ angular.module( 'vgraph' ).directive( 'vgraphFill',
                         .y(function( d ){
                             return chart.y.scale( d[name] );
                         })
-                        .y1(function(){
+                        .y1(function( d ){
                             // TODO : I don't like this...
-                            return scope.fillTo === undefined ? 
-                                chart.y.scale( chart.model.y.bottom ) :
-                                typeof( scope.fillTo ) === 'object' ?
+                            var fillTo = scope.fillTo,
+                                v;
+                            
+                            v = fillTo === undefined ? 
+                                chart.y.scale( chart.pane.y.minimum ) :
+                                typeof( fillTo ) === 'object' ?
                                     chart.y.scale( scope.fillTo.$min ) :
-                                    chart.y.scale( scope.fillTo );
+                                typeof( fillTo ) === 'string' ?
+                                    chart.y.scale( d[fillTo] ) :
+                                    chart.y.scale( fillTo );
+                            
+                            return v;
                         });
 
+                if ( typeof(scope.fillTo) === 'string' ){
+                    ele = ComponentGenerator.svgCompile(
+                        '<g vgraph-feed="data" name="'+scope.fillTo+
+                            '" value="fillTo'+
+                            '" interval="interval'+
+                            '" control="'+control+'"></g>'
+                    )[0];
+                    el[0].appendChild( ele );
+
+                    $compile( ele )( scope );
+                }
+
                 chart.register({
-                    parse : function( data ){
+                    parse : function( pane, data ){
                         return ComponentGenerator.parseLimits( data, name );
                     },
-                    finalize : function( data ){
+                    finalize : function( pane, data ){
                         $path.attr( 'd', line(data) );
                     }
                 });
-            },
-            scope : {
-                data : '=vgraphFill',
-                fillTo : '=fillTo',
-                value : '=value',
-                interval : '=interval',
-                filter : '=filter'
             }
         });
     }]

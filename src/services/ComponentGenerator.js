@@ -82,7 +82,6 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 	                    	if ( d[v] !== undefined ){
                                 return d[ alias ];
 	                    	}
-	                    	// return undefined implied
 	                    };
 	                }else{
 	                	ctrl.valueParse = v;
@@ -92,7 +91,6 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 });
 
                 scope.$watch('data', preLoad);
-
                 scope.$watch('data.length', preLoad);
 
                 if ( !scope.loadPoint ){
@@ -139,12 +137,15 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
             }
         };
 
-        function decode( $scope, conf, type ){
+        function decode( $scope, conf, type, tag ){
         	var name = conf.name,
                 value,
                 interval,
                 src;
 
+            if ( !tag ){
+                tag = 'path';
+            }
             // I'm just expecting conf.className is defined in the future.
             // I will be removing the dynamic styles in the future
             $scope[ name ] = conf;
@@ -161,13 +162,13 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 src = 'data';
             }
 
-            return '<path class="'+type+' '+conf.className+'"'+
+            return '<'+tag+' class="'+type+' '+conf.className+'"'+
                 ' vgraph-feed="'+src+'" name="'+name+'"'+
                 ' value="'+value+'"'+
                 ' interval="'+interval+'"'+
                 ' control="'+(conf.control||'default')+'"'+
                 ( conf.filter ? ' filter="'+conf.filter+'"' : '' ) +
-            '></path>';
+            '></'+tag+'>';
 	    }
 
         function isNumeric( v ){
@@ -365,11 +366,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 	        	}
 
 	        	res = this.decodeConfig( $scope, conf, type );
-	        	comps = (new DOMParser().parseFromString(
-	        		'<g xmlns="http://www.w3.org/2000/svg">' +
-	        			res.join('') +
-	        		'</g>','image/svg+xml'
-	        	)).childNodes[0].childNodes; // the wrapping g
+	        	comps = this.svgCompile( res.join('') );
 
 	        	for( i = 0, c = comps.length; i < c; i++ ){
 	        		res[i] = {
@@ -383,6 +380,13 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 
 	        	return res;
 	        },
+            svgCompile: function( svgHtml ){
+                return (new DOMParser().parseFromString(
+                    '<g xmlns="http://www.w3.org/2000/svg">' +
+                        svgHtml +
+                    '</g>','image/svg+xml'
+                )).childNodes[0].childNodes;
+            },
             parseStackedLimits: function( data, lines ){
                 var i, c,
                     j, co,
