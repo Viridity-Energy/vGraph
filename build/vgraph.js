@@ -439,10 +439,10 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                         v = undefined;
                         d = data[i];
 
-                        for( j = 0, co = lines.length; j < co && v === undefined; j++ ){
+                        for( j = 0, co = lines.length; j < co && v !== undefined && v !== null; j++ ){
                             name = lines[j].name;
                             v = d[ name ];
-                            if ( v !== undefined ){
+                            if ( v !== undefined && v !== null ){
                                 if ( min === undefined ){
                                     min = v;
                                     max = v;
@@ -489,7 +489,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                         for( i = 0, c = data.length; i < c; i++ ){
 	                		d = data[i];
 		                    v = parser( d, d[names] );
-		                    if ( v !== undefined ){
+		                    if ( v !== undefined && v !== null ){
 		                        if ( min === undefined ){
 		                            min = v;
 		                            max = v;
@@ -505,7 +505,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 		for( i = 0, c = data.length; i < c; i++ ){
 	                		d = data[i];
 		                    v = d[names];
-		                    if ( v !== undefined ){
+		                    if ( v !== undefined && v !== null ){
 		                    	if ( min === undefined ){
 		                            min = v;
 		                            max = v;
