@@ -83,14 +83,84 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             ];
         };
 
+        /*
+            label
+            view
+            field
+            format
+        */
+        GraphModel.prototype.publish = function( config ){
+            var i,
+                width,
+                size,
+                step,
+                views = {},
+                stats = {},
+                headers = [],
+                content;
+
+            angular.forEach( config, function( conf ){
+                var view = this.views[conf.view];
+                if ( view && !views[view.name] ){
+                    views[view.name] =  view;
+                }
+            }, this );
+
+            // this assumes each interval is the same units
+            angular.forEach( views, function( view ){
+                var stat = view.publishStats(),
+                    s = stat.data.max-stat.data.min;
+                // expect min, max, step
+
+                stats[view.name] = stat;
+
+                if ( !width || s > width ){
+                    width = s;
+                }
+
+                if ( !step || stat.step < step ){
+                    step = stat.step;
+                }
+            });
+
+            size = Math.ceil( width / step );
+            content = [];
+
+            for( i = 0; i < size; i++ ){
+                content.push([]);
+            }
+            content.push([]); // size is the limit, so it needs one more
+
+            angular.forEach( config, function( conf ){
+                var view = views[conf.view],
+                    stat = stats[view.name];
+
+                headers.push( conf.label );
+                view.publishData( content, conf, function(p){
+                    return Math.round( (p.$x-stat.data.min) / width * size );
+                });
+            });
+
+            content.unshift( headers );
+
+            return content;
+        };
+
         GraphModel.prototype.render = function( waiting ){
             var hasViews = 0,
-                graph = this,
                 primary = this.getPrimaryView(),
                 unified = new IndexedData();
 
             angular.forEach( this.views, function( view ){
-                view.preRender( graph, unified );
+                view.calcBounds();
+            });
+
+            if ( this.calcHook ){
+                this.calcHook();
+            }
+
+            angular.forEach( this.views, function( view ){
+                view.calcScales( unified );
             });
 
             // TODO : not empty

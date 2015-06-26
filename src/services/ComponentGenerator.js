@@ -239,7 +239,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 
 	            return d3.svg.area()
 	                .defined(function(d){
-	                    var y1 = d[chart1.name][ top ],
+	                    var y1 = d[chart1.name] ? d[chart1.name][ top ] : null,
                             y2 = !bottom || d[chart2.name] && isNumeric(d[chart2.name][bottom]);
 
 	                    if ( isNumeric(y1) && y2 ){
@@ -268,7 +268,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 }
 
                 function isDefined( d ){
-                    var y1 = d[chart1.name][ top ],
+                    var y1 = d[chart1.name] ? d[chart1.name][ top ] : null,
                         y2 = !bottom || d[chart2.name] && isNumeric(d[chart2.name][bottom]);
 
                     if ( isNumeric(y1) && y2 ){

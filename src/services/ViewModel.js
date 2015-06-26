@@ -98,6 +98,7 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
             this.components = [];
             this.name = name;
             this.model = model;
+            this.graph = graph;
 
             x = {
                 scale : model.x.scale(),
@@ -156,13 +157,13 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
             this.components.push( component );
         };
 
-        ViewModel.prototype.preRender = function( graph, unified ){
+        ViewModel.prototype.calcBounds = function(){
             var last,
                 step,
                 min,
                 max,
                 sampledData,
-                box = graph.box,
+                box = this.graph.box,
                 pane = this.pane;
 
             pane.adjust( this );
@@ -181,7 +182,7 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
                 }
             });
 
-            graph.samples[ this.name ] = sampledData;
+            this.graph.samples[ this.name ] = sampledData;
 
             this.components.forEach(function( component ){
                 var t;
@@ -189,11 +190,11 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
                 if ( component.parse ){
                     t = component.parse( sampledData, pane.filtered );
                     if ( t ){
-                        if ( !min && min !== 0 || min > t.min ){
+                        if ( t.min !== null && (!min && min !== 0 || min > t.min) ){
                             min = t.min;
                         }
 
-                        if ( !max && max !== 0 || max < t.max ){
+                        if ( t.max !== null && (!max && max !== 0 || max < t.max) ){
                             max = t.max;
                         }
                     }
@@ -211,6 +212,15 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
 
             pane.y.minimum = min;
             pane.y.maximum = max;
+
+            this.sampledData = sampledData;
+        };
+
+        ViewModel.prototype.calcScales = function( unified ){
+            var pane = this.pane,
+                box = this.graph.box,
+                min = pane.y.minimum,
+                max = pane.y.maximum;
 
             if ( pane.x.start ){
                 if ( this.model.adjustSettings ){
@@ -241,10 +251,8 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
                         box.innerTop
                     ]);
 
-                this.sampledData = sampledData;
-
                 // Calculations now to speed things up later
-                sampledData.forEach(function(d){
+                this.sampledData.forEach(function(d){
                     var t = this.x.scale( d.$interval );
 
                     d._$interval = t;
@@ -296,6 +304,72 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
                 }
             });
         };
+
+        ViewModel.prototype.publishStats = function(){
+            var i,
+                s,
+                data = this.model.data,
+                step = this.pane.x.$max,
+                count = data.length;
+
+            for( i = 1; i < count; i++ ){
+                s = data[i].$x - data[i-1].$x;
+                if ( step > s ){
+                    step = s;
+                }
+            }
+
+            return {
+                step: step,
+                count: data.length,
+                bound: {
+                    min: this.pane.x.$min,
+                    max: this.pane.x.$max
+                },
+                data: {
+                    min: this.model.x.$min,
+                    max: this.model.x.$max
+                }
+            };
+        };
+
+        ViewModel.prototype.publishData = function( content, conf, calcPos ){
+            publish( this.model.data, conf.name, content, calcPos, conf.format );
+        };
+
+        function fill( content, start, stop, value ){
+            while ( start < stop ){
+                content[start].push( value );
+                start++;
+            }
+        }
+        
+        function publish( data, name, content, calcPos, format ){
+            var i, c,
+                value,
+                pos,
+                last = 0;
+
+            for( i = 0, c = data.length; i < c; i++ ){
+                value = data[i][name];
+
+                if ( value !== undefined && value !== null ){
+                    pos = calcPos( data[i] );
+                    if ( pos !== last ){
+                        fill( content, last, pos, null );
+                    }
+
+                    if ( format ){
+                        value = format( value );
+                    }
+                    content[pos].push( value );
+
+                    last = pos + 1;
+                }
+            }
+
+            fill( content, last, content.length, null );
+        }
 
         return ViewModel;
     }]

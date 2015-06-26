@@ -13,10 +13,10 @@ angular.module( 'vgraph' ).directive( 'vgraphLine',
                     line = ComponentGenerator.makeLineCalc( chart, name );
 
                 chart.register({
-                    parse : function( data ){
+                    parse: function( data ){
                         return ComponentGenerator.parseLimits( data, name );
                     },
-                    finalize : function( pane, data ){
+                    finalize: function( pane, data ){
                         var last;
 
                         // TODO : what the heck is this filter about?
@@ -33,6 +33,10 @@ angular.module( 'vgraph' ).directive( 'vgraphLine',
                                 return !t || t[ name ] !== last;
                             }
                         })) );
+                    },
+                    publish: function( data, headers, content, calcPos ){
+                        headers.push( name );
+                        ComponentGenerator.publish( data, name, content, calcPos );
                     }
                 });
             }

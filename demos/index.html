@@ -129,6 +129,7 @@
 			<label>Compare<input type='checkbox' ng-checked="compare" ng-click="compare = !compare"/></label>
 			<label>MultiAxis<input type='checkbox' ng-checked="multiAxis" ng-click="multiAxis = !multiAxis"/></label>
 			<label>Zooming<input type='checkbox' ng-checked="zoom" ng-click="zoom = !zoom"/></label>
+			<label>Export<input type='checkbox' ng-checked="export" ng-click="export = !export"/></label>
 		</section>
 
 		<section ng-if="simple">
@@ -388,7 +389,32 @@
 
 		<section ng-if="multiAxis">
 			<h5>Multi Axis</h5>
+			<strong>two different x-y scales</strong>
 			<div ng-controller="MultiAxisCtrl" class='grid-on'>
+				({{highlight.point.firstModel.$interval}},{{highlight.point.firstModel.firstLine}}) : 
+				({{highlight.point.secondModel.$interval}},{{highlight.point.secondModel.secondLine}})
+				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" 
+					model="{ firstModel:firstModel, secondModel:secondModel }" version="1.1">
+					<g vgraph-axis="'left'" control="firstModel"
+		                tick-length="4" tick-padding="-2"></g>
+		            <g vgraph-axis="'bottom'" control="firstModel"
+		                tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+		            <g vgraph-axis="'right'" control="secondModel"
+		                tick-length="4" tick-padding="-2"></g>
+		            <g vgraph-axis="'top'" control="secondModel"
+		                tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+					<g vgraph-line="line" interval="'x'" control="firstModel"
+						value="'y1'" name="firstLine"></g>
+					<g vgraph-line="line" interval="'x2'" control="secondModel"
+						value="'y2'" name="secondLine"></g>
+					<g vgraph-target="highlight" point-radius="5"
+						config="{firstModel:[{name:'firstLine',className:'blue'}], secondModel:[{name:'secondLine',className:'red'}]}"></g>
+					<g vgraph-interact="highlight"></g>
+				</svg>
+			</div>
+
+			<strong>two x, one y scale</strong>
+			<div ng-controller="MultiAxis2Ctrl" class='grid-on'>
 				({{highlight.point.firstModel.$interval}},{{highlight.point.firstModel.firstLine}}) : 
 				({{highlight.point.secondModel.$interval}},{{highlight.point.secondModel.secondLine}})
 				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" 
@@ -450,6 +476,38 @@
 
                     <g vgraph-zoom="graph" control="firstModel"></g>
                 </svg>
+			</div>
+		</section>
+
+		<section ng-if="export">
+			<h5>Export</h5>
+			<div ng-controller="MultiAxisCtrl" class='grid-on'>
+				({{highlight.point.firstModel.$interval}},{{highlight.point.firstModel.firstLine}}) : 
+				({{highlight.point.secondModel.$interval}},{{highlight.point.secondModel.secondLine}})
+				<svg vgraph-chart="graph" 
+					model="{ firstModel:firstModel, secondModel:secondModel }">
+					<g vgraph-axis="'left'" control="firstModel"
+		                tick-length="4" tick-padding="-2"></g>
+		            <g vgraph-axis="'bottom'" control="firstModel"
+		                tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+		            <g vgraph-axis="'right'" control="secondModel"
+		                tick-length="4" tick-padding="-2"></g>
+		            <g vgraph-axis="'top'" control="secondModel"
+		                tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+					
+					<g vgraph-line="line" interval="'x'" control="firstModel"
+						value="'y1'" name="firstLine"></g>
+					<g vgraph-line="line" interval="'x2'" control="secondModel"
+						value="'y2'" name="secondLine"></g>
+
+					<g vgraph-target="highlight" point-radius="5"
+						config="{firstModel:[{name:'firstLine',className:'blue'}], secondModel:[{name:'secondLine',className:'red'}]}"></g>
+
+					<g vgraph-focus="dragPos" lose-focus="dragStop"></g>
+					<g vgraph-interact="highlight" d-begin="dragStart" d-change="dragPos" d-end="dragStop"></g>
+				</svg>
+				<button ng-click="export()">Export</button>
+				<a id="export" ng-show="exportData" download='sample.csv'>Download</a>
 			</div>
 		</section>
 	</article>
@@ -1377,6 +1435,61 @@ angular.module( 'vgraph' ).controller( 'MultiAxisCtrl',
 		<g vgraph-line="line" interval="'x2'" control="secondModel"
 			value="'y2'" name="secondLine"></g>
 		*/
+		var textFile;
+
+		function makeTextFile(text) {
+			var data = new Blob([text], {type: 'text/csv'});
+
+			// If we are replacing a previously generated file we need to
+			// manually revoke the object URL to avoid memory leaks.
+			if (textFile !== null) {
+				window.URL.revokeObjectURL(textFile);
+			}
+
+			textFile = window.URL.createObjectURL(data);
+
+			return textFile;
+		}
+
+		$scope.export = function(){
+			var link = document.getElementById('export'),
+				t = $scope.graph.publish([
+					{
+						view: 'firstModel',
+						name: '$x',
+						label: 'First Time',
+						format: function( v ){
+							return '-'+v+'-';
+						}
+					},
+					{
+						view: 'firstModel',
+						name: 'firstLine',
+						label: 'First Value'
+					},
+					{
+						view: 'secondModel',
+						name: '$x',
+						label: 'Second Time',
+						format: function( v ){
+							return '-'+v+'-';
+						}
+					},
+					{
+						view: 'secondModel',
+						name: 'secondLine',
+						label: 'Second Value'
+					}
+				]);
+
+			angular.forEach(t, function( v, k ){
+				t[k] = v.join(',');
+			});
+
+			link.href = makeTextFile(t.join('\n'));
+			$scope.exportData = true;
+		};
+
 		$scope.config = [
 			{ 
 				name : 'firstLine',
@@ -1423,6 +1536,151 @@ angular.module( 'vgraph' ).controller( 'MultiAxisCtrl',
 			'firstModel': $scope.firstModel,
 			'secondModel': $scope.secondModel
 		});
+
+		var counter = 0;
+		interval = setInterval(function(){
+			var min = -1,
+				max = 1;
+
+			data.push({
+				x : data.length,
+				x2 : data.length + 150,
+				y1 : data[data.length-1].y1 + (Math.random() * (max - min) + min),
+				y2 : data[data.length-1].y2 + (Math.random() * (max - min) + min)
+			});
+
+			$scope.graph.setBounds({
+                    min : null,
+                    max : null
+                },{
+                    min : null,
+                    max : null
+                })
+                .setPane({
+                    start : null,
+                    stop : null
+                },{
+                    start : null,
+                    stop : null
+                });
+
+            $scope.zoom.setBounds({
+                    min : null,
+                    max : null
+                },{
+                    min : null,
+                    max : null
+                })
+                .setPane({
+                    start : null,
+                    stop : null
+                },{
+                    start : null,
+                    stop : null
+                });
+
+			$scope.$apply();
+		}, 20);
+
+		setTimeout(function(){
+			clearInterval( interval );
+		}, 20000 );
+	}]
+);
+
+angular.module( 'vgraph' ).controller( 'MultiAxis2Ctrl',
+	['$scope', 'GraphModel', 'LinearModel', 'DataCollection',
+	function( $scope, GraphModel, LinearModel, DataCollection ){
+		var data = [ {x : 0, x2: 150, y1 : 20, y2 : 400}  ],
+			interval,
+			boxModel;
+
+		/*
+		<g vgraph-line="line" interval="'x'" control="firstModel"
+			value="'y1'" name="firstLine"></g>
+		<g vgraph-line="line" interval="'x2'" control="secondModel"
+			value="'y2'" name="secondLine"></g>
+		*/
+		var textFile;
+
+		function makeTextFile(text) {
+			var data = new Blob([text], {type: 'text/csv'});
+
+			// If we are replacing a previously generated file we need to
+			// manually revoke the object URL to avoid memory leaks.
+			if (textFile !== null) {
+				window.URL.revokeObjectURL(textFile);
+			}
+
+			textFile = window.URL.createObjectURL(data);
+
+			return textFile;
+		}
+
+		$scope.config = [
+			{ 
+				name : 'firstLine',
+				data: data,
+				className : 'red', 
+				control: 'firstModel',
+				interval: 'x',
+				value: 'y1'
+			},
+			{ 
+				name : 'secondLine',
+				data: data,
+				className : 'blue',
+				control: 'secondModel',
+				interval: 'x2',
+				value: 'y2'
+			}
+		];
+
+		$scope.line = data;
+		$scope.graph = new GraphModel();
+		$scope.zoom = new GraphModel();
+		$scope.firstModel = new LinearModel({
+            x : {
+                scale : function(){
+                    return d3.scale.linear();
+                }
+            },
+            y : {
+                padding : 0.05
+            }
+        });
+		$scope.secondModel = new LinearModel({
+            x : {
+                scale : function(){
+                    return d3.scale.linear();
+                }
+            },
+            y : {
+                padding : 0.05
+            }
+        });
+		$scope.graphModel = new DataCollection({
+			'firstModel': $scope.firstModel,
+			'secondModel': $scope.secondModel
+		});
+
+		$scope.graph.calcHook = function(){
+			var min, max;
+
+			angular.forEach( this.views, function( view ){
+                if ( min === undefined || view.pane.y.minimum < min ){
+                	min = view.pane.y.minimum;
+                }
+                if ( max === undefined || view.pane.y.maximum > max ){
+                	max = view.pane.y.maximum;
+                }
+            });
+
+            angular.forEach( this.views, function( view ){
+                view.pane.y.minimum = min;
+                view.pane.y.maximum = max;
+            });
+		};
 
 		var counter = 0;
 		interval = setInterval(function(){
