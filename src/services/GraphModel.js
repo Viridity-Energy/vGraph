@@ -1,3 +1,16 @@
+/*
+The next iteration will be build around config variables for lines, fills, feeds, etc
+{
+    ref : { // this way you can just pass the ref around, not the whole config
+        name
+        view
+        className
+    },
+    data: // raw data source 
+    feed: // feeder to watch and pull content from
+}
+*/
+
 angular.module( 'vgraph' ).factory( 'GraphModel',
     [ '$timeout', 'ViewModel', 'BoxModel', 'LinearModel', 'DataCollection',
     function ( $timeout, ViewModel, BoxModel, LinearModel, DataCollection ) {
@@ -164,6 +177,7 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             });
 
             // TODO : not empty
+            waiting = this.views; // TODO: there's a weird bug when joining scales, quick fix
             hasViews = Object.keys(waiting).length;
             
             if ( hasViews ){

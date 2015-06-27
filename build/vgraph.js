@@ -842,6 +842,7 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             });
 
             // TODO : not empty
+            waiting = this.views; // TODO: there's a weird bug when joining scales, quick fix
             hasViews = Object.keys(waiting).length;
             
             if ( hasViews ){
@@ -993,7 +994,6 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
             }
 
             this.data = [];
-            this.queued = null;
 
             this.construct();
 
@@ -1303,23 +1303,53 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
             }
         };
 
+        function regulator( min, max, func, context ){
+            var args,
+                nextTime,
+                limitTime;
+
+            function callback(){
+                var now = +(new Date());
+
+                if ( now > limitTime || nextTime < now ){
+                    limitTime = null;
+                    func.apply(context, args);
+                }else{
+                    setTimeout(callback, min);
+                }
+            }
+
+            return function(){
+                var now = +(new Date());
+                
+                nextTime = now + min;
+                args = arguments;
+
+                if ( !limitTime ){
+                    limitTime = now+max;
+                    setTimeout(callback, min);
+                }
+            };
+        }
+
+        var dataProc = regulator( 20, 200, function( lm ){
+            var registrations = lm.registrations;
+
+            registrations.forEach(function( registration ){
+                registration();
+            });
+        });
+
         LinearModel.prototype.dataReady = function( force ){
             var registrations = this.registrations;
-
-            clearTimeout( this.queued );
 
             if ( force ){
                 registrations.forEach(function( registration ){
                     registration();
                 });
             }else{
-                this.queued = setTimeout(function(){
-                    registrations.forEach(function( registration ){
-                        registration();
-                    });
-                }, 5);
+                dataProc( this );
             }
-            
         };
 
         LinearModel.prototype.findExtemesY = function( data ){
