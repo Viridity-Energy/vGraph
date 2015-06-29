@@ -439,7 +439,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                         v = undefined;
                         d = data[i];
 
-                        for( j = 0, co = lines.length; j < co && v !== undefined && v !== null; j++ ){
+                        for( j = 0, co = lines.length; j < co && (v === undefined || v === null); j++ ){
                             name = lines[j].name;
                             v = d[ name ];
                             if ( v !== undefined && v !== null ){
@@ -452,6 +452,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                             }
                         }
 
+                        console.log( v );
                         d['$'+name] = v;
                         last = v;
 
