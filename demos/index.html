@@ -17,7 +17,6 @@
 		[ng-controller] {
 			display : inline-block;
 			width: 800;
-			height: 280;
 			margin: 10px 0;
 		}
 
@@ -508,6 +507,61 @@
 				</svg>
 				<button ng-click="export()">Export</button>
 				<a id="export" ng-show="exportData" download='sample.csv'>Download</a>
+			</div>
+			<b>Offset - point</b>
+			<div ng-controller="ExportCtrl">
+				({{highlight.closest.firstModel.$interval}},{{highlight.closest.firstModel.firstLine}}) : 
+				({{highlight.closest.secondModel.$interval}},{{highlight.closest.secondModel.secondLine}})
+				<br>
+				{{highlight.point.$index}}
+				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" 
+					model="graphModel" version="1.1">
+					<g vgraph-multi-line config="config"></g>
+
+					<g vgraph-target="highlight" point-radius="5"
+						config="{firstModel:[{name:'firstLine',className:'green'}], secondModel:[{name:'secondLine',className:'yellow'}]}"></g>
+
+					<g vgraph-interact="highlight" d-begin="dragStart" d-change="dragPos" d-end="dragStop"></g>
+				</svg>
+				<button ng-click="export()">Export</button>
+				<a id="export2" ng-show="exportData" download='sample.csv'>Download</a>
+			</div>
+
+			<b>Offset - off</b>
+			<div ng-controller="ExportCtrl">
+				({{highlight.closest.firstModel.$interval}},{{highlight.closest.firstModel.firstLine}}) : 
+				({{highlight.closest.secondModel.$interval}},{{highlight.closest.secondModel.secondLine}})
+				<br>
+				{{highlight.point.$index}}
+				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" 
+					model="graphModel" version="1.1">
+					<g vgraph-multi-line config="config"></g>
+
+					<g vgraph-target="highlight" point-radius="5" type="closest"
+						config="{firstModel:[{name:'firstLine',className:'green'}], secondModel:[{name:'secondLine',className:'yellow'}]}"></g>
+
+					<g vgraph-interact="highlight" d-begin="dragStart" d-change="dragPos" d-end="dragStop"></g>
+				</svg>
+				<button ng-click="export()">Export</button>
+				<a id="export2" ng-show="exportData" download='sample.csv'>Download</a>
+			</div>
+
+			<b>Offset - on</b>
+			<div ng-controller="ExportCtrl">
+				({{highlight.closest.firstModel.$interval}},{{highlight.closest.firstModel.firstLine}}) : 
+				({{highlight.closest.secondModel.$interval}},{{highlight.closest.secondModel.secondLine}})
+				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" 
+					model="graphModel" version="1.1">
+					<g vgraph-multi-line config="config"></g>
+
+					<g vgraph-target="highlight" point-radius="5" type="closest"
+						offset="true"
+						config="{firstModel:[{name:'firstLine',className:'green'}], secondModel:[{name:'secondLine',className:'yellow'}]}"></g>
+
+					<g vgraph-interact="highlight" d-begin="dragStart" d-change="dragPos" d-end="dragStop"></g>
+				</svg>
+				<button ng-click="export()">Export</button>
+				<a id="export2" ng-show="exportData" download='sample.csv'>Download</a>
 			</div>
 		</section>
 	</article>
@@ -1730,6 +1784,156 @@ angular.module( 'vgraph' ).controller( 'MultiAxis2Ctrl',
 		setTimeout(function(){
 			clearInterval( interval );
 		}, 20000 );
+	}]
+);
+
+angular.module( 'vgraph' ).controller( 'ExportCtrl',
+	['$scope', 'GraphModel', 'LinearModel', 'DataCollection',
+	function( $scope, GraphModel, LinearModel, DataCollection ){
+		var data = [ {x1 : 0, x2 : 1000, y1 : 20, y2 : 25}  ],
+			interval,
+			boxModel;
+
+		var textFile;
+
+		function makeTextFile(text) {
+			var data = new Blob([text], {type: 'text/csv'});
+
+			// If we are replacing a previously generated file we need to
+			// manually revoke the object URL to avoid memory leaks.
+			if (textFile !== null) {
+				window.URL.revokeObjectURL(textFile);
+			}
+
+			textFile = window.URL.createObjectURL(data);
+
+			return textFile;
+		}
+
+		$scope.highlight = {};
+		$scope.config = [
+			{ 
+				name : 'firstLine',
+				data: data,
+				className : 'red', 
+				control: 'firstModel',
+				interval: 'x1',
+				value: 'y1'
+			},
+			{ 
+				name : 'secondLine',
+				data: data,
+				className : 'blue',
+				control: 'secondModel',
+				interval: 'x2',
+				value: 'y2'
+			}
+		];
+
+		$scope.graph = new GraphModel();
+		$scope.firstModel = new LinearModel({
+            x : {
+                scale : function(){
+                    return d3.scale.linear();
+                }
+            },
+            y : {
+                padding : 0.05
+            }
+        });
+		$scope.secondModel = new LinearModel({
+            x : {
+                scale : function(){
+                    return d3.scale.linear();
+                }
+            },
+            y : {
+                padding : 0.05
+            }
+        });
+		$scope.graphModel = new DataCollection({
+			'firstModel': $scope.firstModel,
+			'secondModel': $scope.secondModel
+		});
+
+		for( var i = 0, c = 200; i < c; i++ ){
+			var counter = 0;
+			var min = -1,
+				max = 1,
+				t = Math.random() * (max - min) + min;
+
+			data.push({
+				x1 : data.length,
+				y1 : data[data.length-1].y1 + t
+			});
+		}
+		
+		for( var i = 5, c = 200; i < c; i += 5 ){
+			var counter = 0;
+			var min = -1,
+				max = 1,
+				t = Math.random() * (max - min) + min,
+				d = data[i];
+
+			d.x2 = i + 1000;
+			d.y2 = data[i-5].y2 + t;
+		}
+
+		$scope.export = function(){
+			var link = document.getElementById('export2'),
+				t = $scope.graph.publish([
+					{
+						view: 'secondModel',
+						name: 'secondLine',
+						label: 'Second Value'
+					},
+					
+					{
+						view: 'firstModel',
+						name: 'firstLine',
+						label: 'First Value'
+					}
+				],[
+					{
+						view: 'secondModel',
+						name: '$x',
+						label: 'Second Time',
+						format: function( v ){
+							return '-'+v+'-';
+						}
+					},
+					{
+						view: 'firstModel',
+						name: '$x',
+						label: 'First Time',
+						format: function( v ){
+							return '-'+v+'-';
+						}
+					}
+				]);
+
+			angular.forEach(t, function( v, k ){
+				t[k] = v.join(',');
+			});
+
+			link.href = makeTextFile(t.join('\n'));
+			$scope.exportData = true;
+		};
+
+		$scope.graph.setBounds({
+                min : null,
+                max : null
+            },{
+                min : null,
+                max : null
+            })
+            .setPane({
+                start : null,
+                stop : null
+            },{
+                start : null,
+                stop : null
+            });
 	}]
 );
 </script>

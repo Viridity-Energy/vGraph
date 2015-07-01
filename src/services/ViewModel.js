@@ -257,7 +257,7 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
 
                     d._$interval = t;
 
-                    unified.addIndex(Math.floor(t))[this.name] = d;
+                    unified.addIndex(Math.floor(t),d.$interval)[this.name] = d;
                 }, this);
             }else{
                 this.sampledData = [];
@@ -309,7 +309,7 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
             var i,
                 s,
                 data = this.model.data,
-                step = this.pane.x.$max,
+                step = this.pane.x.$max || 9007199254740991, // max safe int
                 count = data.length;
 
             for( i = 1; i < count; i++ ){

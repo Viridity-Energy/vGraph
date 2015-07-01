@@ -22,9 +22,12 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             this.$dirty = false;
         }
 
-        IndexedData.prototype.addIndex = function( index ){
+        IndexedData.prototype.addIndex = function( index, meta ){
             if ( !this.hash[index] ){
-                this.hash[index] = { $index : index };
+                this.hash[index] = {
+                    $index : index,
+                    $meta : meta
+                };
 
                 if ( this.index[this.index.length-1] > index ){
                     this.$dirty = true;
@@ -42,6 +45,9 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                 right;
 
             if ( this.length ){
+                this.sort();
+
+                // this works because bisect uses .get
                 p = ViewModel.bisect( this, index, function( x ){
                     return x.$index;
                 }, true );
@@ -61,7 +67,9 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
         IndexedData.prototype.sort = function(){
             if ( this.$dirty ){
                 this.$dirty = false;
-                this.index.sort();
+                this.index.sort(function( a, b ){
+                    return a - b;
+                });
             }
         };
 
@@ -102,14 +110,12 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             field
             format
         */
-        GraphModel.prototype.publish = function( config ){
-            var i,
-                width,
+        GraphModel.prototype.publish = function( config, index ){
+            var width,
                 size,
                 step,
                 views = {},
                 stats = {},
-                headers = [],
                 content;
 
             angular.forEach( config, function( conf ){
@@ -137,7 +143,40 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             });
 
             size = Math.ceil( width / step );
-            content = [];
+
+            content = publish( config, views, stats, width, size );
+            if ( index ){
+                index = publish( index, views, stats, width, size );
+                reduce( index.body, content.body );
+                content.header.unshift( index.header[0] );
+            }
+
+            content.body.unshift( content.header );
+
+            return content.body;
+        };
+
+        function reduce( arr, target ){
+            var ar,
+                i, c,
+                j, co;
+
+            for( i = 0, c = arr.length; i < c; i++ ){
+                ar = arr[i];
+
+                for( j = 0, co = ar.length; j < co; j++ ){
+                    if ( ar[j] !== null ){
+                        target[i].unshift( ar[j] );
+                        j = co;
+                    }
+                }
+            }
+        }
+
+        function publish( config, views, stats, width, size ){
+            var i,
+                headers = [],
+                content = [];
 
             for( i = 0; i < size; i++ ){
                 content.push([]);
@@ -154,10 +193,11 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                 });
             });
 
-            content.unshift( headers );
-
-            return content;
-        };
+            return {
+                header: headers,
+                body: content
+            };
+        }
 
         GraphModel.prototype.render = function( waiting ){
             var hasViews = 0,
@@ -175,7 +215,7 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             angular.forEach( this.views, function( view ){
                 view.calcScales( unified );
             });
-
+            
             // TODO : not empty
             waiting = this.views; // TODO: there's a weird bug when joining scales, quick fix
             hasViews = Object.keys(waiting).length;

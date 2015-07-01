@@ -18,6 +18,14 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
                 settings.y = {};
             }
 
+            this.$dataProc = regulator( 20, 200, function( lm ){
+                var registrations = lm.registrations;
+
+                registrations.forEach(function( registration ){
+                    registration();
+                });
+            });
+
             this.data = [];
 
             this.construct();
@@ -156,7 +164,7 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
                 data = this.data,
                 d = this.getPoint( interval ),
                 v = parseFloat( value );
-
+            
             if ( !d ){
                 return;
             }
@@ -357,14 +365,6 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
             };
         }
 
-        var dataProc = regulator( 20, 200, function( lm ){
-            var registrations = lm.registrations;
-
-            registrations.forEach(function( registration ){
-                registration();
-            });
-        });
-
         LinearModel.prototype.dataReady = function( force ){
             var registrations = this.registrations;
 
@@ -373,7 +373,7 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
                     registration();
                 });
             }else{
-                dataProc( this );
+                this.$dataProc( this );
             }
         };
 

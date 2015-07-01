@@ -676,6 +676,19 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
     }]
 );
 
+/*
+The next iteration will be build around config variables for lines, fills, feeds, etc
+{
+    ref : { // this way you can just pass the ref around, not the whole config
+        name
+        view
+        className
+    },
+    data: // raw data source 
+    feed: // feeder to watch and pull content from
+}
+*/
+
 angular.module( 'vgraph' ).factory( 'GraphModel',
     [ '$timeout', 'ViewModel', 'BoxModel', 'LinearModel', 'DataCollection',
     function ( $timeout, ViewModel, BoxModel, LinearModel, DataCollection ) {
@@ -687,9 +700,12 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             this.$dirty = false;
         }
 
-        IndexedData.prototype.addIndex = function( index ){
+        IndexedData.prototype.addIndex = function( index, meta ){
             if ( !this.hash[index] ){
-                this.hash[index] = { $index : index };
+                this.hash[index] = {
+                    $index : index,
+                    $meta : meta
+                };
 
                 if ( this.index[this.index.length-1] > index ){
                     this.$dirty = true;
@@ -707,6 +723,9 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                 right;
 
             if ( this.length ){
+                this.sort();
+
+                // this works because bisect uses .get
                 p = ViewModel.bisect( this, index, function( x ){
                     return x.$index;
                 }, true );
@@ -726,7 +745,9 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
         IndexedData.prototype.sort = function(){
             if ( this.$dirty ){
                 this.$dirty = false;
-                this.index.sort();
+                this.index.sort(function( a, b ){
+                    return a - b;
+                });
             }
         };
 
@@ -767,14 +788,12 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             field
             format
         */
-        GraphModel.prototype.publish = function( config ){
-            var i,
-                width,
+        GraphModel.prototype.publish = function( config, index ){
+            var width,
                 size,
                 step,
                 views = {},
                 stats = {},
-                headers = [],
                 content;
 
             angular.forEach( config, function( conf ){
@@ -802,7 +821,40 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             });
 
             size = Math.ceil( width / step );
-            content = [];
+
+            content = publish( config, views, stats, width, size );
+            if ( index ){
+                index = publish( index, views, stats, width, size );
+                reduce( index.body, content.body );
+                content.header.unshift( index.header[0] );
+            }
+
+            content.body.unshift( content.header );
+
+            return content.body;
+        };
+
+        function reduce( arr, target ){
+            var ar,
+                i, c,
+                j, co;
+
+            for( i = 0, c = arr.length; i < c; i++ ){
+                ar = arr[i];
+
+                for( j = 0, co = ar.length; j < co; j++ ){
+                    if ( ar[j] !== null ){
+                        target[i].unshift( ar[j] );
+                        j = co;
+                    }
+                }
+            }
+        }
+
+        function publish( config, views, stats, width, size ){
+            var i,
+                headers = [],
+                content = [];
 
             for( i = 0; i < size; i++ ){
                 content.push([]);
@@ -819,10 +871,11 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                 });
             });
 
-            content.unshift( headers );
-
-            return content;
-        };
+            return {
+                header: headers,
+                body: content
+            };
+        }
 
         GraphModel.prototype.render = function( waiting ){
             var hasViews = 0,
@@ -840,7 +893,7 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             angular.forEach( this.views, function( view ){
                 view.calcScales( unified );
             });
-
+            
             // TODO : not empty
             waiting = this.views; // TODO: there's a weird bug when joining scales, quick fix
             hasViews = Object.keys(waiting).length;
@@ -993,6 +1046,14 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
                 settings.y = {};
             }
 
+            this.$dataProc = regulator( 20, 200, function( lm ){
+                var registrations = lm.registrations;
+
+                registrations.forEach(function( registration ){
+                    registration();
+                });
+            });
+
             this.data = [];
 
             this.construct();
@@ -1131,7 +1192,7 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
                 data = this.data,
                 d = this.getPoint( interval ),
                 v = parseFloat( value );
-
+            
             if ( !d ){
                 return;
             }
@@ -1332,14 +1393,6 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
             };
         }
 
-        var dataProc = regulator( 20, 200, function( lm ){
-            var registrations = lm.registrations;
-
-            registrations.forEach(function( registration ){
-                registration();
-            });
-        });
-
         LinearModel.prototype.dataReady = function( force ){
             var registrations = this.registrations;
 
@@ -1348,7 +1401,7 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
                     registration();
                 });
             }else{
-                dataProc( this );
+                this.$dataProc( this );
             }
         };
 
@@ -1847,7 +1900,7 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
 
                     d._$interval = t;
 
-                    unified.addIndex(Math.floor(t))[this.name] = d;
+                    unified.addIndex(Math.floor(t),d.$interval)[this.name] = d;
                 }, this);
             }else{
                 this.sampledData = [];
@@ -1899,7 +1952,7 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
             var i,
                 s,
                 data = this.model.data,
-                step = this.pane.x.$max,
+                step = this.pane.x.$max || 9007199254740991, // max safe int
                 count = data.length;
 
             for( i = 1; i < count; i++ ){
@@ -3335,25 +3388,26 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
                         .style( 'opacity', '0' )
                         .attr( 'class', 'focal' )
                         .on( 'mousemove', function(){
-                            var //x0,
-                                keys,
-                                point = {},
+                            var keys,
+                                closest = {},
                                 pos = d3.mouse(this)[0];
 
                             if ( !dragging ){
                                 keys = Object.keys(graph.views);
-                                //x0 = graph.views[keys[0]].x.scale.invert( pos ); 
                                 // this should be pretty much the same for every view
 
-                                /*
                                 keys.forEach(function(name){
-                                    view = graph.views[name];
-                                    point[name] = view.getSampledClosest(x0);
-                                });
-                                */
+                                    var view = graph.views[name],
+                                        x0 = view.x.scale.invert( pos );
 
-                                point = graph.unified.getClosest(pos);
-                                highlightOn( this, point );
+                                    closest[name] = view.getSampledClosest(x0);
+                                });
+
+                                highlightOn( this,
+                                    pos,
+                                    graph.unified.getClosest(pos),
+                                    closest
+                                );
                             }
                         })
                         .on( 'mouseout', function( d ){
@@ -3363,7 +3417,7 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
                         });
 
 
-                function highlightOn( el, d ){
+                function highlightOn( el, offset, point, closest ){
                     clearTimeout( active );
 
                     scope.$apply(function(){
@@ -3373,7 +3427,9 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
                             $(node.$els).removeClass('active');
                         });
 
-                        scope.highlight.point = d;
+                        scope.highlight.offset = offset;
+                        scope.highlight.point = point;
+                        scope.highlight.closest = closest;
                         scope.highlight.position = {
                             x : pos[ 0 ],
                             y : pos[ 1 ]
@@ -3392,6 +3448,8 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
                                 $(node.$els).removeClass('active');
                             });
                             scope.highlight.point = null;
+                            scope.highlight.closest = null;
+                            scope.highlight.offset = null;
                         });
                     }, 100);
                 }
@@ -4170,7 +4228,10 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
                         .attr( 'x1', 0 )
                         .attr( 'x2', 0 ),
                     $dots = $el.append( 'g' ),
-                    watches;
+                    type = attrs.type || 'point',
+                    curX,
+                    watches,
+                    confs = {};
 
                 function parseConf( conf ){
                     var i, c,
@@ -4185,6 +4246,31 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
                     }
 
                     return config;
+                }
+
+                function setBar( p ){
+                    curX = p;
+
+                    if ( p ){
+                        $el.style( 'visibility', 'visible' )
+                                .attr( 'transform', 'translate(' + p + ',0)' );
+
+                        angular.forEach( confs, function( f ){
+                            if ( f ){
+                                f();
+                            }
+                        });
+                    }else{
+                        $el.style( 'visibility', 'hidden' );
+                    }
+                }
+
+                if ( attrs.offset ){
+                    $scope.$watch('target.offset', setBar );
+                }else{
+                    $scope.$watch('target.point.$index', function( dex ){
+                        setBar( dex ); 
+                    });
                 }
 
                 $scope.$watchCollection(
@@ -4212,45 +4298,41 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
                         watches = [];
 
                         angular.forEach(targets, function( chartName ){
-                            var config,
-                                chart = graph.views[chartName],
+                            var chart = graph.views[chartName],
                                 model = chart.model,
-                                c,
-                                d;
+                                c;
 
                             c = $scope.$watch('config["'+chartName+'"]', function( conf ){
-                                config = parseConf(conf);
-                            });
-                            d = $scope.$watch('target.point["'+chartName+'"]', function( p ){
-                                var name,
-                                    className;
+                                var config = parseConf(conf);
 
-                                if ( config && p && attrs.noDots === undefined ){
-                                    $dots.selectAll( 'circle.point.'+chartName ).remove();
+                                confs[chartName] = function(){
+                                    var p = $scope.target[type][chartName],
+                                        name,
+                                        className;
 
-                                    $el.style( 'visibility', 'visible' )
-                                        .attr( 'transform', 'translate(' + chart.x.scale( p.$interval ) + ',0)' );
-                                    
-                                    for( name in model.plots ){
-                                        if ( p[name] ){
-                                            className = config[name] || 'plot-'+name;
-                                            $dots.append( 'circle' )
-                                                .attr( 'class', 'point '+className+' '+chartName )
-                                                .attr( 'x', 0 )
-                                                .attr( 'cy', chart.y.scale(p[name]) ) // p['$'+name] : you need to deal with sampling
-                                                .attr( 'r', $scope.$eval( attrs.pointRadius ) || 3 );
+                                    if ( config && p && attrs.noDots === undefined ){
+                                        $dots.selectAll( 'circle.point.'+chartName ).remove();
+
+                                        for( name in model.plots ){
+                                            if ( p[name] ){
+                                                className = config[name] || 'plot-'+name;
+                                                $dots.append( 'circle' )
+                                                    .attr( 'class', 'point '+className+' '+chartName )
+                                                    .attr( 'cx', attrs.offset ? p._$interval - curX : 0 )
+                                                    .attr( 'cy', chart.y.scale(p[name]) ) // p['$'+name] : you need to deal with sampling
+                                                    .attr( 'r', $scope.$eval( attrs.pointRadius ) || 3 );
+                                            }
                                         }
+                                    }else{
+                                        $dots.selectAll( 'circle.point.'+chartName ).remove();
                                     }
-                                }else{
-                                    $el.style( 'visibility', 'hidden' );
-                                    $dots.selectAll( 'circle.point.'+chartName ).remove();
-                                }
+                                };
                             });
 
                             watches.push(function(){
                                 // this will unload the old watches if a new control comes in
                                 c();
-                                d();
+                                confs[chartName] = null;
                             });
                         });
                     }

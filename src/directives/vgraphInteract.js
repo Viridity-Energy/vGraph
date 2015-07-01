@@ -22,25 +22,26 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
                         .style( 'opacity', '0' )
                         .attr( 'class', 'focal' )
                         .on( 'mousemove', function(){
-                            var //x0,
-                                keys,
-                                point = {},
+                            var keys,
+                                closest = {},
                                 pos = d3.mouse(this)[0];
 
                             if ( !dragging ){
                                 keys = Object.keys(graph.views);
-                                //x0 = graph.views[keys[0]].x.scale.invert( pos ); 
                                 // this should be pretty much the same for every view
 
-                                /*
                                 keys.forEach(function(name){
-                                    view = graph.views[name];
-                                    point[name] = view.getSampledClosest(x0);
-                                });
-                                */
+                                    var view = graph.views[name],
+                                        x0 = view.x.scale.invert( pos );
 
-                                point = graph.unified.getClosest(pos);
-                                highlightOn( this, point );
+                                    closest[name] = view.getSampledClosest(x0);
+                                });
+
+                                highlightOn( this,
+                                    pos,
+                                    graph.unified.getClosest(pos),
+                                    closest
+                                );
                             }
                         })
                         .on( 'mouseout', function( d ){
@@ -50,7 +51,7 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
                         });
 
 
-                function highlightOn( el, d ){
+                function highlightOn( el, offset, point, closest ){
                     clearTimeout( active );
 
                     scope.$apply(function(){
@@ -60,7 +61,9 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
                             $(node.$els).removeClass('active');
                         });
 
-                        scope.highlight.point = d;
+                        scope.highlight.offset = offset;
+                        scope.highlight.point = point;
+                        scope.highlight.closest = closest;
                         scope.highlight.position = {
                             x : pos[ 0 ],
                             y : pos[ 1 ]
@@ -79,6 +82,8 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
                                 $(node.$els).removeClass('active');
                             });
                             scope.highlight.point = null;
+                            scope.highlight.closest = null;
+                            scope.highlight.offset = null;
                         });
                     }, 100);
                 }
