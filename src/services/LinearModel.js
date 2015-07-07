@@ -136,7 +136,8 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
         };
 
         LinearModel.prototype.getPoint = function( interval ){
-            var d;
+            var data = this.data,
+                d;
 
             if ( this.x.massage ){
                 interval = this.x.massage( interval );
@@ -146,14 +147,23 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
                 return; // don't add junk data
             }
 
+            interval = +interval;
             d = this.lookUp[ interval ];
 
             if ( !d ){
                 // TODO : I think this is now over kill, in the next iteration, I'll just have one
                 d = {
                     $interval: this.makeInterval( interval ),
-                    $x: +interval 
+                    $x: interval 
                 };
+
+                this.lookUp[ interval ] = d;
+                data.push( d );
+
+                if ( data.length && data[data.length - 1].$x > interval ){
+                    // I presume intervals should be entered in order if they don't exist
+                    this.needSort = true;
+                }
             }
 
             return d;
@@ -161,7 +171,6 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
 
         LinearModel.prototype.addPoint = function( name, interval, value ){
             var plot,
-                data = this.data,
                 d = this.getPoint( interval ),
                 v = parseFloat( value );
             
@@ -180,15 +189,6 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
                     d.$min = v;
                     d.$max = v;
                 }
-
-                this.lookUp[ interval ] = d;
-
-                if ( data.length && data[data.length - 1].$x > interval ){
-                    // I presume intervals should be entered in order if they don't exist
-                    this.needSort = true;
-                }
-
-                this.data.push( d );
             }else if ( isFinite(v) ){
                 if ( d.$min === undefined || v < d.$min ){
                     d.$min = v;
