@@ -305,7 +305,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                                     .attr( 'y', 0 );
                             }
 
-                            $tickMarks.attr( 'transform', 'translate(-'+box.padding.right+','+(-box.top)+')' );
+                            $tickMarks.attr( 'transform', 'translate(-'+box.padding.right+','+(-box.top||0)+')' );
 
                             if ( ticks ){
                                 axis.orient('right')
@@ -322,9 +322,8 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                                     );
                                 }
 
-                                $ticks.attr('transform', 'translate('+(box.innerRight)+','+(-box.top)+')')
-                                    .call( axis );
-
+                                $ticks.attr('transform', 'translate('+(box.innerRight)+','+(-box.top||0)+')');
+                                $ticks.call( axis );
                                 $ticks.select('.domain').attr( 'transform', 'translate('+( tickLength + tickMargin )+',0)' );
 
                                 if ( labelEndpoints ){
@@ -383,7 +382,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                                     .attr( 'y', 0 );
                             }
 
-                            $tickMarks.attr( 'transform', 'translate('+box.padding.left+','+(-box.top)+')' );
+                            $tickMarks.attr( 'transform', 'translate('+box.padding.left+','+(-box.top||0)+')' );
 
                             if ( ticks ){
                                 axis.orient('left')
@@ -400,7 +399,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                                     );
                                 }
 
-                                $ticks.attr('transform', 'translate('+(box.padding.left - tickLength - tickMargin )+','+(-box.top)+')')
+                                $ticks.attr('transform', 'translate('+(box.padding.left - tickLength - tickMargin )+','+(-box.top||0)+')')
                                     .call( axis );
 
                                 $ticks.select('.domain').attr( 'transform', 'translate('+( tickLength + tickMargin )+',0)' );
