@@ -158,12 +158,13 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
                 };
 
                 this.lookUp[ interval ] = d;
-                data.push( d );
 
                 if ( data.length && data[data.length - 1].$x > interval ){
                     // I presume intervals should be entered in order if they don't exist
                     this.needSort = true;
                 }
+
+                data.push( d );
             }
 
             return d;
