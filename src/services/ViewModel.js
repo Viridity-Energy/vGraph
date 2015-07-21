@@ -75,13 +75,17 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
             }
         }
         
+        function getClosestPair( data, value ){
+            return bisect( data, value, function( x ){
+                return x.$interval;
+            }, true );
+        }
+
         function getClosest( data, value ){
             var p, l, r;
 
             if ( data.length ){
-                p = bisect( data, value, function( x ){
-                    return x.$interval;
-                }, true );
+                p = getClosestPair( data, value );
                 l = value - data[p.left].$interval;
                 r = data[p.right].$interval - value;
 
@@ -143,6 +147,49 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
             var pos = Math.round( this.model.data.length * offset );
 
             return this.getPoint( pos );
+        };
+
+        ViewModel.prototype.makePoint = function( value, min, max, makeInterval ){
+            var data = this.model.data,
+                p,
+                r,
+                l,
+                d,
+                dx;
+
+            if ( value > min && value < max ){
+                p = getClosestPair( data, value );
+
+                if ( p.right === p.left ){
+                    return data[p.right];
+                }else{
+                    r = data[p.right];
+                    l = data[p.left];
+                    d = {};
+                    dx = (value - l.$x) / (r.$x - l.$x);
+
+                    Object.keys(r).forEach(function( key ){
+                        var v1 = l[key], 
+                            v2 = r[key];
+
+                        // both must be numeric
+                        if ( v1 !== undefined && v1 !== null && 
+                            v2 !== undefined && v2 !== null ){
+                            d[key] = v1 + (v2 - v1) * dx;
+                        }
+                    });
+
+                    d.$faux = true;
+                }
+            }else{
+                d = {
+                    $x: value
+                };
+            }
+
+            d.$interval = makeInterval ? makeInterval( d.$x ) : d.$x;
+
+            return d;
         };
 
         ViewModel.prototype.getClosest = function( value, data ){

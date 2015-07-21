@@ -54,14 +54,9 @@ angular.module( 'vgraph' ).factory( 'PaneModel',
                 }
             }
 
-            return this;
-        };
+            this.offset = null;
 
-        PaneModel.prototype.makePoint = function( value ){
-            return {
-                $x : value,
-                $interval : this.dataModel.makeInterval( value )
-            };
+            return this;
         };
 
         PaneModel.prototype.isValid = function( d ) {
@@ -82,15 +77,15 @@ angular.module( 'vgraph' ).factory( 'PaneModel',
                 data = this.dataModel.data,
                 x = this.x,
                 dataX = this.dataModel.x,
-                $max,
-                $min;
+                $min,
+                $max;
 
             if ( data.length ){
                 this.dataModel.clean();
                 
-                $max = x.$max || dataX.$max;
                 $min = x.$min || dataX.$min;
-
+                $max = x.$max || dataX.$max;
+                
                 this.offset = {};
 
                 if ( typeof(x.start) === 'number' ){
@@ -112,10 +107,10 @@ angular.module( 'vgraph' ).factory( 'PaneModel',
                         dx = x.start.$x || 0; // if it's 0, it remains 0
                     }
 
-                    x.start = ( dx > dataX.min.$x && dx < dataX.max.$x ? 
-                        view.getClosest(dx) : this.makePoint(dx)
-                    );
+                    x.start = view.makePoint( dx, dataX.$min, dataX.$max, this.dataModel.makeInterval );
                 }
+                
+                this.offset.$left = x.start.$x;
                 this.offset.left = (x.start.$x - $min) / ($max - $min);
 
                 if ( typeof(x.stop) === 'number' ){
@@ -137,10 +132,10 @@ angular.module( 'vgraph' ).factory( 'PaneModel',
                         dx = x.stop.$x || 0;
                     }
 
-                    x.stop = ( dx > dataX.min.$x && dx < dataX.max.$x ? 
-                        view.getClosest(dx) : this.makePoint(dx)
-                    );
+                    x.stop = view.makePoint( dx, dataX.min.$x, dataX.max.$x, this.dataModel.makeInterval );
                 }
+                
+                this.offset.$right = x.stop.$x;
                 this.offset.right = (x.stop.$x - $min) / ($max - $min);
 
                 // calculate the filtered points
@@ -165,6 +160,14 @@ angular.module( 'vgraph' ).factory( 'PaneModel',
                 
                 this.filtered.$first = firstMatch;
                 this.filtered.$last = lastMatch;
+
+                if ( x.start.$faux ){
+                    this.filtered.unshift( x.start );
+                }
+
+                if ( x.stop.$faux ){
+                    this.filtered.push( x.stop );
+                }
 
                 this.x.min = this.dataModel.x.min;
                 this.x.max = this.dataModel.x.max;
