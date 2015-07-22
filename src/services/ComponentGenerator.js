@@ -172,7 +172,9 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 	    }
 
         function isNumeric( v ){
-            if ( Number.isFinite ){
+            if ( v === null ){
+                return false;
+            }else if ( Number.isFinite ){
                 return Number.isFinite(v) && !Number.isNaN(v);
             }else{
                 return isFinite(v) && !isNaN(v);
@@ -272,7 +274,6 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                         y2 = !bottom || d[chart2.name] && isNumeric(d[chart2.name][bottom]);
 
                     if ( isNumeric(y1) && y2 ){
-                        
                         return true;
                     }else{
                         return false;
