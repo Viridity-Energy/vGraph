@@ -204,6 +204,14 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
             this.components.push( component );
         };
 
+        ViewModel.prototype.hasData = function(){
+            var min = this.pane.y.minimum,
+                max = this.pane.y.maximum;
+
+            // TODO : this really should be is numeric
+            return (min || min === 0) && (max || max === 0);
+        };
+
         ViewModel.prototype.calcBounds = function(){
             var last,
                 step,
@@ -251,12 +259,6 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
             pane.y.top = max;
             pane.y.bottom = min;
 
-            if ( pane.y.padding ){
-                step = ( max - min ) * pane.y.padding;
-                max = max + step;
-                min = min - step;
-            }
-
             pane.y.minimum = min;
             pane.y.maximum = max;
 
@@ -264,10 +266,20 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
         };
 
         ViewModel.prototype.calcScales = function( unified ){
-            var pane = this.pane,
+            var step,
+                pane = this.pane,
                 box = this.graph.box,
                 min = pane.y.minimum,
                 max = pane.y.maximum;
+
+            if ( pane.y.padding ){
+                step = ( max - min ) * pane.y.padding;
+                max = max + step;
+                min = min - step;
+
+                pane.y.minimum = min;
+                pane.y.maximum = max;
+            }
 
             if ( pane.x.start ){
                 if ( this.model.adjustSettings ){

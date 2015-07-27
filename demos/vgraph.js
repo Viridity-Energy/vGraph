@@ -891,12 +891,19 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                 this.calcHook();
             }
 
+            waiting = []; // TODO: there's a weird bug when joining scales, quick fix
+            this.empty = [];
+
             angular.forEach( this.views, function( view ){
                 view.calcScales( unified );
-            });
+                if ( view.hasData() ){
+                    waiting.push( view );
+                }else{
+                    this.empty.push( view );
+                }
+            }, this);
             
             // TODO : not empty
-            waiting = this.views; // TODO: there's a weird bug when joining scales, quick fix
             hasViews = Object.keys(waiting).length;
             
             if ( hasViews ){
@@ -924,6 +931,9 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                         registration( primary.pane );
                     });
                 }
+            }else if ( !this.loading ){
+                this.loading = true;
+                this.message = 'No Data Available';
             }
         };
 
@@ -1852,6 +1862,14 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
             this.components.push( component );
         };
 
+        ViewModel.prototype.hasData = function(){
+            var min = this.pane.y.minimum,
+                max = this.pane.y.maximum;
+
+            // TODO : this really should be is numeric
+            return (min || min === 0) && (max || max === 0);
+        };
+
         ViewModel.prototype.calcBounds = function(){
             var last,
                 step,
@@ -1899,12 +1917,6 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
             pane.y.top = max;
             pane.y.bottom = min;
 
-            if ( pane.y.padding ){
-                step = ( max - min ) * pane.y.padding;
-                max = max + step;
-                min = min - step;
-            }
-
             pane.y.minimum = min;
             pane.y.maximum = max;
 
@@ -1912,10 +1924,20 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
         };
 
         ViewModel.prototype.calcScales = function( unified ){
-            var pane = this.pane,
+            var step,
+                pane = this.pane,
                 box = this.graph.box,
                 min = pane.y.minimum,
                 max = pane.y.maximum;
+
+            if ( pane.y.padding ){
+                step = ( max - min ) * pane.y.padding;
+                max = max + step;
+                min = min - step;
+
+                pane.y.minimum = min;
+                pane.y.maximum = max;
+            }
 
             if ( pane.x.start ){
                 if ( this.model.adjustSettings ){
@@ -3771,9 +3793,8 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
                         .text( text );
 
                 function startPulse(){
-                    $el.attr( 'visibility', 'visible' );
-
-                    if ( !pulsing ){
+                    if ( !pulsing && graph.loading ){
+                        $el.attr( 'visibility', 'visible' );
                         pulsing = true;
                         $interval.cancel( interval );
 
@@ -4009,6 +4030,8 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
     function( $compile, ComponentGenerator ) {
         'use strict';
 
+        var uid = 0;
+
         return {
             require : ['^vgraphChart'],
             scope : {
@@ -4022,7 +4045,11 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                     viewLines = {},
                     childScopes = [],
                     el = $el[0],
-                    names;
+                    names,
+                    id = uid++,
+                    unwatch;
+
+                el.$id = id;
 
                 function parseConf( config ){
                     var $new,
@@ -4067,7 +4094,14 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                     }
                 }
 
-                scope.$watchCollection('config', parseConf );
+                unwatch = scope.$watchCollection('config', parseConf );
+                scope.$on('$destroy', function(){
+                    while( childScopes.length ){
+                        childScopes.pop().$destroy();
+                    }
+
+                    unwatch();
+                });
 
                 function registerView( view ){
                     if ( !views[view.name] ){

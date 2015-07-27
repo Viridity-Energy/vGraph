@@ -212,12 +212,19 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                 this.calcHook();
             }
 
+            waiting = []; // TODO: there's a weird bug when joining scales, quick fix
+            this.empty = [];
+
             angular.forEach( this.views, function( view ){
                 view.calcScales( unified );
-            });
+                if ( view.hasData() ){
+                    waiting.push( view );
+                }else{
+                    this.empty.push( view );
+                }
+            }, this);
             
             // TODO : not empty
-            waiting = this.views; // TODO: there's a weird bug when joining scales, quick fix
             hasViews = Object.keys(waiting).length;
             
             if ( hasViews ){
@@ -245,6 +252,9 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                         registration( primary.pane );
                     });
                 }
+            }else if ( !this.loading ){
+                this.loading = true;
+                this.message = 'No Data Available';
             }
         };
 

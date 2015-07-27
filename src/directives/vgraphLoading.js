@@ -27,9 +27,8 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
                         .text( text );
 
                 function startPulse(){
-                    $el.attr( 'visibility', 'visible' );
-
-                    if ( !pulsing ){
+                    if ( !pulsing && graph.loading ){
+                        $el.attr( 'visibility', 'visible' );
                         pulsing = true;
                         $interval.cancel( interval );
 

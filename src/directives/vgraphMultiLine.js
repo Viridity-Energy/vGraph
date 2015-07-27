@@ -3,6 +3,8 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
     function( $compile, ComponentGenerator ) {
         'use strict';
 
+        var uid = 0;
+
         return {
             require : ['^vgraphChart'],
             scope : {
@@ -16,7 +18,11 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                     viewLines = {},
                     childScopes = [],
                     el = $el[0],
-                    names;
+                    names,
+                    id = uid++,
+                    unwatch;
+
+                el.$id = id;
 
                 function parseConf( config ){
                     var $new,
@@ -61,7 +67,14 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                     }
                 }
 
-                scope.$watchCollection('config', parseConf );
+                unwatch = scope.$watchCollection('config', parseConf );
+                scope.$on('$destroy', function(){
+                    while( childScopes.length ){
+                        childScopes.pop().$destroy();
+                    }
+
+                    unwatch();
+                });
 
                 function registerView( view ){
                     if ( !views[view.name] ){
