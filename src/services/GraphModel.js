@@ -230,6 +230,7 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             if ( hasViews ){
                 this.unified = unified;
                 this.loading = !unified.length;
+                this.message = null;
 
                 if ( this.loading ){
                     angular.forEach( waiting, function( view ){

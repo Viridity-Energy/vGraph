@@ -164,7 +164,8 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
             require : ['^vgraphChart'],
             link : function( scope, el, attrs, requirements ){
             	var control = attrs.control || 'default',
-                    chart = requirements[0].graph.views[control],
+                    graph = requirements[0].graph,
+                    chart = graph.views[control],
                     model = chart.model,
                     ctrl = {
                         model: model
@@ -270,6 +271,9 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 }else{
                     scope.loadPoint = scope.loadPoint.bind( ctrl );
                 }
+
+                // ok, make sure it gets rendered, because maybe the data doesn't change
+                graph.rerender();
             },
             scope : {
                 data : '=_undefined_',
@@ -909,6 +913,7 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             if ( hasViews ){
                 this.unified = unified;
                 this.loading = !unified.length;
+                this.message = null;
 
                 if ( this.loading ){
                     angular.forEach( waiting, function( view ){
