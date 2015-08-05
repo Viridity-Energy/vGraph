@@ -4541,7 +4541,7 @@ angular.module( 'vgraph' ).directive( 'vgraphZone',
                         });
 
                 chart.register({
-                    finalize : function( data ){
+                    finalize : function( pane, data ){
                         $path.attr( 'd', line(data) );
                     }
                 });
