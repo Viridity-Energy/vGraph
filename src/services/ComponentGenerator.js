@@ -33,10 +33,13 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                     memory = parseInt( attrs.memory, 10 ) || 10,
                     timeout;
 
+                graph.loading = true;
+
                 function preLoad(){
                     if ( !timeout ){
                         timeout = $timeout(function(){
                             contentLoad();
+                            graph.loading = false;
                             timeout = null;
                         }, 30);
                     }

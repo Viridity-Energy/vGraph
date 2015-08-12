@@ -201,6 +201,7 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
 
         GraphModel.prototype.render = function( waiting ){
             var hasViews = 0,
+                viewsCount = Object.keys( this.views ).length,
                 primary = this.getPrimaryView(),
                 unified = new IndexedData();
 
@@ -227,7 +228,9 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             // TODO : not empty
             hasViews = Object.keys(waiting).length;
             
-            if ( hasViews ){
+            if ( !viewsCount ){
+                this.loading = true;
+            }else if ( hasViews ){
                 this.unified = unified;
                 this.loading = !unified.length;
                 this.message = null;
@@ -254,7 +257,6 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                     });
                 }
             }else if ( !this.loading ){
-                this.loading = true;
                 this.message = 'No Data Available';
             }
         };
@@ -308,7 +310,7 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
 
             model.onError(function( error ){
                 if ( error ){
-                    this.loading = true;
+                    this.loading = false;
                     this.message = error;
                 }else{
                     this.message = null;

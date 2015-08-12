@@ -176,10 +176,13 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                     memory = parseInt( attrs.memory, 10 ) || 10,
                     timeout;
 
+                graph.loading = true;
+
                 function preLoad(){
                     if ( !timeout ){
                         timeout = $timeout(function(){
                             contentLoad();
+                            graph.loading = false;
                             timeout = null;
                         }, 30);
                     }
@@ -884,6 +887,7 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
 
         GraphModel.prototype.render = function( waiting ){
             var hasViews = 0,
+                viewsCount = Object.keys( this.views ).length,
                 primary = this.getPrimaryView(),
                 unified = new IndexedData();
 
@@ -910,7 +914,9 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             // TODO : not empty
             hasViews = Object.keys(waiting).length;
             
-            if ( hasViews ){
+            if ( !viewsCount ){
+                this.loading = true;
+            }else if ( hasViews ){
                 this.unified = unified;
                 this.loading = !unified.length;
                 this.message = null;
@@ -937,7 +943,6 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                     });
                 }
             }else if ( !this.loading ){
-                this.loading = true;
                 this.message = 'No Data Available';
             }
         };
@@ -991,7 +996,7 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
 
             model.onError(function( error ){
                 if ( error ){
-                    this.loading = true;
+                    this.loading = false;
                     this.message = error;
                 }else{
                     this.message = null;
@@ -1467,8 +1472,10 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
                 });
             }
 
-            x.$min = x.min.$x;
-            x.$max = x.max.$x;
+            if ( x.min ){
+                x.$min = x.min.$x;
+                x.$max = x.max.$x;
+            }
         };
 
         return LinearModel;
@@ -1638,12 +1645,14 @@ angular.module( 'vgraph' ).factory( 'PaneModel',
                 this.filtered.$first = firstMatch;
                 this.filtered.$last = lastMatch;
 
-                if ( x.start.$faux ){
-                    this.filtered.unshift( x.start );
-                }
+                if ( this.dataModel.fitToPane ){
+                    if ( x.start.$faux ){
+                        this.filtered.unshift( x.start );
+                    }
 
-                if ( x.stop.$faux ){
-                    this.filtered.push( x.stop );
+                    if ( x.stop.$faux ){
+                        this.filtered.push( x.stop );
+                    }
                 }
 
                 this.x.min = this.dataModel.x.min;
@@ -2153,6 +2162,8 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                     $axisLabelWrap,
                     $el = d3.select( el[0] );
 
+                $el.attr( 'visibility', 'hidden' );
+
                 $ticks = $el.append( 'g' ).attr( 'class', 'ticks' );
                 $axisPadding = $el.append( 'g' ).attr( 'class', 'padding' );
                 $tickMarks = $axisPadding.append( 'g' )
@@ -2575,13 +2586,18 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                     loading: function(){
                         $el.attr( 'visibility', 'hidden' );
                     },
-                    finalize : function(){
+                    finalize : function( pane, data ){
                         var valid,
                             t,
                             p,
                             i, c,
                             change,
                             boundry = {};
+
+                        if ( !data.length ){
+                            $el.attr( 'visibility', 'hidden' );
+                            return;
+                        }
 
                         $el.attr( 'visibility', '' );
 
@@ -3947,7 +3963,7 @@ angular.module( 'vgraph' ).directive( 'vgraphMessage',
                         return graph.message;
                     }, 
                     function( msg ){
-                        if ( msg ){
+                        if ( msg && !graph.loading ){
                             $el.attr( 'visibility', 'visible' );
                             $text.text( msg );
                         }else{

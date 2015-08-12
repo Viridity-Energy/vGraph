@@ -55,6 +55,8 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                     $axisLabelWrap,
                     $el = d3.select( el[0] );
 
+                $el.attr( 'visibility', 'hidden' );
+
                 $ticks = $el.append( 'g' ).attr( 'class', 'ticks' );
                 $axisPadding = $el.append( 'g' ).attr( 'class', 'padding' );
                 $tickMarks = $axisPadding.append( 'g' )
@@ -477,13 +479,18 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                     loading: function(){
                         $el.attr( 'visibility', 'hidden' );
                     },
-                    finalize : function(){
+                    finalize : function( pane, data ){
                         var valid,
                             t,
                             p,
                             i, c,
                             change,
                             boundry = {};
+
+                        if ( !data.length ){
+                            $el.attr( 'visibility', 'hidden' );
+                            return;
+                        }
 
                         $el.attr( 'visibility', '' );
 

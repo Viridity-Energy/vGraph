@@ -161,12 +161,14 @@ angular.module( 'vgraph' ).factory( 'PaneModel',
                 this.filtered.$first = firstMatch;
                 this.filtered.$last = lastMatch;
 
-                if ( x.start.$faux ){
-                    this.filtered.unshift( x.start );
-                }
+                if ( this.dataModel.fitToPane ){
+                    if ( x.start.$faux ){
+                        this.filtered.unshift( x.start );
+                    }
 
-                if ( x.stop.$faux ){
-                    this.filtered.push( x.stop );
+                    if ( x.stop.$faux ){
+                        this.filtered.push( x.stop );
+                    }
                 }
 
                 this.x.min = this.dataModel.x.min;

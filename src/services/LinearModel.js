@@ -423,8 +423,10 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
                 });
             }
 
-            x.$min = x.min.$x;
-            x.$max = x.max.$x;
+            if ( x.min ){
+                x.$min = x.min.$x;
+                x.$max = x.max.$x;
+            }
         };
 
         return LinearModel;
