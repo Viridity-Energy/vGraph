@@ -180,7 +180,7 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
 
         var ids = 0;
         
-        function GraphModel(){
+        function GraphModel( $interface ){
             this.$uid = ++ids;
 
             this.box = new BoxModel();
@@ -191,6 +191,8 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             this.registrations = [];
             this.loading = true;
             this.message = null;
+
+            this.$interface = $interface;
         }
 
         GraphModel.prototype.register = function( cb ){
@@ -361,36 +363,14 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                     });
                 }
 
+                schedule.func(function(){
+                    if ( dis.$interface.onRender ){
+                        dis.$interface.onRender();
+                    }
+                });
+
                 schedule.endScript();
                 schedule.run();
-
-                /*
-                dis.unified = unified;
-                dis.loading = !unified.length;
-                dis.message = null;
-                
-                if ( this.loading ){
-                    angular.forEach( waiting, function( view ){
-                        view.loading();
-                    });
-                }else{
-                    angular.forEach( waiting, function( view ){
-                        view.build();
-                    });
-
-                    angular.forEach( waiting, function( view ){
-                        view.process();
-                    });
-
-                    angular.forEach( waiting, function( view ){
-                        view.finalize();
-                    });
-
-                    angular.forEach( this.registrations, function( registration ){
-                        registration( primary.pane );
-                    });
-                }
-                */
             }else if ( !this.loading ){
                 this.message = 'No Data Available';
             }
