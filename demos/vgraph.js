@@ -1698,9 +1698,12 @@ angular.module( 'vgraph' ).factory( 'PaneModel',
                 this.dataModel.clean();
 
                 if ( this._bounds.x ){
-                    $min = this._bounds.x.min || x.$min || dataX.$min;
-                    $max = this._bounds.x.max || x.$max || dataX.$max;
+                    $min = this._bounds.x.min || dataX.$min;
+                    $max = this._bounds.x.max || dataX.$max;
 
+                    x.$min = $min;
+                    x.$max = $max;
+                    
                     this._bounds.x = null;
                 }else{
                     $min = x.$min || dataX.$min;
