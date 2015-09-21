@@ -273,7 +273,12 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
                 max = pane.y.maximum;
 
             if ( pane.y.padding ){
-                step = ( max - min ) * pane.y.padding;
+                if ( max === min ){
+                    step = min * pane.y.padding;
+                }else{
+                    step = ( max - min ) * pane.y.padding;
+                }
+
                 max = max + step;
                 min = min - step;
 

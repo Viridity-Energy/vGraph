@@ -7,54 +7,21 @@ angular.module( 'vgraph' ).factory( 'PaneModel',
             this.dataModel = dataModel;
             this.x = {};
             this.y = {};
+
+            this._bounds = {};
+            this._pane = {};
         }
 
         PaneModel.prototype.setBounds = function( x, y ){
-            if ( x ){
-                if ( x.min !== undefined ){
-                    this.x.$min = x.min;
-                }
-
-                if ( x.max !== undefined ){
-                    this.x.$max = x.max;
-                }
-            }
-
-            if ( y ){
-                if ( y.min !== undefined ){
-                    this.y.$min = y.min;
-                }
-
-                if ( y.max !== undefined ){
-                    this.y.$max = y.max;
-                }
-            }
+            this._bounds.x = x;
+            this._bounds.y = y;
 
             return this;
         };
 
         PaneModel.prototype.setPane = function( x, y ){
-            if ( x ){
-                if ( x.start !== undefined ){
-                    this.x.start = x.start;
-                }
-
-                if ( x.stop !== undefined ){
-                    this.x.stop = x.stop;
-                }
-            }
-
-            if ( y ){
-                if ( y.start !== undefined ){
-                    this.y.start = y.start;
-                }
-
-                if ( y.stop !== undefined ){
-                    this.y.stop = y.stop;
-                }
-            }
-
-            this.offset = null;
+            this._pane.x = x;
+            this._pane.y = y;
 
             return this;
         };
@@ -75,68 +42,82 @@ angular.module( 'vgraph' ).factory( 'PaneModel',
                 firstMatch,
                 lastMatch,
                 data = this.dataModel.data,
-                x = this.x,
                 dataX = this.dataModel.x,
+                x = this.x,
+                change,
                 $min,
                 $max;
 
             if ( data.length ){
                 this.dataModel.clean();
-                
-                $min = x.$min || dataX.$min;
-                $max = x.$max || dataX.$max;
-                
-                this.offset = {};
 
-                if ( typeof(x.start) === 'number' ){
-                    x.start = data[ x.start ];
+                if ( this._bounds.x ){
+                    $min = this._bounds.x.min || x.$min || dataX.$min;
+                    $max = this._bounds.x.max || x.$max || dataX.$max;
+
+                    this._bounds.x = null;
                 }else{
-                    if ( x.start === null || x.start === undefined ){
-                        dx = $min;
-                    }else if ( typeof(x.start) === 'string' ){
-                        if ( x.start.charAt(0) === '%' ){
-                            dx = $min + parseFloat( x.start.substring(1) , 10 ) * ($max - $min);
-                        }else if ( x.start.charAt(0) === '+' ){
-                            dx = $min + parseInt( x.start.substring(1) , 10 );
-                        }else if ( x.start.charAt(0) === '=' ){
-                            dx = parseInt( x.start.substring(1) , 10 );
-                        }else{
+                    $min = x.$min || dataX.$min;
+                    $max = x.$max || dataX.$max;
+                }
+                
+                if ( this._pane.x ){
+                    change = this._pane.x;
+                    this.offset = {};
+
+                    if ( typeof(change.start) === 'number' ){
+                        x.start = data[ change.start ];
+                    }else{
+                        if ( !change.start ){ // can not be 0 at this point
+                            dx = $min;
+                        }else if ( typeof(change.start) === 'string' ){
+                            if ( change.start.charAt(0) === '%' ){
+                                dx = $min + parseFloat( change.start.substring(1) , 10 ) * ($max - $min);
+                            }else if ( change.start.charAt(0) === '+' ){
+                                dx = $min + parseInt( change.start.substring(1) , 10 );
+                            }else if ( change.start.charAt(0) === '=' ){
+                                dx = parseInt( change.start.substring(1) , 10 );
+                            }
+                        }
+
+                        if ( dx === undefined ){
                             throw 'Start of pane not properly defined';
                         }
-                    }else{
-                        dx = x.start.$x || 0; // if it's 0, it remains 0
+
+                        x.start = view.makePoint( dx, dataX.$min, dataX.$max, this.dataModel.makeInterval );
                     }
+                    
+                    this.offset.$left = x.start.$x;
+                    this.offset.left = (x.start.$x - $min) / ($max - $min);
 
-                    x.start = view.makePoint( dx, dataX.$min, dataX.$max, this.dataModel.makeInterval );
-                }
-                
-                this.offset.$left = x.start.$x;
-                this.offset.left = (x.start.$x - $min) / ($max - $min);
+                    if ( typeof(change.stop) === 'number' ){
+                        change.stop = data[ change.stop ];
+                    }else{
+                        if ( change.stop === null || change.stop === undefined ){
+                            dx = $max;
+                        }else if ( typeof(change.stop) === 'string' ){
+                            if ( change.stop.charAt(0) === '%' ){
+                                dx = $min + parseFloat( change.stop.substring(1) , 10 ) * ($max - $min);
+                            }else if ( change.stop.charAt(0) === '+' ){
+                                dx = $min + parseInt( change.stop.substring(1) , 10 );
+                            }else if ( change.stop.charAt(0) === '=' ){
+                                dx = parseInt( change.stop.substring(1) , 10 );
+                            }
+                        }
 
-                if ( typeof(x.stop) === 'number' ){
-                    x.stop = data[ x.stop ];
-                }else{
-                    if ( x.stop === null || x.stop === undefined ){
-                        dx = $max;
-                    }else if ( typeof(x.stop) === 'string' ){
-                        if ( x.stop.charAt(0) === '%' ){
-                            dx = $min + parseFloat( x.stop.substring(1) , 10 ) * ($max - $min);
-                        }else if ( x.stop.charAt(0) === '+' ){
-                            dx = $min + parseInt( x.stop.substring(1) , 10 );
-                        }else if ( x.stop.charAt(0) === '=' ){
-                            dx = parseInt( x.stop.substring(1) , 10 );
-                        }else{
+                        if ( dx === undefined ){
                             throw 'End of pane not properly defined';
                         }
-                    }else{
-                        dx = x.stop.$x || 0;
-                    }
 
-                    x.stop = view.makePoint( dx, dataX.min.$x, dataX.max.$x, this.dataModel.makeInterval );
+                        x.stop = view.makePoint( dx, dataX.min.$x, dataX.max.$x, this.dataModel.makeInterval );
+                    }
+                    
+                    this.offset.$right = x.stop.$x;
+                    this.offset.right = (x.stop.$x - $min) / ($max - $min);
+                }else if ( !x.start ){
+                    x.start = view.makePoint( $min, dataX.$min, dataX.$max, this.dataModel.makeInterval );
+                    x.stop = view.makePoint( $max, dataX.min.$x, dataX.max.$x, this.dataModel.makeInterval );
                 }
-                
-                this.offset.$right = x.stop.$x;
-                this.offset.right = (x.stop.$x - $min) / ($max - $min);
 
                 // calculate the filtered points
                 this.data = data;

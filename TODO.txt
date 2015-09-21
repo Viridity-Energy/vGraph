@@ -1,0 +1,29 @@
+A way to thread the rendering….
+
+
+if min and max are ===, then we need to create an artificial min and max
+
+clear() // wipe out the existing calls
+loop( arr, [start, stop,] function( o, i ){
+}, ctx)
+
+run(function(){
+}), ctx}
+——
+ops
+[ looping / single ]
+
+looping
+{
+  data,
+  start,
+  stop,
+  op
+  ctx
+}
+
+single run
+{
+  op
+  ctx
+}

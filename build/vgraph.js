@@ -163,7 +163,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
         var baseComponent = {
             require : ['^vgraphChart'],
             link : function( scope, el, attrs, requirements ){
-            	var control = attrs.control || 'default',
+                var control = attrs.control || 'default',
                     graph = requirements[0].graph,
                     chart = graph.views[control],
                     model = chart.model,
@@ -172,17 +172,19 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                     },
                     alias,
                     name = attrs.name,
+                    uniqueName = name+graph.$uid,
                     history = [],
                     memory = parseInt( attrs.memory, 10 ) || 10,
                     timeout;
 
                 graph.loading = true;
 
+                // console.log( el[0], attrs, scope, ctrl );
+
                 function preLoad(){
                     if ( !timeout ){
                         timeout = $timeout(function(){
                             contentLoad();
-                            graph.loading = false;
                             timeout = null;
                         }, 30);
                     }
@@ -191,26 +193,28 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 function contentLoad(){
                     var i, c;
 
-                    if ( scope.data && ctrl.valueParse ){
+                    if ( scope.data && ctrl.valueParse && !scope.data.$loading ){
+                        graph.loading = false;
+
                         if ( !scope.data._lastRead ){
                             scope.data._lastRead = {};
                         }
 
-                        for( i = scope.data._lastRead[name] || 0, c = scope.data.length; i < c; i++ ){
+                        for( i = scope.data._lastRead[uniqueName] || 0, c = scope.data.length; i < c; i++ ){
                             scope.loadPoint( scope.data[i] );
                         }
-                        scope.data._lastRead[name] = c;
+                        scope.data._lastRead[uniqueName] = c;
                     }
                 }
 
                 scope.$watch('interval', function( v ){
                     if ( typeof(v) === 'string' ){
-	                    ctrl.intervalParse = function( d ){
-	                    	return d[ v ];
-	                    };
-	                }else{
-	                	ctrl.intervalParse = v;
-	                }
+                        ctrl.intervalParse = function( d ){
+                            return d[ v ];
+                        };
+                    }else{
+                        ctrl.intervalParse = v;
+                    }
                 });
 
                 // alias allows you to send back a different value than you search to qualify
@@ -223,21 +227,22 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 });
 
                 scope.$watch('value', function( v ){
-                	if ( typeof(v) === 'string' ){
-                		alias = attrs.alias || v;
-	                    ctrl.valueParse = function( d ){
-	                    	if ( d[v] !== undefined ){
+                    if ( typeof(v) === 'string' ){
+                        alias = attrs.alias || v;
+                        ctrl.valueParse = function( d ){
+                            if ( d[v] !== undefined ){
                                 return d[ alias ];
-	                    	}
-	                    };
-	                }else{
-	                	ctrl.valueParse = v;
-	                }
+                            }
+                        };
+                    }else{
+                        ctrl.valueParse = v;
+                    }
 
                     preLoad();
                 });
 
                 scope.$watch('data', preLoad);
+                scope.$watch('data.$loading', preLoad);
                 scope.$watch('data.length', preLoad);
 
                 if ( !scope.loadPoint ){
@@ -245,30 +250,29 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                         var v = this.valueParse( d ),
                             point;
 
-                        if ( v !== undefined ){
-                            if ( this.filterParse ){
-                                if ( history.length > memory ){
-                                    history.shift();
-                                }
-
-                                history.push( v );
-
-                                point = this.model.addPoint( 
-                                    name, 
-                                    this.intervalParse(d), 
-                                    this.filterParse(v,history)
-                                );
-                            }else{
-                                point = this.model.addPoint(
-                                    name,
-                                    this.intervalParse(d),
-                                    v
-                                );
+                        if ( this.filterParse ){
+                            if ( history.length > memory ){
+                                history.shift();
                             }
 
-                            if ( this.extraParse && point ){
-                                this.extraParse( d, point );
-                            }
+                            history.push( v );
+
+                            point = this.model.addPoint( 
+                                name, 
+                                this.intervalParse(d), 
+                                this.filterParse(v,history)
+                            );
+                        }else{
+                            point = this.model.addPoint(
+                                name,
+                                this.intervalParse(d),
+                                v
+                            );
+                            //console.log( name, el[0] );
+                        }
+
+                        if ( this.extraParse && point ){
+                            this.extraParse( d, point );
                         }
                     }.bind( ctrl );
                 }else{
@@ -288,7 +292,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
         };
 
         function decode( $scope, conf, type, tag ){
-        	var name = conf.name,
+            var name = conf.name,
                 value,
                 interval,
                 src;
@@ -319,7 +323,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 ' control="'+(conf.control||'default')+'"'+
                 ( conf.filter ? ' filter="'+conf.filter+'"' : '' ) +
             '></'+tag+'>';
-	    }
+        }
 
         function isNumeric( v ){
             if ( v === null ){
@@ -332,34 +336,34 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
         }
 
         return {
-        	generate : function( directive, overrides ){
-				var t;
+            generate : function( directive, overrides ){
+                var t;
 
-				function F(){}
+                function F(){}
 
-				F.prototype = baseComponent;
+                F.prototype = baseComponent;
 
-				t = new F();
+                t = new F();
 
-		        t.scope = angular.copy( t.scope );
-		        t.scope.data = '='+directive;
+                t.scope = angular.copy( t.scope );
+                t.scope.data = '='+directive;
 
-		        angular.forEach( overrides, function( f, key ){
-					var old = t[key];
+                angular.forEach( overrides, function( f, key ){
+                    var old = t[key];
 
-					if ( old ){
-						if ( angular.isFunction(old) ){
-							t[key] = function(){
-								old.apply( this, arguments );
-								f.apply( this, arguments );
-							};
-						}else{
-							t[key] = angular.extend( old, f ); 
-						}
-					}else{
-						t[key] = f;
-					}
-				});
+                    if ( old ){
+                        if ( angular.isFunction(old) ){
+                            t[key] = function(){
+                                old.apply( this, arguments );
+                                f.apply( this, arguments );
+                            };
+                        }else{
+                            t[key] = angular.extend( old, f ); 
+                        }
+                    }else{
+                        t[key] = f;
+                    }
+                });
 
                 if ( t.preLink ){
                     t.link = {
@@ -369,32 +373,55 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 }
 
                 return t;
-			},
-			makeLineCalc: function( chart, name ){
-	            return d3.svg.line()
-	                .interpolate( 'linear' )
-	                .defined(function(d){
-	                    var y = d[ name ];
-	                    return isNumeric(y);
-	                })
-	                .x(function( d ){
-	                    return chart.x.scale( d.$interval );
-	                })
-	                .y(function( d ){
-	                    return chart.y.scale( d[name] );
-	                });
-	        },
-			makeFillCalc: function( chart1, top, chart2, bottom, extend ){
+            },
+            // undefined =>  no value, so use last value, null => line break
+            makeLineCalc: function( chart, name ){
+                var isDefined,
+                    lastValue,
+                    lineCalc = d3.svg.line()
+                        .interpolate( 'linear' )
+                        .defined(function(d){
+                            var y = d[ name ];
+                            
+                            if ( isNumeric(y) ){
+                                isDefined = true;
+                                return true;
+                            }else{ 
+                                return y === undefined && isDefined;
+                            }
+                        })
+                        .x(function( d ){
+                            return chart.x.scale( d.$interval );
+                        })
+                        .y(function( d ){
+                            var t = d[name];
+
+                            if ( t !== undefined ){
+                                lastValue = chart.y.scale( d[name] );
+                            }
+
+                            return lastValue;
+                        });
+
+                return function(){
+                    isDefined = false;
+                    lastValue = false;
+
+                    return lineCalc.apply( this, arguments );
+                };
+            },
+            makeFillCalc: function( chart1, top, chart2, bottom, extend ){
                 if ( !chart2 ){
                     chart2 = chart1;
                 }
 
-	            return d3.svg.area()
-	                .defined(function(d){
-	                    var y1 = d[chart1.name] ? d[chart1.name][ top ] : null,
+                return d3.svg.area()
+                    .defined(function(d){
+                        // TODO : handle the undefined
+                        var y1 = d[chart1.name] ? d[chart1.name][ top ] : null,
                             y2 = !bottom || d[chart2.name] && isNumeric(d[chart2.name][bottom]);
 
-	                    if ( isNumeric(y1) && y2 ){
+                        if ( isNumeric(y1) && y2 ){
                             if ( extend && bottom ){
                                 extend( d, d[chart1.name][top], d[chart2.name][bottom] );
                             }
@@ -402,17 +429,17 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                         }else{
                             return false;
                         }
-	                })
-	                .x(function( d ){
-	                    return chart1.x.scale( d[chart1.name].$interval );
-	                })
-	                .y(function( d ){
-	                    return chart1.y.scale( d[chart1.name][top] );
-	                })
-	                .y1(function( d ){
-	                    return chart2.y.scale( bottom ? d[chart2.name][bottom] : chart2.model.y.minimum );
-	                });
-	        },
+                    })
+                    .x(function( d ){
+                        return chart1.x.scale( d[chart1.name].$interval );
+                    })
+                    .y(function( d ){
+                        return chart1.y.scale( d[chart1.name][top] );
+                    })
+                    .y1(function( d ){
+                        return chart2.y.scale( bottom ? d[chart2.name][bottom] : chart2.model.y.minimum );
+                    });
+            },
             // I don't want to do this, but I need to for now
             makeMyFillCalc: function( chart1, top, chart2, bottom, extend ){
                 if ( !chart2 ){
@@ -493,44 +520,44 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                     return segments.length ? segments.join('') : null;
                 };
             },
-	        decodeConfig: function( $scope, conf, type ){
-	        	var i, c,
-	        		res = [];
+            decodeConfig: function( $scope, conf, type ){
+                var i, c,
+                    res = [];
 
-	        	if ( angular.isArray(conf) ){
-	        		for( i = 0, c = conf.length; i < c; i++ ){
-	        			res.push( decode($scope,conf[i],type) );
-	        		}
-	        	}else{
-	        		res.push( decode($scope,conf,type) );
-	        	}
+                if ( angular.isArray(conf) ){
+                    for( i = 0, c = conf.length; i < c; i++ ){
+                        res.push( decode($scope,conf[i],type) );
+                    }
+                }else{
+                    res.push( decode($scope,conf,type) );
+                }
 
-	        	return res;
-	        },
-	        compileConfig: function( $scope, conf, type ){
-	        	var i, c,
-	        		res,
-	        		comps;
+                return res;
+            },
+            compileConfig: function( $scope, conf, type ){
+                var i, c,
+                    res,
+                    comps;
 
-	        	if ( !angular.isArray(conf) ){
-	        		conf = [ conf ];
-	        	}
+                if ( !angular.isArray(conf) ){
+                    conf = [ conf ];
+                }
 
-	        	res = this.decodeConfig( $scope, conf, type );
-	        	comps = this.svgCompile( res.join('') );
+                res = this.decodeConfig( $scope, conf, type );
+                comps = this.svgCompile( res.join('') );
 
-	        	for( i = 0, c = comps.length; i < c; i++ ){
-	        		res[i] = {
-	        			name: conf[i].name,
+                for( i = 0, c = comps.length; i < c; i++ ){
+                    res[i] = {
+                        name: conf[i].name,
                         className: conf[i].className,
-	        			element : comps[i],
-	        			$d3 : d3.select( comps[i] ),
+                        element : comps[i],
+                        $d3 : d3.select( comps[i] ),
                         $conf: conf[i]
-	        		};
-	        	}
+                    };
+                }
 
-	        	return res;
-	        },
+                return res;
+            },
             svgCompile: function( svgHtml ){
                 return (new DOMParser().parseFromString(
                     '<g xmlns="http://www.w3.org/2000/svg">' +
@@ -588,63 +615,63 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                     max : max
                 };
             },
-			parseLimits: function( data, names, parser ){
+            parseLimits: function( data, names, parser ){
                 var i, c,
-                	d,
+                    d,
                     v,
                     min,
                     max;
 
                 if ( angular.isString(names) ){
-                	if ( parser ){
+                    if ( parser ){
                         for( i = 0, c = data.length; i < c; i++ ){
-	                		d = data[i];
-		                    v = parser( d, d[names] );
-		                    if ( isNumeric(v) ){
-		                        if ( min === undefined ){
-		                            min = v;
-		                            max = v;
-		                        }else if ( min > v ){
-		                            min = v;
-		                        }else if ( max < v ){
-		                            max = v;
-		                        }
-		                    }
-		                }
-                	}else{
-                		// used to reduce the checks for parser
-                		for( i = 0, c = data.length; i < c; i++ ){
-	                		d = data[i];
-		                    v = d[names];
-		                    if ( isNumeric(v) ){
-		                    	if ( min === undefined ){
-		                            min = v;
-		                            max = v;
-		                        }else if ( min > v ){
-		                            min = v;
-		                        }else if ( max < v ){
-		                            max = v;
-		                        }
-		                    }
-		                }
-                	}
+                            d = data[i];
+                            v = parser( d, d[names] );
+                            if ( isNumeric(v) ){
+                                if ( min === undefined ){
+                                    min = v;
+                                    max = v;
+                                }else if ( min > v ){
+                                    min = v;
+                                }else if ( max < v ){
+                                    max = v;
+                                }
+                            }
+                        }
+                    }else{
+                        // used to reduce the checks for parser
+                        for( i = 0, c = data.length; i < c; i++ ){
+                            d = data[i];
+                            v = d[names];
+                            if ( isNumeric(v) ){
+                                if ( min === undefined ){
+                                    min = v;
+                                    max = v;
+                                }else if ( min > v ){
+                                    min = v;
+                                }else if ( max < v ){
+                                    max = v;
+                                }
+                            }
+                        }
+                    }
                 }else{
-                	// go through an array of names
-                	for( i = 0, c = names.length; i < c; i++ ){
-                		v = this.parseLimits( data, names[i] );
-                		if ( min === undefined ){
-                			min = v.min;
-                			max = v.max;
-                		}else{
-                			if ( v.min < min ){
-                				min = v.min;
-                			}
+                    // go through an array of names
+                    for( i = 0, c = names.length; i < c; i++ ){
+                        v = this.parseLimits( data, names[i] );
+                        if ( min === undefined ){
+                            min = v.min;
+                            max = v.max;
+                        }else{
+                            if ( v.min < min ){
+                                min = v.min;
+                            }
 
-                			if ( v.max > max ){
-                				max = v.max;
-                			}
-                		}
-                	}
+                            if ( v.max > max ){
+                                max = v.max;
+                            }
+                        }
+                    }
                 }
                 
                 return {
@@ -701,6 +728,101 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
     [ '$timeout', 'ViewModel', 'BoxModel', 'LinearModel', 'DataCollection',
     function ( $timeout, ViewModel, BoxModel, LinearModel, DataCollection ) {
         'use strict';
+
+        function Scheduler(){
+            this.$scripts = {};
+            this.$master = this.schedule = [];
+        }
+
+        function __now(){
+            return +(new Date());
+        }
+
+        Scheduler.prototype.startScript = function( name ){
+            if ( name ){
+                if( this.$scripts[name] ){
+                    this.schedule = this.$scripts[name];
+                    this.schedule.length = 0; // wipe out anything that was previously scripted
+                }else{
+                    this.schedule = this.$scripts[name] = [];
+                }
+            }else{
+                this.schedule = [];
+            }
+        };
+
+        Scheduler.prototype.endScript = function(){
+            this.$master.push( this.schedule );
+            this.schedule = this.$master;
+        };
+
+        Scheduler.prototype.loop = function( arr, func, ctx ){
+            this.schedule.push({
+                start: 0,
+                stop: arr.length,
+                data: arr,
+                op: func,
+                ctx: ctx
+            });
+        };
+
+        Scheduler.prototype.func = function( func, ctx ){
+            this.schedule.push({
+                op: func,
+                ctx: ctx
+            });
+        };
+
+        Scheduler.prototype.run = function(){
+            var dis = this;
+
+            if ( !this.$lock ){
+                this.$lock = true;
+                setTimeout(function(){ // this will gaurentee before you run, the thread was released
+                    dis.$eval(function(){
+                        dis.$lock = false;
+                    });
+                },5);
+            }
+        };
+
+        Scheduler.prototype.$eval = function( cb ){
+            var dis = this,
+                valid = true,
+                now = __now(),
+                goodTill = now + 500,
+                i, c,
+                t;
+
+            function rerun(){
+                dis.$eval( cb );
+            }
+
+            while( (t = this.schedule.shift()) && valid ){
+                if ( t.length ){ // is an array, aka a script
+                    while( t.length ){
+                        this.schedule.unshift( t.pop() );
+                    }
+                }else if ( 'start' in t ){
+                    for( i = t.start, c = t.stop; i < c; i++ ){
+                        t.op.call( t.ctx, t.data[i], i );
+                    }
+                }else{
+                    t.op.call( t.ctx );
+                }
+
+                if ( __now() > goodTill ){
+                    valid = false;
+                    setTimeout(rerun, 5);
+                }
+            }
+
+            if ( this.schedule.length === 0 ){
+                cb();
+            }
+        };
+
+        var schedule = new Scheduler();
 
         function IndexedData(){
             this.index = [];
@@ -768,8 +890,12 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                 func.call( context, this.hash[this.index[i]] );
             }
         };
+
+        var ids = 0;
         
         function GraphModel(){
+            this.$uid = ++ids;
+
             this.box = new BoxModel();
             this.models = [];
             this.views = {};
@@ -886,7 +1012,8 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
         }
 
         GraphModel.prototype.render = function( waiting ){
-            var hasViews = 0,
+            var dis = this,
+                hasViews = 0,
                 viewsCount = Object.keys( this.views ).length,
                 primary = this.getPrimaryView(),
                 unified = new IndexedData();
@@ -917,10 +1044,44 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             if ( !viewsCount ){
                 this.loading = true;
             }else if ( hasViews ){
-                this.unified = unified;
-                this.loading = !unified.length;
-                this.message = null;
+                schedule.startScript( this.$uid );
 
+                schedule.func(function(){
+                    dis.unified = unified;
+                    dis.loading = !unified.length;
+                    dis.message = null;
+                });
+
+                if ( this.loading ){
+                    schedule.loop( waiting, function( view ){
+                        view.loading();
+                    });
+                }else{
+                    schedule.loop( waiting, function( view ){
+                        view.build();
+                    });
+
+                    schedule.loop( waiting, function( view ){
+                        view.process();
+                    });
+
+                    schedule.loop( waiting, function( view ){
+                        view.finalize();
+                    });
+
+                    schedule.loop( this.registrations, function( registration ){
+                        registration( primary.pane );
+                    });
+                }
+
+                schedule.endScript();
+                schedule.run();
+
+                /*
+                dis.unified = unified;
+                dis.loading = !unified.length;
+                dis.message = null;
+                
                 if ( this.loading ){
                     angular.forEach( waiting, function( view ){
                         view.loading();
@@ -942,6 +1103,7 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                         registration( primary.pane );
                     });
                 }
+                */
             }else if ( !this.loading ){
                 this.message = 'No Data Available';
             }
@@ -1491,54 +1653,21 @@ angular.module( 'vgraph' ).factory( 'PaneModel',
             this.dataModel = dataModel;
             this.x = {};
             this.y = {};
+
+            this._bounds = {};
+            this._pane = {};
         }
 
         PaneModel.prototype.setBounds = function( x, y ){
-            if ( x ){
-                if ( x.min !== undefined ){
-                    this.x.$min = x.min;
-                }
-
-                if ( x.max !== undefined ){
-                    this.x.$max = x.max;
-                }
-            }
-
-            if ( y ){
-                if ( y.min !== undefined ){
-                    this.y.$min = y.min;
-                }
-
-                if ( y.max !== undefined ){
-                    this.y.$max = y.max;
-                }
-            }
+            this._bounds.x = x;
+            this._bounds.y = y;
 
             return this;
         };
 
         PaneModel.prototype.setPane = function( x, y ){
-            if ( x ){
-                if ( x.start !== undefined ){
-                    this.x.start = x.start;
-                }
-
-                if ( x.stop !== undefined ){
-                    this.x.stop = x.stop;
-                }
-            }
-
-            if ( y ){
-                if ( y.start !== undefined ){
-                    this.y.start = y.start;
-                }
-
-                if ( y.stop !== undefined ){
-                    this.y.stop = y.stop;
-                }
-            }
-
-            this.offset = null;
+            this._pane.x = x;
+            this._pane.y = y;
 
             return this;
         };
@@ -1559,68 +1688,82 @@ angular.module( 'vgraph' ).factory( 'PaneModel',
                 firstMatch,
                 lastMatch,
                 data = this.dataModel.data,
-                x = this.x,
                 dataX = this.dataModel.x,
+                x = this.x,
+                change,
                 $min,
                 $max;
 
             if ( data.length ){
                 this.dataModel.clean();
-                
-                $min = x.$min || dataX.$min;
-                $max = x.$max || dataX.$max;
-                
-                this.offset = {};
 
-                if ( typeof(x.start) === 'number' ){
-                    x.start = data[ x.start ];
+                if ( this._bounds.x ){
+                    $min = this._bounds.x.min || x.$min || dataX.$min;
+                    $max = this._bounds.x.max || x.$max || dataX.$max;
+
+                    this._bounds.x = null;
                 }else{
-                    if ( x.start === null || x.start === undefined ){
-                        dx = $min;
-                    }else if ( typeof(x.start) === 'string' ){
-                        if ( x.start.charAt(0) === '%' ){
-                            dx = $min + parseFloat( x.start.substring(1) , 10 ) * ($max - $min);
-                        }else if ( x.start.charAt(0) === '+' ){
-                            dx = $min + parseInt( x.start.substring(1) , 10 );
-                        }else if ( x.start.charAt(0) === '=' ){
-                            dx = parseInt( x.start.substring(1) , 10 );
-                        }else{
+                    $min = x.$min || dataX.$min;
+                    $max = x.$max || dataX.$max;
+                }
+                
+                if ( this._pane.x ){
+                    change = this._pane.x;
+                    this.offset = {};
+
+                    if ( typeof(change.start) === 'number' ){
+                        x.start = data[ change.start ];
+                    }else{
+                        if ( !change.start ){ // can not be 0 at this point
+                            dx = $min;
+                        }else if ( typeof(change.start) === 'string' ){
+                            if ( change.start.charAt(0) === '%' ){
+                                dx = $min + parseFloat( change.start.substring(1) , 10 ) * ($max - $min);
+                            }else if ( change.start.charAt(0) === '+' ){
+                                dx = $min + parseInt( change.start.substring(1) , 10 );
+                            }else if ( change.start.charAt(0) === '=' ){
+                                dx = parseInt( change.start.substring(1) , 10 );
+                            }
+                        }
+
+                        if ( dx === undefined ){
                             throw 'Start of pane not properly defined';
                         }
-                    }else{
-                        dx = x.start.$x || 0; // if it's 0, it remains 0
+
+                        x.start = view.makePoint( dx, dataX.$min, dataX.$max, this.dataModel.makeInterval );
                     }
+                    
+                    this.offset.$left = x.start.$x;
+                    this.offset.left = (x.start.$x - $min) / ($max - $min);
 
-                    x.start = view.makePoint( dx, dataX.$min, dataX.$max, this.dataModel.makeInterval );
-                }
-                
-                this.offset.$left = x.start.$x;
-                this.offset.left = (x.start.$x - $min) / ($max - $min);
+                    if ( typeof(change.stop) === 'number' ){
+                        change.stop = data[ change.stop ];
+                    }else{
+                        if ( change.stop === null || change.stop === undefined ){
+                            dx = $max;
+                        }else if ( typeof(change.stop) === 'string' ){
+                            if ( change.stop.charAt(0) === '%' ){
+                                dx = $min + parseFloat( change.stop.substring(1) , 10 ) * ($max - $min);
+                            }else if ( change.stop.charAt(0) === '+' ){
+                                dx = $min + parseInt( change.stop.substring(1) , 10 );
+                            }else if ( change.stop.charAt(0) === '=' ){
+                                dx = parseInt( change.stop.substring(1) , 10 );
+                            }
+                        }
 
-                if ( typeof(x.stop) === 'number' ){
-                    x.stop = data[ x.stop ];
-                }else{
-                    if ( x.stop === null || x.stop === undefined ){
-                        dx = $max;
-                    }else if ( typeof(x.stop) === 'string' ){
-                        if ( x.stop.charAt(0) === '%' ){
-                            dx = $min + parseFloat( x.stop.substring(1) , 10 ) * ($max - $min);
-                        }else if ( x.stop.charAt(0) === '+' ){
-                            dx = $min + parseInt( x.stop.substring(1) , 10 );
-                        }else if ( x.stop.charAt(0) === '=' ){
-                            dx = parseInt( x.stop.substring(1) , 10 );
-                        }else{
+                        if ( dx === undefined ){
                             throw 'End of pane not properly defined';
                         }
-                    }else{
-                        dx = x.stop.$x || 0;
-                    }
 
-                    x.stop = view.makePoint( dx, dataX.min.$x, dataX.max.$x, this.dataModel.makeInterval );
+                        x.stop = view.makePoint( dx, dataX.min.$x, dataX.max.$x, this.dataModel.makeInterval );
+                    }
+                    
+                    this.offset.$right = x.stop.$x;
+                    this.offset.right = (x.stop.$x - $min) / ($max - $min);
+                }else if ( !x.start ){
+                    x.start = view.makePoint( $min, dataX.$min, dataX.$max, this.dataModel.makeInterval );
+                    x.stop = view.makePoint( $max, dataX.min.$x, dataX.max.$x, this.dataModel.makeInterval );
                 }
-                
-                this.offset.$right = x.stop.$x;
-                this.offset.right = (x.stop.$x - $min) / ($max - $min);
 
                 // calculate the filtered points
                 this.data = data;
@@ -1945,7 +2088,12 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
                 max = pane.y.maximum;
 
             if ( pane.y.padding ){
-                step = ( max - min ) * pane.y.padding;
+                if ( max === min ){
+                    step = min * pane.y.padding;
+                }else{
+                    step = ( max - min ) * pane.y.padding;
+                }
+
                 max = max + step;
                 min = min - step;
 
