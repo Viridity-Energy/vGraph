@@ -32,9 +32,15 @@ angular.module( 'vgraph' ).directive( 'vgraphLeading',
                     }
                 }
 
+                function clearComponent(){
+                    $el.attr( 'visibility', 'hidden' );
+                }
+
                 scope.$watchCollection('config', parseConf );
 
                 chart.register({
+                    error: clearComponent,
+                    loading: clearComponent,
                     finalize : function( pane ){
                         var d,
                             last,
@@ -73,7 +79,7 @@ angular.module( 'vgraph' ).directive( 'vgraphLeading',
                         });
 
                         if ( last ){
-                            $el.style( 'visibility', 'visible' );
+                            $el.attr( 'visibility', 'visible' );
 
                             last.el
                                 .attr( 'x1', last.x )
@@ -81,7 +87,7 @@ angular.module( 'vgraph' ).directive( 'vgraphLeading',
                                 .attr( 'y1', last.y )
                                 .attr( 'y2', graph.box.innerBottom );
                         }else{
-                            $el.style( 'visibility', 'hidden' );
+                            $el.attr( 'visibility', 'hidden' );
                         }
                     }
                 });

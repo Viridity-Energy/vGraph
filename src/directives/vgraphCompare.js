@@ -23,9 +23,17 @@ angular.module( 'vgraph' ).directive( 'vgraphCompare',
                         chart2 = graph.views[config[name2]];
 
                     function draw(){
-                        fill.$d3.attr( 'd', fill.calc(graph.unified) );
-                        chart1Ready = false;
-                        chart2Ready = false;
+                        if ( chart1Ready && chart2Ready ){
+                            fill.$d3.attr( 'visibility', 'visible' );
+                            fill.$d3.attr( 'd', fill.calc(graph.unified) );
+
+                            chart1Ready = false;
+                            chart2Ready = false;
+                        }
+                    }
+
+                    function clearComponent(){
+                        fill.$d3.attr( 'visibility', 'hidden' );
                     }
 
                     if ( config && keys.length === 2 ){
@@ -58,6 +66,14 @@ angular.module( 'vgraph' ).directive( 'vgraphCompare',
 
                         // this isn't entirely right... It will be forced to call twice
                         chart1.register({
+                            loading: function(){
+                                chart1Ready = false;
+                                clearComponent();
+                            },
+                            error: function(){
+                                chart1Ready = false;
+                                clearComponent();
+                            },
                             finalize : function(){
                                 chart1Ready = true;
                                 draw();
@@ -65,6 +81,14 @@ angular.module( 'vgraph' ).directive( 'vgraphCompare',
                         });
 
                         chart2.register({
+                            loading: function(){
+                                chart2Ready = false;
+                                clearComponent();
+                            },
+                            error: function(){
+                                chart2Ready = false;
+                                clearComponent();
+                            },
                             finalize : function(){
                                 chart2Ready = true;
                                 draw();

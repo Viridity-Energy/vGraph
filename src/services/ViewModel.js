@@ -369,6 +369,14 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
             });
         };
 
+        ViewModel.prototype.error = function(){
+            this.components.forEach(function( component ){
+                if ( component.error ){
+                    component.error();
+                }
+            });
+        };
+
         ViewModel.prototype.publishStats = function(){
             var i,
                 s,

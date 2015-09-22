@@ -60,20 +60,24 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             });
         };
 
-        Scheduler.prototype.run = function(){
+        // TODO : this should all be managed with promises, but... not adding now
+        Scheduler.prototype.run = function( failure ){
             var dis = this;
 
             if ( !this.$lock ){
                 this.$lock = true;
                 setTimeout(function(){ // this will gaurentee before you run, the thread was released
-                    dis.$eval(function(){
-                        dis.$lock = false;
-                    });
+                    dis.$eval(
+                        function(){
+                            dis.$lock = false;
+                        },
+                        failure
+                    );
                 },5);
             }
         };
 
-        Scheduler.prototype.$eval = function( cb ){
+        Scheduler.prototype.$eval = function( success, failure ){
             var dis = this,
                 valid = true,
                 now = __now(),
@@ -82,30 +86,35 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                 t;
 
             function rerun(){
-                dis.$eval( cb );
+                dis.$eval( success, failure );
             }
 
-            while( (t = this.schedule.shift()) && valid ){
-                if ( t.length ){ // is an array, aka a script
-                    while( t.length ){
-                        this.schedule.unshift( t.pop() );
+            try{
+                while( (t = this.schedule.shift()) && valid ){
+                    if ( t.length ){ // is an array, aka a script
+                        while( t.length ){
+                            this.schedule.unshift( t.pop() );
+                        }
+                    }else if ( 'start' in t ){
+                        for( i = t.start, c = t.stop; i < c; i++ ){
+                            t.op.call( t.ctx, t.data[i], i );
+                        }
+                    }else{
+                        t.op.call( t.ctx );
                     }
-                }else if ( 'start' in t ){
-                    for( i = t.start, c = t.stop; i < c; i++ ){
-                        t.op.call( t.ctx, t.data[i], i );
-                    }
-                }else{
-                    t.op.call( t.ctx );
-                }
 
-                if ( __now() > goodTill ){
-                    valid = false;
-                    setTimeout(rerun, 5);
+                    if ( __now() > goodTill ){
+                        valid = false;
+                        setTimeout(rerun, 5);
+                    }
                 }
+            }catch( ex ){
+                console.log( ex );
+                failure();
             }
 
             if ( this.schedule.length === 0 ){
-                cb();
+                success();
             }
         };
 
@@ -192,7 +201,7 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             this.loading = true;
             this.message = null;
 
-            this.$interface = $interface;
+            this.$interface = $interface || {};
         }
 
         GraphModel.prototype.register = function( cb ){
@@ -300,8 +309,9 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             };
         }
 
-        GraphModel.prototype.render = function( waiting ){
+        GraphModel.prototype.render = function( /* waiting */ ){
             var dis = this,
+                hasData,
                 hasViews = 0,
                 viewsCount = Object.keys( this.views ).length,
                 primary = this.getPrimaryView(),
@@ -315,66 +325,98 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                 this.calcHook();
             }
 
-            waiting = []; // TODO: there's a weird bug when joining scales, quick fix
+            hasData = []; // TODO: there's a weird bug when joining scales, quick fix
             this.empty = [];
 
             angular.forEach( this.views, function( view ){
                 view.calcScales( unified );
                 if ( view.hasData() ){
-                    waiting.push( view );
+                    hasData.push( view );
                 }else{
                     this.empty.push( view );
                 }
             }, this);
             
             // TODO : not empty
-            hasViews = Object.keys(waiting).length;
+            hasViews = Object.keys(hasData).length;
+            schedule.startScript( this.$uid );
             
             if ( !viewsCount ){
-                this.loading = true;
+                schedule.func(function(){
+                    dis.loading = true;
+                    dis.pristine = false;
+                });
             }else if ( hasViews ){
                 schedule.startScript( this.$uid );
 
                 dis.loading = !unified.length;
 
                 schedule.func(function(){
-                    dis.unified = unified;    
+                    dis.unified = unified;
                     dis.message = null;
                 });
 
-                if ( this.loading ){
-                    schedule.loop( waiting, function( view ){
-                        view.loading();
-                    });
-                }else{
-                    schedule.loop( waiting, function( view ){
+                if ( unified.length ){
+                    schedule.loop( hasData, function( view ){
                         view.build();
                     });
 
-                    schedule.loop( waiting, function( view ){
+                    schedule.loop( hasData, function( view ){
                         view.process();
                     });
 
-                    schedule.loop( waiting, function( view ){
+                    schedule.loop( hasData, function( view ){
                         view.finalize();
                     });
 
                     schedule.loop( this.registrations, function( registration ){
                         registration( primary.pane );
                     });
-                }
 
-                schedule.func(function(){
-                    if ( dis.$interface.onRender ){
-                        dis.$interface.onRender();
-                    }
+                    schedule.func(function(){
+                        dis.loading = false;
+                        dis.pristine = true;
+                    });
+                }else{
+                    schedule.loop( hasData, function( view ){
+                        view.loading();
+                    });
+
+                    schedule.func(function(){
+                        dis.loading = true;
+                        dis.pristine = false;
+                    });
+                }
+            }else if ( !this.loading ){
+                schedule.loop( this.views, function( view ){
+                    view.error();
                 });
 
-                schedule.endScript();
-                schedule.run();
-            }else if ( !this.loading ){
-                this.message = 'No Data Available';
+                schedule.func(function(){
+                    dis.message = 'No Data Available';
+                    dis.pristine = false;
+                });
+            }else{
+                schedule.loop( this.views, function( view ){
+                    view.error();
+                });
+
+                schedule.func(function(){
+                    dis.pristine = false;
+                });
             }
+
+            schedule.func(function(){
+                if ( dis.$interface.onRender ){
+                    dis.$interface.onRender();
+                }
+            });
+
+            schedule.endScript();
+            schedule.run(function(){ // if error
+                dis.pristine = false;
+                dis.message = 'Unable to Render';
+            });
         };
 
         GraphModel.prototype.scheduleRender = function(){

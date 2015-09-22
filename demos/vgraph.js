@@ -177,10 +177,6 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                     memory = parseInt( attrs.memory, 10 ) || 10,
                     timeout;
 
-                graph.loading = true;
-
-                // console.log( el[0], attrs, scope, ctrl );
-
                 function preLoad(){
                     if ( !timeout ){
                         timeout = $timeout(function(){
@@ -194,8 +190,6 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                     var i, c;
 
                     if ( scope.data && ctrl.valueParse && !scope.data.$loading ){
-                        graph.loading = false;
-
                         if ( !scope.data._lastRead ){
                             scope.data._lastRead = {};
                         }
@@ -776,20 +770,24 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             });
         };
 
-        Scheduler.prototype.run = function(){
+        // TODO : this should all be managed with promises, but... not adding now
+        Scheduler.prototype.run = function( failure ){
             var dis = this;
 
             if ( !this.$lock ){
                 this.$lock = true;
                 setTimeout(function(){ // this will gaurentee before you run, the thread was released
-                    dis.$eval(function(){
-                        dis.$lock = false;
-                    });
+                    dis.$eval(
+                        function(){
+                            dis.$lock = false;
+                        },
+                        failure
+                    );
                 },5);
             }
         };
 
-        Scheduler.prototype.$eval = function( cb ){
+        Scheduler.prototype.$eval = function( success, failure ){
             var dis = this,
                 valid = true,
                 now = __now(),
@@ -798,30 +796,35 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                 t;
 
             function rerun(){
-                dis.$eval( cb );
+                dis.$eval( success, failure );
             }
 
-            while( (t = this.schedule.shift()) && valid ){
-                if ( t.length ){ // is an array, aka a script
-                    while( t.length ){
-                        this.schedule.unshift( t.pop() );
+            try{
+                while( (t = this.schedule.shift()) && valid ){
+                    if ( t.length ){ // is an array, aka a script
+                        while( t.length ){
+                            this.schedule.unshift( t.pop() );
+                        }
+                    }else if ( 'start' in t ){
+                        for( i = t.start, c = t.stop; i < c; i++ ){
+                            t.op.call( t.ctx, t.data[i], i );
+                        }
+                    }else{
+                        t.op.call( t.ctx );
                     }
-                }else if ( 'start' in t ){
-                    for( i = t.start, c = t.stop; i < c; i++ ){
-                        t.op.call( t.ctx, t.data[i], i );
-                    }
-                }else{
-                    t.op.call( t.ctx );
-                }
 
-                if ( __now() > goodTill ){
-                    valid = false;
-                    setTimeout(rerun, 5);
+                    if ( __now() > goodTill ){
+                        valid = false;
+                        setTimeout(rerun, 5);
+                    }
                 }
+            }catch( ex ){
+                console.log( ex );
+                failure();
             }
 
             if ( this.schedule.length === 0 ){
-                cb();
+                success();
             }
         };
 
@@ -908,7 +911,7 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             this.loading = true;
             this.message = null;
 
-            this.$interface = $interface;
+            this.$interface = $interface || {};
         }
 
         GraphModel.prototype.register = function( cb ){
@@ -1016,8 +1019,9 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             };
         }
 
-        GraphModel.prototype.render = function( waiting ){
+        GraphModel.prototype.render = function( /* waiting */ ){
             var dis = this,
+                hasData,
                 hasViews = 0,
                 viewsCount = Object.keys( this.views ).length,
                 primary = this.getPrimaryView(),
@@ -1031,66 +1035,98 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                 this.calcHook();
             }
 
-            waiting = []; // TODO: there's a weird bug when joining scales, quick fix
+            hasData = []; // TODO: there's a weird bug when joining scales, quick fix
             this.empty = [];
 
             angular.forEach( this.views, function( view ){
                 view.calcScales( unified );
                 if ( view.hasData() ){
-                    waiting.push( view );
+                    hasData.push( view );
                 }else{
                     this.empty.push( view );
                 }
             }, this);
             
             // TODO : not empty
-            hasViews = Object.keys(waiting).length;
+            hasViews = Object.keys(hasData).length;
+            schedule.startScript( this.$uid );
             
             if ( !viewsCount ){
-                this.loading = true;
+                schedule.func(function(){
+                    dis.loading = true;
+                    dis.pristine = false;
+                });
             }else if ( hasViews ){
                 schedule.startScript( this.$uid );
 
                 dis.loading = !unified.length;
 
                 schedule.func(function(){
-                    dis.unified = unified;    
+                    dis.unified = unified;
                     dis.message = null;
                 });
 
-                if ( this.loading ){
-                    schedule.loop( waiting, function( view ){
-                        view.loading();
-                    });
-                }else{
-                    schedule.loop( waiting, function( view ){
+                if ( unified.length ){
+                    schedule.loop( hasData, function( view ){
                         view.build();
                     });
 
-                    schedule.loop( waiting, function( view ){
+                    schedule.loop( hasData, function( view ){
                         view.process();
                     });
 
-                    schedule.loop( waiting, function( view ){
+                    schedule.loop( hasData, function( view ){
                         view.finalize();
                     });
 
                     schedule.loop( this.registrations, function( registration ){
                         registration( primary.pane );
                     });
-                }
 
-                schedule.func(function(){
-                    if ( dis.$interface.onRender ){
-                        dis.$interface.onRender();
-                    }
+                    schedule.func(function(){
+                        dis.loading = false;
+                        dis.pristine = true;
+                    });
+                }else{
+                    schedule.loop( hasData, function( view ){
+                        view.loading();
+                    });
+
+                    schedule.func(function(){
+                        dis.loading = true;
+                        dis.pristine = false;
+                    });
+                }
+            }else if ( !this.loading ){
+                schedule.loop( this.views, function( view ){
+                    view.error();
                 });
 
-                schedule.endScript();
-                schedule.run();
-            }else if ( !this.loading ){
-                this.message = 'No Data Available';
+                schedule.func(function(){
+                    dis.message = 'No Data Available';
+                    dis.pristine = false;
+                });
+            }else{
+                schedule.loop( this.views, function( view ){
+                    view.error();
+                });
+
+                schedule.func(function(){
+                    dis.pristine = false;
+                });
             }
+
+            schedule.func(function(){
+                if ( dis.$interface.onRender ){
+                    dis.$interface.onRender();
+                }
+            });
+
+            schedule.endScript();
+            schedule.run(function(){ // if error
+                dis.pristine = false;
+                dis.message = 'Unable to Render';
+            });
         };
 
         GraphModel.prototype.scheduleRender = function(){
@@ -2171,6 +2207,14 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
             });
         };
 
+        ViewModel.prototype.error = function(){
+            this.components.forEach(function( component ){
+                if ( component.error ){
+                    component.error();
+                }
+            });
+        };
+
         ViewModel.prototype.publishStats = function(){
             var i,
                 s,
@@ -3180,9 +3224,17 @@ angular.module( 'vgraph' ).directive( 'vgraphCompare',
                         chart2 = graph.views[config[name2]];
 
                     function draw(){
-                        fill.$d3.attr( 'd', fill.calc(graph.unified) );
-                        chart1Ready = false;
-                        chart2Ready = false;
+                        if ( chart1Ready && chart2Ready ){
+                            fill.$d3.attr( 'visibility', 'visible' );
+                            fill.$d3.attr( 'd', fill.calc(graph.unified) );
+
+                            chart1Ready = false;
+                            chart2Ready = false;
+                        }
+                    }
+
+                    function clearComponent(){
+                        fill.$d3.attr( 'visibility', 'hidden' );
                     }
 
                     if ( config && keys.length === 2 ){
@@ -3215,6 +3267,14 @@ angular.module( 'vgraph' ).directive( 'vgraphCompare',
 
                         // this isn't entirely right... It will be forced to call twice
                         chart1.register({
+                            loading: function(){
+                                chart1Ready = false;
+                                clearComponent();
+                            },
+                            error: function(){
+                                chart1Ready = false;
+                                clearComponent();
+                            },
                             finalize : function(){
                                 chart1Ready = true;
                                 draw();
@@ -3222,6 +3282,14 @@ angular.module( 'vgraph' ).directive( 'vgraphCompare',
                         });
 
                         chart2.register({
+                            loading: function(){
+                                chart2Ready = false;
+                                clearComponent();
+                            },
+                            error: function(){
+                                chart2Ready = false;
+                                clearComponent();
+                            },
                             finalize : function(){
                                 chart2Ready = true;
                                 draw();
@@ -3551,7 +3619,13 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
                     pulse();
                 }
 
+                function clearComponent(){
+                    $el.attr( 'visibility', 'hidden' );
+                }
+
                 chart.register({
+                    error: clearComponent,
+                    loading: clearComponent,
                     finalize : function( pane ){
                         var d,
                             x,
@@ -3816,9 +3890,15 @@ angular.module( 'vgraph' ).directive( 'vgraphLeading',
                     }
                 }
 
+                function clearComponent(){
+                    $el.attr( 'visibility', 'hidden' );
+                }
+
                 scope.$watchCollection('config', parseConf );
 
                 chart.register({
+                    error: clearComponent,
+                    loading: clearComponent,
                     finalize : function( pane ){
                         var d,
                             last,
@@ -3857,7 +3937,7 @@ angular.module( 'vgraph' ).directive( 'vgraphLeading',
                         });
 
                         if ( last ){
-                            $el.style( 'visibility', 'visible' );
+                            $el.attr( 'visibility', 'visible' );
 
                             last.el
                                 .attr( 'x1', last.x )
@@ -3865,7 +3945,7 @@ angular.module( 'vgraph' ).directive( 'vgraphLeading',
                                 .attr( 'y1', last.y )
                                 .attr( 'y2', graph.box.innerBottom );
                         }else{
-                            $el.style( 'visibility', 'hidden' );
+                            $el.attr( 'visibility', 'hidden' );
                         }
                     }
                 });

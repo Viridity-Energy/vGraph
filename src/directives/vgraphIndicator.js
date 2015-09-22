@@ -46,7 +46,13 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
                     pulse();
                 }
 
+                function clearComponent(){
+                    $el.attr( 'visibility', 'hidden' );
+                }
+
                 chart.register({
+                    error: clearComponent,
+                    loading: clearComponent,
                     finalize : function( pane ){
                         var d,
                             x,

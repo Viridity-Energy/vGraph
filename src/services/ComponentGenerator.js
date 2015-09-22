@@ -34,10 +34,6 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                     memory = parseInt( attrs.memory, 10 ) || 10,
                     timeout;
 
-                graph.loading = true;
-
-                // console.log( el[0], attrs, scope, ctrl );
-
                 function preLoad(){
                     if ( !timeout ){
                         timeout = $timeout(function(){
@@ -51,8 +47,6 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                     var i, c;
 
                     if ( scope.data && ctrl.valueParse && !scope.data.$loading ){
-                        graph.loading = false;
-
                         if ( !scope.data._lastRead ){
                             scope.data._lastRead = {};
                         }

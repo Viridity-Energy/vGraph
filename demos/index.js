@@ -68,7 +68,11 @@ angular.module( 'vgraph' ).controller( 'LoadingCtrl',
 	function( $scope, GraphModel, LinearModel ){
 		var data = [];
 
-		$scope.graph = new GraphModel();
+		$scope.graph = new GraphModel({
+			onRender: function(){
+				$scope.$apply()
+			}
+		});
 		$scope.model = new LinearModel({
 			x : {
 				scale : function(){
@@ -100,11 +104,11 @@ angular.module( 'vgraph' ).controller( 'LoadingCtrl',
 			$scope.$apply(function(){
 				$scope.graph.message = 'This Go Boom - Sample';
 			});
-		}, 1000);
+		}, 2000);
 
 		setTimeout(function(){
 			$scope.model.setError('--==model error==--');
-		}, 2000);
+		}, 4000);
 
 		setTimeout(function(){
 			$scope.$apply(function(){
@@ -130,13 +134,13 @@ angular.module( 'vgraph' ).controller( 'LoadingCtrl',
 					});
 				}
 			});
-		}, 3000);
+		}, 6000);
 
 		setTimeout(function(){
 			$scope.$apply(function(){
 				$scope.model.reset();
 			});
-		}, 4000);
+		}, 8000);
 
 		setTimeout(function(){
 			$scope.$apply(function(){
@@ -162,7 +166,7 @@ angular.module( 'vgraph' ).controller( 'LoadingCtrl',
 					});
 				}
 			});
-		}, 5000);
+		}, 10000);
 	}]
 );
 
