@@ -320,6 +320,23 @@
 					<g vgraph-interact="highlight"></g>
 				</svg>
 			</div>
+
+			<div ng-controller="NullCtrl">
+				{{graph.loading}} :: {{graph.message}}
+				<hr>
+				<span ng-repeat="conf in config">|{{highlight.point.default[conf.name]}}|</span>
+				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" model="model" version="1.1">
+					<g vgraph-axis="'left'"
+						tick-length="4" tick-padding="-2"></g>
+					<g vgraph-axis="'bottom'"
+						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+					<g vgraph-multi-line config="config"></g>
+					<g vgraph-target="highlight" point-radius="5" config="{'default':config}"></g>
+					<g vgraph-loading="Loading Data"></g>
+					<g vgraph-interact="highlight"></g>
+					<g vgraph-area config="config"></g>
+				</svg>
+			</div>
 		</section>
 
 		<section ng-if="classed">

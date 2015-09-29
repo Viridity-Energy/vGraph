@@ -19,6 +19,13 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 
         var baseComponent = {
             require : ['^vgraphChart'],
+            scope : {
+                data: '=_undefined_',
+                value: '=?value',
+                extra: '=?extra',
+                filter: '=?filter',
+                interval: '=?interval'
+            },
             link : function( scope, el, attrs, requirements ){
                 var control = attrs.control || 'default',
                     graph = requirements[0].graph,
@@ -119,7 +126,6 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                                 this.intervalParse(d),
                                 v
                             );
-                            //console.log( name, el[0] );
                         }
 
                         if ( this.extraParse && point ){
@@ -132,13 +138,6 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 
                 // ok, make sure it gets rendered, because maybe the data doesn't change
                 graph.rerender();
-            },
-            scope : {
-                data : '=_undefined_',
-                value : '=?value',
-                interval : '=?interval',
-                filter : '=?filter',
-                extra: '=?extra'
             }
         };
 
@@ -187,6 +186,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
         }
 
         return {
+            isNumeric: isNumeric,
             generate : function( directive, overrides ){
                 var t;
 
@@ -224,6 +224,21 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 }
 
                 return t;
+            },
+            makeAreaCalc: function( chart, name ){
+                return d3.svg.area()
+                    .defined(function(d){
+                        return isNumeric(d[ name ]);
+                    })
+                    .x(function( d ){
+                        return chart.x.scale( d.$interval );
+                    })
+                    .y(function( d ){
+                        return chart.y.scale( d[name+'$Min'] );
+                    })
+                    .y1(function( d ){
+                        return chart.y.scale( d[name+'$Max'] );
+                    });
             },
             // undefined =>  no value, so use last value, null => line break
             makeLineCalc: function( chart, name ){
@@ -380,7 +395,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 
                 if ( angular.isArray(conf) ){
                     for( i = 0, c = conf.length; i < c; i++ ){
-                        res.push( decode($scope,conf[i],type) );
+                        res.push( decode($scope,conf[i],type,conf[i]) );
                     }
                 }else{
                     res.push( decode($scope,conf,type) );
@@ -388,26 +403,30 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 
                 return res;
             },
-            compileConfig: function( $scope, conf, type ){
+            compileConfig: function( $scope, config, type ){
                 var i, c,
                     res,
-                    comps;
+                    comp,
+                    conf,
+                    els;
 
                 if ( !angular.isArray(conf) ){
                     conf = [ conf ];
                 }
 
-                res = this.decodeConfig( $scope, conf, type );
-                comps = this.svgCompile( res.join('') );
+                res = this.decodeConfig( $scope, config, type );
+                els = this.svgCompile( res.join('') );
 
-                for( i = 0, c = comps.length; i < c; i++ ){
-                    res[i] = {
-                        name: conf[i].name,
-                        className: conf[i].className,
-                        element : comps[i],
-                        $d3 : d3.select( comps[i] ),
-                        $conf: conf[i]
+                for( i = 0, c = els.length; i < c; i++ ){
+                    conf = config[i];
+                    comp = {
+                        name: conf.name,
+                        className: conf.className,
+                        element : els[i],
+                        $d3 : d3.select( els[i] ),
+                        $conf: conf
                     };
+                    res[i] = comp;
                 }
 
                 return res;
@@ -463,6 +482,89 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                         }
                     }
                 }
+
+                return {
+                    min : min,
+                    max : max
+                };
+            },
+            parseSegmentedLimits: function( data, names, parser, start ){
+                var i, c,
+                    d,
+                    v,
+                    min,
+                    max,
+                    next = {},
+                    stretch = [];
+
+                function normalize( d ){
+                    d[names+'$Max'] = max;
+                    d[names+'$Min'] = min;
+                }
+
+                if ( !start ){
+                    start = 0;
+                }
+
+                if ( angular.isString(names) ){
+                    if ( !parser ){
+                        parser = function( i, v ){
+                            return v;
+                        };
+                    }
+
+                    while( start < data.length && !isNumeric(parser(data[start],data[start][names])) ){
+                        start++;
+                    }
+
+                    for( i = start, c = data.length; i < c; i++ ){
+                        d = data[i];
+                        v = parser( d, d[names] );
+                        if ( isNumeric(v) ){
+                            if ( min === undefined ){
+                                min = v;
+                                max = v;
+                            }else if ( min > v ){
+                                min = v;
+                            }else if ( max < v ){
+                                max = v;
+                            }
+
+                            stretch.push(d);
+                        }else{
+                            stretch.forEach( normalize );
+                            next = this.parseSegmentedLimits( data, names, parser, i+1 );
+                            i = data.length;
+                        }
+                    }
+
+                    if ( isNumeric(next.min) && next.min < min ){
+                        min = next.min;
+                    }
+
+                    if ( isNumeric(next.max) && next.max > max ){
+                        max = next.max;
+                    }
+                }else{
+                    // go through an array of names
+                    for( i = 0, c = names.length; i < c; i++ ){
+                        v = this.parseSegmentedLimits( data, names[i], parser );
+                        if ( min === undefined ){
+                            min = v.min;
+                            max = v.max;
+                        }else{
+                            if ( v.min < min ){
+                                min = v.min;
+                            }
+
+                            if ( v.max > max ){
+                                max = v.max;
+                            }
+                        }
+                    }
+                }
+                
+                console.log( min, max );
 
                 return {
                     min : min,
