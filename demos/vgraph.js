@@ -386,8 +386,11 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                             if ( isNumeric(y) ){
                                 isDefined = true;
                                 return true;
-                            }else{ 
-                                return y === undefined && isDefined;
+                            }else if ( y === undefined && isDefined ){
+                                return true;
+                            }else{
+                                isDefined = false;
+                                return false;
                             }
                         })
                         .x(function( d ){
