@@ -1051,9 +1051,10 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             }else if ( hasViews ){
                 schedule.startScript( this.$uid );
 
+                dis.loading = !unified.length;
+
                 schedule.func(function(){
-                    dis.unified = unified;
-                    dis.loading = !unified.length;
+                    dis.unified = unified;    
                     dis.message = null;
                 });
 
