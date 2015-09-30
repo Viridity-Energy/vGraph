@@ -395,7 +395,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 
                 if ( angular.isArray(conf) ){
                     for( i = 0, c = conf.length; i < c; i++ ){
-                        res.push( decode($scope,conf[i],type,conf[i]) );
+                        res.push( decode($scope,conf[i],type) );
                     }
                 }else{
                     res.push( decode($scope,conf,type) );
