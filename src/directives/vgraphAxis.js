@@ -174,6 +174,10 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                                 }
 
                                 if ( tickRotation ){
+                                    if ( $ticks.select('.tick text')[0][0] === null ){
+                                        return;
+                                    }
+
                                     $ticks.selectAll('.tick text')
                                         .attr( 'transform', 'translate(0,'+$ticks.select('.tick text').attr('y')+') rotate(' + tickRotation + ',0,0)' )
                                         .attr( 'y', '0' )
@@ -262,7 +266,10 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                                 }
 
                                 if ( tickRotation ){
-				                    // TODO : these settings styles be a hash
+				                    if ( $ticks.select('.tick text')[0][0] === null ){
+                                        return;
+                                    }
+                                
                                     $ticks.selectAll('.tick text')
                                         .attr( 'transform', function(){
                                             return 'translate(0,' + d3.select(this).attr('y') + ') rotate(' + tickRotation + ',0,0)';

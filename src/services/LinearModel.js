@@ -34,6 +34,8 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
         }
 
         LinearModel.prototype.construct = function(){
+            var loaders = [];
+
             this.$modelId = modelC++;
 
             this.registrations = [];
@@ -44,11 +46,42 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
                     p.$y = null;
                 }
             };
+
+            this.getLoaders = function(){
+                return loaders;
+            };
+
+            this.$follow = function( loader ){
+                loaders.push( loader );
+            };
+
+            this.$ignore = function( loader ){
+                var dex = loaders.indexOf( loader );
+
+                if ( dex !== -1 ){
+                    loaders.splice( dex, 1 );
+                }
+            };
+        };
+
+        LinearModel.prototype.$ready = function(){
+            var i, c,
+                isReady = false,
+                loaders = this.getLoaders();
+
+            for( i = 0, c = loaders.length; i < c && !isReady; i++ ){
+                if ( loaders[i].ready ){
+                    isReady = true;
+                }
+            }
+
+            return isReady;
         };
 
         LinearModel.prototype.reset = function( settings ){
             this.data.length = 0;
             
+            this.ready = false;
             this.lookUp = {};
             this.plots = {};
             this.plotNames = [];

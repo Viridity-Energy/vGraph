@@ -142,8 +142,8 @@ angular.module( 'vgraph' ).factory( 'BoxModel',
 );
 
 angular.module( 'vgraph' ).factory( 'ComponentGenerator',
-    ['$timeout',
-    function ($timeout) {
+    [
+    function () {
         'use strict';
 
         function forEach( data, method, context ){
@@ -160,127 +160,367 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
             }
         }
 
-        var baseComponent = {
+        var uid = 1,
+            dataFeeds = {};
+            
+        function DataFeed( data /* array */, explode ){
+            this.explode = explode;
+            this.setSource( data );
+
+            this._$dfUid = uid++;
+        }
+
+        // ensures singletons
+        DataFeed.create = function( data, explode ){
+            var t;
+
+            if ( !(data._$dfUid && dataFeeds[data._$dfUid]) ){
+                t = new DataFeed( data, explode );
+
+                data._$dfUid = t._$dfUid;
+                dataFeeds[t._$dfUid] = t;
+            }else{
+                t = dataFeeds[ data._$dfUid ];
+            }
+
+            return t;
+        };
+
+        DataFeed.prototype.setSource = function( src ){
+            var dis = this,
+                oldPush = src.push;
+
+            this.data = src;
+            this._readPos = 0;
+
+            src.push = function(){
+                oldPush.apply( this, arguments );
+                dis.$push();
+            };
+
+            src.$ready = function(){
+                dis.$trigger('ready');
+            };
+
+            this.$push();
+        };
+
+        DataFeed.prototype.$on = function( event, cb ){
+            var dis = this;
+
+            if ( !this._$listeners ){
+                this._$listeners = {};
+            }
+
+            if ( !this._$listeners[event] ){
+                this._$listeners[event] = [];
+            }
+
+            this._$listeners[event].push( cb );
+
+            return function clear$on(){
+                dis._$listeners[event].splice(
+                    dis._$listeners[event].indexOf( cb ),
+                    1
+                );
+            };
+        };
+
+        DataFeed.prototype.$trigger = function( event, arg ){
+            var listeners,
+                i, c;
+
+            if ( this._$listeners ){
+                listeners = this._$listeners[event];
+
+                if ( listeners ){
+                    for( i = 0, c = listeners.length; i < c; i++ ){
+                        listeners[i]( arg );
+                    }
+                }                   
+            }
+        };
+
+        DataFeed.prototype.$push = function(){
+            var dis = this;
+
+            if ( !this._$push ){
+                this._$push = setTimeout(function(){
+                    var t = dis._readNext();
+
+                    if ( t ){
+                        dis.$trigger('ready');
+                    }
+
+                    while( t ){
+                        dis.$trigger( 'data', t );
+                        t = dis._readNext();
+                    }
+
+                    dis._$push = null;
+                }, 0);
+            }
+        };
+
+        DataFeed.prototype._readAll = function( cb ){
+            var t = this._read( 0 );
+
+            while( t ){
+                cb( t );
+                t = this._read( t.next );
+            }
+        };
+
+        DataFeed.prototype._readNext = function(){
+            var t = this._read( this._readPos );
+
+            if ( t ){
+                this._readPos = t.next;
+            }
+
+            return t;
+        };
+
+        DataFeed.prototype._read = function( pos ){
+            var t,
+                data = this.data,
+                explode = this.explode;
+
+            if ( !data.length || pos >= data.length ){
+                return null;
+            } else {
+                if ( explode ){
+                    t = data[pos];
+                    return {
+                        points: explode( t ),
+                        next: pos + 1,
+                        ref: t
+                    };
+                }else{
+                    return {
+                        points: data,
+                        next: data.length
+                    };
+                }
+            }
+        };
+
+        function DataLoader( feed, dataModel ){
+            var dis = this,
+                confs = [],
+                proc = this._process.bind( this ),
+                readyReg = feed.$on( 'ready', function(){
+                    dis.ready = true;
+                }),
+                dataReg = feed.$on( 'data', function( data ){
+                    var i, c,
+                        j, co;
+
+                    for( i = 0, c = data.points.length; i < c; i++ ){
+                        for( j = 0, co = confs.length; j < co; j++ ){
+                            proc( confs[j], data.points[i], data.ref );
+                        }
+                    }
+                });
+
+            this.feed = feed;
+            this.confs = confs;
+            this.dataModel = dataModel;
+
+            dataModel.$follow( this );
+            
+            this.$destroy = function(){
+                dataModel.$ignore( this );
+                readyReg();
+                dataReg();
+            };
+        }
+
+        var dataLoaders = {};
+
+        // ensures singletons
+        DataLoader.create = function( feed, dataModel, conf ){
+            var t;
+
+            if ( !dataLoaders[feed._$dfUid] ){
+                t = new DataLoader( feed, dataModel );
+                dataLoaders[feed._$dfUid] = t;
+            }
+
+            if ( conf ){
+                t.addConf( conf );
+            }
+
+            return t;
+        };
+
+        DataLoader.unregister = function(){};
+
+        DataLoader.prototype.addConf = function( conf ){
+            /*
+            -- it is assumed a feed will have the same exploder
+            conf.feed : {
+                data: override push event of feed
+                explode: run against the data nodes to generate child data nodes.  Expect result appends [name]$Ref
+            }
+            -- the rest are on an individual level
+            conf.ref {
+                name *
+                view
+                className
+            }
+            conf.massage : run against the resulting data node ( importedPoint, dataNode )
+            conf.valueParse *
+            conf.intervalParse *
+            */
+            var proc = this._process.bind( this ),
+                t = {
+                    name: conf.ref.name,
+                    massage: conf.massage,
+                    valueParse: conf.valueParse,
+                    intervalParse: conf.intervalParse
+                };
+
+            this.feed._readAll(function( data ){
+                var i, c,
+                    points = data.points;
+
+                for( i = 0, c = points.length; i < c; i++ ){
+                    proc( t, points[i], data.ref );
+                }
+            });
+
+            this.confs.push( t );
+        };
+
+        DataLoader.prototype.removeConf = function( conf ){
+            var dex = this.confs.indexOf( conf );
+
+            if ( dex !== -1 ){
+                this.confs.splice( dex, 1 );
+            }
+        };
+
+        DataLoader.prototype._process = function( conf, datum, reference ){
+            var point = this.dataModel.addPoint(
+                    conf.name,
+                    conf.intervalParse( datum ),
+                    conf.valueParse( datum )
+                );
+
+            if ( conf.massage ){
+                conf.massage( point, datum, reference );
+            }
+        };
+
+        var lookupHash = {},
+            baseComponent = {
             require : ['^vgraphChart'],
             scope : {
                 data: '=_undefined_',
                 value: '=?value',
-                extra: '=?extra',
-                filter: '=?filter',
-                interval: '=?interval'
+                interval: '=?interval',
+                config: '=?config',
+                explode: '=?explode',
+                massage: '=?massage'
             },
             link : function( scope, el, attrs, requirements ){
-                var control = attrs.control || 'default',
+                var ctrl,
+                    dataLoader,
+                    control = attrs.control || 'default',
                     graph = requirements[0].graph,
                     chart = graph.views[control],
-                    model = chart.model,
+                    dataModel = chart.model,
+                    name = attrs.name;
+
+                function addConf(){
+                    var value = scope.value,
+                        field = attrs.alias || value,
+                        interval = scope.interval;
+
                     ctrl = {
-                        model: model
-                    },
-                    alias,
-                    name = attrs.name,
-                    uniqueName = name+graph.$uid,
-                    history = [],
-                    memory = parseInt( attrs.memory, 10 ) || 10,
-                    timeout;
+                        ref: {
+                            name: name
+                        },
+                        massage: scope.massage
+                    };
 
-                function preLoad(){
-                    if ( !timeout ){
-                        timeout = $timeout(function(){
-                            contentLoad();
-                            timeout = null;
-                        }, 30);
-                    }
-                }
-
-                function contentLoad(){
-                    var i, c;
-
-                    if ( scope.data && ctrl.valueParse && !scope.data.$loading ){
-                        if ( !scope.data._lastRead ){
-                            scope.data._lastRead = {};
-                        }
-
-                        for( i = scope.data._lastRead[uniqueName] || 0, c = scope.data.length; i < c; i++ ){
-                            scope.loadPoint( scope.data[i] );
-                        }
-                        scope.data._lastRead[uniqueName] = c;
-                    }
-                }
-
-                scope.$watch('interval', function( v ){
-                    if ( typeof(v) === 'string' ){
+                    if ( typeof(interval) === 'string' ){
                         ctrl.intervalParse = function( d ){
-                            return d[ v ];
+                            return d[ interval ];
                         };
                     }else{
-                        ctrl.intervalParse = v;
+                        ctrl.intervalParse = interval;
                     }
-                });
-
-                // alias allows you to send back a different value than you search to qualify
-                scope.$watch('extra', function( parser ){
-                    ctrl.extraParse = parser;
-                });
-
-                scope.$watch('filter', function( parser ){
-                    ctrl.filterParse = parser;
-                });
-
-                scope.$watch('value', function( v ){
-                    if ( typeof(v) === 'string' ){
-                        alias = attrs.alias || v;
+                    
+                    if ( typeof(value) === 'string' ){
                         ctrl.valueParse = function( d ){
-                            if ( d[v] !== undefined ){
-                                return d[ alias ];
+                            if ( d[value] !== undefined ){
+                                return d[ field ];
                             }
                         };
                     }else{
-                        ctrl.valueParse = v;
+                        ctrl.valueParse = value;
                     }
-
-                    preLoad();
-                });
-
-                scope.$watch('data', preLoad);
-                scope.$watch('data.$loading', preLoad);
-                scope.$watch('data.length', preLoad);
-
-                if ( !scope.loadPoint ){
-                    scope.loadPoint = function ( d ){
-                        var v = this.valueParse( d ),
-                            point;
-
-                        if ( this.filterParse ){
-                            if ( history.length > memory ){
-                                history.shift();
-                            }
-
-                            history.push( v );
-
-                            point = this.model.addPoint( 
-                                name, 
-                                this.intervalParse(d), 
-                                this.filterParse(v,history)
-                            );
-                        }else{
-                            point = this.model.addPoint(
-                                name,
-                                this.intervalParse(d),
-                                v
-                            );
-                        }
-
-                        if ( this.extraParse && point ){
-                            this.extraParse( d, point );
-                        }
-                    }.bind( ctrl );
-                }else{
-                    scope.loadPoint = scope.loadPoint.bind( ctrl );
                 }
 
-                // ok, make sure it gets rendered, because maybe the data doesn't change
-                graph.rerender();
+                scope.$watch('data', function( data ){
+                    var t,
+                        lookup,
+                        feed = DataFeed.create( data, scope.massage );
+
+                    if ( dataLoader ){
+                        dataLoader.$destroy();
+                    }
+
+                    lookup = lookupHash[feed._$dfUid];
+                    if ( !lookup ){
+                        lookup = lookupHash[feed._$dfUid] = {};
+                    }
+                    
+                    dataLoader = lookup[control];
+                    if ( !dataLoader ){
+                        dataLoader = lookup[control] = new DataLoader(
+                            feed, 
+                            dataModel
+                        );
+
+                        if ( ctrl ){
+                            dataLoader.addConf( ctrl );
+                        }
+                    }
+                });
+
+                scope.$watch(
+                    function(){
+                        return ctrl;
+                    },
+                    function( n, o ){
+                        if ( o ){
+                            dataLoader.removeConf( o );
+                        }
+
+                        if ( n ){
+                            dataLoader.addConf( n );
+                        }
+                    }
+                );
+
+                if ( scope.config ){
+                    scope.$watch( 'config', function( cfg ){
+                        if ( !cfg.ref ){
+                            cfg.ref = {
+                                name: name,
+                                view: control
+                            };
+                        }
+
+                        ctrl = cfg;
+                    });
+                }else{
+                    scope.$watch('interval', addConf);
+                    scope.$watch('value', addConf);
+                }
             }
         };
 
@@ -707,8 +947,6 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                     }
                 }
                 
-                console.log( min, max );
-
                 return {
                     min : min,
                     max : max
@@ -1367,6 +1605,8 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
         }
 
         LinearModel.prototype.construct = function(){
+            var loaders = [];
+
             this.$modelId = modelC++;
 
             this.registrations = [];
@@ -1377,11 +1617,42 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
                     p.$y = null;
                 }
             };
+
+            this.getLoaders = function(){
+                return loaders;
+            };
+
+            this.$follow = function( loader ){
+                loaders.push( loader );
+            };
+
+            this.$ignore = function( loader ){
+                var dex = loaders.indexOf( loader );
+
+                if ( dex !== -1 ){
+                    loaders.splice( dex, 1 );
+                }
+            };
+        };
+
+        LinearModel.prototype.$ready = function(){
+            var i, c,
+                isReady = false,
+                loaders = this.getLoaders();
+
+            for( i = 0, c = loaders.length; i < c && !isReady; i++ ){
+                if ( loaders[i].ready ){
+                    isReady = true;
+                }
+            }
+
+            return isReady;
         };
 
         LinearModel.prototype.reset = function( settings ){
             this.data.length = 0;
             
+            this.ready = false;
             this.lookUp = {};
             this.plots = {};
             this.plotNames = [];
@@ -2681,6 +2952,10 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                                 }
 
                                 if ( tickRotation ){
+                                    if ( $ticks.select('.tick text')[0][0] === null ){
+                                        return;
+                                    }
+
                                     $ticks.selectAll('.tick text')
                                         .attr( 'transform', 'translate(0,'+$ticks.select('.tick text').attr('y')+') rotate(' + tickRotation + ',0,0)' )
                                         .attr( 'y', '0' )
@@ -2769,7 +3044,10 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                                 }
 
                                 if ( tickRotation ){
-				                    // TODO : these settings styles be a hash
+				                    if ( $ticks.select('.tick text')[0][0] === null ){
+                                        return;
+                                    }
+                                
                                     $ticks.selectAll('.tick text')
                                         .attr( 'transform', function(){
                                             return 'translate(0,' + d3.select(this).attr('y') + ') rotate(' + tickRotation + ',0,0)';
