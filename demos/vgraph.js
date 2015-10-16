@@ -262,7 +262,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                                 this.intervalParse(d), 
                                 this.filterParse(v,history)
                             );
-                        }else{
+                        }else if ( !isNaN(v) || v === null || v === undefined ){
                             point = this.model.addPoint(
                                 name,
                                 this.intervalParse(d),
@@ -908,7 +908,7 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             this.loading = true;
             this.message = null;
 
-            this.$interface = $interface;
+            this.$interface = $interface || {};
         }
 
         GraphModel.prototype.register = function( cb ){

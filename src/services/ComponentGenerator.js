@@ -119,7 +119,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                                 this.intervalParse(d), 
                                 this.filterParse(v,history)
                             );
-                        }else{
+                        }else if ( !isNaN(v) || v === null || v === undefined ){
                             point = this.model.addPoint(
                                 name,
                                 this.intervalParse(d),

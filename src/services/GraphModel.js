@@ -192,7 +192,7 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             this.loading = true;
             this.message = null;
 
-            this.$interface = $interface;
+            this.$interface = $interface || {};
         }
 
         GraphModel.prototype.register = function( cb ){
