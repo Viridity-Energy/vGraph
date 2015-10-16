@@ -41,26 +41,27 @@ angular.module( 'vgraph' ).directive( 'vgraphCompare',
                             fill.$d3.remove();
                         }
                         
+                        /*
+                        TODO: put this back in
+                        
+                        function( node, v1, v2, y1, y2 ){
+                            node.$compare = {
+                                value: {
+                                    middle : ( v1 + v2 ) / 2,
+                                    difference : Math.abs( v1 - v2 ),
+                                },
+                                position: {
+                                    middle: ( y1 + y2 ) / 2,
+                                    top: y1,
+                                    bottom: y2
+                                }
+                            };
+                        }
+                        */
                         fill = {
                             $d3 : d3.select( el ).append('path').attr( 'class', 'fill' ),
-                            calc : ComponentGenerator.makeMyFillCalc( 
-                                chart1, 
-                                name1,
-                                chart2, 
-                                name2,
-                                function( node, v1, v2, y1, y2 ){
-                                    node.$compare = {
-                                        value: {
-                                            middle : ( v1 + v2 ) / 2,
-                                            difference : Math.abs( v1 - v2 ),
-                                        },
-                                        position: {
-                                            middle: ( y1 + y2 ) / 2,
-                                            top: y1,
-                                            bottom: y2
-                                        }
-                                    };
-                                }
+                            calc : ComponentGenerator.makeFillCalc( 
+                                chart1, name1, chart2, name2
                             )
                         };
 

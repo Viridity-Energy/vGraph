@@ -1,0 +1,70 @@
+<body>
+
+<script>
+var i, c = 4000,
+	t,
+	start,
+	stop;
+
+function testMethod( name, value ){
+	this[name] = value;
+};
+
+function TestNode(){}
+
+TestNode.prototype.$setValue = testMethod;
+
+var parentNode = new TestNode();
+
+start = +(new Date());
+for( i = 0; i < c; i++ ){
+	t = { $setValue: testMethod };
+	t.$setValue('foo','bar');
+}
+stop = +(new Date());
+console.log('aggregate 1:', stop - start);
+
+start = +(new Date());
+for( i = 0; i < c; i++ ){
+	t = new TestNode();
+	t.$setValue('foo','bar');
+}
+stop = +(new Date());
+console.log('classed 1:', stop - start);
+
+start = +(new Date());
+for( i = 0; i < c; i++ ){
+	t = Object.create(TestNode.prototype);
+	t.$setValue('foo','bar');
+}
+stop = +(new Date());
+console.log('create 1:', stop - start);
+
+//--------
+
+start = +(new Date());
+for( i = 0; i < c; i++ ){
+	t = { $setValue: testMethod };
+	t.$setValue('foo','bar');
+}
+stop = +(new Date());
+console.log('aggregate 2:', stop - start);
+
+start = +(new Date());
+for( i = 0; i < c; i++ ){
+	t = new TestNode();
+	t.$setValue('foo','bar');
+}
+stop = +(new Date());
+console.log('classed 2:', stop - start);
+
+start = +(new Date());
+for( i = 0; i < c; i++ ){
+	t = Object.create(TestNode.prototype);
+	t.$setValue('foo','bar');
+}
+stop = +(new Date());
+console.log('create 2:', stop - start);
+
+</script>
+</body>

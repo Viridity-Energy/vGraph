@@ -26,50 +26,51 @@ angular.module( 'vgraph' ).factory( 'PaneModel',
             return this;
         };
 
+        // TODO : where is this used?
         PaneModel.prototype.isValid = function( d ) {
-            var v;
-
-            if ( this.x.start === undefined ){
-                return true;
+            var interval;
+            if ( this.filtered ){
+                interval = d.$interval 
+                return this.filtered.$minInterval <= interval && interval <= this.filtered.$maxInterval;
             }else{
-                v = d.$x;
-                return this.x.start.$x <=  v && v <= this.x.stop.$x;
+                return false;
+                
             }
         };
         
-        PaneModel.prototype.adjust = function( view ){
+        PaneModel.prototype.filter = function(){
             var dx,
                 firstMatch,
                 lastMatch,
                 data = this.dataModel.data,
-                dataX = this.dataModel.x,
                 x = this.x,
                 change,
                 $min,
-                $max;
+                $max,
+                minInterval,
+                maxInterval;
 
             if ( data.length ){
                 this.dataModel.clean();
 
                 if ( this._bounds.x ){
-                    $min = this._bounds.x.min || dataX.$min;
-                    $max = this._bounds.x.max || dataX.$max;
+                    $min = this._bounds.x.min || data.$minInterval;
+                    $max = this._bounds.x.max || data.$maxInterval;
 
                     x.$min = $min;
                     x.$max = $max;
-                    
-                    this._bounds.x = null;
                 }else{
-                    $min = x.$min || dataX.$min;
-                    $max = x.$max || dataX.$max;
+                    $min = x.$min || data.$minInterval;
+                    $max = x.$max || data.$maxInterval;
                 }
                 
+                this.offset = {};
+
                 if ( this._pane.x ){
                     change = this._pane.x;
-                    this.offset = {};
-
+                    
                     if ( typeof(change.start) === 'number' ){
-                        x.start = data[ change.start ];
+                        minInterval = data[ change.start ];
                     }else{
                         if ( !change.start ){ // can not be 0 at this point
                             dx = $min;
@@ -87,11 +88,10 @@ angular.module( 'vgraph' ).factory( 'PaneModel',
                             throw 'Start of pane not properly defined';
                         }
 
-                        x.start = view.makePoint( dx, dataX.$min, dataX.$max, this.dataModel.makeInterval );
+                        minInterval = dx;
                     }
                     
-                    this.offset.$left = x.start.$x;
-                    this.offset.left = (x.start.$x - $min) / ($max - $min);
+                    
 
                     if ( typeof(change.stop) === 'number' ){
                         change.stop = data[ change.stop ];
@@ -112,58 +112,25 @@ angular.module( 'vgraph' ).factory( 'PaneModel',
                             throw 'End of pane not properly defined';
                         }
 
-                        x.stop = view.makePoint( dx, dataX.min.$x, dataX.max.$x, this.dataModel.makeInterval );
+                        maxInterval = dx;
                     }
-                    
-                    this.offset.$right = x.stop.$x;
-                    this.offset.right = (x.stop.$x - $min) / ($max - $min);
-                }else if ( !x.start ){
-                    x.start = view.makePoint( $min, dataX.$min, dataX.$max, this.dataModel.makeInterval );
-                    x.stop = view.makePoint( $max, dataX.min.$x, dataX.max.$x, this.dataModel.makeInterval );
+                }else{
+                    minInterval = $min;
+                    maxInterval = $max;
                 }
+
+                this.offset.$left = minInterval;
+                this.offset.left = (minInterval - $min) / ($max - $min);
+                this.offset.$right = maxInterval;
+                this.offset.right = (maxInterval - $min) / ($max - $min);
 
                 // calculate the filtered points
-                this.data = data;
-                this.filtered = data.filter(function( d, i ){
-                    var v = d.$x;
-
-                    if ( x.start.$x <= v && v <= x.stop.$x ){
-                        if ( firstMatch ){
-                            lastMatch = i;
-                        }else{
-                            firstMatch = i;
-                        }
-
-                        d.$inPane = true;
-                        return true;
-                    }else{
-                        d.$inPane = false;
-                        return false;
-                    }
-                });
-                
-                this.filtered.$first = firstMatch;
-                this.filtered.$last = lastMatch;
+                this.filtered = data.$filter( minInterval, maxInterval );
 
                 if ( this.dataModel.fitToPane ){
-                    if ( x.start.$faux ){
-                        this.filtered.unshift( x.start );
-                    }
-
-                    if ( x.stop.$faux ){
-                        this.filtered.push( x.stop );
-                    }
+                    this.filtered.$addNode( data.$makePoint(minInterval) );
+                    this.filtered.$addNode( data.$makePoint(maxInterval) );
                 }
-
-                this.x.min = this.dataModel.x.min;
-                this.x.max = this.dataModel.x.max;
-                this.y = {
-                    start: this.dataModel.y.start,
-                    stop: this.dataModel.y.stop,
-                    padding: this.dataModel.y.padding
-                };
-            }else{
-                this.filtered = [];
             }
         };
 

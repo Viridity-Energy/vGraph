@@ -1,21 +1,7 @@
 angular.module( 'vgraph' ).factory( 'ComponentGenerator',
-    [
-    function () {
+    [ 'DrawLine', 'DrawArea',
+    function ( DrawLine, DrawArea ) {
         'use strict';
-
-        function forEach( data, method, context ){
-            var i, c;
-
-            if ( data ){
-                if ( data.forEach ){
-                    data.forEach( method, context );
-                }else if ( data.length ){
-                    for( i = 0, c = data.length; i < c; i++ ){
-                        method.call( context, data[i], i );
-                    }
-                }
-            }
-        }
 
         var uid = 1,
             dataFeeds = {};
@@ -227,15 +213,15 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 className
             }
             conf.massage : run against the resulting data node ( importedPoint, dataNode )
-            conf.valueParse *
-            conf.intervalParse *
+            conf.parseValue *
+            conf.parseInterval *
             */
             var proc = this._process.bind( this ),
                 t = {
                     name: conf.ref.name,
                     massage: conf.massage,
-                    valueParse: conf.valueParse,
-                    intervalParse: conf.intervalParse
+                    parseValue: conf.parseValue,
+                    parseInterval: conf.parseInterval
                 };
 
             this.feed._readAll(function( data ){
@@ -261,8 +247,8 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
         DataLoader.prototype._process = function( conf, datum, reference ){
             var point = this.dataModel.addPoint(
                     conf.name,
-                    conf.intervalParse( datum ),
-                    conf.valueParse( datum )
+                    conf.parseInterval( datum ),
+                    conf.parseValue( datum )
                 );
 
             if ( conf.massage ){
@@ -272,114 +258,113 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 
         var lookupHash = {},
             baseComponent = {
-            require : ['^vgraphChart'],
-            scope : {
-                data: '=_undefined_',
-                value: '=?value',
-                interval: '=?interval',
-                config: '=?config',
-                explode: '=?explode',
-                massage: '=?massage'
-            },
-            link : function( scope, el, attrs, requirements ){
-                var ctrl,
-                    dataLoader,
-                    control = attrs.control || 'default',
-                    graph = requirements[0].graph,
-                    chart = graph.views[control],
-                    dataModel = chart.model,
-                    name = attrs.name;
+                require : ['^vgraphChart'],
+                scope : {
+                    data: '=_undefined_',
+                    value: '=?value',
+                    interval: '=?interval',
+                    config: '=?config',
+                    explode: '=?explode',
+                    massage: '=?massage'
+                },
+                link : function( scope, el, attrs, requirements ){
+                    var ctrl,
+                        dataLoader,
+                        control = attrs.control || 'default',
+                        graph = requirements[0].graph,
+                        chart = graph.views[control],
+                        dataModel = chart.model,
+                        name = attrs.name;
 
-                function addConf(){
-                    var value = scope.value,
-                        field = attrs.alias || value,
-                        interval = scope.interval;
+                    function addConf(){
+                        var value = scope.value,
+                            field = attrs.alias || value,
+                            interval = scope.interval;
 
-                    ctrl = {
-                        ref: {
-                            name: name
-                        },
-                        massage: scope.massage
-                    };
-
-                    if ( typeof(interval) === 'string' ){
-                        ctrl.intervalParse = function( d ){
-                            return d[ interval ];
+                        ctrl = {
+                            ref: {
+                                name: name
+                            },
+                            massage: scope.massage
                         };
-                    }else{
-                        ctrl.intervalParse = interval;
-                    }
-                    
-                    if ( typeof(value) === 'string' ){
-                        ctrl.valueParse = function( d ){
-                            if ( d[value] !== undefined ){
-                                return d[ field ];
-                            }
-                        };
-                    }else{
-                        ctrl.valueParse = value;
-                    }
-                }
 
-                scope.$watch('data', function( data ){
-                    var t,
-                        lookup,
-                        feed = DataFeed.create( data, scope.massage );
-
-                    if ( dataLoader ){
-                        dataLoader.$destroy();
-                    }
-
-                    lookup = lookupHash[feed._$dfUid];
-                    if ( !lookup ){
-                        lookup = lookupHash[feed._$dfUid] = {};
-                    }
-                    
-                    dataLoader = lookup[control];
-                    if ( !dataLoader ){
-                        dataLoader = lookup[control] = new DataLoader(
-                            feed, 
-                            dataModel
-                        );
-
-                        if ( ctrl ){
-                            dataLoader.addConf( ctrl );
-                        }
-                    }
-                });
-
-                scope.$watch(
-                    function(){
-                        return ctrl;
-                    },
-                    function( n, o ){
-                        if ( o ){
-                            dataLoader.removeConf( o );
-                        }
-
-                        if ( n ){
-                            dataLoader.addConf( n );
-                        }
-                    }
-                );
-
-                if ( scope.config ){
-                    scope.$watch( 'config', function( cfg ){
-                        if ( !cfg.ref ){
-                            cfg.ref = {
-                                name: name,
-                                view: control
+                        if ( typeof(interval) === 'string' ){
+                            ctrl.parseInterval = function( d ){
+                                return d[ interval ];
                             };
+                        }else{
+                            ctrl.parseInterval = interval;
+                        }
+                        
+                        if ( typeof(value) === 'string' ){
+                            ctrl.parseValue = function( d ){
+                                if ( d[value] !== undefined ){
+                                    return d[ field ];
+                                }
+                            };
+                        }else{
+                            ctrl.parseValue = value;
+                        }
+                    }
+
+                    scope.$watch('data', function( data ){
+                        var lookup,
+                            feed = DataFeed.create( data, scope.massage );
+
+                        if ( dataLoader ){
+                            dataLoader.$destroy();
                         }
 
-                        ctrl = cfg;
+                        lookup = lookupHash[feed._$dfUid];
+                        if ( !lookup ){
+                            lookup = lookupHash[feed._$dfUid] = {};
+                        }
+                        
+                        dataLoader = lookup[control];
+                        if ( !dataLoader ){
+                            dataLoader = lookup[control] = new DataLoader(
+                                feed, 
+                                dataModel
+                            );
+
+                            if ( ctrl ){
+                                dataLoader.addConf( ctrl );
+                            }
+                        }
                     });
-                }else{
-                    scope.$watch('interval', addConf);
-                    scope.$watch('value', addConf);
+
+                    scope.$watch(
+                        function(){
+                            return ctrl;
+                        },
+                        function( n, o ){
+                            if ( o ){
+                                dataLoader.removeConf( o );
+                            }
+
+                            if ( n ){
+                                dataLoader.addConf( n );
+                            }
+                        }
+                    );
+
+                    if ( scope.config ){
+                        scope.$watch( 'config', function( cfg ){
+                            if ( !cfg.ref ){
+                                cfg.ref = {
+                                    name: name,
+                                    view: control
+                                };
+                            }
+
+                            ctrl = cfg;
+                        });
+                    }else{
+                        scope.$watch('interval', addConf);
+                        scope.$watch('value', addConf);
+                    }
                 }
-            }
-        };
+            };
 
         function decode( $scope, conf, type, tag ){
             var name = conf.name,
@@ -481,152 +466,82 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                     });
             },
             // undefined =>  no value, so use last value, null => line break
+            // this accepts raw
             makeLineCalc: function( chart, name ){
-                var isDefined,
-                    lastValue,
-                    lineCalc = d3.svg.line()
-                        .interpolate( 'linear' )
-                        .defined(function(d){
-                            var y = d[ name ];
+                var lineDrawer = new DrawLine();
+
+                lineDrawer.preParse = function( d, last ){
+                    var y = d[ name ];
                             
-                            if ( isNumeric(y) ){
-                                isDefined = true;
-                                return true;
-                            }else if ( y === undefined && isDefined ){
-                                return true;
-                            }else{
-                                isDefined = false;
-                                return false;
-                            }
-                        })
-                        .x(function( d ){
-                            return chart.x.scale( d.$interval );
-                        })
-                        .y(function( d ){
-                            var t = d[name];
+                    if ( isNumeric(y) ){
+                        return d;
+                    }else if ( last && y === undefined ){
+                        d[name] = last[name];
+                        return d;
+                    }else{
+                        return null;
+                    }
+                };
 
-                            if ( t !== undefined ){
-                                lastValue = chart.y.scale( d[name] );
-                            }
+                lineDrawer.parseValue = function( d ){
+                    return chart.y.scale( d[name] );
+                };
 
-                            return lastValue;
-                        });
+                lineDrawer.parseInterval = function( d ){
+                    return chart.x.scale( d.$interval );
+                };
 
-                return function(){
-                    isDefined = false;
-                    lastValue = false;
-
-                    return lineCalc.apply( this, arguments );
+                return function( dataFeed ){
+                    return lineDrawer.render( dataFeed ).join('');
                 };
             },
-            makeFillCalc: function( chart1, top, chart2, bottom, extend ){
+            // this accepts unified
+            makeFillCalc: function( chart1, top, chart2, bottom ){
+                var areaDrawer = new DrawArea();
+
                 if ( !chart2 ){
                     chart2 = chart1;
                 }
 
-                return d3.svg.area()
-                    .defined(function(d){
-                        // TODO : handle the undefined
-                        var y1 = d[chart1.name] ? d[chart1.name][ top ] : null,
-                            y2 = !bottom || d[chart2.name] && isNumeric(d[chart2.name][bottom]);
+                areaDrawer.preParse = function( d ){
+                    var c1 = d[chart1.name],
+                        c2 = d[chart2.name],
+                        y1,
+                        y2;
 
-                        if ( isNumeric(y1) && y2 ){
-                            if ( extend && bottom ){
-                                extend( d, d[chart1.name][top], d[chart2.name][bottom] );
-                            }
-                            return true;
+                    if ( c1 ){
+                        y1 = c1[top];
+                    }
+
+                    if ( c2 ){
+                        if ( bottom ){
+                            y2 = c2[bottom];
                         }else{
-                            return false;
+                            y2 = chart2.pane.y.minimum;
                         }
-                    })
-                    .x(function( d ){
-                        return chart1.x.scale( d[chart1.name].$interval );
-                    })
-                    .y(function( d ){
-                        return chart1.y.scale( d[chart1.name][top] );
-                    })
-                    .y1(function( d ){
-                        return chart2.y.scale( bottom ? d[chart2.name][bottom] : chart2.model.y.minimum );
-                    });
-            },
-            // I don't want to do this, but I need to for now
-            makeMyFillCalc: function( chart1, top, chart2, bottom, extend ){
-                if ( !chart2 ){
-                    chart2 = chart1;
-                }
-
-                function isDefined( d ){
-                    var y1 = d[chart1.name] ? d[chart1.name][ top ] : null,
-                        y2 = !bottom || d[chart2.name] && isNumeric(d[chart2.name][bottom]);
-
-                    if ( isNumeric(y1) && y2 ){
-                        return true;
-                    }else{
-                        return false;
-                    }
-                }
-
-                function xCalc( d ){
-                    return d[chart1.name]._$interval;
-                }
-
-                function v1Get( d ){
-                    return d[chart1.name][top];
-                }
-
-                function y1Calc( v ){
-                    return chart1.y.scale( v );
-                }
-
-                function v2Get( d ){
-                    return bottom && d[chart2.name][bottom] ? d[chart2.name][bottom] : chart2.pane.y.minimum;
-                }
-
-                function y2Calc( v ){
-                    return chart2.y.scale( v );
-                }
-
-                return function areaCalc(data) {
-                    var segments = [],
-                        points0 = [],
-                        points1 = [];
-
-                    function segment() {
-                        segments.push('M', points1.join('L'), 'L', points0.reverse().join('L'), 'Z');
                     }
 
-                    forEach( data, function( d ){
-                        var x,
-                            v1,
-                            v2,
-                            y1,
-                            y2;
-
-                        if (isDefined(d)) {
-                            v1 = v1Get( d );
-                            v2 = v2Get( d );
-                            y1 = y1Calc( v1 );
-                            y2 = y1Calc( v2 );
-                            x = xCalc( d );
-                            
-                            if ( extend ){
-                                extend( d, v1, v2, y1, y2, x );
-                            }
-
-                            points0.push( x+','+y1Calc(v1) );
-                            points1.push( x+','+y2Calc(v2) );
-                        } else if (points0.length) {
-                            segment();
-                            points0 = [];
-                            points1 = [];
-                        }
-                    });
-
-                    if ( points0.length ){
-                        segment();
+                    if ( isNumeric(y1) && isNumeric(y2) ){
+                        return {
+                            interval: chart1.x.scale( c1.$interval ),
+                            y1: chart1.y.scale( y1 ),
+                            y2: chart2.y.scale( y2 )
+                        };
                     }
+                };
 
-                    return segments.length ? segments.join('') : null;
+                areaDrawer.parseInterval = function( d ){
+                    return d.interval;
+                };
+                areaDrawer.parseValue1 = function( d ){
+                    return d.y1;
+                };
+                areaDrawer.parseValue2 = function( d ){
+                    return d.y2;
+                };
+
+                return function( dataFeed ){
+                    return areaDrawer.render( dataFeed ).join('');
                 };
             },
             decodeConfig: function( $scope, conf, type ){

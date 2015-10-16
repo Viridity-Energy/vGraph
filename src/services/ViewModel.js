@@ -2,96 +2,6 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
     [ 'PaneModel',
     function ( PaneModel ) {
         'use strict';
-
-        function bisect( arr, value, func, preSorted ){
-            var idx,
-                val,
-                bottom = 0,
-                top = arr.length - 1,
-                get;
-
-            if ( arr.get ){
-                get = function( key ){
-                    return arr.get(key);
-                };
-            }else{
-                get = function( key ){
-                    return arr[key];
-                };
-            }
-
-            if ( !preSorted ){
-                arr.sort(function(a,b){
-                    return func(a) - func(b);
-                });
-            }
-
-            if ( func(get(bottom)) >= value ){
-                return {
-                    left : bottom,
-                    right : bottom
-                };
-            }
-
-            if ( func(get(top)) <= value ){
-                return {
-                    left : top,
-                    right : top
-                };
-            }
-
-            if ( arr.length ){
-                while( top - bottom > 1 ){
-                    idx = Math.floor( (top+bottom)/2 );
-                    val = func( get(idx) );
-
-                    if ( val === value ){
-                        top = idx;
-                        bottom = idx;
-                    }else if ( val > value ){
-                        top = idx;
-                    }else{
-                        bottom = idx;
-                    }
-                }
-
-                // if it is one of the end points, make it that point
-                if ( top !== idx && func(get(top)) === value ){
-                    return {
-                        left : top,
-                        right : top
-                    };
-                }else if ( bottom !== idx && func(get(bottom)) === value ){
-                    return {
-                        left : bottom,
-                        right : bottom
-                    };
-                }else{
-                    return {
-                        left : bottom,
-                        right : top
-                    };
-                }
-            }
-        }
-        
-        function getClosestPair( data, value ){
-            return bisect( data, value, function( x ){
-                return x.$interval;
-            }, true );
-        }
-
-        function getClosest( data, value ){
-            var p, l, r;
-
-            if ( data.length ){
-                p = getClosestPair( data, value );
-                l = value - data[p.left].$interval;
-                r = data[p.right].$interval - value;
-
-                return data[ l < r ? p.left : p.right ];
-            }
-        }
         
         function ViewModel( graph, name, model ){
             var x,
@@ -110,7 +20,7 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
                     return x.scale( model.x.parse(p) );
                 },
                 center : function(){
-                    return ( x.calc(view.pane.x.min) + x.calc(view.pane.x.max) ) / 2;
+                    return ( x.calc(view.pane.filtered.$minInterval) + x.calc(view.pane.filtered.$maxInterval) ) / 2;
                 }
             };
             this.x = x;
@@ -121,7 +31,7 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
                     return y.scale( model.y.parse(p) );
                 },
                 center : function(){
-                    return ( y.calc(view.pane.y.min) + y.calc(view.pane.y.max) ) / 2;
+                    return ( y.calc(view.pane.filtered.$minNode.$min) + y.calc(view.pane.filtered.$maxNode.$max) ) / 2;
                 }
             };
             this.y = y;
@@ -134,8 +44,10 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
         ViewModel.bisect = bisect; // I just wanna share code between.  I'll clean this up later
 
         ViewModel.prototype.getPoint = function( pos ){
-            if ( this.model.data[pos] ){
-                return this.model.data[pos];
+            var t = this.model.data[pos];
+
+            if ( t ){
+                return t;
             }else if ( pos < 0 ){
                 return this.model.data[0];
             }else{
@@ -147,49 +59,6 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
             var pos = Math.round( this.model.data.length * offset );
 
             return this.getPoint( pos );
-        };
-
-        ViewModel.prototype.makePoint = function( value, min, max, makeInterval ){
-            var data = this.model.data,
-                p,
-                r,
-                l,
-                d,
-                dx;
-
-            if ( value > min && value < max ){
-                p = getClosestPair( data, value );
-
-                if ( p.right === p.left ){
-                    return data[p.right];
-                }else{
-                    r = data[p.right];
-                    l = data[p.left];
-                    d = {};
-                    dx = (value - l.$x) / (r.$x - l.$x);
-
-                    Object.keys(r).forEach(function( key ){
-                        var v1 = l[key], 
-                            v2 = r[key];
-
-                        // both must be numeric
-                        if ( v1 !== undefined && v1 !== null && 
-                            v2 !== undefined && v2 !== null ){
-                            d[key] = v1 + (v2 - v1) * dx;
-                        }
-                    });
-
-                    d.$faux = true;
-                }
-            }else{
-                d = {
-                    $x: value
-                };
-            }
-
-            d.$interval = makeInterval ? makeInterval( d.$x ) : d.$x;
-
-            return d;
         };
 
         ViewModel.prototype.getClosest = function( value, data ){
@@ -205,45 +74,38 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
         };
 
         ViewModel.prototype.hasData = function(){
-            var min = this.pane.y.minimum,
-                max = this.pane.y.maximum;
-
-            // TODO : this really should be is numeric
-            return (min || min === 0) && (max || max === 0);
+            return this.pane.filtered && this.pane.filtered.length > 0;
         };
 
-        ViewModel.prototype.calcBounds = function(){
-            var last,
-                step,
+        ViewModel.prototype.sample = function(){
+            var step,
                 min,
                 max,
                 sampledData,
                 box = this.graph.box,
-                pane = this.pane;
+                pane = this.pane,
+                filtered;
 
-            pane.adjust( this );
+            pane.filter();
+            filtered = pane.filtered;
+            step = parseInt( filtered.length / box.innerWidth ) || 1;
+            sampled = filtered.$filter( step );
 
-            step = parseInt( pane.filtered.length / box.innerWidth ) || 1;
+            this.sampled = sampled;
+        }
 
-            sampledData = pane.filtered.filter(function( d, i ){
-                if ( pane.x.start === d || pane.x.stop === d || i % step === 0 ){
-                    last = d;
-                    d.$sampled = d;
+        ViewModel.prototype.calcBounds = function(){
+            var sampled;
+                filtered;
 
-                    return true;
-                }else{
-                    d.$sampled = last;
-                    return false;
-                }
-            });
-
-            this.graph.samples[ this.name ] = sampledData;
+            sampled = this.sampled,
+            filtered = this.pane.filtered;
 
             this.components.forEach(function( component ){
                 var t;
 
                 if ( component.parse ){
-                    t = component.parse( sampledData, pane.filtered );
+                    t = component.parse( sampled, filtered );
                     if ( t ){
                         if ( t.min !== null && (!min && min !== 0 || min > t.min) ){
                             min = t.min;
@@ -261,8 +123,6 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
 
             pane.y.minimum = min;
             pane.y.maximum = max;
-
-            this.sampledData = sampledData;
         };
 
         ViewModel.prototype.calcScales = function( unified ){

@@ -38,17 +38,13 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                             if ( i ){
                                 el.insertBefore( line.element, lines[i-1].element );
                                 line.$bottom = lines[i-1].$valueField;
-                                line.calc = ComponentGenerator.makeMyFillCalc(
-                                    chart,
-                                    line.$valueField,
-                                    chart,
-                                    line.$bottom
+                                line.calc = ComponentGenerator.makeFillCalc(
+                                    chart, line.$valueField, chart, line.$bottom
                                 );
                             }else{
                                 el.appendChild( line.element );
-                                line.calc = ComponentGenerator.makeMyFillCalc(
-                                    chart,
-                                    line.$valueField
+                                line.calc = ComponentGenerator.makeFillCalc(
+                                    chart, line.$valueField
                                 );
                             }
 

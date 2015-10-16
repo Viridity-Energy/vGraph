@@ -441,6 +441,9 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                 }
 
                 chart.register({
+                    loading: function(){
+                        $el.attr( 'visibility', 'hidden' );
+                    },
                     build : function(){
                         if ( ticks === undefined ){
                             makeTicks();
@@ -482,9 +485,6 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                                 max = max.getBoundingClientRect();
                             }
                         }
-                    },
-                    loading: function(){
-                        $el.attr( 'visibility', 'hidden' );
                     },
                     finalize : function( pane, data ){
                         var valid,
