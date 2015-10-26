@@ -1445,7 +1445,7 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
             for( i = start; i <= stop; i += interval ){
                 point = this.getPoint( i );
                 if ( point[field] === undefined ){
-                    this.addPoint( field, interval, null );
+                    this.addPoint( field, i, null );
                 }
             }            
         };
