@@ -296,7 +296,7 @@ angular.module( 'vgraph' ).controller( 'ResizeCtrl', [
 angular.module( 'vgraph' ).controller( 'MultiCtrl',
 	['$scope', 'GraphModel', 'LinearModel',
 	function( $scope, GraphModel, LinearModel ){
-		var data = [ { y1 : 10, y2 : 5, y3 : 15, y4 : 8} ],
+		var data = [ { x: 0, y1 : 10, y2 : 5, y3 : 15, y4 : 8} ],
 			interval,
 			boxModel;
 
@@ -382,7 +382,7 @@ angular.module( 'vgraph' ).controller( 'MultiCtrl',
 angular.module( 'vgraph' ).controller( 'MixerCtrl',
 	['$scope', 'GraphModel', 'LinearModel',
 	function( $scope, GraphModel, LinearModel ){
-		var data = [ { y1 : 15, y2 : 5, y3 : 25, y4 : 35} ],
+		var data = [ { x: 0, y1 : 15, y2 : 5, y3 : 25, y4 : 35} ],
 			interval,
 			boxModel;
 
@@ -454,7 +454,7 @@ angular.module( 'vgraph' ).controller( 'MixerCtrl',
 angular.module( 'vgraph' ).controller( 'RawCtrl',
 	['$scope', 'GraphModel', 'LinearModel',
 	function( $scope, GraphModel, LinearModel ){
-		var data = [ { y1 : 15, y2 : 5, y3 : 25, y4 : 35} ],
+		var data = [ { x: 0, y1 : 15, y2 : 5, y3 : 25, y4 : 35} ],
 			interval,
 			boxModel;
 
@@ -515,7 +515,7 @@ angular.module( 'vgraph' ).controller( 'RawCtrl',
 angular.module( 'vgraph' ).controller( 'StackedCtrl',
 	['$scope', 'GraphModel', 'LinearModel',
 	function( $scope, GraphModel, LinearModel ){
-		var data = [ { y1 : 10, y2 : 5, y3 : 15, y4 : 8} ],
+		var data = [ { x: 0, y1 : 10, y2 : 5, y3 : 15, y4 : 8} ],
 			interval,
 			boxModel;
 
@@ -553,10 +553,10 @@ angular.module( 'vgraph' ).controller( 'StackedCtrl',
 
 			data.push( p );
 
-			$scope.model.addPoint( 'y1', p.x, p.y1 );
-			$scope.model.addPoint( 'y2', p.x, p.y2 );
-			$scope.model.addPoint( 'y3', p.x, p.y3 );
-			$scope.model.addPoint( 'y4', p.x, p.y4 );
+			$scope.model.setValue( p.x, 'y1', p.y1 );
+			$scope.model.setValue( p.x, 'y2', p.y2 );
+			$scope.model.setValue( p.x, 'y3', p.y3 );
+			$scope.model.setValue( p.x, 'y4', p.y4 );
 		}
 
 		$scope.model.dataReady( $scope );
@@ -580,7 +580,7 @@ angular.module( 'vgraph' ).controller( 'StackedCtrl',
 angular.module( 'vgraph' ).controller( 'StackedMultiCtrl',
 	['$scope', 'GraphModel', 'LinearModel',
 	function( $scope, GraphModel, LinearModel ){
-		var data = [ { y1 : 10, y2 : 5, y3 : 15, diff : 8} ],
+		var data = [ { x: 249, xDiff: 499, y1 : 10, y2 : 5, y3 : 15, diff : 8} ],
 			interval,
 			boxModel;
 
@@ -648,7 +648,7 @@ angular.module( 'vgraph' ).controller( 'StackedMultiCtrl',
 angular.module( 'vgraph' ).controller( 'SimpleStackedMultiCtrl',
 	['$scope', 'GraphModel', 'LinearModel',
 	function( $scope, GraphModel, LinearModel ){
-		var data = [ { y1 : 10, y2 : 5, y3 : 15, diff : 8} ],
+		var data = [ { x: 249, xDiff: 499, y1 : 10, y2 : 5, y3 : 15, diff : 8} ],
 			interval,
 			boxModel;
 
@@ -686,9 +686,9 @@ angular.module( 'vgraph' ).controller( 'SimpleStackedMultiCtrl',
 			}
 		};
 
-		$scope.classParser = function( old, newer ){
-			if ( old.x > 1900 ){
-				newer.newest = true;
+		$scope.classParser = function( point, datum ){
+			if ( datum.x > 1900 ){
+				point.newest = true;
 			}
 		};
 
@@ -747,7 +747,7 @@ angular.module( 'vgraph' ).controller( 'SimpleStackedMultiCtrl',
 angular.module( 'vgraph' ).controller( 'StackedClassCtrl',
 	['$scope', 'GraphModel', 'LinearModel',
 	function( $scope, GraphModel, LinearModel ){
-		var data = [ { y1 : 10, y2 : 5, y3 : 15, y4 : 8} ],
+		var data = [ { x: 0, y1: 10, y2: 5, y3: 15, y4: 8} ],
 			interval,
 			boxModel;
 
@@ -785,10 +785,10 @@ angular.module( 'vgraph' ).controller( 'StackedClassCtrl',
 
 			data.push( p );
 
-			$scope.model.addPoint( 'y1', p.x, p.y1 );
-			$scope.model.addPoint( 'y2', p.x, p.y2 );
-			$scope.model.addPoint( 'y3', p.x, p.y3 );
-			$scope.model.addPoint( 'y4', p.x, p.y4 );
+			$scope.model.setValue( p.x, 'y1', p.y1 );
+			$scope.model.setValue( p.x, 'y2', p.y2 );
+			$scope.model.setValue( p.x, 'y3', p.y3 );
+			$scope.model.setValue( p.x, 'y4', p.y4 );
 		}
 
 		$scope.model.dataReady( $scope );

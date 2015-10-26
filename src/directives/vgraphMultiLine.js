@@ -54,10 +54,7 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
 
                             // I want the first calculated value, lowest on the DOM
                             el.appendChild( line.element );
-                            line.calc = ComponentGenerator.makeLineCalc(
-                                view,
-                                line.name
-                            );
+                            line.calc = ComponentGenerator.makeLineCalc( view, line.name );
 
                             $new = scope.$new();
                             childScopes.push( $new );
@@ -93,7 +90,7 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
 
                                 return ComponentGenerator.parseLimits( data, names );
                             },
-                            finalize : function( pane, data ){
+                            finalize : function( unified, sampled ){
                                 var i, c,
                                     line,
                                     lines = viewLines[view.name];
@@ -101,7 +98,7 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                                 if ( lines ){
                                     for( i = 0, c = lines.length; i < c; i++ ){
                                         line = lines[ i ];
-                                        line.$d3.attr( 'd', line.calc(data) );
+                                        line.$d3.attr( 'd', line.calc(sampled) );
                                     }
                                 }
                             }

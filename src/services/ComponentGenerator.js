@@ -1,260 +1,7 @@
 angular.module( 'vgraph' ).factory( 'ComponentGenerator',
-    [ 'DrawLine', 'DrawArea',
-    function ( DrawLine, DrawArea ) {
+    [ 'DrawLine', 'DrawArea', 'DataFeed', 'DataLoader',
+    function ( DrawLine, DrawArea, DataFeed, DataLoader ) {
         'use strict';
-
-        var uid = 1,
-            dataFeeds = {};
-            
-        function DataFeed( data /* array */, explode ){
-            this.explode = explode;
-            this.setSource( data );
-
-            this._$dfUid = uid++;
-        }
-
-        // ensures singletons
-        DataFeed.create = function( data, explode ){
-            var t;
-
-            if ( !(data._$dfUid && dataFeeds[data._$dfUid]) ){
-                t = new DataFeed( data, explode );
-
-                data._$dfUid = t._$dfUid;
-                dataFeeds[t._$dfUid] = t;
-            }else{
-                t = dataFeeds[ data._$dfUid ];
-            }
-
-            return t;
-        };
-
-        DataFeed.prototype.setSource = function( src ){
-            var dis = this,
-                oldPush = src.push;
-
-            this.data = src;
-            this._readPos = 0;
-
-            src.push = function(){
-                oldPush.apply( this, arguments );
-                dis.$push();
-            };
-
-            src.$ready = function(){
-                dis.$trigger('ready');
-            };
-
-            this.$push();
-        };
-
-        DataFeed.prototype.$on = function( event, cb ){
-            var dis = this;
-
-            if ( !this._$listeners ){
-                this._$listeners = {};
-            }
-
-            if ( !this._$listeners[event] ){
-                this._$listeners[event] = [];
-            }
-
-            this._$listeners[event].push( cb );
-
-            return function clear$on(){
-                dis._$listeners[event].splice(
-                    dis._$listeners[event].indexOf( cb ),
-                    1
-                );
-            };
-        };
-
-        DataFeed.prototype.$trigger = function( event, arg ){
-            var listeners,
-                i, c;
-
-            if ( this._$listeners ){
-                listeners = this._$listeners[event];
-
-                if ( listeners ){
-                    for( i = 0, c = listeners.length; i < c; i++ ){
-                        listeners[i]( arg );
-                    }
-                }                   
-            }
-        };
-
-        DataFeed.prototype.$push = function(){
-            var dis = this;
-
-            if ( !this._$push ){
-                this._$push = setTimeout(function(){
-                    var t = dis._readNext();
-
-                    if ( t ){
-                        dis.$trigger('ready');
-                    }
-
-                    while( t ){
-                        dis.$trigger( 'data', t );
-                        t = dis._readNext();
-                    }
-
-                    dis._$push = null;
-                }, 0);
-            }
-        };
-
-        DataFeed.prototype._readAll = function( cb ){
-            var t = this._read( 0 );
-
-            while( t ){
-                cb( t );
-                t = this._read( t.next );
-            }
-        };
-
-        DataFeed.prototype._readNext = function(){
-            var t = this._read( this._readPos );
-
-            if ( t ){
-                this._readPos = t.next;
-            }
-
-            return t;
-        };
-
-        DataFeed.prototype._read = function( pos ){
-            var t,
-                data = this.data,
-                explode = this.explode;
-
-            if ( !data.length || pos >= data.length ){
-                return null;
-            } else {
-                if ( explode ){
-                    t = data[pos];
-                    return {
-                        points: explode( t ),
-                        next: pos + 1,
-                        ref: t
-                    };
-                }else{
-                    return {
-                        points: data,
-                        next: data.length
-                    };
-                }
-            }
-        };
-
-        function DataLoader( feed, dataModel ){
-            var dis = this,
-                confs = [],
-                proc = this._process.bind( this ),
-                readyReg = feed.$on( 'ready', function(){
-                    dis.ready = true;
-                }),
-                dataReg = feed.$on( 'data', function( data ){
-                    var i, c,
-                        j, co;
-
-                    for( i = 0, c = data.points.length; i < c; i++ ){
-                        for( j = 0, co = confs.length; j < co; j++ ){
-                            proc( confs[j], data.points[i], data.ref );
-                        }
-                    }
-                });
-
-            this.feed = feed;
-            this.confs = confs;
-            this.dataModel = dataModel;
-
-            dataModel.$follow( this );
-            
-            this.$destroy = function(){
-                dataModel.$ignore( this );
-                readyReg();
-                dataReg();
-            };
-        }
-
-        var dataLoaders = {};
-
-        // ensures singletons
-        DataLoader.create = function( feed, dataModel, conf ){
-            var t;
-
-            if ( !dataLoaders[feed._$dfUid] ){
-                t = new DataLoader( feed, dataModel );
-                dataLoaders[feed._$dfUid] = t;
-            }
-
-            if ( conf ){
-                t.addConf( conf );
-            }
-
-            return t;
-        };
-
-        DataLoader.unregister = function(){};
-
-        DataLoader.prototype.addConf = function( conf ){
-            /*
-            -- it is assumed a feed will have the same exploder
-            conf.feed : {
-                data: override push event of feed
-                explode: run against the data nodes to generate child data nodes.  Expect result appends [name]$Ref
-            }
-            -- the rest are on an individual level
-            conf.ref {
-                name *
-                view
-                className
-            }
-            conf.massage : run against the resulting data node ( importedPoint, dataNode )
-            conf.parseValue *
-            conf.parseInterval *
-            */
-            var proc = this._process.bind( this ),
-                t = {
-                    name: conf.ref.name,
-                    massage: conf.massage,
-                    parseValue: conf.parseValue,
-                    parseInterval: conf.parseInterval
-                };
-
-            this.feed._readAll(function( data ){
-                var i, c,
-                    points = data.points;
-
-                for( i = 0, c = points.length; i < c; i++ ){
-                    proc( t, points[i], data.ref );
-                }
-            });
-
-            this.confs.push( t );
-        };
-
-        DataLoader.prototype.removeConf = function( conf ){
-            var dex = this.confs.indexOf( conf );
-
-            if ( dex !== -1 ){
-                this.confs.splice( dex, 1 );
-            }
-        };
-
-        DataLoader.prototype._process = function( conf, datum, reference ){
-            var point = this.dataModel.addPoint(
-                    conf.name,
-                    conf.parseInterval( datum ),
-                    conf.parseValue( datum )
-                );
-
-            if ( conf.massage ){
-                conf.massage( point, datum, reference );
-            }
-        };
 
         var lookupHash = {},
             baseComponent = {
@@ -262,18 +9,18 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 scope : {
                     data: '=_undefined_',
                     value: '=?value',
-                    interval: '=?interval',
                     config: '=?config',
                     explode: '=?explode',
-                    massage: '=?massage'
+                    massage: '=?massage',
+                    interval: '=?interval'
                 },
                 link : function( scope, el, attrs, requirements ){
                     var ctrl,
                         dataLoader,
                         control = attrs.control || 'default',
                         graph = requirements[0].graph,
-                        chart = graph.views[control],
-                        dataModel = chart.model,
+                        view = graph.views[control],
+                        dataModel = view.dataModel,
                         name = attrs.name;
 
                     function addConf(){
@@ -450,24 +197,69 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 
                 return t;
             },
-            makeAreaCalc: function( chart, name ){
+            // this accepts unified
+            makeDiffCalc: function( view1, top, view2, bottom ){
+                var areaDrawer = new DrawArea();
+
+                if ( !view2 ){
+                     view2 = view1;
+                }
+
+                areaDrawer.preParse = function( d ){
+                    var c1 = d[view1.name],
+                        c2 = d[view2.name],
+                        y1,
+                        y2;
+
+                    if ( c1 ){
+                        y1 = c1[top];
+                    }
+
+                    if ( c2 ){
+                        y2 = c2[bottom];
+                    }
+
+                    if ( isNumeric(y1) && isNumeric(y2) ){
+                        return {
+                            interval: ( c1._$interval + c2._$interval ) / 2, // average the differnce
+                            y1: view1.y.scale( y1 ),
+                            y2: view2.y.scale( y2 )
+                        };
+                    }
+                };
+
+                areaDrawer.parseInterval = function( d ){
+                    return d.interval;
+                };
+                areaDrawer.parseValue1 = function( d ){
+                    return d.y1;
+                };
+                areaDrawer.parseValue2 = function( d ){
+                    return d.y2;
+                };
+
+                return function( dataFeed ){
+                    return areaDrawer.render( dataFeed ).join('');
+                };
+            },
+            // undefined =>  no value, so use last value, null => line break
+            // this accepts sampled / filtered / raw
+            makeAreaCalc: function( view, name ){
                 return d3.svg.area()
                     .defined(function(d){
                         return isNumeric(d[ name ]);
                     })
                     .x(function( d ){
-                        return chart.x.scale( d.$interval );
+                        return d._$interval;
                     })
                     .y(function( d ){
-                        return chart.y.scale( d[name+'$Min'] );
+                        return view.y.scale( d[name+'$Min'] );
                     })
                     .y1(function( d ){
-                        return chart.y.scale( d[name+'$Max'] );
+                        return view.y.scale( d[name+'$Max'] );
                     });
             },
-            // undefined =>  no value, so use last value, null => line break
-            // this accepts raw
-            makeLineCalc: function( chart, name ){
+            makeLineCalc: function( view, name ){
                 var lineDrawer = new DrawLine();
 
                 lineDrawer.preParse = function( d, last ){
@@ -484,48 +276,36 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 };
 
                 lineDrawer.parseValue = function( d ){
-                    return chart.y.scale( d[name] );
+                    return view.y.scale( d[name] );
                 };
 
                 lineDrawer.parseInterval = function( d ){
-                    return chart.x.scale( d.$interval );
+                    return d._$interval;
                 };
 
                 return function( dataFeed ){
                     return lineDrawer.render( dataFeed ).join('');
                 };
             },
-            // this accepts unified
-            makeFillCalc: function( chart1, top, chart2, bottom ){
+            makeFillCalc: function( view, top, bottom ){
                 var areaDrawer = new DrawArea();
 
-                if ( !chart2 ){
-                    chart2 = chart1;
-                }
-
                 areaDrawer.preParse = function( d ){
-                    var c1 = d[chart1.name],
-                        c2 = d[chart2.name],
-                        y1,
+                    var y1,
                         y2;
 
-                    if ( c1 ){
-                        y1 = c1[top];
-                    }
-
-                    if ( c2 ){
-                        if ( bottom ){
-                            y2 = c2[bottom];
-                        }else{
-                            y2 = chart2.pane.y.minimum;
-                        }
+                    y1 = d[top];
+                    if ( bottom ){
+                        y2 = d[bottom];
+                    }else{
+                        y2 = view.viewport.minValue;
                     }
 
                     if ( isNumeric(y1) && isNumeric(y2) ){
                         return {
-                            interval: chart1.x.scale( c1.$interval ),
-                            y1: chart1.y.scale( y1 ),
-                            y2: chart2.y.scale( y2 )
+                            interval: d._$interval,
+                            y1: view.y.scale( y1 ),
+                            y2: view.y.scale( y2 )
                         };
                     }
                 };
@@ -596,12 +376,12 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
             parseStackedLimits: function( data, lines ){
                 var i, c,
                     j, co,
-                    name,
-                    last,
                     d,
                     v,
                     min,
-                    max;
+                    max,
+                    name,
+                    last;
 
                 if ( lines && lines.length ){
                     for( i = 0, c = data.length; i < c; i++ ){

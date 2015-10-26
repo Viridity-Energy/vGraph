@@ -83,7 +83,7 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 
 		StatNode.prototype.$addValue = function( field, value ){
 			// TODO : check for numerical
-			if ( typeof(value) !== 'object' ){
+			if ( isNumeric(value) ){
 				if ( this.$min === undefined ){
 					this.$min = value;
 					this.$max = value;
@@ -97,7 +97,7 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 			this[field] = value;
 		};
 
-		StateNode.prototype.$mimic = function( node ){
+		StatNode.prototype.$mimic = function( node ){
 			var i, c,
 				key,
 				keys = Object.keys(node);
@@ -108,23 +108,26 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 			}
 		};
 
-		function StatCollection(){
-			this._index = {};
+		//-------------------------
 
+		function StatCollection( fullStat ){
+			this._fullStat = fullStat;
+
+			this.$index = {};
 			this.$dirty = false;
 		}
 
-		StatCollection.prototype = new Array();
+		StatCollection.prototype = [];
 
 		StatCollection.prototype._registerNode = function( interval, node ){
 			node.$interval = interval;
-			this._index[interval] = node;
+			this.$index[interval] = node;
 
 			if ( this.$minInterval === undefined ){
 				this.$minInterval = interval;
 				this.$maxInterval = interval;
 
-				this.push(node)
+				this.push(node);
 			}else if ( interval < this.$minInterval ){
 				this.$minInterval = interval;
 				
@@ -134,22 +137,39 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 
 				this.push( node );
 			}else{
-				this.$dirty = true
+				this.$dirty = true;
 
 				this.push( node );
 			}
 		};
 
+		function isNumeric( value ){
+			return value !== null && value !== undefined && typeof(value) !== 'object';
+		}
+
 		StatCollection.prototype._registerValue = function( node, value ){
 			// check for numerical
-			if ( typeof(value) !== 'object' ){
+			if ( isNumeric(value) ){
 				if ( this.$minNode === undefined ){
-					this.$minNode = value;
-					this.$maxNode = value;
+					this.$minNode = node;
+					this.$maxNode = node;
 				}else if ( this.$minNode.$min > value ){
 					this.$minNode = node;
 				}else if ( this.$maxNode.$max < value ){
 					this.$maxNode = node;
+				}
+			}
+		};
+
+		StatCollection.prototype._registerStats = function( stats, interval, value ){
+			if ( isNumeric(value) ){
+				if ( stats.$minInterval === undefined ){
+					stats.$minInterval = interval;
+					stats.$maxInterval = interval;
+				}else if ( interval < stats.$minInterval ){
+					stats.$minInterval = interval;
+				}else if ( interval > stats.$maxInterval ){
+					stats.$maxInterval = interval;
 				}
 			}
 		};
@@ -170,6 +190,25 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 			this.$minNode = minNode;
 		};
 
+		StatCollection.prototype._restatMin = function( field ){
+			var i = 0,
+				node,
+				stats = this.$fields[field];
+
+			this.$sort();
+
+			do{
+				node = this[i];
+				i++;
+			}while( node && !isNumeric(node[field]) );
+
+			if ( node ){
+				stats.$minInterval = node.$interval;
+			}else{
+				stats.$minInterval = undefined;
+			}
+		};
+
 		StatCollection.prototype._resetMax = function(){
 			var i, c,
 				node,
@@ -186,25 +225,105 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 			this.$maxNode = maxNode;
 		};
 
-		StatCollection.prototype.$addValue = function( interval, field, value ){
-			var node = this._index[interval];
+		StatCollection.prototype._restatMax = function( field ){
+			var i =  this.length - 1,
+				node,
+				stats = this.$fields[field];
+
+			this.$sort();
+
+			do{
+				node = this[i];
+				i--;
+			}while( node && !isNumeric(node[field]) );
+
+			if ( node ){
+				stats.$maxInterval = node.$interval;
+			}else{
+				stats.$maxInterval = undefined;
+			}
+		};
+
+		StatCollection.prototype._statNode = function( node ){
+			var dis = this,
+				fields = this.$fields;
+
+			Object.keys( fields ).forEach(function( field ){
+				var v = node[field],
+					stats = fields[field];
+
+				if ( isNumeric(v) ){
+					dis._registerStats( stats, node.$interval, v );
+				}else{
+					if ( stats.$minInterval === node.$interval ){
+						dis._restatMin( field );
+					}
+
+					if ( stats.$maxInterval === node.$interval ){
+						dis._restatMax( field );
+					}
+				}
+			});
+		};
+
+		StatCollection.prototype.$getNode = function( interval ){
+			var dex = +interval,
+				node = this.$index[dex];
+
+			if ( isNaN(dex) ){
+				throw new Error( 'interval must be a number, not: '+interval+' that becomes '+dex );
+			}
 
 			if ( !node ){
 				node = new StatNode();
 				this._registerNode( interval, node );
 			}
 
-			if ( !this._fields ){
-				this._fields = {};
+			return node;
+		};
+
+		StatCollection.prototype.$setValue = function( interval, field, value ){
+			var node = this.$getNode( interval );
+
+			if ( !this.$fields ){
+				this.$fields = {};
 			}
 
-			if ( !this._fields[field] ){
-				this._fields[field] = true;
+			if ( !this.$fields[field] ){
+				this.$fields[field] = {};
 			}
 
 			node[field] = value;
 
+			if ( this._fullStat ){
+				this._registerStats( this.$fields[field], interval, value );
+			}
+
 			this._registerValue( node, value );
+
+			return node;
+		};
+
+		StatCollection.prototype._copyFields = function(){
+			var t = {};
+
+			Object.keys( this.$fields ).forEach(function( key ){
+				t[key] = {};
+			});
+
+			return t;
+		};
+
+		function makeFields( node ){
+			var t = {};
+			
+			Object.keys(node).filter(function( k ){
+				if ( k.charAt(0) !== '$' && k.charAt(0) !== '_' ){
+					t[k] = {};
+				}
+			});
+
+			return t;
 		}
 
 		StatCollection.prototype.$addNode = function( interval, newNode ){
@@ -215,12 +334,10 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 				interval = newNode.$interval;
 			}
 
-			node = this._index[interval];
+			node = this.$index[interval];
 
-			if ( !this._fields ){
-				this._fields = Object.keys(newNode).filter(function( d ){
-					return d.charAt(0) !== '$' && d.charAt(0) !== '_';
-				});
+			if ( !this.$fields ){
+				this.$fields = makeFields(node);
 			}
 
 			if ( node ){
@@ -230,20 +347,28 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 
 				node.$mimic( newNode );
 
-				if ( node === this.$minNode ){
-					this._resetMin();
-				}
-				if ( node === this.$maxNode ){
-					this._resetMax();
+				if ( this._fullStat ){
+					if ( node === this.$minNode ){
+						this._resetMin();
+					}
+					if ( node === this.$maxNode ){
+						this._resetMax();
+					}
+
+					this._statNode( node );
 				}
 			}else{
 				this._registerNode( interval, newNode );
 
-				if ( newNode.$min !== undefined ){
-					this._registerValue(newNode, newNode.$min);
-				}
-				if ( newNode.$max !== undefined ){
-					this._registerValue(newNode, newNode.$max);
+				if ( this._fullStat ){
+					if ( newNode.$min !== undefined ){
+						this._registerValue(newNode, newNode.$min);
+					}
+					if ( newNode.$max !== undefined ){
+						this._registerValue(newNode, newNode.$max);
+					}
+
+					this._statNode( newNode );
 				}
 			}
 		};
@@ -272,7 +397,7 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 
 		StatCollection.prototype.$getClosest = function( interval ){
 			var l, r,
-				p = this.getClosestPair(interval);
+				p = this.$getClosestPair(interval);
 
 			l = interval - p.left.$interval;
 			r = p.right.$interval - interval;
@@ -285,7 +410,7 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 				this.$dirty = false;
 
 				this.sort(function(a, b){
-					return b.$interval - a.$interval;
+					return a.$interval - b.$interval;
 				});
 			}
 		};
@@ -298,7 +423,7 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 				v1,
 				p = this.$getClosestPair( interval ),
 				point = {},
-				keys = Object.keys(this._fields);
+				keys = Object.keys(this.$fields);
 
 			if ( p.left !== p.right ){
 				dx = (interval - p.left.$interval) / (p.right.$interval - p.left.$interval);
@@ -324,11 +449,12 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 			this.$addNode( this.$makePoint(interval) );
 		};
 
-		StatCollection.prototype.$filter = function( startInterval, stopInterval ){
+		StatCollection.prototype.$filter = function( startInterval, stopInterval, fullStat ){
 			var node,
 				i = -1,
-				filtered = new StatCollection();
+				filtered = new StatCollection( fullStat );
 
+			filtered.$fields = this._copyFields();
 			this.$sort();
 
 			do{
@@ -336,7 +462,7 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 				node = this[i];
 			}while( node && node.$interval < startInterval);
 
-			while( node && node.$interval < stopInterval){
+			while( node && node.$interval <= stopInterval){
 				filtered.$addNode( node );
 				i++;
 				node = this[i];
@@ -345,15 +471,15 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 			return filtered;
 		};
 
-		StatCollection.prototype.$sample = function( sampleRate ){
+		StatCollection.prototype.$sample = function( sampleRate, fullStat ){
 			var i, c,
 				sampled;
 
-
-			if ( sampleRate === 1 ){
+			if ( sampleRate === 1 && fullStat === this._fullStat ){
 				return this;
-			}else{
-				sampled = new StatCollection();
+			}else if ( this.length ){
+				sampled = new StatCollection( fullStat );
+				sampled.$fields = this._copyFields();
 
 				for( i = 0, c = this.length; i < c; i++ ){
 					if ( i % sampleRate === 0 ){
@@ -366,5 +492,7 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 				return sampled;
 			}
 		};
+
+		return StatCollection;
 	}]
 );

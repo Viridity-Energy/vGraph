@@ -39,7 +39,7 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                                 el.insertBefore( line.element, lines[i-1].element );
                                 line.$bottom = lines[i-1].$valueField;
                                 line.calc = ComponentGenerator.makeFillCalc(
-                                    chart, line.$valueField, chart, line.$bottom
+                                    chart, line.$valueField, line.$bottom
                                 );
                             }else{
                                 el.appendChild( line.element );
@@ -61,13 +61,13 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                     parse : function( data ){
                         return ComponentGenerator.parseStackedLimits( data, lines );
                     },
-                    finalize : function(){
+                    finalize : function( unified, sampled ){
                         var i, c,
                             line;
 
                         for( i = 0, c = lines.length; i < c; i++ ){
                             line = lines[ i ];
-                            line.$d3.attr( 'd', line.calc(graph.unified) );
+                            line.$d3.attr( 'd', line.calc(sampled) );
                         }
                     }
                 });

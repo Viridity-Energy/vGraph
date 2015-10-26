@@ -12,8 +12,8 @@ The next iteration will be build around config variables for lines, fills, feeds
 */
 
 angular.module( 'vgraph' ).factory( 'GraphModel',
-    [ '$timeout', 'ViewModel', 'BoxModel', 'LinearModel', 'DataCollection',
-    function ( $timeout, ViewModel, BoxModel, LinearModel, DataCollection ) {
+    [ '$timeout', 'StatCollection', 'ViewModel', 'BoxModel', 'LinearModel', 'DataCollection',
+    function ( $timeout, StatCollection, ViewModel, BoxModel, LinearModel, DataCollection ) {
         'use strict';
 
         function Scheduler(){
@@ -118,79 +118,11 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             }
         };
 
-        var schedule = new Scheduler();
-
-        function IndexedData(){
-            this.index = [];
-            this.hash = {};
-            this.$dirty = false;
-        }
-
-        IndexedData.prototype.addIndex = function( index, meta ){
-            if ( !this.hash[index] ){
-                this.hash[index] = {
-                    $index : index,
-                    $meta : meta
-                };
-
-                if ( this.index[this.index.length-1] > index ){
-                    this.$dirty = true;
-                }
-                this.index.push( index );
-                this.length = this.index.length;
-            }
-
-            return this.hash[index];
-        };
-
-        IndexedData.prototype.getClosest = function( index ){
-            var p, l, r, 
-                left,
-                right;
-
-            if ( this.length ){
-                this.sort();
-
-                // this works because bisect uses .get
-                p = ViewModel.bisect( this, index, function( x ){
-                    return x.$index;
-                }, true );
-                left = this.get(p.left);
-                right = this.get(p.right);
-                l = index - left.$index;
-                r = right.$index - index;
-
-                return l < r ? left : right;
-            }
-        };
-
-        IndexedData.prototype.get = function( dex ){
-            return this.hash[this.index[dex]];
-        };
-
-        IndexedData.prototype.sort = function(){
-            if ( this.$dirty ){
-                this.$dirty = false;
-                this.index.sort(function( a, b ){
-                    return a - b;
-                });
-            }
-        };
-
-        IndexedData.prototype.forEach = function( func, context ){
-            var i, c;
-
-            this.sort();
-
-            for( i = 0, c = this.index.length; i < c; i++ ){
-                func.call( context, this.hash[this.index[i]] );
-            }
-        };
-
-        var ids = 0;
+        var schedule = new Scheduler(),
+            ids = 0;
         
         function GraphModel( $interface ){
-            this.$uid = ++ids;
+            this.$vguid = ++ids;
 
             this.box = new BoxModel();
             this.models = [];
@@ -311,34 +243,37 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
 
         GraphModel.prototype.render = function( /* waiting */ ){
             var dis = this,
-                hasData,
+                activeViews,
                 hasViews = 0,
                 viewsCount = Object.keys( this.views ).length,
                 primary = this.getPrimaryView(),
-                unified = new IndexedData();
+                unified = new StatCollection();
 
             angular.forEach( this.views, function( view ){
-                view.calcBounds();
+                view.parse();
             });
 
             if ( this.calcHook ){
                 this.calcHook();
             }
 
-            hasData = []; // TODO: there's a weird bug when joining scales, quick fix
-            this.empty = [];
-
-            angular.forEach( this.views, function( view ){
-                view.calcScales( unified );
-                if ( view.hasData() ){
-                    hasData.push( view );
-                }else{
-                    this.empty.push( view );
-                }
-            }, this);
+            activeViews = []; // TODO: there's a weird bug when joining scales, quick fix
             
-            // TODO : not empty
-            hasViews = Object.keys(hasData).length;
+            angular.forEach( this.views, function( view ){
+                if ( view.hasData() ){
+                    activeViews.push( view );
+                    view.sampled.forEach(function( node ){
+                        var t = view.x.scale( node.$interval );
+
+                        // Calculations now to speed things up later
+                        node._$interval = t;
+
+                        unified.$setValue( Math.floor(t), view.name, node );
+                    });
+                }
+            });
+
+            hasViews = activeViews.length;
             schedule.startScript( this.$uid );
             
             if ( !viewsCount ){
@@ -356,19 +291,21 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                     dis.message = null;
                 });
 
+
                 if ( unified.length ){
-                    schedule.loop( hasData, function( view ){
-                        view.build();
+                    schedule.loop( activeViews, function( view ){
+                        view.build( unified );
                     });
 
-                    schedule.loop( hasData, function( view ){
-                        view.process();
+                    schedule.loop( activeViews, function( view ){
+                        view.process( unified );
                     });
 
-                    schedule.loop( hasData, function( view ){
-                        view.finalize();
+                    schedule.loop( activeViews, function( view ){
+                        view.finalize( unified );
                     });
 
+                    // TODO : why did I do this?
                     schedule.loop( this.registrations, function( registration ){
                         registration( primary.pane );
                     });
@@ -378,7 +315,7 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                         dis.pristine = true;
                     });
                 }else{
-                    schedule.loop( hasData, function( view ){
+                    schedule.loop( activeViews, function( view ){
                         view.loading();
                     });
 

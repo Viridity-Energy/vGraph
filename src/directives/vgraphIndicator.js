@@ -10,10 +10,10 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
             },
             link : function( scope, el, attrs, requirements ){
                 var control = attrs.control || 'default',
-                    chart = requirements[0].graph.views[control],
+                    view = requirements[0].graph.views[control],
                     name = attrs.vgraphIndicator,
                     pulse,
-                    model = chart.model,
+                    model = view.dataModel, // TODO : prolly need to upgrade
                     radius = scope.$eval( attrs.pointRadius ) || 3,
                     outer = scope.$eval( attrs.outerRadius ),
                     $el = d3.select( el[0] )
@@ -50,20 +50,21 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
                     $el.attr( 'visibility', 'hidden' );
                 }
 
-                chart.register({
+                view.register({
                     error: clearComponent,
                     loading: clearComponent,
-                    finalize : function( pane ){
+                    finalize : function( unified, sampled ){
                         var d,
                             x,
-                            y;
+                            y,
+                            stats = sampled.$fields[name];
 
-                        if ( model.plots[name] ){
-                            d = model.plots[name].x.max;
+                        if ( stats ){
+                            d = sampled.$index[stats.$maxInterval];
 
-                            if ( pane.isValid(d) && d[name] ){
-                                x = chart.x.scale( d.$interval );
-                                y = chart.y.scale( d['$'+name] || d[name] );
+                            if ( d && d[name] ){
+                                x = d._$interval;
+                                y = view.y.scale( d['$'+name] || d[name] );
 
                                 $circle.attr( 'visibility', 'visible' );
 

@@ -14,21 +14,21 @@ angular.module( 'vgraph' ).directive( 'vgraphCompare',
                     fill;
 
                 function parseConf( config ){
-                    var chart1Ready = false,
-                        chart2Ready = false,
+                    var view1Ready = false,
+                        view2Ready = false,
                         keys = Object.keys(config),
                         name1 = keys[0],
-                        chart1 = graph.views[config[name1]],
+                        view1 = graph.views[config[name1]],
                         name2 = keys[1],
-                        chart2 = graph.views[config[name2]];
+                        view2 = graph.views[config[name2]];
 
                     function draw(){
-                        if ( chart1Ready && chart2Ready ){
+                        if ( view1Ready && view2Ready ){
                             fill.$d3.attr( 'visibility', 'visible' );
                             fill.$d3.attr( 'd', fill.calc(graph.unified) );
 
-                            chart1Ready = false;
-                            chart2Ready = false;
+                            view1Ready = false;
+                            view2Ready = false;
                         }
                     }
 
@@ -60,38 +60,38 @@ angular.module( 'vgraph' ).directive( 'vgraphCompare',
                         */
                         fill = {
                             $d3 : d3.select( el ).append('path').attr( 'class', 'fill' ),
-                            calc : ComponentGenerator.makeFillCalc( 
-                                chart1, name1, chart2, name2
+                            calc : ComponentGenerator.makeDiffCalc( 
+                                view1, name1, view2, name2
                             )
                         };
 
                         // this isn't entirely right... It will be forced to call twice
-                        chart1.register({
+                        view1.register({
                             loading: function(){
-                                chart1Ready = false;
+                                view1Ready = false;
                                 clearComponent();
                             },
                             error: function(){
-                                chart1Ready = false;
+                                view1Ready = false;
                                 clearComponent();
                             },
                             finalize : function(){
-                                chart1Ready = true;
+                                view1Ready = true;
                                 draw();
                             }
                         });
 
-                        chart2.register({
+                        view2.register({
                             loading: function(){
-                                chart2Ready = false;
+                                view2Ready = false;
                                 clearComponent();
                             },
                             error: function(){
-                                chart2Ready = false;
+                                view2Ready = false;
                                 clearComponent();
                             },
                             finalize : function(){
-                                chart2Ready = true;
+                                view2Ready = true;
                                 draw();
                             }
                         });

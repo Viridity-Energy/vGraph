@@ -16,23 +16,10 @@ angular.module( 'vgraph' ).directive( 'vgraphLine',
                     parse: function( data ){
                         return ComponentGenerator.parseLimits( data, name );
                     },
-                    finalize: function( pane, data ){
+                    finalize: function( unified, sampled ){
                         var last;
 
-                        // TODO : what the heck is this filter about?
-                        $path.attr( 'd', line(data.filter(function(d, i){
-                            var t,
-                                o = last;
-
-                            last = d[ name ];
-
-                            if ( o !== last ){
-                                return true;
-                            }else{
-                                t = data[i+1];
-                                return !t || t[ name ] !== last;
-                            }
-                        })) );
+                        $path.attr( 'd', line(sampled) );
                     },
                     publish: function( data, headers, content, calcPos ){
                         headers.push( name );

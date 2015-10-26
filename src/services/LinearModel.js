@@ -88,8 +88,6 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
         // expect a seed function to be defined
 
         LinearModel.prototype.config = function( settings ){
-            var dis = this;
-
             this.x = {
                 massage : settings.x.massage || null,
                 padding : settings.x.padding || 0,
@@ -135,29 +133,19 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
             }
         };
 
-
-        LinearModel.prototype.addPoint = function( name, interval, value ){
-            this.data.$addValue( +interval, name, value );
-
+        LinearModel.prototype.getNode = function( interval ){
             this.dataReady();
 
-            return d;
+            return this.data.$getNode( interval );
         };
 
-        LinearModel.prototype.addPlot = function( name, data, parseInterval, parseValue ){
-            var i, c,
-                d;
+        LinearModel.prototype.setValue = function( interval, name, value ){
+            this.dataReady();
 
-            if ( !this.plots[name] ){
-                for( i = 0, c = data.length; i < c; i++ ){
-                    d = data[ i ];
-
-                    this.addPoint( name, parseInterval(d), parseValue(d) );
-                }
-            }
+            return this.data.$setValue( interval, name, value );
         };
 
-        LinearModel.prototype.removePlot = function( name ){
+        LinearModel.prototype.removePlot = function(){
            // TODO : redo
         };
 

@@ -91,7 +91,6 @@ angular.module( 'vgraph' ).directive( 'vgraphArea',
                                     }
                                 }
 
-                                console.log( '--parse--', data );
                                 return ComponentGenerator.parseSegmentedLimits( data, names );
                             },
                             finalize : function( pane, data ){

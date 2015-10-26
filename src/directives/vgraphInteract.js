@@ -22,25 +22,12 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
                         .style( 'opacity', '0' )
                         .attr( 'class', 'focal' )
                         .on( 'mousemove', function(){
-                            var keys,
-                                closest = {},
-                                pos = d3.mouse(this)[0];
+                            var pos = d3.mouse(this)[0];
 
                             if ( !dragging ){
-                                keys = Object.keys(graph.views);
-                                // this should be pretty much the same for every view
-
-                                keys.forEach(function(name){
-                                    var view = graph.views[name],
-                                        x0 = view.x.scale.invert( pos );
-
-                                    closest[name] = view.getSampledClosest(x0);
-                                });
-
                                 highlightOn( this,
                                     pos,
-                                    graph.unified.getClosest(pos),
-                                    closest
+                                    graph.unified.$getClosest( pos )
                                 );
                             }
                         })
@@ -51,7 +38,7 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
                         });
 
 
-                function highlightOn( el, offset, point, closest ){
+                function highlightOn( el, offset, point ){
                     clearTimeout( active );
 
                     scope.$apply(function(){
@@ -61,9 +48,8 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
                             $(node.$els).removeClass('active');
                         });
 
-                        scope.highlight.offset = offset;
                         scope.highlight.point = point;
-                        scope.highlight.closest = closest;
+                        scope.highlight.offset = offset;
                         scope.highlight.position = {
                             x : pos[ 0 ],
                             y : pos[ 1 ]

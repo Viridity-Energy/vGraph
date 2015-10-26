@@ -30,7 +30,7 @@ angular.module( 'vgraph' ).factory( 'PaneModel',
         PaneModel.prototype.isValid = function( d ) {
             var interval;
             if ( this.filtered ){
-                interval = d.$interval 
+                interval = d.$interval;
                 return this.filtered.$minInterval <= interval && interval <= this.filtered.$maxInterval;
             }else{
                 return false;
@@ -40,15 +40,13 @@ angular.module( 'vgraph' ).factory( 'PaneModel',
         
         PaneModel.prototype.filter = function(){
             var dx,
-                firstMatch,
-                lastMatch,
-                data = this.dataModel.data,
-                x = this.x,
-                change,
                 $min,
                 $max,
+                change,
                 minInterval,
-                maxInterval;
+                maxInterval,
+                x = this.x,
+                data = this.dataModel.data;
 
             if ( data.length ){
                 this.dataModel.clean();
@@ -91,8 +89,6 @@ angular.module( 'vgraph' ).factory( 'PaneModel',
                         minInterval = dx;
                     }
                     
-                    
-
                     if ( typeof(change.stop) === 'number' ){
                         change.stop = data[ change.stop ];
                     }else{

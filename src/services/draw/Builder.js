@@ -3,20 +3,6 @@ angular.module( 'vgraph' ).factory( 'DrawBuilder',
 	function(){
 		'use strict';
 
-		function forEach( data, method, context ){
-            var i, c;
-
-            if ( data ){
-                if ( data.forEach ){
-                    data.forEach( method, context );
-                }else if ( data.length ){
-                    for( i = 0, c = data.length; i < c; i++ ){
-                        method.call( context, data[i], i );
-                    }
-                }
-            }
-        }
-
 		function DrawBuilder(){}
 
 		// allows for very complex checks of if the value is defined, allows checking previous and next value
@@ -25,13 +11,16 @@ angular.module( 'vgraph' ).factory( 'DrawBuilder',
 		};
 
 		DrawBuilder.prototype.parse = function( dataSet ){
-			var last,
+			var i, c,
+				d,
+				last,
 				set = [],
 				sets = [ set ],
 				preParse = this.preParse.bind(this);
 
 			// I need to start on the end, and find the last valid point.  Go until there
-			forEach( dataSet, function(d){
+			for( i = 0, c = dataSet.length; i < c; i++ ){
+				d = dataSet[i];
 				last = preParse( d, last ); // you can return something falsey and not have it defined
 
 				if ( last ){
@@ -42,18 +31,20 @@ angular.module( 'vgraph' ).factory( 'DrawBuilder',
 						sets.push( set );
 					}
 				}
-			});
+			}
 
 			return sets;
 		};
 
 		DrawBuilder.prototype.render = function( dataSet ){
-			var i, c;
+			var i, c,
+				d;
 
 			dataSet = this.parse( dataSet );
 
 			for( i = 0, c = dataSet.length; i < c; i++ ){
-				dataSet[i] = this.build(dataSet[i]);
+				d = dataSet[i];
+				dataSet[i] = this.build( d );
 			}
 
 			return dataSet;

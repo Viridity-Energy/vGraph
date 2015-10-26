@@ -36,7 +36,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                     axis = d3.svg.axis(),
                     className= 'axis',
                     box = graph.box,
-                    model = chart.model,
+                    model = chart.dataModel, // TODO : prolly need to fix
                     labelOffset = 0,
                     tickRotation = null,
                     labelClean = true,

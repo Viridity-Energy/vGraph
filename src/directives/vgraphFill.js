@@ -19,7 +19,7 @@ angular.module( 'vgraph' ).directive( 'vgraphFill',
                     name = attrs.name,
                     $path = d3.select( el[0] ).append('path')
                         .attr( 'class', 'fill plot-'+name ),
-                    line = ComponentGenerator.makeFillCalc( chart, name, chart, scope.fillTo );
+                    line = ComponentGenerator.makeFillCalc( chart, name, scope.fillTo );
 
                 if ( typeof(scope.fillTo) === 'string' ){
                     ele = ComponentGenerator.svgCompile(
@@ -37,8 +37,8 @@ angular.module( 'vgraph' ).directive( 'vgraphFill',
                     parse : function( pane, data ){
                         return ComponentGenerator.parseLimits( data, name );
                     },
-                    finalize : function(){
-                        $path.attr( 'd', line(graph.unified) );
+                    finalize : function( unified, sampled ){
+                        $path.attr( 'd', line(sampled) );
                     }
                 });
             }

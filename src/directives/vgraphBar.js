@@ -1,3 +1,4 @@
+// TODO : refactor
 angular.module( 'vgraph' ).directive( 'vgraphBar',
     [ '$compile', 'ComponentGenerator',
     function( $compile, ComponentGenerator ) {
@@ -12,7 +13,7 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
             link : function( scope, $el, attrs, requirements ){
                 var control = attrs.control || 'default',
                     graph = requirements[0].graph,
-                    chart = graph.views[control],
+                    view = graph.views[control],
                     childScopes = [],
                     el = $el[0],
                     minWidth = parseInt(attrs.minWidth || 1),
@@ -42,18 +43,14 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
                             if ( i ){
                                 el.insertBefore( line.element, lines[i-1].element );
                                 line.$bottom = lines[i-1].$valueField;
-                                line.calc = ComponentGenerator.makeLineCalc(
-                                    chart,
-                                    line.$valueField,
-                                    line.$bottom
-                                );
                             }else{
                                 el.appendChild( line.element );
-                                line.calc = ComponentGenerator.makeLineCalc(
-                                    chart,
-                                    line.$valueField
-                                );
                             }
+
+                            line.calc = ComponentGenerator.makeLineCalc(
+                                view,
+                                line.$valueField
+                            );
 
                             $new = scope.$new();
                             childScopes.push( $new );
@@ -106,7 +103,7 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
                         }
 
                         if ( sum ){
-                            y = chart.y.scale( sum/counted );
+                            y = view.y.scale( sum/counted );
 
                             if ( x1 === undefined ){
                                 if ( points[start] === last ){
@@ -140,7 +137,7 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
 
                             if ( lastY === undefined ){
                                 e = mount.append('rect')
-                                    .attr( 'height', chart.y.scale(pane.y.minimum) - y );
+                                    .attr( 'height', view.y.scale(pane.y.minimum) - y );
                             } else {
                                 e = mount.append('rect');
 
@@ -173,15 +170,15 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
 
                 scope.$watchCollection('config', parseConf );
 
-                chart.register({
+                view.register({
                     parse : function( data ){
                         return ComponentGenerator.parseStackedLimits( data, lines );
                     },
                     build : function( pane, data ){
                         var i, c,
                             next = 0,
-                            start = chart.x.scale( pane.x.min.$interval ),
-                            stop = chart.x.scale( pane.x.max.$interval ),
+                            start = view.x.scale( view.viewport.minInterval ),
+                            stop = view.x.scale( view.viewport.maxInterval ),
                             totalPixels = stop - start,
                             barWidth = padding + minWidth,
                             totalBars = totalPixels / barWidth,
@@ -199,13 +196,13 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
                             makeRect( data, i, next, pane );
                         }
                     },
-                    finalize : function( pane, data ){
+                    finalize : function( unified, sampled ){
                         var i, c,
                             line;
 
                         for( i = 0, c = lines.length; i < c; i++ ){
                             line = lines[ i ];
-                            line.$d3.attr( 'd', line.calc(data) );
+                            line.$d3.attr( 'd', line.calc(sampled) );
                         }
                     }
                 });
