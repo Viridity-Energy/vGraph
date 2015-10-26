@@ -1377,7 +1377,7 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
             interval = d.$x;
 
             if ( this.y.massage ){
-                value = this.y.massage( interval );
+                value = this.y.massage( value );
             }
 
             if ( d.$max === undefined ){
@@ -1436,6 +1436,18 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
             this.dataReady();
 
             return d;
+        };
+
+        LinearModel.prototype.fillPoints = function( start, stop, interval, field ){
+            var i,
+                point;
+
+            for( i = start; i <= stop; i += interval ){
+                point = this.getPoint( i );
+                if ( point[field] === undefined ){
+                    this.addPoint( field, interval, null );
+                }
+            }            
         };
 
         LinearModel.prototype.addPlot = function( name, data, parseInterval, parseValue ){
