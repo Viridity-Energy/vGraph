@@ -20,7 +20,7 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
                     return x.scale( model.x.parse(p) );
                 },
                 center : function(){
-                    return ( x.calc(view.pane.filtered.$minInterval) + x.calc(view.pane.filtered.$maxInterval) ) / 2;
+                    return ( x.calc(view.pane.filtered.$minIndex) + x.calc(view.pane.filtered.$maxIndex) ) / 2;
                 }
             };
             this.x = x;
@@ -69,18 +69,33 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
         };
 
         ViewModel.prototype.sample = function(){
-            var step,
+            var scale,
+                filtered,
                 box = this.graph.box,
-                pane = this.pane,
-                filtered;
+                pane = this.pane;
 
             pane.filter();
             filtered = pane.filtered;
 
             if ( filtered ){
-                step = parseInt( filtered.length / box.innerWidth ) || 1;
-                
-                this.sampled = filtered.$sample( step, true );
+                this.x.scale
+                    .domain([
+                        filtered.$minIndex,
+                        filtered.$maxIndex
+                    ])
+                    .range([
+                        box.innerLeft,
+                        box.innerRight
+                    ]);
+
+                scale = this.x.scale;
+
+                this.sampled = filtered.$sample(function(index, datum){
+                    var t = scale(index);
+                    datum.$interval = index;
+                    datum._$interval = t;
+                    return Math.round(t);
+                }, true );
             }
         };
 
@@ -94,11 +109,10 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
                 raw = pane.dataModel.data;
 
             this.sample();
-
             sampled = this.sampled;
 
             if ( sampled ){
-                // TODO : this will have the max/min bug
+                // TODO : this could have the max/min bug
                 this.components.forEach(function( component ){
                     var t;
 
@@ -117,83 +131,98 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
                 });
 
                 // TODO : normalize config stuff
-                if ( this.dataModel.y.padding ){
-                    if ( max === min ){
-                        step = min * this.dataModel.y.padding;
-                    }else{
-                        step = ( max - min ) * this.dataModel.y.padding;
-                    }
-
-                    max = max + step;
-                    min = min - step;
+                if ( !this.viewport ){
+                    this.viewport = {};
                 }
 
-                this.viewport = {
-                    maxValue: max,
-                    minValue: min,
-                    minInterval: sampled.$minInterval,
-                    maxInterval: sampled.$maxInterval
-                };
+                this.setViewportValues( min, max );
+                this.setViewportIntervals( pane.filtered.$minIndex, pane.filtered.$maxIndex );
 
                 if ( this.dataModel.adjustSettings ){
                     this.dataModel.adjustSettings(
-                        sampled.$maxInterval - sampled.$minInterval,
+                        sampled.$maxIndex - sampled.$minIndex,
                         max - min,
-                        raw.$maxInterval - raw.$minInterval
+                        raw.$maxIndex - raw.$minIndex
                     );
                 }
-
-                this.x.scale
-                    .domain([
-                        sampled.$minInterval,
-                        sampled.$maxInterval
-                    ])
-                    .range([
-                        box.innerLeft,
-                        box.innerRight
-                    ]);
-
-                this.y.scale
-                    .domain([
-                        min,
-                        max
-                    ])
-                    .range([
-                        box.innerBottom,
-                        box.innerTop
-                    ]);
             }
         };
 
-        ViewModel.prototype.build = function( unified ){
+        ViewModel.prototype.setViewportValues = function( min, max ){
+            var step,
+                box = this.graph.box;
+
+            if ( this.dataModel.y.padding ){
+                if ( max === min ){
+                    step = min * this.dataModel.y.padding;
+                }else{
+                    step = ( max - min ) * this.dataModel.y.padding;
+                }
+
+                max = max + step;
+                min = min - step;
+            }
+
+            this.viewport.minValue = min;
+            this.viewport.maxValue = max;
+
+            this.y.scale
+                .domain([
+                    min,
+                    max
+                ])
+                .range([
+                    box.innerBottom,
+                    box.innerTop
+                ]);
+        };
+
+        ViewModel.prototype.setViewportIntervals = function( min, max ){
+            var box = this.graph.box;
+
+            this.viewport.minInterval = min;
+            this.viewport.maxInterval = max;
+
+            this.x.scale
+                .domain([
+                    min,
+                    max
+                ])
+                .range([
+                    box.innerLeft,
+                    box.innerRight
+                ]);
+        };
+
+        ViewModel.prototype.build = function(){
             var pane = this.pane,
                 sampled = this.sampled;
 
             this.components.forEach(function( component ){
                 if ( component.build ){
-                    component.build( unified, sampled, pane.filtered, pane.dataModel );
+                    component.build( sampled, pane.filtered, pane.dataModel );
                 }
             });
         };
 
-        ViewModel.prototype.process = function( unified ){
+        ViewModel.prototype.process = function(){
             var pane = this.pane,
                 sampled = this.sampled;
 
             this.components.forEach(function( component ){
                 if ( component.process ){
-                    component.process( unified, sampled, pane.filtered,  pane.dataModel );
+                    component.process( sampled, pane.filtered,  pane.dataModel );
                 }
             });
         };
 
-        ViewModel.prototype.finalize = function( unified ){
+        ViewModel.prototype.finalize = function(){
             var pane = this.pane,
                 sampled = this.sampled;
 
             this.components.forEach(function( component ){
                 if ( component.finalize ){
-                    component.finalize( unified, sampled, pane.filtered,  pane.dataModel );
+                    component.finalize( sampled, pane.filtered,  pane.dataModel );
                 }
             });
         };
@@ -210,6 +239,24 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
             this.components.forEach(function( component ){
                 if ( component.error ){
                     component.error();
+                }
+            });
+        };
+
+        ViewModel.prototype.highlight = function( point, pos ){
+            var t,
+                sampled = this.sampled;
+
+            t = sampled.$get( pos );
+            if ( !t ){
+                t = sampled.$getClosest( pos );
+            }
+
+            point[ this.name ] = t;
+
+            this.components.forEach(function( component ){
+                if ( component.highlight ){
+                    component.highlight( point, pos, t );
                 }
             });
         };

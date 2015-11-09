@@ -42,10 +42,15 @@
 			fill: #ddd;
 		}
 
-		[vgraph-line="line"] {
+		[vgraph-line] {
 			stroke: black;
 			stroke-width: 2;
 			fill: none;
+		}
+
+		[vgraph-line] .fill {
+			stroke-width: 1;
+			fill: #bbb;
 		}
 
 		.red.line {
@@ -135,6 +140,7 @@
 		<section ng-if="simple">
 			<h5>Simple</h5>
 			<div ng-controller="FloodCtrl">
+				<div>{{highlight.point.default.someLine1}}:{{highlight.point.default.$interval}}
 				<svg vgraph-chart="graph" model="model">
 					<g vgraph-axis="'left'"
 						axis-label="'foo'"
@@ -148,20 +154,28 @@
 						axis-label="woot"
 						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
 					
-					<g vgraph-line="line" interval="'x'" 
-						value="'y1'" name="someLine1"></g>
-					<g vgraph-line="line" interval="'x'" 
-						value="'y2'" name="someLine2"></g>
-					<g vgraph-line="line" interval="'x'" 
-						value="'y3'" name="someLine3"></g>
-					<g vgraph-line="line" interval="'x'" 
-						value="'y4'" name="someLine4"></g>
+					<g vgraph-line
+						feed="line" interval="'x'" 
+						value="'y1'" name="someLine1"
+						reference="l1"></g>
+					<g vgraph-line
+						feed="line" interval="'x'" 
+						value="'y2'" name="someLine2"
+						reference="l2"></g>
+					<g vgraph-line
+						feed="line" interval="'x'" 
+						value="'y3'" name="someLine3"
+						reference="l3"></g>
+					<g vgraph-line
+						feed="line" interval="'x'" 
+						value="'y4'" name="someLine4"
+						reference="l4"></g>
 
-					<g vgraph-target="highlight" point-radius="10"></g>
+					<g vgraph-target="['l1','l2','l3','l4']" target="highlight" point-radius="10"></g>
 					<g vgraph-interact="highlight"></g>
 				</svg>
 			</div>
-
+			
 			<div ng-controller="FloodCtrl">
 				<svg vgraph-chart="graph" model="model">
 					<g vgraph-axis="'left'"
@@ -176,13 +190,19 @@
 						axis-label="woot"
 						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
 					
-					<g vgraph-fill="line" interval="'x'" 
-						value="'y1'" name="someLine1"></g>
-					<g vgraph-fill="line" interval="'x'"
-						fill-to="'y2'" 
-						value="'y4'" name="someLine2"></g>
+					<g vgraph-line
+						feed="line" interval="'x'" 
+						value="'y1'" name="someLine1"
+						pair="'-'"></g>
+					
+					<g vgraph-line
+						feed="line" interval="'x'" 
+						value="'y4'" name="someLine2"
+						pair="'y2'"
+						reference="t1"
+						pair-reference="t2"></g>
 
-					<g vgraph-target="highlight" point-radius="5"></g>
+					<g vgraph-target="['t1','t2']" target="highlight" point-radius="5"></g>
 					<g vgraph-interact="highlight"></g>
 				</svg>
 			</div>
@@ -199,13 +219,13 @@
 					
 					<g vgraph-loading></g>
 					
-					<g vgraph-line="line" interval="'x'" 
+					<g vgraph-line feed="line" interval="'x'" 
 						value="'y1'" name="someLine1"></g>
-					<g vgraph-line="line" interval="'x'" 
+					<g vgraph-line feed="line" interval="'x'" 
 						value="'y2'" name="someLine2"></g>
-					<g vgraph-line="line" interval="'x'" 
+					<g vgraph-line feed="line" interval="'x'" 
 						value="'y3'" name="someLine3"></g>
-					<g vgraph-line="line" interval="'x'" 
+					<g vgraph-line feed="line" interval="'x'" 
 						value="'y4'" name="someLine4"></g>
 
 					<g vgraph-message></g>
@@ -222,9 +242,11 @@
 					<g vgraph-axis="'bottom'"
 						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
 
-					<g vgraph-line="line" interval="'x'" 
-						value="'y'" name="someLine"></g>
-					<g vgraph-indicator="someLine"
+					<g vgraph-line
+						feed="line" interval="'x'" 
+						value="'y'" name="someLine"
+						reference="line1"></g>
+					<g vgraph-indicator="line1"
 						point-radius="5"></g>
 				</svg>
 			</div>
@@ -233,8 +255,10 @@
 		<section ng-if="stacked">
 			<h5>Stacked</h5>
 			<div ng-controller="StackedCtrl">
+				{{ highlight.point }}
 				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" model="model" version="1.1">
-					<g vgraph-stack config="config"></g>
+					<g vgraph-stack="config"></g>
+					<g vgraph-interact="highlight"></g>
 				</svg>
 			</div>
 		</section>
@@ -244,13 +268,17 @@
 			
 			<div ng-controller="SpeedCtrl">
 				<svg vgraph-chart="graph" model="model">
-					<g vgraph-line="line" interval="'x'" 
+					<g vgraph-line
+						feed="line" interval="'x'" 
 						value="'y1'" name="someLine1"></g>
-					<g vgraph-line="line" interval="'x'" 
+					<g vgraph-line
+						feed="line" interval="'x'" 
 						value="'y2'" name="someLine2"></g>
-					<g vgraph-line="line" interval="'x'" 
+					<g vgraph-line 
+						feed="line" interval="'x'" 
 						value="'y3'" name="someLine3"></g>
-					<g vgraph-line="line" interval="'x'" 
+					<g vgraph-line
+						feed="line" interval="'x'" 
 						value="'y4'" name="someLine4"></g>
 				</svg>
 			</div>
@@ -261,8 +289,10 @@
 						tick-length="4" tick-padding="-2"></g>
 					<g vgraph-axis="'bottom'"
 						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					<g vgraph-line="line" interval="'x'" 
-						value="'y'" name="someLine"></g>
+					<g vgraph-line
+						feed="line" interval="'x'" 
+						value="'y'" name="someLine"
+						reference="someLine"></g>
 					<g vgraph-indicator="someLine"
 						outer-radius="10"
 						point-radius="5"></g>
@@ -275,7 +305,7 @@
 						tick-length="4" tick-padding="-2"></g>
 					<g vgraph-axis="'bottom'"
 						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					<g vgraph-multi-line="line" config="config"></g>
+					<g vgraph-multi-line="config" feed="line"></g>
 				</svg>
 			</div>
 
@@ -285,7 +315,7 @@
 						tick-length="4" tick-padding="-2"></g>
 					<g vgraph-axis="'bottom'"
 						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					<g vgraph-stack config="config"></g>
+					<g vgraph-stack="config"></g>
 				</svg>
 			</div>
 		</section>
@@ -295,8 +325,8 @@
 
 			<div ng-controller="RawCtrl">
 				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" model="model" version="1.1">
-					<g vgraph-multi-line config="config"></g>
-					<g vgraph-leading config="config"></g>
+					<g vgraph-multi-line="config"></g>
+					<!-- <g vgraph-leading config="config"></g> -->
 				</svg>
 			</div>
 		</section>
@@ -312,9 +342,9 @@
 						tick-length="4" tick-padding="-2"></g>
 					<g vgraph-axis="'bottom'"
 						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					<g vgraph-multi-line config="config"></g>
-					<g vgraph-multi-indicator config="config"></g>
-					<g vgraph-target="highlight" point-radius="5" config="{'default':config}"></g>
+					<g vgraph-multi-line="config"></g>
+					<g vgraph-multi-indicator="config"></g>
+					<g vgraph-target="config" target="highlight" point-radius="5"></g>
 					<g vgraph-loading="Loading Data"
 						></g>
 					<g vgraph-interact="highlight"></g>
@@ -330,8 +360,8 @@
 						tick-length="4" tick-padding="-2"></g>
 					<g vgraph-axis="'bottom'"
 						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					<g vgraph-multi-line config="config"></g>
-					<g vgraph-target="highlight" point-radius="5" config="{'default':config}"></g>
+					<g vgraph-multi-line="config"></g>
+					<g vgraph-target="config" target="highlight" point-radius="5"></g>
 					<g vgraph-loading="Loading Data"></g>
 					<g vgraph-interact="highlight"></g>
 					<g vgraph-area config="config"></g>
@@ -342,13 +372,14 @@
 		<section ng-if="classed">
 			<h5>Classed - Multi Data Sources</h5>
 			<div ng-controller="StackedMultiCtrl">
+				{{highlight}}
 				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" model="model" version="1.1">
 					<g vgraph-axis="'left'"
 						tick-length="4" tick-padding="-2"></g>
 					<g vgraph-axis="'bottom'"
 						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					<g vgraph-stack config="config"></g>
-					<g vgraph-target="highlight" point-radius="5" config="{'default':config}"></g>
+					<g vgraph-stack="config"></g>
+					<g vgraph-target="config" target="highlight" point-radius="5"></g>
 					<g vgraph-interact="highlight"></g>
 				</svg>
 			</div>
@@ -361,9 +392,9 @@
 						tick-length="4" tick-padding="-2"></g>
 					<g vgraph-axis="'bottom'"
 						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					<g vgraph-multi-line config="config"></g>
-					<g vgraph-multi-indicator config="config"></g>
-					<g vgraph-target="highlight" point-radius="5" config="{'default':config}"></g>
+					<g vgraph-multi-line="config"></g>
+					<g vgraph-multi-indicator="config"></g>
+					<g vgraph-target="config" target="highlight" point-radius="5"></g>
 					<g vgraph-loading="Loading Data"
 						></g>
 					<g vgraph-interact="highlight"></g>
@@ -377,15 +408,17 @@
 		<section ng-if="compare">
 			<h5>Other Stuff</h5>
 			<div ng-controller="MixerCtrl">
-				{{ highlight.point.$compare }}
+				{{ highlight.point.compare }}
+				{{ getX }} :: {{ getY }}
 				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" model="model" version="1.1">
-					<g vgraph-compare config="{y_1:'default',y_2:'default'}"></g>
-					<g vgraph-multi-line config="config"></g>
-					<g vgraph-target="highlight" point-radius="5" config="{default:config}"></g>
-					<g vgraph-tooltip="highlight" 
+					<g vgraph-compare config1="config[0]" config2="config[1]" reference="compare"></g>
+					<g vgraph-multi-line="config"></g>
+					<g vgraph-target="config" target="highlight" point-radius="5"></g>
+					<g vgraph-tooltip="config"
+						point="highlight.point" 
 						text-formatter="formatter" 
-						value="getCompare"
-						y-value="getPosition"></g>
+						position-x="getX"
+						position-y="getY"></g>
 					<g vgraph-interact="highlight"></g>
 				</svg>
 			</div>
@@ -445,11 +478,12 @@
 					<g vgraph-axis="'top'" control="secondModel"
 						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
 					<g vgraph-line="line" interval="'x'" control="firstModel"
-						value="'y1'" name="firstLine"></g>
+						value="'y1'" name="firstLine"
+						reference="l1"></g>
 					<g vgraph-line="line" interval="'x2'" control="secondModel"
-						value="'y2'" name="secondLine"></g>
-					<g vgraph-target="highlight" point-radius="5"
-						config="{firstModel:[{name:'firstLine',className:'blue'}], secondModel:[{name:'secondLine',className:'red'}]}"></g>
+						value="'y2'" name="secondLine"
+						reference="l2"></g>
+					<g vgraph-target="['l1','l2']" target="highlight" point-radius="5"></g>
 					<g vgraph-interact="highlight"></g>
 				</svg>
 			</div>
@@ -469,11 +503,12 @@
 					<g vgraph-axis="'top'" control="secondModel"
 						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
 					<g vgraph-line="line" interval="'x'" control="firstModel"
-						value="'y1'" name="firstLine"></g>
+						value="'y1'" name="firstLine"
+						reference="l1"></g>
 					<g vgraph-line="line" interval="'x2'" control="secondModel"
-						value="'y2'" name="secondLine"></g>
-					<g vgraph-target="highlight" point-radius="5"
-						config="{firstModel:[{name:'firstLine',className:'blue'}], secondModel:[{name:'secondLine',className:'red'}]}"></g>
+						value="'y2'" name="secondLine"
+						reference="l2"></g>
+					<g vgraph-target="['l1','l2']" target="highlight" point-radius="5"></g>
 					<g vgraph-interact="highlight"></g>
 				</svg>
 			</div>
@@ -541,9 +576,6 @@
 					<g vgraph-line="feed2" interval="'x2'" control="secondModel"
 						value="'y2'" name="secondLine" class="line blue"></g>
 
-					<g vgraph-target="highlight" point-radius="5"
-						config="{firstModel:[{name:'firstLine',className:'red'}], secondModel:[{name:'secondLine',className:'blue'}]}"></g>
-
 					<g vgraph-focus="dragPos" lose-focus="dragStop"></g>
 					<g vgraph-interact="highlight" d-begin="dragStart" d-change="dragPos" d-end="dragStop"></g>
 				</svg>
@@ -583,9 +615,6 @@
 					<g vgraph-line="line" interval="'x2'" control="secondModel"
 						value="'y2'" name="secondLine"></g>
 
-					<g vgraph-target="highlight" point-radius="5"
-						config="{firstModel:[{name:'firstLine',className:'blue'}], secondModel:[{name:'secondLine',className:'red'}]}"></g>
-
 					<g vgraph-focus="dragPos" lose-focus="dragStop"></g>
 					<g vgraph-interact="highlight" d-begin="dragStart" d-change="dragPos" d-end="dragStop"></g>
 				</svg>
@@ -602,8 +631,7 @@
 					model="graphModel" version="1.1">
 					<g vgraph-multi-line config="config"></g>
 
-					<g vgraph-target="highlight" point-radius="5"
-						config="{firstModel:[{name:'firstLine',className:'green'}], secondModel:[{name:'secondLine',className:'yellow'}]}"></g>
+					<g vgraph-target="config" target="highlight" point-radius="5"></g>
 
 					<g vgraph-interact="highlight" d-begin="dragStart" d-change="dragPos" d-end="dragStop"></g>
 				</svg>
@@ -621,8 +649,7 @@
 					model="graphModel" version="1.1">
 					<g vgraph-multi-line config="config"></g>
 
-					<g vgraph-target="highlight" point-radius="5" type="closest"
-						config="{firstModel:[{name:'firstLine',className:'green'}], secondModel:[{name:'secondLine',className:'yellow'}]}"></g>
+					<g vgraph-target="config" target="highlight" point-radius="5" type="closest"></g>
 
 					<g vgraph-interact="highlight" d-begin="dragStart" d-change="dragPos" d-end="dragStop"></g>
 				</svg>
@@ -638,9 +665,8 @@
 					model="graphModel" version="1.1">
 					<g vgraph-multi-line config="config"></g>
 
-					<g vgraph-target="highlight" point-radius="5" type="closest"
-						offset="true"
-						config="{firstModel:[{name:'firstLine',className:'green'}], secondModel:[{name:'secondLine',className:'yellow'}]}"></g>
+					<g vgraph-target="config" target="highlight" point-radius="5" type="closest"
+						offset="true"></g>
 
 					<g vgraph-interact="highlight" d-begin="dragStart" d-change="dragPos" d-end="dragStop"></g>
 				</svg>

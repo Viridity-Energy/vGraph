@@ -6,99 +6,33 @@ angular.module( 'vgraph' ).directive( 'vgraphCompare',
         return {
             require : ['^vgraphChart'],
             scope : {
-                config : '=config'
+                config1: '=config1',
+                config2: '=config2'
             },
             link : function( scope, $el, attrs, requirements ){
                 var graph = requirements[0].graph,
-                    el = $el[0],
-                    fill;
+                    view = graph.getPrimaryView(),
+                    element = ComponentGenerator.svgCompile( 
+                        '<g vgraph-line="config1" pair="config2" class="compare"></g>'
+                    );
 
-                function parseConf( config ){
-                    var view1Ready = false,
-                        view2Ready = false,
-                        keys = Object.keys(config),
-                        name1 = keys[0],
-                        view1 = graph.views[config[name1]],
-                        name2 = keys[1],
-                        view2 = graph.views[config[name2]];
+                $el[0].appendChild( element[0] );
+                $compile( element )( scope );
 
-                    function draw(){
-                        if ( view1Ready && view2Ready ){
-                            fill.$d3.attr( 'visibility', 'visible' );
-                            fill.$d3.attr( 'd', fill.calc(graph.unified) );
+                view.register({
+                    highlight: function( point ){
+                        var ref1 = scope.config1.ref,
+                            ref2 = scope.config2.ref,
+                            p1 = point[ref1.view],
+                            p2 = point[ref2.view];
 
-                            view1Ready = false;
-                            view2Ready = false;
-                        }
-                    }
-
-                    function clearComponent(){
-                        fill.$d3.attr( 'visibility', 'hidden' );
-                    }
-
-                    if ( config && keys.length === 2 ){
-                        if( fill ){
-                            fill.$d3.remove();
-                        }
-                        
-                        /*
-                        TODO: put this back in
-                        
-                        function( node, v1, v2, y1, y2 ){
-                            node.$compare = {
-                                value: {
-                                    middle : ( v1 + v2 ) / 2,
-                                    difference : Math.abs( v1 - v2 ),
-                                },
-                                position: {
-                                    middle: ( y1 + y2 ) / 2,
-                                    top: y1,
-                                    bottom: y2
-                                }
-                            };
-                        }
-                        */
-                        fill = {
-                            $d3 : d3.select( el ).append('path').attr( 'class', 'fill' ),
-                            calc : ComponentGenerator.makeDiffCalc( 
-                                view1, name1, view2, name2
-                            )
+                        point[ attrs.reference || 'compare' ] = {
+                            diff: Math.abs( p1[ref1.field] - p2[ref2.field] ),
+                            y: ( ref1.$view.y.scale(p1[ref1.field]) + ref2.$view.y.scale(p2[ref2.field]) ) / 2,
+                            _$interval: ( p1._$interval + p2._$interval ) / 2
                         };
-
-                        // this isn't entirely right... It will be forced to call twice
-                        view1.register({
-                            loading: function(){
-                                view1Ready = false;
-                                clearComponent();
-                            },
-                            error: function(){
-                                view1Ready = false;
-                                clearComponent();
-                            },
-                            finalize : function(){
-                                view1Ready = true;
-                                draw();
-                            }
-                        });
-
-                        view2.register({
-                            loading: function(){
-                                view2Ready = false;
-                                clearComponent();
-                            },
-                            error: function(){
-                                view2Ready = false;
-                                clearComponent();
-                            },
-                            finalize : function(){
-                                view2Ready = true;
-                                draw();
-                            }
-                        });
                     }
-                }
-
-                scope.$watchCollection('config', parseConf );
+                });
             }
         };
     } ]

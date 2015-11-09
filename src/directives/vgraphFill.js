@@ -1,6 +1,6 @@
 angular.module( 'vgraph' ).directive( 'vgraphFill',
-    ['$compile', 'ComponentGenerator',
-    function( $compile, ComponentGenerator ){
+    ['$compile', 'ComponentGenerator', 'StatCalculations',
+    function( $compile, ComponentGenerator, StatCalculations ){
         'use strict';
 
         return ComponentGenerator.generate( 'vgraphFill', {
@@ -15,11 +15,11 @@ angular.module( 'vgraph' ).directive( 'vgraphFill',
                 var ele,
                     control = attrs.control || 'default',
                     graph = requirements[0].graph,
-                    chart = graph.views[control],
+                    view = graph.views[control],
                     name = attrs.name,
                     $path = d3.select( el[0] ).append('path')
                         .attr( 'class', 'fill plot-'+name ),
-                    line = ComponentGenerator.makeFillCalc( chart, name, scope.fillTo );
+                    line = ComponentGenerator.makeFillCalc( view, name, scope.fillTo );
 
                 if ( typeof(scope.fillTo) === 'string' ){
                     ele = ComponentGenerator.svgCompile(
@@ -33,11 +33,11 @@ angular.module( 'vgraph' ).directive( 'vgraphFill',
                     $compile( ele )( scope );
                 }
 
-                chart.register({
-                    parse : function( pane, data ){
-                        return ComponentGenerator.parseLimits( data, name );
+                view.register({
+                    parse : function( sampled ){
+                        return StatCalculations.limits( name, sampled );
                     },
-                    finalize : function( unified, sampled ){
+                    finalize : function( sampled ){
                         $path.attr( 'd', line(sampled) );
                     }
                 });

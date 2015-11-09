@@ -1,70 +1,37 @@
 <body>
-
+<svg id="test_target" width="5000" height="3000"></svg>
 <script>
-var i, c = 4000,
-	t,
-	start,
-	stop;
+var start = +(new Date), 
+	svgns = "http://www.w3.org/2000/svg";
 
-function testMethod( name, value ){
-	this[name] = value;
-};
-
-function TestNode(){}
-
-TestNode.prototype.$setValue = testMethod;
-
-var parentNode = new TestNode();
-
-start = +(new Date());
-for( i = 0; i < c; i++ ){
-	t = { $setValue: testMethod };
-	t.$setValue('foo','bar');
+for (var x = 0; x < 5000; x += 50) {
+    for (var y = 0; y < 3000; y += 50) {
+        var rect = document.createElementNS(svgns, 'rect');
+        rect.setAttributeNS(null, 'x', x);
+        rect.setAttributeNS(null, 'y', y);
+        rect.setAttributeNS(null, 'height', '50');
+        rect.setAttributeNS(null, 'width', '50');
+        rect.setAttributeNS(null, 'fill', '#'+Math.round(0xffffff * Math.random()).toString(16));
+        document.getElementById('test_target').appendChild(rect);
+    }
 }
-stop = +(new Date());
-console.log('aggregate 1:', stop - start);
+alert( +(new Date) - start );
+start = +(new Date)
+for (var x = 0; x < 5000; x = nextX ) {
+	var nextY,
+		nextX = x + 50,
+		line = '',
+		rect = document.createElementNS(svgns, 'path');
 
-start = +(new Date());
-for( i = 0; i < c; i++ ){
-	t = new TestNode();
-	t.$setValue('foo','bar');
+	for (var y = 0; y < 3000; y = nextY ) {
+    	nextY = y + 50;
+    	line += 'M'+x+','+y+'L'+nextX+','+y+'L'+nextX+','+nextY+'L'+x+','+nextY+'Z';
+    }
+    rect.setAttributeNS(null, 'd', line);
+    rect.setAttributeNS(null, 'fill', '#'+Math.round(0xffffff * Math.random()).toString(16));
+    document.getElementById('test_target').appendChild(rect);
 }
-stop = +(new Date());
-console.log('classed 1:', stop - start);
-
-start = +(new Date());
-for( i = 0; i < c; i++ ){
-	t = Object.create(TestNode.prototype);
-	t.$setValue('foo','bar');
-}
-stop = +(new Date());
-console.log('create 1:', stop - start);
-
-//--------
-
-start = +(new Date());
-for( i = 0; i < c; i++ ){
-	t = { $setValue: testMethod };
-	t.$setValue('foo','bar');
-}
-stop = +(new Date());
-console.log('aggregate 2:', stop - start);
-
-start = +(new Date());
-for( i = 0; i < c; i++ ){
-	t = new TestNode();
-	t.$setValue('foo','bar');
-}
-stop = +(new Date());
-console.log('classed 2:', stop - start);
-
-start = +(new Date());
-for( i = 0; i < c; i++ ){
-	t = Object.create(TestNode.prototype);
-	t.$setValue('foo','bar');
-}
-stop = +(new Date());
-console.log('create 2:', stop - start);
+alert( +(new Date) - start ); 
 
 </script>
 </body>

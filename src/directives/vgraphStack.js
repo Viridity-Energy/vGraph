@@ -1,74 +1,89 @@
 angular.module( 'vgraph' ).directive( 'vgraphStack',
-    [ '$compile', 'ComponentGenerator',
-    function( $compile, ComponentGenerator ) {
+    [ '$compile', 'ComponentGenerator', 'StatCalculations',
+    function( $compile, ComponentGenerator, StatCalculations ) {
         'use strict';
 
         return {
             require : ['^vgraphChart'],
             scope : {
-                config : '=config'
+                config: '=vgraphStack',
+                feed: '=?feed'
             },
             link : function( scope, $el, attrs, requirements ){
                 var control = attrs.control || 'default',
                     graph = requirements[0].graph,
                     chart = graph.views[control],
-                    childScopes = [],
                     el = $el[0],
-                    lines;
+                    unwatch,
+                    childScope,
+                    refs,
+                    lines,
+                    fieldNames;
 
-                function parseConf( config ){
-                    var $new,
-                        i, c,
-                        line;
+                function parseConf( configs ){
+                    var i, c,
+                        cfg,
+                        last = {},
+                        lines,
+                        elements;
 
-                    if ( config ){
-                        d3.select( el ).selectAll( 'path' ).remove();
+                    refs = [];
+                    fieldNames = [];
 
-                        lines = ComponentGenerator.compileConfig( scope, config, 'fill' );
-                        while( childScopes.length ){
-                            childScopes.pop().$destroy();
+                    if ( configs ){
+                        d3.select( $el[0] ).selectAll( 'g' ).remove();
+
+                        if ( childScope ){
+                            childScope.$destroy();
                         }
 
-                        for( i = 0, c = lines.length; i < c; i++ ){
-                            line = lines[ i ];
+                        lines = '';
 
-                            // I want the first calculated value, lowest on the DOM
-                            line.$valueField = '$'+line.name;
-
-                            if ( i ){
-                                el.insertBefore( line.element, lines[i-1].element );
-                                line.$bottom = lines[i-1].$valueField;
-                                line.calc = ComponentGenerator.makeFillCalc(
-                                    chart, line.$valueField, line.$bottom
-                                );
-                            }else{
-                                el.appendChild( line.element );
-                                line.calc = ComponentGenerator.makeFillCalc(
-                                    chart, line.$valueField
-                                );
+                        for( i = 0, c = configs.length; i < c; i++ ){
+                            cfg = configs[i];
+                            
+                            if ( !cfg.feed ){
+                                cfg.feed = scope.feed;
+                            }
+                            if ( !cfg.ref ){
+                                cfg.ref = {
+                                    name: cfg.name,
+                                    view: control
+                                };
                             }
 
-                            $new = scope.$new();
-                            childScopes.push( $new );
-                            $compile( line.element )( $new );
+                            cfg.pair = last;
+                            last = cfg.ref;
+
+                            lines += '<g vgraph-line="config['+i+']"></g>';
                         }
+
+                        elements = ComponentGenerator.svgCompile( lines );
+                        
+                        for( i = 0, c = elements.length; i < c; i++ ){
+                            $el[0].appendChild( elements[i] );
+                        }
+
+                        childScope = scope.$new();
+                        $compile( elements )( childScope );
                     }
                 }
 
                 scope.$watchCollection('config', parseConf );
 
-                chart.register({
-                    parse : function( data ){
-                        return ComponentGenerator.parseStackedLimits( data, lines );
-                    },
-                    finalize : function( unified, sampled ){
-                        var i, c,
-                            line;
+                unwatch = scope.$watchCollection('config', parseConf );
 
-                        for( i = 0, c = lines.length; i < c; i++ ){
-                            line = lines[ i ];
-                            line.$d3.attr( 'd', line.calc(sampled) );
-                        }
+                scope.$on('$destroy', function(){
+                    childScope.$destroy();
+                    unwatch();
+                });
+
+                chart.register({
+                    parse : function( sampled ){
+                        var config = scope.config;
+
+                        StatCalculations.$resetCalcs( config );
+                        StatCalculations.stack( config, sampled );
                     }
                 });
             }

@@ -3,6 +3,11 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 	function () {
 		'use strict';
 
+		var uid = 0;
+		// assign each collection a vgcUid
+		// $index becomes [vgcUid] = index
+		// allow index to be expressed with a function in some instances
+		// change minIndex and maxIndex to minIndex and maxIndex
 		function bisect( arr, value, func, preSorted ){
 			var idx,
 				val,
@@ -113,27 +118,30 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 		function StatCollection( fullStat ){
 			this._fullStat = fullStat;
 
+			this.$vgcUid = uid++;
 			this.$index = {};
 			this.$dirty = false;
 		}
 
 		StatCollection.prototype = [];
 
-		StatCollection.prototype._registerNode = function( interval, node ){
-			node.$interval = interval;
-			this.$index[interval] = node;
+		StatCollection.prototype._registerNode = function( index, node ){
+			var myIndex = this.$vgcUid;
 
-			if ( this.$minInterval === undefined ){
-				this.$minInterval = interval;
-				this.$maxInterval = interval;
+			node[myIndex] = index;
+			this.$index[index] = node;
+
+			if ( this.$minIndex === undefined ){
+				this.$minIndex = index;
+				this.$maxIndex = index;
 
 				this.push(node);
-			}else if ( interval < this.$minInterval ){
-				this.$minInterval = interval;
+			}else if ( index < this.$minIndex ){
+				this.$minIndex = index;
 				
 				this.unshift( node );
-			}else if ( interval > this.$maxInterval ){
-				this.$maxInterval = interval;
+			}else if ( index > this.$maxIndex ){
+				this.$maxIndex = index;
 
 				this.push( node );
 			}else{
@@ -161,15 +169,15 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 			}
 		};
 
-		StatCollection.prototype._registerStats = function( stats, interval, value ){
+		StatCollection.prototype._registerStats = function( stats, index, value ){
 			if ( isNumeric(value) ){
-				if ( stats.$minInterval === undefined ){
-					stats.$minInterval = interval;
-					stats.$maxInterval = interval;
-				}else if ( interval < stats.$minInterval ){
-					stats.$minInterval = interval;
-				}else if ( interval > stats.$maxInterval ){
-					stats.$maxInterval = interval;
+				if ( stats.$minIndex === undefined ){
+					stats.$minIndex = index;
+					stats.$maxIndex = index;
+				}else if ( index < stats.$minIndex ){
+					stats.$minIndex = index;
+				}else if ( index > stats.$maxIndex ){
+					stats.$maxIndex = index;
 				}
 			}
 		};
@@ -193,6 +201,7 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 		StatCollection.prototype._restatMin = function( field ){
 			var i = 0,
 				node,
+				myIndex = this.$vgcUid,
 				stats = this.$fields[field];
 
 			this.$sort();
@@ -203,9 +212,9 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 			}while( node && !isNumeric(node[field]) );
 
 			if ( node ){
-				stats.$minInterval = node.$interval;
+				stats.$minIndex = node[myIndex];
 			}else{
-				stats.$minInterval = undefined;
+				stats.$minIndex = undefined;
 			}
 		};
 
@@ -228,6 +237,7 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 		StatCollection.prototype._restatMax = function( field ){
 			var i =  this.length - 1,
 				node,
+				myIndex = this.$vgcUid,
 				stats = this.$fields[field];
 
 			this.$sort();
@@ -238,14 +248,15 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 			}while( node && !isNumeric(node[field]) );
 
 			if ( node ){
-				stats.$maxInterval = node.$interval;
+				stats.$maxIndex = node[myIndex];
 			}else{
-				stats.$maxInterval = undefined;
+				stats.$maxIndex = undefined;
 			}
 		};
 
 		StatCollection.prototype._statNode = function( node ){
 			var dis = this,
+				myIndex = this.$vgcUid,
 				fields = this.$fields;
 
 			Object.keys( fields ).forEach(function( field ){
@@ -253,37 +264,37 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 					stats = fields[field];
 
 				if ( isNumeric(v) ){
-					dis._registerStats( stats, node.$interval, v );
+					dis._registerStats( stats, node[myIndex], v );
 				}else{
-					if ( stats.$minInterval === node.$interval ){
+					if ( stats.$minIndex === node[myIndex] ){
 						dis._restatMin( field );
 					}
 
-					if ( stats.$maxInterval === node.$interval ){
+					if ( stats.$maxIndex === node[myIndex] ){
 						dis._restatMax( field );
 					}
 				}
 			});
 		};
 
-		StatCollection.prototype.$getNode = function( interval ){
-			var dex = +interval,
+		StatCollection.prototype.$getNode = function( index ){
+			var dex = +index,
 				node = this.$index[dex];
 
 			if ( isNaN(dex) ){
-				throw new Error( 'interval must be a number, not: '+interval+' that becomes '+dex );
+				throw new Error( 'index must be a number, not: '+index+' that becomes '+dex );
 			}
 
 			if ( !node ){
 				node = new StatNode();
-				this._registerNode( interval, node );
+				this._registerNode( index, node );
 			}
 
 			return node;
 		};
 
-		StatCollection.prototype.$setValue = function( interval, field, value ){
-			var node = this.$getNode( interval );
+		StatCollection.prototype.$setValue = function( index, field, value ){
+			var node = this.$getNode( index );
 
 			if ( !this.$fields ){
 				this.$fields = {};
@@ -296,7 +307,7 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 			node[field] = value;
 
 			if ( this._fullStat ){
-				this._registerStats( this.$fields[field], interval, value );
+				this._registerStats( this.$fields[field], index, value );
 			}
 
 			this._registerValue( node, value );
@@ -326,15 +337,10 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 			return t;
 		}
 
-		StatCollection.prototype.$addNode = function( interval, newNode ){
+		StatCollection.prototype.$addNode = function( index, newNode ){
 			var node;
 
-			if ( !newNode ){
-				newNode = interval;
-				interval = newNode.$interval;
-			}
-
-			node = this.$index[interval];
+			node = this.$index[index];
 
 			if ( !this.$fields ){
 				this.$fields = makeFields(node);
@@ -358,7 +364,7 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 					this._statNode( node );
 				}
 			}else{
-				this._registerNode( interval, newNode );
+				this._registerNode( index, newNode );
 
 				if ( this._fullStat ){
 					if ( newNode.$min !== undefined ){
@@ -373,21 +379,22 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 			}
 		};
 
-		StatCollection.prototype.$pos = function( interval ){
-			var p;
+		StatCollection.prototype.$pos = function( index ){
+			var p,
+				myIndex = this.$vgcUid;
 
 			this.$sort();
 
 			// this works because bisect uses .get
-			p = bisect( this, interval, function( x ){
-					return x.$interval;
+			p = bisect( this, index, function( x ){
+					return x[myIndex];
 				}, true );
 
 			return p;
 		};
 
-		StatCollection.prototype.$getClosestPair = function( interval ){
-			var p = this.$pos( interval );
+		StatCollection.prototype.$getClosestPair = function( index ){
+			var p = this.$pos( index );
 			
 			return {
 				left: this[p.left],
@@ -395,38 +402,46 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 			};
 		};
 
-		StatCollection.prototype.$getClosest = function( interval ){
+		StatCollection.prototype.$getClosest = function( index ){
 			var l, r,
-				p = this.$getClosestPair(interval);
+				p = this.$getClosestPair(index),
+				myIndex = this.$vgcUid;
 
-			l = interval - p.left.$interval;
-			r = p.right.$interval - interval;
+			l = index - p.left[myIndex];
+			r = p.right[myIndex] - index;
 
 			return l < r ? p.left : p.right;
 		};
 
+		StatCollection.prototype.$get = function( index ){
+			return this.$index[index];
+		};
+
 		StatCollection.prototype.$sort = function(){
+			var myIndex = this.$vgcUid;
+
 			if ( this.$dirty ){
 				this.$dirty = false;
 
 				this.sort(function(a, b){
-					return a.$interval - b.$interval;
+					return a[myIndex] - b[myIndex];
 				});
 			}
 		};
 
-		StatCollection.prototype.$makePoint = function( interval ){
+		StatCollection.prototype.$makePoint = function( index ){
 			var i, c,
 				key,
 				dx,
 				v0,
 				v1,
-				p = this.$getClosestPair( interval ),
+				p = this.$getClosestPair( index ),
 				point = {},
-				keys = Object.keys(this.$fields);
+				keys = Object.keys(this.$fields),
+				myIndex = this.$vgcUid;
 
 			if ( p.left !== p.right ){
-				dx = (interval - p.left.$interval) / (p.right.$interval - p.left.$interval);
+				dx = (index - p.left[myIndex]) / (p.right[myIndex] - p.left[myIndex]);
 
 				for( i = 0, c = keys.length; i < c; i++ ){
 					key = keys[i];
@@ -440,18 +455,19 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 				}
 			}
 
-			point.$interval = interval;
+			point[myIndex] = index;
 
 			return point;
 		};
 
-		StatCollection.prototype.$makeNode = function( interval ){
-			this.$addNode( this.$makePoint(interval) );
+		StatCollection.prototype.$makeNode = function( index ){
+			this.$addNode( index, this.$makePoint(index) );
 		};
 
-		StatCollection.prototype.$filter = function( startInterval, stopInterval, fullStat ){
+		StatCollection.prototype.$filter = function( startIndex, stopIndex, fullStat ){
 			var node,
 				i = -1,
+				myIndex = this.$vgcUid,
 				filtered = new StatCollection( fullStat );
 
 			filtered.$fields = this._copyFields();
@@ -460,10 +476,10 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 			do{
 				i++;
 				node = this[i];
-			}while( node && node.$interval < startInterval);
+			}while( node && node[myIndex] < startIndex);
 
-			while( node && node.$interval <= stopInterval){
-				filtered.$addNode( node );
+			while( node && node[myIndex] <= stopIndex){
+				filtered.$addNode( node[myIndex], node );
 				i++;
 				node = this[i];
 			}
@@ -471,25 +487,95 @@ angular.module( 'vgraph' ).factory( 'StatCollection',
 			return filtered;
 		};
 
-		StatCollection.prototype.$sample = function( sampleRate, fullStat ){
+		StatCollection.prototype.$sample = function( indexer, fullStat ){
 			var i, c,
-				sampled;
+				last,
+				index,
+				datum,
+				sampled,
+				myIndex = this.$vgcUid;
 
-			if ( sampleRate === 1 && fullStat === this._fullStat ){
-				return this;
-			}else if ( this.length ){
-				sampled = new StatCollection( fullStat );
+			sampled = new StatCollection( fullStat );
+
+			if ( this.length ){
 				sampled.$fields = this._copyFields();
 
-				for( i = 0, c = this.length; i < c; i++ ){
-					if ( i % sampleRate === 0 ){
-						sampled.$addNode( this[i] );
+				datum = this[0];
+				last = indexer( datum[myIndex], datum );
+				sampled.$addNode( last, datum );
+
+				for( i = 1, c = this.length; i < c; i++ ){
+					datum = this[i];
+					index = indexer( datum[myIndex], datum );
+
+					if ( index !== last ){
+						last = index;
+						sampled.$addNode( index, datum );
 					}
 				}
 
-				sampled.$addNode( this[c-1] );
+				datum = this[c-1];
+				sampled.$addNode( indexer(datum[myIndex],datum), datum );
+			}
 
-				return sampled;
+			return sampled;
+		};
+
+		function functionalBucketize( collection, inBucket, inCurrentBucket, fullStat ){
+			var i, c,
+				datum,
+				currentBucket,
+				buckets = [];
+
+			for( i = 0, c = collection.length; i < c; i++ ){
+				datum = collection[i];
+				if ( inBucket(datum) ){
+					if ( !inCurrentBucket(datum) ){
+						currentBucket = new StatCollection( fullStat );
+						buckets.push( currentBucket );
+					}
+				}
+
+				currentBucket.$addNode( datum[collection.$vgcUid], datum );
+			}
+		}
+
+		function numericBucketize( collection, perBucket, fullStat ){
+			var i, c,
+				datum,
+				currentBucket,
+				buckets = [],
+				nextLimit = 0;
+
+			for( i = 0, c = collection.length; i < c; i++ ){
+				datum = collection[i];
+				
+				if ( i >= nextLimit ){
+					nextLimit += perBucket;
+					currentBucket = new StatCollection( fullStat );
+					buckets.push( currentBucket );
+				}
+
+				currentBucket.$addNode( datum[collection.$vgcUid], datum );
+			}
+		}
+
+		StatCollection.prototype.$bucketize = function( inBucket, inCurrentBucket, fullStat ){
+			if ( typeof(inBucket) === 'function' ){
+				if ( arguments.length === 2 ){
+					fullStat = this._fullStat;
+				}
+
+				return functionalBucketize( this, inBucket, inCurrentBucket, fullStat );
+			}else{
+				// assume inBucket is an int, number of buckets to seperate into
+				if ( arguments.length === 1 ){
+					fullStat = this._fullStat;
+				}else{
+					fullStat = inCurrentBucket;
+				}
+
+				return numericBucketize( this, this.length / inBucket, fullStat );
 			}
 		};
 

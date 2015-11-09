@@ -6,14 +6,12 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
         return {
             require : ['^vgraphChart'],
             scope : {
-                model : '=model'
+                ref: '=?vgraphIndicator'
             },
             link : function( scope, el, attrs, requirements ){
-                var control = attrs.control || 'default',
-                    view = requirements[0].graph.views[control],
-                    name = attrs.vgraphIndicator,
+                var ref,
                     pulse,
-                    model = view.dataModel, // TODO : prolly need to upgrade
+                    showing,
                     radius = scope.$eval( attrs.pointRadius ) || 3,
                     outer = scope.$eval( attrs.outerRadius ),
                     $el = d3.select( el[0] )
@@ -26,6 +24,12 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
                         .attr( 'class', 'point outer' )
                         .attr( 'r', radius )
                         .attr( 'visibility', 'hidden' );
+
+                if ( !scope.ref ){
+                    ref = requirements[0].graph.refs[attrs.vgraphIndicator];
+                }else{
+                    ref = scope.ref;
+                }
 
                 if ( outer ){
                     pulse = function() {
@@ -50,39 +54,43 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
                     $el.attr( 'visibility', 'hidden' );
                 }
 
-                view.register({
+                ref.$view.register({
                     error: clearComponent,
                     loading: clearComponent,
-                    finalize : function( unified, sampled ){
+                    finalize : function( sampled ){
                         var d,
                             x,
                             y,
+                            name = ref.alias || ref.name,
                             stats = sampled.$fields[name];
 
                         if ( stats ){
-                            d = sampled.$index[stats.$maxInterval];
+                            d = sampled.$index[stats.$maxIndex];
 
                             if ( d && d[name] ){
                                 x = d._$interval;
-                                y = view.y.scale( d['$'+name] || d[name] );
+                                y = ref.$view.y.scale( d[name] );
 
-                                $circle.attr( 'visibility', 'visible' );
-
-                                if ( $outer ){
-                                    $outer.attr( 'visibility', 'visible' );
+                                if ( x && y ){
+                                    showing = true;
+                                    $el.attr( 'transform', 'translate(' + x + ',' + y + ')' );
+                                
+                                    $circle.attr( 'visibility', 'visible' );
+                                    if ( $outer ){
+                                        $outer.attr( 'visibility', 'visible' );
+                                    }
                                 }
-
-                                $el.transition()
-                                    .duration( model.transitionDuration )
-                                    .ease( 'linear' )
-                                    .attr( 'transform', 'translate(' + x + ',' + y + ')' );
                             }else{
+                                showing = false;
+
                                 $circle.attr( 'visibility', 'hidden' );
                                 if ( $outer ){
                                     $outer.attr( 'visibility', 'hidden' );
                                 }
                             }
                         }else{
+                            showing = false;
+
                             $circle.attr( 'visibility', 'hidden' );
                             if ( $outer ){
                                 $outer.attr( 'visibility', 'hidden' );

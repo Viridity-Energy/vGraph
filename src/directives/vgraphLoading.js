@@ -7,6 +7,7 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
             require : ['^vgraphChart'],
             link : function( scope, el, attrs, requirements ){
                 var graph = requirements[0].graph,
+                    view = graph.getPrimaryView(),
                     pulsing = false,
                     interval,
                     box = graph.box,
@@ -119,20 +120,15 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
                     stopPulse();
                 });
                 
-                scope.$watch(
-                    function(){
-                        return graph.loading;
-                    }, 
-                    function( loading ){
+                view.register({
+                    finalize: function(){
                         stopPulse();
 
-                        if ( loading ){
-                            if ( box.ratio ){
-                                startPulse();
-                            }
+                        if ( graph.loading && box.ratio ){
+                            startPulse();
                         }
                     }
-                );
+                });
             }
         };
     } ]

@@ -5,7 +5,7 @@ angular.module( 'vgraph' ).factory( 'DataLoader',
 
 		function DataLoader( feed, dataModel ){
             var dis = this,
-                confs = [],
+                confs = {},
                 proc = this._process.bind( this ),
                 readyReg = feed.$on( 'ready', function(){
                     dis.ready = true;
@@ -14,10 +14,13 @@ angular.module( 'vgraph' ).factory( 'DataLoader',
                     var i, c,
                         j, co;
 
+                    function procer( j ){
+                        var cfg = confs[j];
+                        proc( cfg, data.points[i], data.ref );
+                    }
+
                     for( i = 0, c = data.points.length; i < c; i++ ){
-                        for( j = 0, co = confs.length; j < co; j++ ){
-                            proc( confs[j], data.points[i], data.ref );
-                        }
+                        Object.keys(confs).forEach( procer );
                     }
                 });
 
@@ -54,7 +57,7 @@ angular.module( 'vgraph' ).factory( 'DataLoader',
 
         DataLoader.unregister = function(){};
 
-        DataLoader.prototype.addConf = function( conf ){
+        DataLoader.prototype.addConf = function( cfg ){
             /*
             -- it is assumed a feed will have the same exploder
             conf.feed : {
@@ -72,31 +75,25 @@ angular.module( 'vgraph' ).factory( 'DataLoader',
             conf.parseInterval *
             conf.massage : run against the resulting data node ( importedPoint, dataNode )
             */
-            var proc = this._process.bind( this ),
-                t = {
-                    name: conf.ref.name,
-                    massage: conf.massage,
-                    parseValue: conf.parseValue,
-                    parseInterval: conf.parseInterval
-                };
+            var proc = this._process.bind( this );
 
-            this.feed._readAll(function( data ){
-                var i, c,
-                    points = data.points;
+            if ( !this.confs[ cfg.$uid ] ){
+                this.feed._readAll(function( data ){
+                    var i, c,
+                        points = data.points;
 
-                for( i = 0, c = points.length; i < c; i++ ){
-                    proc( t, points[i], data.ref );
-                }
-            });
+                    for( i = 0, c = points.length; i < c; i++ ){
+                        proc( cfg, points[i], data.ref );
+                    }
+                });
 
-            this.confs.push( t );
+                this.confs[ cfg.$uid ] = cfg 
+            }
         };
 
         DataLoader.prototype.removeConf = function( conf ){
-            var dex = this.confs.indexOf( conf );
-
-            if ( dex !== -1 ){
-                this.confs.splice( dex, 1 );
+            if ( this.confs[conf.$uid] ){
+                delete this.confs[conf.$uid];
             }
         };
 
@@ -110,7 +107,7 @@ angular.module( 'vgraph' ).factory( 'DataLoader',
             if ( conf.parseValue ){
                 point = this.dataModel.setValue(
                     conf.parseInterval( datum ),
-                    conf.name,
+                    conf.ref.name,
                     conf.parseValue( datum )
                 );
             }else{

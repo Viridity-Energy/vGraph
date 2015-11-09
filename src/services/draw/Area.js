@@ -25,7 +25,11 @@ angular.module( 'vgraph' ).factory( 'DrawArea',
 				v2.unshift( interval+','+this.parseValue2(d) );
 			}
 
-			return 'M' + v1.join('L') + 'L' + v2.join('L') + 'Z';
+			if ( v1.length ){
+				return 'M' + v1.join('L') + 'L' + v2.join('L') + 'Z';
+			}else{
+				return '';
+			}
 		};
 
 		return DrawArea;

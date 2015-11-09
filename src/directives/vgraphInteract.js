@@ -25,9 +25,10 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
                             var pos = d3.mouse(this)[0];
 
                             if ( !dragging ){
-                                highlightOn( this,
+                                highlightOn(
+                                    this,
                                     pos,
-                                    graph.unified.$getClosest( pos )
+                                    graph.highlight( pos )
                                 );
                             }
                         })

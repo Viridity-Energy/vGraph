@@ -117,7 +117,7 @@ angular.module( 'vgraph' ).controller( 'LoadingCtrl',
 				$scope.graph.message = null;
 				$scope.line = data;
 
-				data.push({x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40});
+				data.push({x : 0, y1 : 10, y2 : 20, y3 : 30, y4 : 40});
 
 				for( var i = 0, c = 2000; i < c; i++ ){
 					var counter = 0;
@@ -192,8 +192,8 @@ angular.module( 'vgraph' ).controller( 'NullCtrl', [
 		});
 
 		$scope.config = [
-			{ name : 'y1', className : 'red', data: data },
-			{ name : 'y2', className : 'blue', data: data }
+			{ name : 'y1', className : 'red', feed: data, interval: 'x' },
+			{ name : 'y2', className : 'blue', feed: data, interval: 'x' }
 		];
 
 		for( var i = 0, c = 501; i < c; i++ ){
@@ -264,15 +264,14 @@ angular.module( 'vgraph' ).controller( 'ResizeCtrl', [
 				wide = true;
 			}
 
-			console.log( 'resizing...' );
 			$scope.graph.box.resize();
 		};
 
 		$scope.config = [
-			{ name : 'y_line_1', className : 'red', data : 'line' },
-			{ name : 'y_line_2', className : 'blue', data : 'line' },
-			{ name : 'y_line_3', className : 'green', data : 'line' },
-			{ name : 'y_line_4', className : 'orange', data : 'line' }
+			{ name : 'y_line_1', className : 'red', feed : data, interval: 'x' },
+			{ name : 'y_line_2', className : 'blue', feed : data, interval: 'x' },
+			{ name : 'y_line_3', className : 'green', feed : data, interval: 'x' },
+			{ name : 'y_line_4', className : 'orange', feed : data, interval: 'x' }
 		];
 
 		for( var i = 0, c = 2000; i < c; i++ ){
@@ -319,29 +318,29 @@ angular.module( 'vgraph' ).controller( 'MultiCtrl',
 				name : 'y1', 
 				data : 'line',
 				className : 'red', 
-				x : function( d ){ return d.x }, 
-				y : function( d ){ return d.y1 }
+				parseInterval : function( d ){ return d.x }, 
+				parseValue : function( d ){ return d.y1 }
 			},
 			{ 
 				name : 'y2',
 				data : 'line',
 				className : 'blue',
-				x : function( d ){ return d.x },
-				y : function( d ){ return d.y2 }
+				parseInterval : function( d ){ return d.x },
+				parseValue : function( d ){ return d.y2 }
 			},
 			{
 				name : 'y3',
 				data : 'line',
 				className : 'green',
-				x : function( d ){ return d.x },
-				y : function( d ){ return d.y3 }
+				parseInterval : function( d ){ return d.x },
+				parseValue: function( d ){ return d.y3 }
 			},
 			{
 				name : 'y4',
 				data : 'line',
 				className : 'orange',
-				x : function( d ){ return d.x },
-				y : function( d ){ return d.y4 }
+				parseInterval : function( d ){ return d.x },
+				parseValue : function( d ){ return d.y4 }
 			}
 		];
 
@@ -399,24 +398,24 @@ angular.module( 'vgraph' ).controller( 'MixerCtrl',
 			}
 		});
 
-		$scope.formatter = function( value, data, point ){
-			return point.$compare.value.difference;
+		$scope.formatter = function( point ){
+			return point.compare.diff;
 		};
 
-		$scope.getCompare = function( point ){
-			return point.$compare;
+		$scope.getX = function( point ){
+			return point.compare._$interval;
 		};
 
-		$scope.getPosition = function( point ){
-			return point.$compare.position.middle;
+		$scope.getY = function( point ){
+			return point.compare.y;
 		};
 
 		// x is the interval, y is the function pulling the value
 		$scope.config = [
-			{ name : 'y_1', data: data, className : 'red', value : 'y1' },
-			{ name : 'y_2', data: data, className : 'blue', value : 'y2'  },
-			{ name : 'y_3', data: data, className : 'green', value : 'y3'  },
-			{ name : 'y_4', data: data, className : 'orange', value : 'y4'  }
+			{ name : 'y_1', feed: data, className : 'red', value : 'y1', interval: 'x' },
+			{ name : 'y_2', feed: data, className : 'blue', value : 'y2', interval: 'x'  },
+			{ name : 'y_3', feed: data, className : 'green', value : 'y3', interval: 'x'  },
+			{ name : 'y_4', feed: data, className : 'orange', value : 'y4', interval: 'x'  }
 		];
 
 		for( var i = 0, c = 2000; i < c; i++ ){
@@ -473,10 +472,10 @@ angular.module( 'vgraph' ).controller( 'RawCtrl',
 
 		// x is the interval, y is the function pulling the value
 		$scope.config = [
-			{ name : 'y_1', data: data, className : 'red', value : 'y1' },
-			{ name : 'y_2', data: data, className : 'blue', value : 'y2'  },
-			{ name : 'y_3', data: data, className : 'green', value : 'y3'  },
-			{ name : 'y_4', data: data, className : 'orange', value : 'y4'  }
+			{ name : 'y_1', feed: data, className : 'red', value : 'y1', interval: 'x' },
+			{ name : 'y_2', feed: data, className : 'blue', value : 'y2', interval: 'x'  },
+			{ name : 'y_3', feed: data, className : 'green', value : 'y3', interval: 'x'  },
+			{ name : 'y_4', feed: data, className : 'orange', value : 'y4', interval: 'x'  }
 		];
 
 		for( var i = 0, c = 2000; i < c; i++ ){
@@ -519,6 +518,7 @@ angular.module( 'vgraph' ).controller( 'StackedCtrl',
 			interval,
 			boxModel;
 
+		$scope.highlight = {};
 		$scope.line = data;
 		$scope.graph = new GraphModel();
 		$scope.model = new LinearModel({
@@ -532,10 +532,10 @@ angular.module( 'vgraph' ).controller( 'StackedCtrl',
 			}
 		});
 		$scope.config = [
-			{ name : 'y1', className : 'red', data: data },
-			{ name : 'y2', className : 'blue', data: data },
-			{ name : 'y3', className : 'green', data: data },
-			{ name : 'y4', className : 'orange', data: data }
+			{ name : 'y1', className : 'red', feed: data, interval: 'x' },
+			{ name : 'y2', className : 'blue', feed: data, interval: 'x' },
+			{ name : 'y3', className : 'green', feed: data, interval: 'x' },
+			{ name : 'y4', className : 'orange', feed: data, interval: 'x' }
 		];
 
 		for( var i = 0, c = 2000; i < c; i++ ){
@@ -584,7 +584,7 @@ angular.module( 'vgraph' ).controller( 'StackedMultiCtrl',
 			interval,
 			boxModel;
 
-		$scope.line = data;
+		$scope.highlight = {};
 		$scope.graph = new GraphModel();
 		$scope.model = new LinearModel({
 			x : {
@@ -597,10 +597,10 @@ angular.module( 'vgraph' ).controller( 'StackedMultiCtrl',
 			}
 		});
 		$scope.config = [
-			{ name : 'y1', className : 'red', data : 'line' },
-			{ name : 'y2', className : 'blue', data : 'line' },
-			{ name : 'y3', className : 'green', data : 'line' },
-			{ name : 'y4', className : 'orange', data : 'line', value : 'diff', interval : 'xDiff' }
+			{ name : 'y1', className : 'red', feed: data, interval: 'x' },
+			{ name : 'y2', className : 'blue', feed: data, interval: 'x' },
+			{ name : 'y3', className : 'green', feed: data, interval: 'x' },
+			{ name : 'y4', className : 'orange', feed: data, value : 'diff', interval : 'xDiff' }
 		];
 
 		$scope.formatter = function( value, data ){
@@ -665,10 +665,10 @@ angular.module( 'vgraph' ).controller( 'SimpleStackedMultiCtrl',
 			}
 		});
 		$scope.config = [
-			{ name : 'y1', className : 'red', data : 'line' },
-			{ name : 'y2', className : 'blue', data : 'line' },
-			{ name : 'y3', className : 'green', data : 'line' },
-			{ name : 'y4', className : 'orange', data : 'line', value : 'diff', interval : 'xDiff' }
+			{ name : 'y1', className : 'red', feed: data },
+			{ name : 'y2', className : 'blue', feed: data },
+			{ name : 'y3', className : 'green', feed: data },
+			{ name : 'y4', className : 'orange', feed: data, value : 'diff', interval : 'xDiff' }
 		];
 
 		$scope.classTests = {
@@ -764,10 +764,10 @@ angular.module( 'vgraph' ).controller( 'StackedClassCtrl',
 			}
 		});
 		$scope.config = [
-			{ name : 'y1', className : 'red', data: data },
-			{ name : 'y2', className : 'blue', data: data },
-			{ name : 'y3', className : 'green', data: data },
-			{ name : 'y4', className : 'orange', data: data }
+			{ name : 'y1', className : 'red', feed: data, interval: 'x' },
+			{ name : 'y2', className : 'blue', feed: data, interval: 'x' },
+			{ name : 'y3', className : 'green', feed: data, interval: 'x' },
+			{ name : 'y4', className : 'orange', feed: data, interval: 'x' }
 		];
 
 		for( var i = 0, c = 2000; i < c; i++ ){
@@ -986,7 +986,7 @@ angular.module( 'vgraph' ).controller( 'MultiZoomCtrl',
 		$scope.config = [
 			{ 
 				name : 'firstLine',
-				data: feed1,
+				feed: feed1,
 				className : 'red', 
 				control: 'firstModel',
 				interval: 'x1',
@@ -994,7 +994,7 @@ angular.module( 'vgraph' ).controller( 'MultiZoomCtrl',
 			},
 			{ 
 				name : 'secondLine',
-				data: feed2,
+				feed: feed2,
 				className : 'blue',
 				control: 'secondModel',
 				interval: 'x2',
@@ -1154,7 +1154,7 @@ angular.module( 'vgraph' ).controller( 'MultiAxisCtrl',
 		$scope.config = [
 			{ 
 				name : 'firstLine',
-				data: data,
+				feed: data,
 				className : 'red', 
 				control: 'firstModel',
 				interval: 'x',
@@ -1162,7 +1162,7 @@ angular.module( 'vgraph' ).controller( 'MultiAxisCtrl',
 			},
 			{ 
 				name : 'secondLine',
-				data: data,
+				feed: data,
 				className : 'blue',
 				control: 'secondModel',
 				interval: 'x2',
@@ -1281,7 +1281,7 @@ angular.module( 'vgraph' ).controller( 'MultiAxis2Ctrl',
 		$scope.config = [
 			{ 
 				name : 'firstLine',
-				data: data,
+				feed: data,
 				className : 'red', 
 				control: 'firstModel',
 				interval: 'x',
@@ -1289,7 +1289,7 @@ angular.module( 'vgraph' ).controller( 'MultiAxis2Ctrl',
 			},
 			{ 
 				name : 'secondLine',
-				data: data,
+				feed: data,
 				className : 'blue',
 				control: 'secondModel',
 				interval: 'x2',
@@ -1325,23 +1325,7 @@ angular.module( 'vgraph' ).controller( 'MultiAxis2Ctrl',
 			'secondModel': $scope.secondModel
 		});
 
-		$scope.graph.calcHook = function(){
-			var min, max;
-
-			angular.forEach( this.views, function( view ){
-				if ( min === undefined || view.pane.y.minimum < min ){
-					min = view.pane.y.minimum;
-				}
-				if ( max === undefined || view.pane.y.maximum > max ){
-					max = view.pane.y.maximum;
-				}
-			});
-
-			angular.forEach( this.views, function( view ){
-				view.pane.y.minimum = min;
-				view.pane.y.maximum = max;
-			});
-		};
+		$scope.graph.normalizeY = true;
 
 		var counter = 0;
 		interval = setInterval(function(){
@@ -1421,7 +1405,7 @@ angular.module( 'vgraph' ).controller( 'ExportCtrl',
 		$scope.config = [
 			{ 
 				name : 'firstLine',
-				data: data,
+				feed: data,
 				className : 'red', 
 				control: 'firstModel',
 				interval: 'x1',
@@ -1429,7 +1413,7 @@ angular.module( 'vgraph' ).controller( 'ExportCtrl',
 			},
 			{ 
 				name : 'secondLine',
-				data: data,
+				feed: data,
 				className : 'blue',
 				control: 'secondModel',
 				interval: 'x2',

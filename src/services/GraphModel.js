@@ -127,17 +127,17 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             this.box = new BoxModel();
             this.models = [];
             this.views = {};
+            this.refs = {};
             this.samples = {};
             this.waiting = {};
-            this.registrations = [];
             this.loading = true;
             this.message = null;
 
             this.$interface = $interface || {};
         }
 
-        GraphModel.prototype.register = function( cb ){
-            this.registrations.push( cb );
+        GraphModel.prototype.setInputReference = function( name, ref ){
+            this.refs[ name ] = ref;
         };
 
         GraphModel.prototype.getPrimaryView = function(){
@@ -241,7 +241,47 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             };
         }
 
-        GraphModel.prototype.render = function( /* waiting */ ){
+        function normalizeY( views ){
+            var min, max;
+
+            views.forEach(function( view ){
+                var vp = view.viewport;
+
+                if ( min === undefined || min > vp.minValue ){
+                    min = vp.minValue;
+                }
+
+                if ( max === undefined || max < vp.maxValue ){
+                    max = vp.maxValue;
+                }
+            });
+
+            views.forEach(function( view ){
+                view.setViewportValues( min, max );
+            });
+        }
+
+        function normalizeX( views ){
+            var min, max;
+
+            views.forEach(function( view ){
+                var vp = view.viewport;
+
+                if ( min === undefined || min > vp.minInterval ){
+                    min = vp.minInterval;
+                }
+
+                if ( max === undefined || max < vp.maxInterval ){
+                    max = vp.maxInterval;
+                }
+            });
+
+            views.forEach(function( view ){
+                view.setViewportIntervals( min, max );
+            });
+        }
+
+        GraphModel.prototype.render = function( waiting, onRender ){
             var dis = this,
                 activeViews,
                 hasViews = 0,
@@ -253,29 +293,25 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
                 view.parse();
             });
 
-            if ( this.calcHook ){
-                this.calcHook();
-            }
-
             activeViews = []; // TODO: there's a weird bug when joining scales, quick fix
             
             angular.forEach( this.views, function( view ){
                 if ( view.hasData() ){
                     activeViews.push( view );
-                    view.sampled.forEach(function( node ){
-                        var t = view.x.scale( node.$interval );
-
-                        // Calculations now to speed things up later
-                        node._$interval = t;
-
-                        unified.$setValue( Math.floor(t), view.name, node );
-                    });
                 }
             });
 
+            if ( this.normalizeY ){
+                normalizeY( activeViews );
+            }
+
+            if ( this.normalizeX ){
+                normalizeX( activeViews );
+            }
+
             hasViews = activeViews.length;
             schedule.startScript( this.$uid );
-            
+
             if ( !viewsCount ){
                 schedule.func(function(){
                     dis.loading = true;
@@ -284,46 +320,28 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             }else if ( hasViews ){
                 schedule.startScript( this.$uid );
 
-                dis.loading = !unified.length;
+                dis.loading = true;
 
                 schedule.func(function(){
-                    dis.unified = unified;
                     dis.message = null;
                 });
 
+                schedule.loop( activeViews, function( view ){
+                    view.build();
+                });
 
-                if ( unified.length ){
-                    schedule.loop( activeViews, function( view ){
-                        view.build( unified );
-                    });
+                schedule.loop( activeViews, function( view ){
+                    view.process();
+                });
 
-                    schedule.loop( activeViews, function( view ){
-                        view.process( unified );
-                    });
+                schedule.func(function(){
+                    dis.loading = false;
+                    dis.pristine = true;
+                });
 
-                    schedule.loop( activeViews, function( view ){
-                        view.finalize( unified );
-                    });
-
-                    // TODO : why did I do this?
-                    schedule.loop( this.registrations, function( registration ){
-                        registration( primary.pane );
-                    });
-
-                    schedule.func(function(){
-                        dis.loading = false;
-                        dis.pristine = true;
-                    });
-                }else{
-                    schedule.loop( activeViews, function( view ){
-                        view.loading();
-                    });
-
-                    schedule.func(function(){
-                        dis.loading = true;
-                        dis.pristine = false;
-                    });
-                }
+                schedule.loop( activeViews, function( view ){
+                    view.finalize();
+                });
             }else if ( !this.loading ){
                 schedule.loop( this.views, function( view ){
                     view.error();
@@ -344,6 +362,10 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             }
 
             schedule.func(function(){
+                if ( onRender ){
+                    onRender();
+                }
+
                 if ( dis.$interface.onRender ){
                     dis.$interface.onRender();
                 }
@@ -356,26 +378,48 @@ angular.module( 'vgraph' ).factory( 'GraphModel',
             });
         };
 
-        GraphModel.prototype.scheduleRender = function(){
+        GraphModel.prototype.scheduleRender = function( cb ){
+            var dis = this;
+
             if ( !this.nrTimeout ){
                 this.nrTimeout = $timeout(function(){
-                    this.render(this.waiting);
-                    this.waiting = {};
-                    this.nrTimeout = null;
-                }.bind(this), 30 );
+                    dis.render( dis.waiting, cb );
+                    dis.waiting = {};
+                    dis.nrTimeout = null;
+                }, 30 );
             }
         };
 
-        GraphModel.prototype.rerender = function(){
-            this.scheduleRender();
+        GraphModel.prototype.rerender = function( cb ){
+            this.scheduleRender( cb );
             this.waiting = this.views;
         };
 
-        GraphModel.prototype.needsRender = function( view ){
-            this.scheduleRender();
+        GraphModel.prototype.needsRender = function( view, cb ){
+            this.scheduleRender( cb );
             if ( !this.waiting[view.name] ){
                 this.waiting[view.name] = view;
             }
+        };
+
+        GraphModel.prototype.highlight = function( pos ){
+            var p,
+                sum = 0,
+                count = 0,
+                point = {};
+
+            angular.forEach( this.views, function( view ){
+                view.highlight( point, pos );
+                p = point[view.name]._$interval;
+                if ( p ){
+                    count++;
+                    sum += p;
+                }
+            });
+
+            point.$pos = sum / count;
+
+            return point;
         };
 
         GraphModel.prototype.addDataCollection = function( collection ){

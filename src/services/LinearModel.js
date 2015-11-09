@@ -78,10 +78,11 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
         LinearModel.prototype.reset = function( settings ){
             this.ready = false;
             this.ratio = null;
-            this.transitionDuration = 30;
             this.data = new StatCollection();
 
-            this.config( settings || this );
+            if ( settings ){
+                this.config( settings || this );
+            }
 
             this.dataReady(true);
         };

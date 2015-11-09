@@ -81,10 +81,6 @@ angular.module( 'vgraph' ).factory( 'BoxModel',
         }
 
         BoxModel.prototype.register = function( cb ){
-            if ( this.ratio ){
-                cb();
-            }
-
             this.registrations.push( cb );
         };
 

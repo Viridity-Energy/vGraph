@@ -52,14 +52,14 @@ angular.module( 'vgraph' ).factory( 'PaneModel',
                 this.dataModel.clean();
 
                 if ( this._bounds.x ){
-                    $min = this._bounds.x.min || data.$minInterval;
-                    $max = this._bounds.x.max || data.$maxInterval;
+                    $min = this._bounds.x.min || data.$minIndex;
+                    $max = this._bounds.x.max || data.$maxIndex;
 
                     x.$min = $min;
                     x.$max = $max;
                 }else{
-                    $min = x.$min || data.$minInterval;
-                    $max = x.$max || data.$maxInterval;
+                    $min = x.$min || data.$minIndex;
+                    $max = x.$max || data.$maxIndex;
                 }
                 
                 this.offset = {};
@@ -127,6 +127,8 @@ angular.module( 'vgraph' ).factory( 'PaneModel',
                     this.filtered.$addNode( data.$makePoint(minInterval) );
                     this.filtered.$addNode( data.$makePoint(maxInterval) );
                 }
+            }else{
+                this.filtered = data;
             }
         };
 

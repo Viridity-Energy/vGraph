@@ -58,121 +58,19 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
                         }
                     }
                 }
-                
-                function makeRect( points, start, stop, pane ){
-                    var e,
-                        els,
-                        j, co,
-                        i,
-                        sum,
-                        line,
-                        counted,
-                        point,
-                        last,
-                        lastY,
-                        y, x1, x2,
-                        width,
-                        $valueField;
-
-                    for( i = start; i < stop; i++ ){
-                        point = points[i];
-                        if ( point ){
-                            point.$els = [];
-                        }
-                    }
-
-                    for( j = 0, co = lines.length; j < co; j++ ){
-                        line = lines[j];
-                        $valueField = lines[j].$valueField;
-                        sum = 0;
-                        counted = 0;
-                        i = start;
-                        els = [];
-
-                        while( i < stop ){
-                            point = points[i];
-
-                            if ( point && point[$valueField] !== undefined ){
-                                sum += point[$valueField];
-                                counted++;
-
-                                last = point;
-                            }
-
-                            i++;
-                        }
-
-                        if ( sum ){
-                            y = view.y.scale( sum/counted );
-
-                            if ( x1 === undefined ){
-                                if ( points[start] === last ){
-                                    x1 = last._$interval - minWidth/2;
-                                    x2 = x1 + minWidth;
-                                }else{
-                                    x1 = points[start]._$interval + padding;
-                                    x2 = last._$interval - padding;
-                                }
-
-                                if ( x1 < graph.box.innerLeft ){
-                                    x1 = graph.box.innerLeft;
-                                }else if ( points[start-1] && points[start-1]._$interval > x1 ){
-                                    x1 = points[start-1]._$interval + padding;
-                                }
-
-                                if ( x2 > graph.box.innerRight ){
-                                    x2 = graph.box.innerRight;
-                                }else if ( points[i] && points[i]._$interval < x2 ){
-                                    x2 = points[i]._$interval - padding;
-                                }
-
-                                if ( x1 > x2 ){
-                                    width = x1;
-                                    x1 = x2;
-                                    x2 = width;
-                                }
-                                
-                                width = x2 - x1;
-                            }
-
-                            if ( lastY === undefined ){
-                                e = mount.append('rect')
-                                    .attr( 'height', view.y.scale(pane.y.minimum) - y );
-                            } else {
-                                e = mount.append('rect');
-
-                                if ( lastY > y ){
-                                    e.attr( 'height', lastY-y );
-                                }
-                            }
-
-                            e.attr( 'class', 'bar '+line.className )
-                                .attr( 'y', y )
-                                .attr( 'x', x1 )
-                                .attr( 'width', width );
-
-                            e = e[0][0]; // dereference
-                            for( i = start; i < stop; i++ ){
-                                point = points[i];
-                                if ( point ){
-                                    point.$els.push( e );
-                                    point.$bar = {
-                                        center : (x1 + x2) / 2,
-                                        top : sum / counted
-                                    };
-                                }
-                            }
-
-                            lastY = y;
-                        }
-                    }
-                }
 
                 scope.$watchCollection('config', parseConf );
 
                 view.register({
-                    parse : function( data ){
-                        return ComponentGenerator.parseStackedLimits( data, lines );
+                    parse : function( sampled ){
+                        var start = view.x.scale( view.viewport.minInterval ),
+                            stop = view.x.scale( view.viewport.maxInterval ),
+                            totalPixels = stop - start,
+                            barWidth = padding + minWidth,
+                            totalBars = totalPixels / barWidth,
+                            buckets = sampled.$bucketize( totalBars );
+
+                        return ComponentGenerator.parseStackedLimits( sampled, lines );
                     },
                     build : function( pane, data ){
                         var i, c,
@@ -193,7 +91,7 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
                         for( i = 0, c = data.length; i < c; i = Math.floor(next) ){
                             next = next + pointsPerBar;
 
-                            makeRect( data, i, next, pane );
+                            //makeRect( data, i, next, pane );
                         }
                     },
                     finalize : function( unified, sampled ){
@@ -210,3 +108,114 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
         };
     } ]
 );
+
+/*
+function makeRect( points, start, stop, pane ){
+    var e,
+        els,
+        j, co,
+        i,
+        sum,
+        line,
+        counted,
+        point,
+        last,
+        lastY,
+        y, x1, x2,
+        width,
+        $valueField;
+
+    for( i = start; i < stop; i++ ){
+        point = points[i];
+        if ( point ){
+            point.$els = [];
+        }
+    }
+
+    for( j = 0, co = lines.length; j < co; j++ ){
+        line = lines[j];
+        $valueField = lines[j].$valueField;
+        sum = 0;
+        counted = 0;
+        i = start;
+        els = [];
+
+        while( i < stop ){
+            point = points[i];
+
+            if ( point && point[$valueField] !== undefined ){
+                sum += point[$valueField];
+                counted++;
+
+                last = point;
+            }
+
+            i++;
+        }
+
+        if ( sum ){
+            y = view.y.scale( sum/counted );
+
+            if ( x1 === undefined ){
+                if ( points[start] === last ){
+                    x1 = last._$interval - minWidth/2;
+                    x2 = x1 + minWidth;
+                }else{
+                    x1 = points[start]._$interval + padding;
+                    x2 = last._$interval - padding;
+                }
+
+                if ( x1 < graph.box.innerLeft ){
+                    x1 = graph.box.innerLeft;
+                }else if ( points[start-1] && points[start-1]._$interval > x1 ){
+                    x1 = points[start-1]._$interval + padding;
+                }
+
+                if ( x2 > graph.box.innerRight ){
+                    x2 = graph.box.innerRight;
+                }else if ( points[i] && points[i]._$interval < x2 ){
+                    x2 = points[i]._$interval - padding;
+                }
+
+                if ( x1 > x2 ){
+                    width = x1;
+                    x1 = x2;
+                    x2 = width;
+                }
+                
+                width = x2 - x1;
+            }
+
+            if ( lastY === undefined ){
+                e = mount.append('rect')
+                    .attr( 'height', view.y.scale(pane.y.minimum) - y );
+            } else {
+                e = mount.append('rect');
+
+                if ( lastY > y ){
+                    e.attr( 'height', lastY-y );
+                }
+            }
+
+            e.attr( 'class', 'bar '+line.className )
+                .attr( 'y', y )
+                .attr( 'x', x1 )
+                .attr( 'width', width );
+
+            e = e[0][0]; // dereference
+            for( i = start; i < stop; i++ ){
+                point = points[i];
+                if ( point ){
+                    point.$els.push( e );
+                    point.$bar = {
+                        center : (x1 + x2) / 2,
+                        top : sum / counted
+                    };
+                }
+            }
+
+            lastY = y;
+        }
+    }
+}
+*/

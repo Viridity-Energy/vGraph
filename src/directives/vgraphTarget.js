@@ -7,8 +7,8 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
             require : ['^vgraphChart'],
             scope : {
                 pointRadius: '=pointRadius',
-                target: '=vgraphTarget',
-                config: '=?config'
+                config: '=vgraphTarget',
+                target: '=target'
             },
             link : function( $scope, el, attrs, requirements ){
                 var graph = requirements[0].graph,
@@ -22,23 +22,7 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
                     $dots = $el.append( 'g' ),
                     type = attrs.type || 'point',
                     curX,
-                    watches,
-                    confs = {};
-
-                function parseConf( conf ){
-                    var i, c,
-                        config = {};
-
-                    if ( conf ){
-                        for( i = 0, c = conf.length; i <c; i++ ){
-                            if ( conf[i] ){
-                                config[ conf[i].name ] = conf[i].className;
-                            }
-                        }
-                    }
-
-                    return config;
-                }
+                    watches;
 
                 function setBar( p ){
                     curX = p;
@@ -47,11 +31,32 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
                         $el.style( 'visibility', 'visible' )
                                 .attr( 'transform', 'translate(' + p + ',0)' );
 
-                        angular.forEach( confs, function( f ){
-                            if ( f ){
-                                f();
-                            }
-                        });
+                        if ( attrs.noDots === undefined ){
+                            angular.forEach( $scope.config, function( cfg ){
+                                var node,
+                                    ref = angular.isString(cfg) ? graph.refs[cfg] : cfg.ref,
+                                    view = ref.$view,
+                                    name = ref.name,
+                                    field = ref.field,
+                                    point = $scope.target[type][view.name],
+                                    className = 'plot-'+name,
+                                    value = point[field];
+                                
+                                if ( value !== undefined ){
+                                    node = $dots.selectAll( 'circle.point.'+className );
+                                    if ( !node[0].length ){
+                                        node = $dots.append( 'circle' )
+                                            .attr( 'class', 'point '+className+' '+view.name );
+                                    }
+
+                                    node.attr( 'cx', attrs.offset ? point._$interval - p : 0 )
+                                        .attr( 'cy', view.y.scale(value) )
+                                        .attr( 'r', $scope.$eval( attrs.pointRadius ) || 3 );
+                                }else{
+                                    $dots.selectAll( 'circle.point.'+className ).remove();
+                                }
+                            });
+                        }
                     }else{
                         $el.style( 'visibility', 'hidden' );
                     }
@@ -60,75 +65,10 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
                 if ( attrs.offset ){
                     $scope.$watch('target.offset', setBar );
                 }else{
-                    $scope.$watch('target.point.$index', function( dex ){
+                    $scope.$watch('target.point.$pos', function( dex ){
                         setBar( dex ); 
                     });
                 }
-
-                $scope.$watchCollection(
-                    function(){
-                        var arg = attrs.control;
-
-                        try {
-                            arg = $scope.$eval( attrs.control );
-                            if ( angular.isString(arg) ){
-                                arg = [arg];
-                            }
-                        }catch( ex ){}
-
-                        if ( !arg ){
-                            // try to eval control, if it fails, assume it is a string to be used if defined
-                            arg = attrs.control ? [attrs.control] : Object.keys(graph.views);
-                        }
-
-                        return arg;
-                    },
-                    function( targets ){
-                        angular.forEach(watches, function( clear ){
-                            clear();
-                        });
-                        watches = [];
-
-                        angular.forEach(targets, function( chartName ){
-                            var chart = graph.views[chartName],
-                                model = chart.model,
-                                c;
-
-                            c = $scope.$watch('config["'+chartName+'"]', function( conf ){
-                                var config = parseConf(conf);
-
-                                confs[chartName] = function(){
-                                    var p = $scope.target[type][chartName],
-                                        name,
-                                        className;
-
-                                    if ( config && p && attrs.noDots === undefined ){
-                                        $dots.selectAll( 'circle.point.'+chartName ).remove();
-
-                                        for( name in model.plots ){
-                                            if ( p[name] ){
-                                                className = config[name] || 'plot-'+name;
-                                                $dots.append( 'circle' )
-                                                    .attr( 'class', 'point '+className+' '+chartName )
-                                                    .attr( 'cx', attrs.offset ? p._$interval - curX : 0 )
-                                                    .attr( 'cy', chart.y.scale(p[name]) ) // p['$'+name] : you need to deal with sampling
-                                                    .attr( 'r', $scope.$eval( attrs.pointRadius ) || 3 );
-                                            }
-                                        }
-                                    }else{
-                                        $dots.selectAll( 'circle.point.'+chartName ).remove();
-                                    }
-                                };
-                            });
-
-                            watches.push(function(){
-                                // this will unload the old watches if a new control comes in
-                                c();
-                                confs[chartName] = null;
-                            });
-                        });
-                    }
-                );
 
                 box.register(function(){
                     $highlight.attr( 'y1', box.innerTop )

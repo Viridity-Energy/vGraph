@@ -44,7 +44,9 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
 
                 graph.box.register(function(){
                     resize( graph.box );
-                    graph.rerender();
+                    graph.rerender(function(){
+                        $scope.$apply();
+                    });
                 });
             }],
             require : ['vgraphChart'],
