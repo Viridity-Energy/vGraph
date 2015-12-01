@@ -1,17 +1,15 @@
-angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
-    [ '$compile', 'ComponentGenerator', 'GraphModel',
-    function( $compile, ComponentGenerator, GraphModel ) {
+angular.module( 'vgraph' ).directive( 'vgraphMultiTooltip',
+    [ '$compile',
+    function( $compile ) {
         'use strict';
 
         return {
-            require : ['^vgraphChart'],
             scope : {
-                config : '=vgraphMultiLine',
-                feed : '=?feed'
+                config: '=config',
+                data: '=vgraphMultiTooltip'
             },
             link : function( scope, $el, attrs ){
-                var viewName = attrs.view || GraphModel.defaultView,
-                    modelName = attrs.model || GraphModel.defaultModel,
+                var viewName = attrs.control || GraphModel.defaultView, // TODO
                     childScope,
                     unwatch;
 
@@ -31,20 +29,7 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                         lines = '';
 
                         for( i = 0, c = configs.length; i < c; i++ ){
-                            cfg = configs[i];
-                            
-                            if ( !cfg.feed ){
-                                console.log('no feed');
-                                cfg.feed = scope.feed;
-                            }
-                            if ( !cfg.ref ){
-                                cfg.ref = {
-                                    name: cfg.name,
-                                    view: viewName,
-                                    model: modelName
-                                };
-                            }
-                            lines += '<path vgraph-line="config['+i+']"></path>';
+                            lines += '<g vgraph-tooltip="config['+i+']" point="data"></g>';
                         }
 
                         elements = ComponentGenerator.svgCompile( lines );

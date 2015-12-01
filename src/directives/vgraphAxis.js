@@ -28,15 +28,13 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
             },
             require : ['^vgraphChart'],
             link : function( scope, el, attrs, requirements ){
-                var control = attrs.control || 'default',
-                    graph = requirements[0].graph,
-                    chart = graph.views[control],
+                var graph = requirements[0].graph,
+                    view = graph.views[attrs.control || 'default'], // TODO
                     makeTicks,
                     express,
                     axis = d3.svg.axis(),
                     className= 'axis',
                     box = graph.box,
-                    model = chart.dataModel, // TODO : prolly need to fix
                     labelOffset = 0,
                     tickRotation = null,
                     labelClean = true,
@@ -134,23 +132,23 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
 
                             if ( ticks ){
                                 axis.orient('top')
-                                    .tickFormat( model.x.format )
+                                    .tickFormat( view.x.format )
                                     .innerTickSize( -(box.innerHeight + tickLength + tickMargin) )
                                     .outerTickSize( 0 )
                                     .tickPadding( tickPadding + tickLength + tickMargin )
-                                    .scale( chart.x.scale );
+                                    .scale( view.x.scale );
 
-                                if ( model.x.tick.interval ){
+                                if ( view.x.tick.interval ){
                                     axis.ticks(
-                                        model.x.tick.interval,
-                                        model.x.tick.step
+                                        view.x.tick.interval,
+                                        view.x.tick.step
                                     );
                                 }
 
                                 $ticks.attr( 'transform', 'translate(-'+box.margin.left+','+box.padding.top+')' )
                                     .call( axis );
 
-                                axisMaxMin = $el.selectAll('g.axis-cap').data( chart.x.scale.domain() );
+                                axisMaxMin = $el.selectAll('g.axis-cap').data( view.x.scale.domain() );
 
                                 if ( labelEndpoints ){
                                     axisMaxMin.enter().append('g').attr('class', function(d,i){
@@ -161,11 +159,11 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                                     axisMaxMin.exit().remove();
 
                                     axisMaxMin.attr('transform', function( d ){
-                                            return 'translate(' + ( chart.x.scale(d) - box.margin.left ) + ',0)';
+                                            return 'translate(' + ( view.x.scale(d) - box.margin.left ) + ',0)';
                                         })
                                         .select( 'text' )
                                             .text( function(d) {
-                                                var v = model.x.format( d );
+                                                var v = view.x.format( d );
                                                 return ('' + v).match('NaN') ? '' : v;
                                             })
                                             .attr( 'dy', '-0.25em')
@@ -221,23 +219,23 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
 
                             if ( ticks ){
                                 axis.orient('bottom')
-                                    .tickFormat( model.x.format )
+                                    .tickFormat( view.x.format )
                                     .innerTickSize( box.innerHeight + tickLength + tickMargin )
                                     .outerTickSize( 0 )
                                     .tickPadding( tickPadding + tickLength + tickMargin )
-                                    .scale( chart.x.scale );
+                                    .scale( view.x.scale );
 
-                                if ( model.x.tick.interval ){
+                                if ( view.x.tick.interval ){
                                     axis.ticks(
-                                        model.x.tick.interval,
-                                        model.x.tick.step
+                                        view.x.tick.interval,
+                                        view.x.tick.step
                                     );
                                 }
 
                                 $ticks.attr( 'transform', 'translate(-'+box.margin.left+','+(-box.innerHeight)+')' )
                                     .call( axis );
 
-                                axisMaxMin = $el.selectAll('g.axis-cap').data( chart.x.scale.domain() );
+                                axisMaxMin = $el.selectAll('g.axis-cap').data( view.x.scale.domain() );
 
                                 if ( labelEndpoints ){
                                     axisMaxMin.enter().append('g').attr('class', function(d,i){
@@ -248,11 +246,11 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                                     axisMaxMin.exit().remove();
 
                                     axisMaxMin.attr('transform', function( d ){
-                                            return 'translate(' + ( chart.x.scale(d) - box.margin.left ) + ',0)';
+                                            return 'translate(' + ( view.x.scale(d) - box.margin.left ) + ',0)';
                                         })
                                         .select( 'text' )
                                             .text( function(d) {
-                                                var v = model.x.format( d );
+                                                var v = view.x.format( d );
                                                 return ('' + v).match('NaN') ? '' : v;
                                             })
                                             .attr( 'dy', '1em')
@@ -318,16 +316,16 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
 
                             if ( ticks ){
                                 axis.orient('right')
-                                    .tickFormat( model.y.format )
+                                    .tickFormat( view.y.format )
                                     .innerTickSize( -(box.innerWidth + tickLength + tickMargin) )
                                     .outerTickSize( 0 )
                                     .tickPadding( tickPadding + tickLength + tickMargin )
-                                    .scale( chart.y.scale );
+                                    .scale( view.y.scale );
 
-                                if ( model.y.tick.interval ){
+                                if ( view.y.tick.interval ){
                                     axis.ticks(
-                                        model.y.tick.interval,
-                                        model.y.tick.step
+                                        view.y.tick.interval,
+                                        view.y.tick.step
                                     );
                                 }
 
@@ -336,7 +334,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                                 $ticks.select('.domain').attr( 'transform', 'translate('+( tickLength + tickMargin )+',0)' );
 
                                 if ( labelEndpoints ){
-                                    axisMaxMin = $el.selectAll('g.axis-cap').data( chart.y.scale.domain() );
+                                    axisMaxMin = $el.selectAll('g.axis-cap').data( view.y.scale.domain() );
 
                                     axisMaxMin.enter().append('g').attr('class', function(d,i){
                                             return 'axis-cap ' + ( i ? 'axis-max' : 'axis-min' );
@@ -346,11 +344,11 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                                     axisMaxMin.exit().remove();
 
                                     axisMaxMin.attr('transform', function( d ){
-                                            return 'translate(0,' + ( chart.y.scale(d) - box.margin.top ) + ')';
+                                            return 'translate(0,' + ( view.y.scale(d) - box.margin.top ) + ')';
                                         })
                                         .select( 'text' )
                                             .text( function(d) {
-                                                var v = model.y.format( d );
+                                                var v = view.y.format( d );
                                                 return ('' + v).match('NaN') ? '' : v;
                                             })
                                             .attr( 'dy', '.25em')
@@ -395,16 +393,16 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
 
                             if ( ticks ){
                                 axis.orient('left')
-                                    .tickFormat( model.y.format )
+                                    .tickFormat( view.y.format )
                                     .innerTickSize( -(box.innerWidth + tickLength + tickMargin) )
                                     .outerTickSize( 0 )
                                     .tickPadding( tickPadding + tickLength + tickMargin )
-                                    .scale( chart.y.scale );
+                                    .scale( view.y.scale );
 
-                                if ( model.y.tick.interval ){
+                                if ( view.y.tick.interval ){
                                     axis.ticks(
-                                        model.y.tick.interval,
-                                        model.y.tick.step
+                                        view.y.tick.interval,
+                                        view.y.tick.step
                                     );
                                 }
 
@@ -414,7 +412,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                                 $ticks.select('.domain').attr( 'transform', 'translate('+( tickLength + tickMargin )+',0)' );
 
                                 if ( labelEndpoints ){
-                                    axisMaxMin = $el.selectAll('g.axis-cap').data( chart.y.scale.domain() );
+                                    axisMaxMin = $el.selectAll('g.axis-cap').data( view.y.scale.domain() );
 
                                     axisMaxMin.enter().append('g').attr('class', function(d,i){
                                             return 'axis-cap ' + ( i ? 'axis-max' : 'axis-min' );
@@ -424,11 +422,11 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                                     axisMaxMin.exit().remove();
 
                                     axisMaxMin.attr('transform', function( d ){
-                                            return 'translate(0,' + ( chart.y.scale(d) - box.margin.top ) + ')';
+                                            return 'translate(0,' + ( view.y.scale(d) - box.margin.top ) + ')';
                                         })
                                         .select( 'text' )
                                             .text( function(d) {
-                                                var v = model.y.format( d );
+                                                var v = view.y.format( d );
                                                 return ('' + v).match('NaN') ? '' : v;
                                             })
                                             .attr( 'dy', '.25em')
@@ -440,7 +438,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                         break;
                 }
 
-                chart.register({
+                view.register({
                     loading: function(){
                         $el.attr( 'visibility', 'hidden' );
                     },
@@ -486,8 +484,9 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                             }
                         }
                     },
-                    finalize : function( pane, data ){
-                        var valid,
+                    finalize : function(){
+                        var data = view.pane.filtered,
+                            valid,
                             t,
                             p,
                             i, c,

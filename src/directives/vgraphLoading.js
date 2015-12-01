@@ -2,12 +2,11 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
     [ '$interval',
     function( $interval ){
         'use strict';
-
+        
         return {
             require : ['^vgraphChart'],
             link : function( scope, el, attrs, requirements ){
                 var graph = requirements[0].graph,
-                    view = graph.getPrimaryView(),
                     pulsing = false,
                     interval,
                     box = graph.box,
@@ -120,13 +119,11 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
                     stopPulse();
                 });
                 
-                view.register({
-                    finalize: function(){
-                        stopPulse();
+                graph.register(function(){
+                    stopPulse();
 
-                        if ( graph.loading && box.ratio ){
-                            startPulse();
-                        }
+                    if ( graph.loading && box.ratio ){
+                        startPulse();
                     }
                 });
             }

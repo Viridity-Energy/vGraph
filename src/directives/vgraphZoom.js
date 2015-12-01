@@ -14,6 +14,7 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
                 var graph = requirements[0].graph,
                     box = graph.box,
                     target = scope.target,
+                    targetView = target.views[Object.keys(target.views)[0]],
                     dragging = false,
                     zoomed = false,
                     dragStart,
@@ -201,18 +202,23 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
                     $focus.attr( 'height', box.innerHeight );
                 });
 
-                target.register(function( pane ){
-                    if ( !dragging ){
-                        if ( pane.offset ) {
-                            minPos = pane.offset.left * box.innerWidth;
-                            maxPos = pane.offset.right * box.innerWidth;
-                        }else{
-                            minPos = 0;
-                            maxPos = box.innerWidth;
-                        }
+                targetView.register({
+                    // TODO : There has to be a better way, this really should be on graph level
+                    finalize: function(){
+                        var pane = targetView.pane;
 
-                        redraw( true );
-                    }
+                        if ( !dragging ){
+                            if ( pane.offset ) {
+                                minPos = pane.offset.left * box.innerWidth;
+                                maxPos = pane.offset.right * box.innerWidth;
+                            }else{
+                                minPos = 0;
+                                maxPos = box.innerWidth;
+                            }
+
+                            redraw( true );
+                        }
+                    },
                 });
 
                 /* this is just duplicate functionality

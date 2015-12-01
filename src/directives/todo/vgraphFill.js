@@ -34,11 +34,11 @@ angular.module( 'vgraph' ).directive( 'vgraphFill',
                 }
 
                 view.register({
-                    parse : function( sampled ){
-                        return StatCalculations.limits( name, sampled );
+                    parse : function( models ){
+                        return StatCalculations.limits( name, models[] );
                     },
-                    finalize : function( sampled ){
-                        $path.attr( 'd', line(sampled) );
+                    finalize : function( models ){
+                        $path.attr( 'd', line(models[]) );
                     }
                 });
             }

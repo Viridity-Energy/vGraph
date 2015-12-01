@@ -1,6 +1,6 @@
 angular.module( 'vgraph' ).directive( 'vgraphLine',
-    ['ComponentGenerator', 'StatCalculations',
-    function( ComponentGenerator, StatCalculations ){
+    ['ComponentGenerator', 'StatCalculations', 'GraphModel',
+    function( ComponentGenerator, StatCalculations, GraphModel ){
         'use strict';
 
         return {
@@ -17,19 +17,27 @@ angular.module( 'vgraph' ).directive( 'vgraphLine',
             link : function( scope, el, attrs, requirements ){
                 var ref,
                     pair,
-                    lines = [],
+                    $path,
                     drawer,
+                    className,
+                    lines = [],
+                    model = GraphModel.defaultModel, // TODO : model
                     graph = requirements[0].graph,
                     cfg = ComponentGenerator.getConfig( scope, attrs, graph ),
-                    $path = d3.select( el[0] ).append('path'),
-                    className;
+                    referenceName = cfg.reference || attrs.reference;
+
+                if ( el[0].tagName === 'path' ){
+                    $path = d3.select( el[0] );
+                }else{
+                    $path = d3.select( el[0] ).append('path');
+                }
 
                 ref = cfg.ref;
                 lines.push( ref );
                 ComponentGenerator.watchFeed( scope, cfg );
 
-                if ( attrs.reference ){
-                    graph.setInputReference( attrs.reference, ref );
+                if ( referenceName ){
+                    graph.setInputReference( referenceName, ref );
                 }
 
                 pair = cfg.pair || scope.pair;
@@ -50,8 +58,8 @@ angular.module( 'vgraph' ).directive( 'vgraphLine',
 
                     drawer = ComponentGenerator.makeFillCalc( ref, pair );
 
-                    if ( attrs.pairReference ){
-                        graph.setInputReference( attrs.pairReference, pair );
+                    if ( pair.reference || attrs.pairReference ){
+                        graph.setInputReference( pair.reference||attrs.pairReference, pair );
                     }
                 }else{
                     className = 'line ';
@@ -67,11 +75,11 @@ angular.module( 'vgraph' ).directive( 'vgraphLine',
                 $path.attr( 'class', className );
 
                 ref.$view.register({
-                    parse: function( sampled ){
-                        return StatCalculations.limits( lines, sampled );
+                    parse: function( models ){
+                        return StatCalculations.limits( lines, models[model] );
                     },
-                    finalize: function( sampled ){
-                        $path.attr( 'd', drawer(sampled) );
+                    finalize: function( models ){
+                        $path.attr( 'd', drawer(models[model]) );
                     },
                     publish: function( data, headers, content, calcPos ){
                         headers.push( name );

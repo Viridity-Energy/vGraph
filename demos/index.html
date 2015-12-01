@@ -140,7 +140,7 @@
 		<section ng-if="simple">
 			<h5>Simple</h5>
 			<div ng-controller="FloodCtrl">
-				<div>{{highlight.point.default.someLine1}}:{{highlight.point.default.$interval}}
+				<div>{{highlight.point.default.linear.someLine1}}:{{highlight.point.default.linear.$index}}
 				<svg vgraph-chart="graph" model="model">
 					<g vgraph-axis="'left'"
 						axis-label="'foo'"
@@ -153,30 +153,34 @@
 					<g vgraph-axis="'bottom'"
 						axis-label="woot"
 						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					
 					<g vgraph-line
 						feed="line" interval="'x'" 
 						value="'y1'" name="someLine1"
 						reference="l1"></g>
-					<g vgraph-line
+					<path vgraph-line
 						feed="line" interval="'x'" 
 						value="'y2'" name="someLine2"
-						reference="l2"></g>
-					<g vgraph-line
+						reference="l2"></path>
+					<path vgraph-line
 						feed="line" interval="'x'" 
 						value="'y3'" name="someLine3"
-						reference="l3"></g>
+						reference="l3"></path>
 					<g vgraph-line
 						feed="line" interval="'x'" 
 						value="'y4'" name="someLine4"
 						reference="l4"></g>
 
-					<g vgraph-target="['l1','l2','l3','l4']" target="highlight" point-radius="10"></g>
+					<g vgraph-target="['l1','l2','l3','l4']" 
+						point="highlight.point" point-radius="10"></g>
+					<g vgraph-tooltip="'l2'"
+						point="highlight.point"></g>
+
 					<g vgraph-interact="highlight"></g>
 				</svg>
 			</div>
 			
 			<div ng-controller="FloodCtrl">
+				<div>{{highlight.point.default.linear.someLine1}}:{{highlight.point.default.linear.$index}}
 				<svg vgraph-chart="graph" model="model">
 					<g vgraph-axis="'left'"
 						axis-label="'foo'"
@@ -202,7 +206,33 @@
 						reference="t1"
 						pair-reference="t2"></g>
 
-					<g vgraph-target="['t1','t2']" target="highlight" point-radius="5"></g>
+					<g vgraph-target="['t1','t2']" point="highlight.point" point-radius="5"></g>
+					<g vgraph-interact="highlight"></g>
+				</svg>
+			</div>
+
+			<div ng-controller="FloodCtrl">
+				<div>{{highlight.point.default.linear.someLine1}}:{{highlight.point.default.linear.$index}}
+				<svg vgraph-chart="graph">
+					<g vgraph-axis="'left'"
+						axis-label="'foo'"
+						label-offset="50"
+						tick-length="4" tick-padding="-2"></g>
+					<g vgraph-axis="'right'"
+						axis-label="'bar'"
+						label-offset="40"
+						tick-length="4" tick-padding="-2"></g>
+					<g vgraph-axis="'bottom'"
+						axis-label="woot"
+						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+
+					<path ng-repeat="cfg in config" vgraph-line="cfg"></path>
+
+					<g vgraph-target="targets" 
+						point="highlight.point" point-radius="10"></g>
+					<g vgraph-tooltip="'l2'"
+						point="highlight.point"></g>
+
 					<g vgraph-interact="highlight"></g>
 				</svg>
 			</div>
@@ -416,9 +446,7 @@
 					<g vgraph-target="config" target="highlight" point-radius="5"></g>
 					<g vgraph-tooltip="config"
 						point="highlight.point" 
-						text-formatter="formatter" 
-						position-x="getX"
-						position-y="getY"></g>
+						reference="compare"></g>
 					<g vgraph-interact="highlight"></g>
 				</svg>
 			</div>
@@ -465,8 +493,8 @@
 			<h5>Multi Axis</h5>
 			<strong>two different x-y scales</strong>
 			<div ng-controller="MultiAxisCtrl" class='grid-on'>
-				({{highlight.point.firstModel.$interval}},{{highlight.point.firstModel.firstLine}}) : 
-				({{highlight.point.secondModel.$interval}},{{highlight.point.secondModel.secondLine}})
+				({{highlight.point.firstModel.$index}},{{highlight.point.firstModel.firstLine}}) : 
+				({{highlight.point.secondModel.$index}},{{highlight.point.secondModel.secondLine}})
 				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" 
 					model="{ firstModel:firstModel, secondModel:secondModel }" version="1.1">
 					<g vgraph-axis="'left'" control="firstModel"
@@ -477,10 +505,14 @@
 						tick-length="4" tick-padding="-2"></g>
 					<g vgraph-axis="'top'" control="secondModel"
 						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					<g vgraph-line="line" interval="'x'" control="firstModel"
+					<g vgraph-line
+						feed="line" interval="'x'"
+						control="firstModel"
 						value="'y1'" name="firstLine"
 						reference="l1"></g>
-					<g vgraph-line="line" interval="'x2'" control="secondModel"
+					<g vgraph-line 
+						feed="line" interval="'x2'"
+						control="secondModel"
 						value="'y2'" name="secondLine"
 						reference="l2"></g>
 					<g vgraph-target="['l1','l2']" target="highlight" point-radius="5"></g>
@@ -488,7 +520,7 @@
 				</svg>
 			</div>
 
-			<strong>two x, one y scale</strong>
+			<strong>two x, one y scale (normalizeY)</strong>
 			<div ng-controller="MultiAxis2Ctrl" class='grid-on'>
 				({{highlight.point.firstModel.$interval}},{{highlight.point.firstModel.firstLine}}) : 
 				({{highlight.point.secondModel.$interval}},{{highlight.point.secondModel.secondLine}})
@@ -502,10 +534,12 @@
 						tick-length="4" tick-padding="-2"></g>
 					<g vgraph-axis="'top'" control="secondModel"
 						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					<g vgraph-line="line" interval="'x'" control="firstModel"
+					<g vgraph-line
+						feed="line" interval="'x'" control="firstModel"
 						value="'y1'" name="firstLine"
 						reference="l1"></g>
-					<g vgraph-line="line" interval="'x2'" control="secondModel"
+					<g vgraph-line
+						feed="line" interval="'x2'" control="secondModel"
 						value="'y2'" name="secondLine"
 						reference="l2"></g>
 					<g vgraph-target="['l1','l2']" target="highlight" point-radius="5"></g>
@@ -557,11 +591,10 @@
 			-->
 			<h5>Zooming - offset</h5>
 			<div ng-controller="MultiZoomCtrl" class='grid-on'>
-				({{highlight.point.firstModel.$interval}},{{highlight.point.firstModel.firstLine}}) : 
-				({{highlight.point.secondModel.$interval}},{{highlight.point.secondModel.secondLine}})
-				:{{ line.length }}:
-				<svg vgraph-chart="graph" 
-					model="{ firstModel:firstModel, secondModel:secondModel }">
+				({{highlight.point.firstModel.$index}},{{highlight.point.firstModel.firstLine}}) : 
+				({{highlight.point.secondModel.$index}},{{highlight.point.secondModel.secondLine}})
+				:{{ feed1.length }}:{{ feed2.length }}
+				<svg vgraph-chart="graph">
 					<g vgraph-axis="'left'" control="firstModel"
 						tick-length="4" tick-padding="-2"></g>
 					<g vgraph-axis="'bottom'" control="firstModel"
@@ -571,25 +604,22 @@
 					<g vgraph-axis="'top'" control="secondModel"
 						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
 					
-					<g vgraph-line="feed1" interval="'x'" control="firstModel"
-						value="'y1'" name="firstLine" class="line red"></g>
-					<g vgraph-line="feed2" interval="'x2'" control="secondModel"
-						value="'y2'" name="secondLine" class="line blue"></g>
+					<g vgraph-line="config[0]" class="line red"></g>
+					<g vgraph-line="config[1]" class="line blue"></g>
 
 					<g vgraph-focus="dragPos" lose-focus="dragStop"></g>
 					<g vgraph-interact="highlight" d-begin="dragStart" d-change="dragPos" d-end="dragStop"></g>
 				</svg>
-
-				<svg class="zoom" vgraph-chart="zoom" 
-					model="{ firstModel:firstModel, secondModel:secondModel }">
+				<svg class="zoom" vgraph-chart="zoom">
 					<g vgraph-axis="'bottom'" control="firstModel"
 						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
 					<g vgraph-axis="'top'" control="secondModel"
 						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
 
-					<g vgraph-multi-line config="config"></g>
+					<g vgraph-multi-line="config"></g>
 
 					<g vgraph-zoom="graph" control="firstModel"></g>
+				
 				</svg>
 			</div>
 		</section>

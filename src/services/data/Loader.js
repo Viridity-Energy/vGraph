@@ -11,8 +11,7 @@ angular.module( 'vgraph' ).factory( 'DataLoader',
                     dis.ready = true;
                 }),
                 dataReg = feed.$on( 'data', function( data ){
-                    var i, c,
-                        j, co;
+                    var i, c;
 
                     function procer( j ){
                         var cfg = confs[j];
@@ -22,6 +21,13 @@ angular.module( 'vgraph' ).factory( 'DataLoader',
                     for( i = 0, c = data.points.length; i < c; i++ ){
                         Object.keys(confs).forEach( procer );
                     }
+                }),
+                errorState = feed.$on( 'error', function( error ){
+                    dataModel.setError( error );
+                }),
+                forceReset = feed.$on( 'reset', function(){
+                    dataModel.reset();
+                    dis.ready = false;
                 });
 
             this.feed = feed;
@@ -32,6 +38,8 @@ angular.module( 'vgraph' ).factory( 'DataLoader',
             
             this.$destroy = function(){
                 dataModel.$ignore( this );
+                errorState();
+                forceReset();
                 readyReg();
                 dataReg();
             };
@@ -87,7 +95,7 @@ angular.module( 'vgraph' ).factory( 'DataLoader',
                     }
                 });
 
-                this.confs[ cfg.$uid ] = cfg 
+                this.confs[ cfg.$uid ] = cfg;
             }
         };
 
@@ -104,20 +112,26 @@ angular.module( 'vgraph' ).factory( 'DataLoader',
                 return;
             }
 
-            if ( conf.parseValue ){
-                point = this.dataModel.setValue(
-                    conf.parseInterval( datum ),
-                    conf.ref.name,
-                    conf.parseValue( datum )
-                );
-            }else{
-                point = this.dataModel.getNode(
-                    conf.parseInterval( datum )
-                );
-            }
+            try{
+                if ( conf.parseValue ){
+                    point = this.dataModel.setValue(
+                        conf.parseInterval( datum ),
+                        conf.ref.name,
+                        conf.parseValue( datum )
+                    );
+                }else{
+                    point = this.dataModel.getNode(
+                        conf.parseInterval( datum )
+                    );
+                }
 
-            if ( conf.massage ){
-                conf.massage( point, datum, reference );
+                if ( conf.massage ){
+                    conf.massage( point, datum, reference );
+                }
+            }catch( ex ){
+                console.log( 'failed to load', datum, conf.parseInterval(datum), conf.parseValue(datum) );
+                console.log( 'conf:', conf );
+                console.log( ex );
             }
         };
 

@@ -1,6 +1,6 @@
 angular.module( 'vgraph' ).directive( 'vgraphStack',
-    [ '$compile', 'ComponentGenerator', 'StatCalculations',
-    function( $compile, ComponentGenerator, StatCalculations ) {
+    [ '$compile', 'ComponentGenerator', 'StatCalculations', 'GraphModel',
+    function( $compile, ComponentGenerator, StatCalculations, GraphModel ) {
         'use strict';
 
         return {
@@ -10,9 +10,10 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                 feed: '=?feed'
             },
             link : function( scope, $el, attrs, requirements ){
-                var control = attrs.control || 'default',
+                var viewName = attrs.control || GraphModel.defaultView,
+                    model = GraphModel.defaultModel, // TODO : model
                     graph = requirements[0].graph,
-                    chart = graph.views[control],
+                    view = graph.views[viewName],
                     el = $el[0],
                     unwatch,
                     childScope,
@@ -48,7 +49,7 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                             if ( !cfg.ref ){
                                 cfg.ref = {
                                     name: cfg.name,
-                                    view: control
+                                    view: viewName
                                 };
                             }
 
@@ -78,12 +79,12 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                     unwatch();
                 });
 
-                chart.register({
-                    parse : function( sampled ){
+                view.register({
+                    parse : function( models ){
                         var config = scope.config;
 
                         StatCalculations.$resetCalcs( config );
-                        StatCalculations.stack( config, sampled );
+                        StatCalculations.stack( config, models[model] );
                     }
                 });
             }

@@ -62,15 +62,15 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
                 scope.$watchCollection('config', parseConf );
 
                 view.register({
-                    parse : function( sampled ){
+                    parse : function( models ){
                         var start = view.x.scale( view.viewport.minInterval ),
                             stop = view.x.scale( view.viewport.maxInterval ),
                             totalPixels = stop - start,
                             barWidth = padding + minWidth,
                             totalBars = totalPixels / barWidth,
-                            buckets = sampled.$bucketize( totalBars );
+                            buckets = models.$bucketize( totalBars );
 
-                        return ComponentGenerator.parseStackedLimits( sampled, lines );
+                        return ComponentGenerator.parseStackedLimits( models, lines );
                     },
                     build : function( pane, data ){
                         var i, c,

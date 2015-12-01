@@ -1,23 +1,21 @@
-angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
-    [ '$compile', 'ComponentGenerator', 'GraphModel',
-    function( $compile, ComponentGenerator, GraphModel ) {
+angular.module( 'vgraph' ).directive( 'vgraphMultiIndicator',
+    [ '$compile',
+    function( $compile ) {
         'use strict';
 
         return {
-            require : ['^vgraphChart'],
             scope : {
-                config : '=vgraphMultiLine',
-                feed : '=?feed'
+                config : '=config'
             },
             link : function( scope, $el, attrs ){
-                var viewName = attrs.view || GraphModel.defaultView,
-                    modelName = attrs.model || GraphModel.defaultModel,
+                var viewName = attrs.control || GraphModel.defaultView, // TODO
                     childScope,
                     unwatch;
 
                 function parseConf( configs ){
                     var i, c,
                         cfg,
+                        refs = [],
                         lines,
                         elements;
 
@@ -33,18 +31,13 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                         for( i = 0, c = configs.length; i < c; i++ ){
                             cfg = configs[i];
                             
-                            if ( !cfg.feed ){
-                                console.log('no feed');
-                                cfg.feed = scope.feed;
+                            if ( cfg.ref ){
+                                refs.push( cfg.ref );
+                            }else{
+                                refs.push( cfg );
                             }
-                            if ( !cfg.ref ){
-                                cfg.ref = {
-                                    name: cfg.name,
-                                    view: viewName,
-                                    model: modelName
-                                };
-                            }
-                            lines += '<path vgraph-line="config['+i+']"></path>';
+
+                            lines += '<g vgraph-indicator="refs['+i+']"></g>';
                         }
 
                         elements = ComponentGenerator.svgCompile( lines );
@@ -54,6 +47,8 @@ angular.module( 'vgraph' ).directive( 'vgraphMultiLine',
                         }
 
                         childScope = scope.$new();
+                        childScope.refs = refs;
+
                         $compile( elements )( childScope );
                     }
                 }

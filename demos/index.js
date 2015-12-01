@@ -8,28 +8,53 @@ angular.module( 'vgraph' ).controller( 'AppCtrl', [
 angular.module( 'vgraph' ).controller( 'FloodCtrl',
 	['$scope', '$timeout', 'GraphModel', 'LinearModel',
 	function( $scope, $timeout, GraphModel, LinearModel ){
-		var data = [ {x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40}  ],
+		var ref1 = {
+				name: 'someLine1'
+			},
+			data = [ {x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40}  ],
 			interval,
 			boxModel;
 
-		$scope.woot = 'Hello';
-		$timeout(function(){
-			$scope.woot = 'World';
-		},2000);
-
 		$scope.highlight = {};
 		$scope.line = data;
-		$scope.graph = new GraphModel();
-		$scope.model = new LinearModel({
-			x : {
-				scale : function(){
-					return d3.scale.linear();
-				}
+		
+		$scope.config = [
+			{
+				ref: ref1,
+				feed: data,
+				value: 'y1',
+				interval: 'x',
+				reference: 'l1'
 			},
-			y : {
-				padding : 0.05
+			{
+				ref: {
+					name: 'someLine2'
+				},
+				feed: data,
+				value: 'y2',
+				interval: 'x',
+				reference: 'l2'
+			},
+			{
+				ref: {
+					name: 'someLine3'
+				},
+				feed: data,
+				value: 'y3',
+				interval: 'x',
+				reference: 'l3'
+			},
+			{
+				ref: {
+					name: 'someLine4'
+				},
+				feed: data,
+				value: 'y4',
+				interval: 'x',
+				reference: 'l4'
 			}
-		});
+		];
+		$scope.targets = [ ref1, 'l2', 'l4' ];
 
 		for( var i = 0, c = 20; i < c; i++ ){
 			var counter = 0;
@@ -46,6 +71,20 @@ angular.module( 'vgraph' ).controller( 'FloodCtrl',
 			});
 		}
 		
+		$scope.graph = new GraphModel({
+			x : {
+				scale : function(){
+					return d3.scale.linear();
+				}
+			},
+			y : {
+				padding : 0.05,
+				format: function( y ){
+					return ':' + y;
+				}
+			}
+		});
+
 		$scope.graph.setBounds({
 				min : null,
 				max : null
@@ -68,22 +107,12 @@ angular.module( 'vgraph' ).controller( 'LoadingCtrl',
 	function( $scope, GraphModel, LinearModel ){
 		var data = [];
 
+		$scope.line = data;
 		$scope.graph = new GraphModel({
 			onRender: function(){
 				$scope.$apply()
 			}
 		});
-		$scope.model = new LinearModel({
-			x : {
-				scale : function(){
-					return d3.scale.linear();
-				}
-			},
-			y : {
-				padding : 0.05
-			}
-		});
-		$scope.line = data;
 		
 		$scope.graph.setBounds({
 				min : null,
@@ -101,18 +130,16 @@ angular.module( 'vgraph' ).controller( 'LoadingCtrl',
 			});
 
 		setTimeout(function(){
-			$scope.$apply(function(){
-				$scope.graph.message = 'This Go Boom - Sample';
-			});
+			$scope.graph.error('Error for the graph');
 		}, 2000);
 
 		setTimeout(function(){
-			$scope.model.setError('--==model error==--');
+			data.$error('--==model error==--');
 		}, 4000);
 
 		setTimeout(function(){
 			$scope.$apply(function(){
-				var data = [];
+				data = [];
 
 				$scope.graph.message = null;
 				$scope.line = data;
@@ -138,7 +165,7 @@ angular.module( 'vgraph' ).controller( 'LoadingCtrl',
 
 		setTimeout(function(){
 			$scope.$apply(function(){
-				$scope.model.reset();
+				data.$reset();
 			});
 		}, 8000);
 
@@ -180,16 +207,6 @@ angular.module( 'vgraph' ).controller( 'NullCtrl', [
 		$scope.highlight = {};
 		$scope.line = data;
 		$scope.graph = new GraphModel();
-		$scope.model = new LinearModel({
-			x : {
-				scale : function(){
-					return d3.scale.linear();
-				}
-			},
-			y : {
-				padding : 0.05
-			}
-		});
 
 		$scope.config = [
 			{ name : 'y1', className : 'red', feed: data, interval: 'x' },
@@ -244,16 +261,6 @@ angular.module( 'vgraph' ).controller( 'ResizeCtrl', [
 		$scope.highlight = {};
 		$scope.line = data;
 		$scope.graph = new GraphModel();
-		$scope.model = new LinearModel({
-			x : {
-				scale : function(){
-					return d3.scale.linear();
-				}
-			},
-			y : {
-				padding : 0.05
-			}
-		});
 
 		$scope.resize = function(){
 			if ( wide ){
@@ -301,16 +308,6 @@ angular.module( 'vgraph' ).controller( 'MultiCtrl',
 
 		$scope.line = data;
 		$scope.graph = new GraphModel();
-		$scope.model = new LinearModel({
-			x : {
-				scale : function(){
-					return d3.scale.linear();
-				}
-			},
-			y : {
-				padding : 0.05
-			}
-		});
 
 		// x is the interval, y is the function pulling the value
 		$scope.config = [
@@ -360,7 +357,6 @@ angular.module( 'vgraph' ).controller( 'MultiCtrl',
 			data.push( p );
 		}
 
-		$scope.model.dataReady( $scope );
 		$scope.graph.setBounds({
 				min : null,
 				max : null
@@ -387,16 +383,6 @@ angular.module( 'vgraph' ).controller( 'MixerCtrl',
 
 		$scope.line = data;
 		$scope.graph = new GraphModel();
-		$scope.model = new LinearModel({
-			x : {
-				scale : function(){
-					return d3.scale.linear();
-				}
-			},
-			y : {
-				padding : 0.05
-			}
-		});
 
 		$scope.formatter = function( point ){
 			return point.compare.diff;
@@ -459,16 +445,6 @@ angular.module( 'vgraph' ).controller( 'RawCtrl',
 
 		$scope.line = data;
 		$scope.graph = new GraphModel();
-		$scope.model = new LinearModel({
-			x : {
-				scale : function(){
-					return d3.scale.linear();
-				}
-			},
-			y : {
-				padding : 0.05
-			}
-		});
 
 		// x is the interval, y is the function pulling the value
 		$scope.config = [
@@ -521,16 +497,7 @@ angular.module( 'vgraph' ).controller( 'StackedCtrl',
 		$scope.highlight = {};
 		$scope.line = data;
 		$scope.graph = new GraphModel();
-		$scope.model = new LinearModel({
-			x : {
-				scale : function(){
-					return d3.scale.linear();
-				}
-			},
-			y : {
-				padding : 0.05
-			}
-		});
+		
 		$scope.config = [
 			{ name : 'y1', className : 'red', feed: data, interval: 'x' },
 			{ name : 'y2', className : 'blue', feed: data, interval: 'x' },
@@ -552,14 +519,8 @@ angular.module( 'vgraph' ).controller( 'StackedCtrl',
 				};
 
 			data.push( p );
-
-			$scope.model.setValue( p.x, 'y1', p.y1 );
-			$scope.model.setValue( p.x, 'y2', p.y2 );
-			$scope.model.setValue( p.x, 'y3', p.y3 );
-			$scope.model.setValue( p.x, 'y4', p.y4 );
 		}
 
-		$scope.model.dataReady( $scope );
 		$scope.graph.setBounds({
 				min : null,
 				max : null
@@ -586,16 +547,7 @@ angular.module( 'vgraph' ).controller( 'StackedMultiCtrl',
 
 		$scope.highlight = {};
 		$scope.graph = new GraphModel();
-		$scope.model = new LinearModel({
-			x : {
-				scale : function(){
-					return d3.scale.linear();
-				}
-			},
-			y : {
-				padding : 0.05
-			}
-		});
+		
 		$scope.config = [
 			{ name : 'y1', className : 'red', feed: data, interval: 'x' },
 			{ name : 'y2', className : 'blue', feed: data, interval: 'x' },
@@ -627,7 +579,6 @@ angular.module( 'vgraph' ).controller( 'StackedMultiCtrl',
 			data.push( p );
 		}
 
-		$scope.model.dataReady( $scope );
 		$scope.graph.setBounds({
 				min : 0,
 				max : 3000
@@ -654,16 +605,7 @@ angular.module( 'vgraph' ).controller( 'SimpleStackedMultiCtrl',
 
 		$scope.line = data;
 		$scope.graph = new GraphModel();
-		$scope.model = new LinearModel({
-			x : {
-				scale : function(){
-					return d3.scale.linear();
-				}
-			},
-			y : {
-				padding : 0.05
-			}
-		});
+		
 		$scope.config = [
 			{ name : 'y1', className : 'red', feed: data },
 			{ name : 'y2', className : 'blue', feed: data },
@@ -726,7 +668,6 @@ angular.module( 'vgraph' ).controller( 'SimpleStackedMultiCtrl',
 		data[data.length-1].high = true;
 
 		$scope.data = data;
-		$scope.model.dataReady( $scope );
 		$scope.graph.setBounds({
 				min : null,
 				max : null
@@ -753,16 +694,7 @@ angular.module( 'vgraph' ).controller( 'StackedClassCtrl',
 
 		$scope.line = data;
 		$scope.graph = new GraphModel();
-		$scope.model = new LinearModel({
-			x : {
-				scale : function(){
-					return d3.scale.linear();
-				}
-			},
-			y : {
-				padding : 0.05
-			}
-		});
+		
 		$scope.config = [
 			{ name : 'y1', className : 'red', feed: data, interval: 'x' },
 			{ name : 'y2', className : 'blue', feed: data, interval: 'x' },
@@ -784,14 +716,8 @@ angular.module( 'vgraph' ).controller( 'StackedClassCtrl',
 				};
 
 			data.push( p );
-
-			$scope.model.setValue( p.x, 'y1', p.y1 );
-			$scope.model.setValue( p.x, 'y2', p.y2 );
-			$scope.model.setValue( p.x, 'y3', p.y3 );
-			$scope.model.setValue( p.x, 'y4', p.y4 );
 		}
 
-		$scope.model.dataReady( $scope );
 		$scope.graph.setBounds({
 				min : null,
 				max : null
@@ -818,16 +744,6 @@ angular.module( 'vgraph' ).controller( 'SpeedCtrl',
 
 		$scope.line = data;
 		$scope.graph = new GraphModel();
-		$scope.model = new LinearModel({
-			x : {
-				scale : function(){
-					return d3.scale.linear();
-				}
-			},
-			y : {
-				padding : 0.05
-			}
-		});
 
 		var counter = 0;
 		interval = setInterval(function(){
@@ -876,16 +792,6 @@ angular.module( 'vgraph' ).controller( 'GrowingCtrl',
 
 		$scope.line = data;
 		$scope.graph = new GraphModel();
-		$scope.model = new LinearModel({
-			x : {
-				scale : function(){
-					return d3.scale.linear();
-				}
-			},
-			y : {
-				padding : 0.05
-			}
-		});
 
 		interval = setInterval(function(){
 			var min = -1,
@@ -930,16 +836,6 @@ angular.module( 'vgraph' ).controller( 'StaticCtrl',
 
 		$scope.line = data;
 		$scope.graph = new GraphModel();
-		$scope.model = new LinearModel({
-			x : {
-				scale : function(){
-					return d3.scale.linear();
-				}
-			},
-			y : {
-				padding : 0.05
-			}
-		});
 
 		interval = setInterval(function(){
 			var min = -1,
@@ -976,62 +872,80 @@ angular.module( 'vgraph' ).controller( 'StaticCtrl',
 );
 
 angular.module( 'vgraph' ).controller( 'MultiZoomCtrl',
-	['$scope', 'GraphModel', 'LinearModel', 'DataCollection',
-	function( $scope, GraphModel, LinearModel, DataCollection ){
+	['$scope', 'GraphModel', 'ViewModel', 'StatCollection',
+	function( $scope, GraphModel, ViewModel, StatCollection ){
 		var feed1 = [ {x1 : 0, y1 : 20} ],
 			feed2 = [ {x2: 150, y2 : 400} ],
 			interval,
 			boxModel;
 
+		$scope.feed1 = feed1,
+		$scope.feed2 = feed2;
+		
 		$scope.config = [
 			{ 
-				name : 'firstLine',
+				ref : {
+					name: 'firstLine',
+					view: 'firstModel'
+				},
 				feed: feed1,
-				className : 'red', 
-				control: 'firstModel',
+				className : 'red',
 				interval: 'x1',
 				value: 'y1'
 			},
 			{ 
-				name : 'secondLine',
+				ref: {
+					name: 'secondLine',
+					view: 'secondModel',
+				},
 				feed: feed2,
 				className : 'blue',
-				control: 'secondModel',
 				interval: 'x2',
 				value: 'y2'
 			}
 		];
 
-		$scope.graph = new GraphModel();
-		$scope.zoom = new GraphModel();
-
 		$scope.feed1 = feed1;
 		$scope.feed2 = feed2;
 
-		$scope.firstModel = new LinearModel({
-			x : {
-				scale : function(){
-					return d3.scale.linear();
-				}
-			},
-			y : {
-				padding : 0.05
+		$scope.graph = new GraphModel(
+			{},
+			{
+				views: {
+					'firstModel': (new ViewModel()).addModel(
+                        GraphModel.defaultModel,
+                        new StatCollection(function(datum){
+                            return Math.round(datum._$interval);
+                        })
+                    ),
+					'secondModel': (new ViewModel()).addModel(
+                        GraphModel.defaultModel,
+                        new StatCollection(function(datum){
+                            return Math.round(datum._$interval);
+                        })
+                    )
+                }
 			}
-		});
-		$scope.secondModel = new LinearModel({
-			x : {
-				scale : function(){
-					return d3.scale.linear();
-				}
-			},
-			y : {
-				padding : 0.05
+		);
+		$scope.zoom = new GraphModel(
+			{},
+			{
+				views: {
+					'firstModel': (new ViewModel()).addModel(
+                        GraphModel.defaultModel,
+                        new StatCollection(function(datum){
+                            return Math.round(datum._$interval);
+                        })
+                    ),
+					'secondModel': (new ViewModel()).addModel(
+                        GraphModel.defaultModel,
+                        new StatCollection(function(datum){
+                            return Math.round(datum._$interval);
+                        })
+                    )
+                }
 			}
-		});
-		$scope.graphModel = new DataCollection({
-			'firstModel': $scope.firstModel,
-			'secondModel': $scope.secondModel
-		});
+		);
 
 		var i, c,
 			min = -1,
@@ -1084,8 +998,8 @@ angular.module( 'vgraph' ).controller( 'MultiZoomCtrl',
 );
 
 angular.module( 'vgraph' ).controller( 'MultiAxisCtrl',
-	['$scope', '$element', 'GraphModel', 'LinearModel', 'DataCollection',
-	function( $scope, $element, GraphModel, LinearModel, DataCollection ){
+	['$scope', '$element', 'GraphModel', 'ViewModel', 'StatCollection',
+	function( $scope, $element, GraphModel, ViewModel, StatCollection ){
 		var data = [ {x : 0, x2: 150, y1 : 20, y2 : 400}  ],
 			interval,
 			boxModel;
@@ -1151,52 +1065,68 @@ angular.module( 'vgraph' ).controller( 'MultiAxisCtrl',
 			$scope.exportData = true;
 		};
 
+		$scope.line = data;
 		$scope.config = [
 			{ 
-				name : 'firstLine',
+				ref: {
+					name: 'firstLine',
+					view: 'firstModel'
+				},
 				feed: data,
 				className : 'red', 
-				control: 'firstModel',
 				interval: 'x',
 				value: 'y1'
 			},
 			{ 
-				name : 'secondLine',
+				ref: {
+					name: 'secondLine',
+					view: 'secondModel'
+				},
 				feed: data,
 				className : 'blue',
-				control: 'secondModel',
 				interval: 'x2',
 				value: 'y2'
 			}
 		];
 
-		$scope.line = data;
-		$scope.graph = new GraphModel();
-		$scope.zoom = new GraphModel();
-		$scope.firstModel = new LinearModel({
-			x : {
-				scale : function(){
-					return d3.scale.linear();
-				}
-			},
-			y : {
-				padding : 0.05
+		$scope.graph = new GraphModel(
+			{},
+			{
+				views: {
+					'firstModel': (new ViewModel()).addModel(
+                        GraphModel.defaultModel,
+                        new StatCollection(function(datum){
+                            return Math.round(datum._$interval);
+                        })
+                    ),
+					'secondModel': (new ViewModel()).addModel(
+                        GraphModel.defaultModel,
+                        new StatCollection(function(datum){
+                            return Math.round(datum._$interval);
+                        })
+                    )
+                }
 			}
-		});
-		$scope.secondModel = new LinearModel({
-			x : {
-				scale : function(){
-					return d3.scale.linear();
-				}
-			},
-			y : {
-				padding : 0.05
+		);
+		$scope.zoom = new GraphModel(
+			{},
+			{
+				views: {
+					'firstModel': (new ViewModel()).addModel(
+                        GraphModel.defaultModel,
+                        new StatCollection(function(datum){
+                            return Math.round(datum._$interval);
+                        })
+                    ),
+					'secondModel': (new ViewModel()).addModel(
+                        GraphModel.defaultModel,
+                        new StatCollection(function(datum){
+                            return Math.round(datum._$interval);
+                        })
+                    )
+                }
 			}
-		});
-		$scope.graphModel = new DataCollection({
-			'firstModel': $scope.firstModel,
-			'secondModel': $scope.secondModel
-		});
+		);
 
 		var counter = 0;
 		interval = setInterval(function(){
@@ -1250,8 +1180,8 @@ angular.module( 'vgraph' ).controller( 'MultiAxisCtrl',
 );
 
 angular.module( 'vgraph' ).controller( 'MultiAxis2Ctrl',
-	['$scope', 'GraphModel', 'LinearModel', 'DataCollection',
-	function( $scope, GraphModel, LinearModel, DataCollection ){
+	['$scope', 'GraphModel', 'ViewModel', 'StatCollection',
+	function( $scope, GraphModel, ViewModel, StatCollection ){
 		var data = [ {x : 0, x2: 150, y1 : 20, y2 : 400}  ],
 			interval,
 			boxModel;
@@ -1300,32 +1230,47 @@ angular.module( 'vgraph' ).controller( 'MultiAxis2Ctrl',
 		$scope.line = data;
 		$scope.graph = new GraphModel();
 		$scope.zoom = new GraphModel();
-		$scope.firstModel = new LinearModel({
-			x : {
-				scale : function(){
-					return d3.scale.linear();
-				}
+		$scope.graph = new GraphModel(
+			{
 			},
-			y : {
-				padding : 0.05
+			{
+				normalizeY: true,
+				views: {
+					'firstModel': (new ViewModel()).addModel(
+                        GraphModel.defaultModel,
+                        new StatCollection(function(datum){
+                            return Math.round(datum._$interval);
+                        })
+                    ),
+					'secondModel': (new ViewModel()).addModel(
+                        GraphModel.defaultModel,
+                        new StatCollection(function(datum){
+                            return Math.round(datum._$interval);
+                        })
+                    )
+                }
 			}
-		});
-		$scope.secondModel = new LinearModel({
-			x : {
-				scale : function(){
-					return d3.scale.linear();
-				}
-			},
-			y : {
-				padding : 0.05
+		);
+		$scope.zoom = new GraphModel(
+			{},
+			{
+				normalizeY: true,
+				views: {
+					'firstModel': (new ViewModel()).addModel(
+                        GraphModel.defaultModel,
+                        new StatCollection(function(datum){
+                            return Math.round(datum._$interval);
+                        })
+                    ),
+					'secondModel': (new ViewModel()).addModel(
+                        GraphModel.defaultModel,
+                        new StatCollection(function(datum){
+                            return Math.round(datum._$interval);
+                        })
+                    )
+                }
 			}
-		});
-		$scope.graphModel = new DataCollection({
-			'firstModel': $scope.firstModel,
-			'secondModel': $scope.secondModel
-		});
-
-		$scope.graph.normalizeY = true;
+		);
 
 		var counter = 0;
 		interval = setInterval(function(){

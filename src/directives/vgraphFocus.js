@@ -74,7 +74,7 @@ angular.module( 'vgraph' ).directive( 'vgraphFocus',
                                 stop = stop - box.innerLeft;
                             }
 
-                            offset = graph.getPrimaryView().pane.offset;
+                            offset = graph.views[Object.keys(graph.views)[0]].pane.offset;
                             currentWidth = box.innerWidth * offset.right - box.innerWidth * offset.left;
                             
                             graph.setPane(

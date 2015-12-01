@@ -1,6 +1,6 @@
 angular.module( 'vgraph' ).directive( 'vgraphIndicator',
-    [
-    function(){
+    [ 'GraphModel',
+    function( GraphModel ){
         'use strict';
 
         return {
@@ -12,6 +12,7 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
                 var ref,
                     pulse,
                     showing,
+                    model = GraphModel.defaultModel, // TODO : model
                     radius = scope.$eval( attrs.pointRadius ) || 3,
                     outer = scope.$eval( attrs.outerRadius ),
                     $el = d3.select( el[0] )
@@ -26,7 +27,7 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
                         .attr( 'visibility', 'hidden' );
 
                 if ( !scope.ref ){
-                    ref = requirements[0].graph.refs[attrs.vgraphIndicator];
+                    ref = requirements[0].graph.references[attrs.vgraphIndicator];
                 }else{
                     ref = scope.ref;
                 }
@@ -57,35 +58,25 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
                 ref.$view.register({
                     error: clearComponent,
                     loading: clearComponent,
-                    finalize : function( sampled ){
+                    finalize : function( models ){
                         var d,
                             x,
                             y,
                             name = ref.alias || ref.name,
-                            stats = sampled.$fields[name];
+                            myModel = models[model];
 
-                        if ( stats ){
-                            d = sampled.$index[stats.$maxIndex];
+                        d = myModel[myModel.length-1];
+                        if ( d && d[name] ){
+                            x = d._$interval;
+                            y = ref.$view.y.scale( d[name] );
 
-                            if ( d && d[name] ){
-                                x = d._$interval;
-                                y = ref.$view.y.scale( d[name] );
-
-                                if ( x && y ){
-                                    showing = true;
-                                    $el.attr( 'transform', 'translate(' + x + ',' + y + ')' );
-                                
-                                    $circle.attr( 'visibility', 'visible' );
-                                    if ( $outer ){
-                                        $outer.attr( 'visibility', 'visible' );
-                                    }
-                                }
-                            }else{
-                                showing = false;
-
-                                $circle.attr( 'visibility', 'hidden' );
+                            if ( x && y ){
+                                showing = true;
+                                $el.attr( 'transform', 'translate(' + x + ',' + y + ')' );
+                            
+                                $circle.attr( 'visibility', 'visible' );
                                 if ( $outer ){
-                                    $outer.attr( 'visibility', 'hidden' );
+                                    $outer.attr( 'visibility', 'visible' );
                                 }
                             }
                         }else{

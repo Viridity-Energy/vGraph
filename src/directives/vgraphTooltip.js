@@ -3,27 +3,83 @@ angular.module( 'vgraph' ).directive( 'vgraphTooltip',
     function(){
         'use strict';
 
+        function makeConfig( graph, $scope, $attrs ){
+            var cfg = $scope.config;
+
+            if ( $attrs.reference ){
+                return makeByPointReference( $attrs.reference );
+            }else if ( cfg ){
+                if ( cfg.ref ){
+                    return makeByConfig(cfg.ref);
+                }else if ( angular.isString(cfg) ){
+                    return makeByConfigReference( graph, cfg );
+                }else{
+                    return cfg;
+                }
+            }else{
+                console.log( 'can not parse tooltip config' );
+            }
+        }
+
+        function makeByConfig( ref ){
+            return {
+                formatter: function( point ){
+                    return point[ref.view][ref.model][ref.field];
+                },
+                xParse: function( point ){
+                    return point[ref.view][ref.model]._$interval;
+                },
+                yParse: function( point ){
+                    return ref.$view.y.scale( point[ref.view][ref.model][ref.field] );
+                }
+            };
+        }
+
+        function makeByConfigReference( graph, ref ){
+            return makeByConfig( graph.references[ref] );
+        }
+
+        function makeByPointReference( reference ){
+            return {
+                formatter: function( point ){
+                    return point[reference].value;
+                },
+                xParse: function( point ){
+                    return point[reference].x;
+                },
+                yParse: function( point ){
+                    return point[reference].y;
+                }
+            };
+        }
+
         return {
             require : ['^vgraphChart'],
             scope : {
-                formatter: '=textFormatter',
                 config: '=?vgraphTooltip',
-                point: '=?point',
-                x: '=?positionX',
-                y: '=?positionY'
+                point: '=?point'
             },
+            /*
+            config
+            {
+                ref {
+                    view
+                    model
+                    field
+                }
+            }
+            ------
+            is string ===> reference
+            ------
+            {
+                formatter
+                xParse
+                yParse
+            }
+            */
             link : function( scope, el, attrs, requirements ){
-                var cfg = scope.config,
-                    graph = requirements[0].graph,
-                    formatter = scope.formatter || function( d ){
-                        return d.compare.diff;
-                    },
-                    xParse = scope.x || function( d ){
-                        return d.compare.$_interval;
-                    },
-                    yParse = scope.y || function( d ){
-                        return d.compare.y;
-                    },
+                var graph = requirements[0].graph,
+                    cfg = makeConfig( graph, scope, attrs ),
                     xOffset = parseInt(attrs.offsetX) || 0,
                     yOffset = parseInt(attrs.offsetY) || 0,
                     $el = d3.select( el[0] )
@@ -43,13 +99,13 @@ angular.module( 'vgraph' ).directive( 'vgraphTooltip',
                         width;
 
                     if ( point ){
-                        value = yParse(point);
+                        value = cfg.yParse(point);
                     }
 
                     if ( value !== undefined ){
                         $y = value + yOffset;
-                        $x = xParse(point) + xOffset;
-                        $text.text( formatter(point) );
+                        $x = cfg.xParse(point) + xOffset;
+                        $text.text( cfg.formatter(point) );
                         width = $text.node().getComputedTextLength() + 5; // magic padding... for luls
 
                         $el.style( 'visibility', 'visible' );

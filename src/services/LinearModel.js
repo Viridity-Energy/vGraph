@@ -1,23 +1,11 @@
 angular.module( 'vgraph' ).factory( 'LinearModel',
-    [ 'StatCollection',
-    function ( StatCollection ) {
+    [ 'DataCollection',
+    function ( DataCollection ) {
         'use strict';
 
         var modelC = 0;
 
-    	function LinearModel( settings ){
-            if ( !settings ){
-                settings = {};
-            }
-
-            if ( !settings.x ){
-                settings.x = {};
-            }
-
-            if ( !settings.y ){
-                settings.y = {};
-            }
-
+    	function LinearModel(){
             this.$dataProc = regulator( 20, 200, function( lm ){
                 var registrations = lm.registrations;
 
@@ -27,7 +15,7 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
             });
 
             this.construct();
-            this.reset( settings );
+            this.reset();
         }
 
         LinearModel.prototype.construct = function(){
@@ -37,12 +25,6 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
 
             this.registrations = [];
             this.errorRegistrations = [];
-            this.point = {
-                reset : function( p ){
-                    p.$x = null;
-                    p.$y = null;
-                }
-            };
 
             this.getLoaders = function(){
                 return loaders;
@@ -61,66 +43,13 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
             };
         };
 
-        LinearModel.prototype.$ready = function(){
-            var i, c,
-                isReady = false,
-                loaders = this.getLoaders();
-
-            for( i = 0, c = loaders.length; i < c && !isReady; i++ ){
-                if ( loaders[i].ready ){
-                    isReady = true;
-                }
-            }
-
-            return isReady;
-        };
-
-        LinearModel.prototype.reset = function( settings ){
+        LinearModel.prototype.reset = function(){
+            this.data = new DataCollection();
             this.ready = false;
-            this.ratio = null;
-            this.data = new StatCollection();
-
-            if ( settings ){
-                this.config( settings || this );
-            }
 
             this.dataReady(true);
         };
         // expect a seed function to be defined
-
-        LinearModel.prototype.config = function( settings ){
-            this.x = {
-                massage : settings.x.massage || null,
-                padding : settings.x.padding || 0,
-                scale : settings.x.scale || function(){
-                    return d3.scale.linear();
-                },
-                // used to get ploting value
-                parse : settings.x.parse || function( d ){
-                    return d.$interval;
-                },
-                format : settings.x.format || d3.format('03d'),
-                tick : settings.x.tick || {}
-            };
-
-            this.y = {
-                massage : settings.y.massage || null,
-                padding : settings.y.padding || 0,
-                scale : settings.y.scale || function(){
-                    return d3.scale.linear();
-                },
-                // used to get ploting value
-                parse : settings.y.parse || function( d, plot ){
-                    if ( d === undefined || d === null){
-                        return null;
-                    }else{
-                        return d[ plot ];
-                    }
-                },
-                format : settings.y.format || d3.format(',.2f'),
-                tick : settings.y.tick || {}
-            };
-        };
 
         LinearModel.prototype.onError = function( cb ){
             this.errorRegistrations.push( cb );
@@ -142,7 +71,8 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
 
         LinearModel.prototype.setValue = function( interval, name, value ){
             this.dataReady();
-
+            this.ready = true;
+            
             return this.data.$setValue( interval, name, value );
         };
 
@@ -196,7 +126,7 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
         };
 
         LinearModel.prototype.clean = function(){
-            this.data.$sort();
+            this.data.$calcStats();
         };
 
         return LinearModel;

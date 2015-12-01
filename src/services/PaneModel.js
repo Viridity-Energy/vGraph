@@ -3,10 +3,11 @@ angular.module( 'vgraph' ).factory( 'PaneModel',
     function () {
         'use strict';
 
-        function PaneModel( dataModel ){
-            this.dataModel = dataModel;
-            this.x = {};
-            this.y = {};
+        function PaneModel( rawContainer, fitToPane, xObj, yObj ){
+            this.rawContainer = rawContainer;
+            this.fitToPane = fitToPane;
+            this.x = xObj;
+            this.y = yObj;
 
             this._bounds = {};
             this._pane = {};
@@ -28,10 +29,10 @@ angular.module( 'vgraph' ).factory( 'PaneModel',
 
         // TODO : where is this used?
         PaneModel.prototype.isValid = function( d ) {
-            var interval;
+            var index;
             if ( this.filtered ){
-                interval = d.$interval;
-                return this.filtered.$minInterval <= interval && interval <= this.filtered.$maxInterval;
+                index = d.$index;
+                return this.filtered.$minIndex <= index && index <= this.filtered.$maxIndex;
             }else{
                 return false;
                 
@@ -46,10 +47,10 @@ angular.module( 'vgraph' ).factory( 'PaneModel',
                 minInterval,
                 maxInterval,
                 x = this.x,
-                data = this.dataModel.data;
+                data = this.rawContainer.data;
 
             if ( data.length ){
-                this.dataModel.clean();
+                this.rawContainer.clean();
 
                 if ( this._bounds.x ){
                     $min = this._bounds.x.min || data.$minIndex;
@@ -123,12 +124,10 @@ angular.module( 'vgraph' ).factory( 'PaneModel',
                 // calculate the filtered points
                 this.filtered = data.$filter( minInterval, maxInterval );
 
-                if ( this.dataModel.fitToPane ){
+                if ( this.rawContainer.fitToPane ){
                     this.filtered.$addNode( data.$makePoint(minInterval) );
                     this.filtered.$addNode( data.$makePoint(maxInterval) );
                 }
-            }else{
-                this.filtered = data;
             }
         };
 

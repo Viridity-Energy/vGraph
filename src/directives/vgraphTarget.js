@@ -8,7 +8,7 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
             scope : {
                 pointRadius: '=pointRadius',
                 config: '=vgraphTarget',
-                target: '=target'
+                point: '=point'
             },
             link : function( $scope, el, attrs, requirements ){
                 var graph = requirements[0].graph,
@@ -34,13 +34,13 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
                         if ( attrs.noDots === undefined ){
                             angular.forEach( $scope.config, function( cfg ){
                                 var node,
-                                    ref = angular.isString(cfg) ? graph.refs[cfg] : cfg.ref,
+                                    ref = (angular.isString(cfg) ? graph.references[cfg] : cfg.ref) || cfg,
                                     view = ref.$view,
                                     name = ref.name,
                                     field = ref.field,
-                                    point = $scope.target[type][view.name],
+                                    datum = $scope.point[ref.view][ref.model],
                                     className = 'plot-'+name,
-                                    value = point[field];
+                                    value = datum[field];
                                 
                                 if ( value !== undefined ){
                                     node = $dots.selectAll( 'circle.point.'+className );
@@ -62,13 +62,12 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
                     }
                 }
 
-                if ( attrs.offset ){
-                    $scope.$watch('target.offset', setBar );
-                }else{
-                    $scope.$watch('target.point.$pos', function( dex ){
-                        setBar( dex ); 
-                    });
-                }
+                //if ( attrs.offset ){
+                //    $scope.$watch('target.offset', setBar );
+                //}else{
+                $scope.$watch('point.$pos', function( dex ){
+                    setBar( dex ); 
+                });
 
                 box.register(function(){
                     $highlight.attr( 'y1', box.innerTop )

@@ -14,6 +14,8 @@ angular.module( 'vgraph' ).directive( 'vgraphMessage',
                         .attr( 'class', 'outline' ),
                     $text = $el.append( 'text' );
 
+                $el.attr( 'visibility', 'hidden' );
+
                 box.register(function(){
                     if ( box.innerHeight ){
                         $outline.attr( 'transform', 'translate('+box.innerLeft+','+box.innerTop+')' )
@@ -32,11 +34,10 @@ angular.module( 'vgraph' ).directive( 'vgraphMessage',
                     }
                 });
 
-                scope.$watch(
+                graph.register(
                     function(){
-                        return graph.message;
-                    }, 
-                    function( msg ){
+                        var msg = graph.message;
+
                         if ( msg && !graph.loading ){
                             $el.attr( 'visibility', 'visible' );
                             $text.text( msg );

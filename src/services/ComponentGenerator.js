@@ -1,19 +1,22 @@
 angular.module( 'vgraph' ).factory( 'ComponentGenerator',
-    [ '$timeout', 'DrawLine', 'DrawArea', 'DataFeed', 'DataLoader',
-    function ( $timeout, DrawLine, DrawArea, DataFeed, DataLoader ) {
+    [ '$timeout', 'DrawLine', 'DrawArea', 'DataFeed', 'DataLoader', 'GraphModel',
+    function ( $timeout, DrawLine, DrawArea, DataFeed, DataLoader, GraphModel ) {
         'use strict';
 
         function createConfig( scope, attrs ){
-            var t = {
-                ref: {
-                    name: attrs.name,
-                    view: attrs.control
-                },
-                pair: scope.pair,
-                massage: scope.massage,
-                interval: scope.interval,
-                value: scope.value
-            };
+            var view = attrs.control || GraphModel.defaultView,
+                model = attrs.model || GraphModel.defaultModel,
+                t = {
+                    ref: {
+                        name: attrs.name,
+                        view: view,
+                        model: model
+                    },
+                    pair: scope.pair,
+                    massage: scope.massage,
+                    interval: scope.interval,
+                    value: scope.value
+                };
 
             if ( scope.pair ){
                 if ( scope.pair === '-' ){
@@ -22,7 +25,8 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                     t.pair = {
                         ref: {
                             name: attrs.name+'2',
-                            view: attrs.control
+                            view: view,
+                            model: model
                         },
                         massage: scope.massage,
                         interval: scope.interval,
@@ -44,28 +48,34 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 
         var cfgUid = 0;
         function normalizeConfig( cfg, graph ){
-            var value = cfg.value,
+            var ref,
+                value = cfg.value,
                 interval = cfg.interval;
 
-            if ( !cfg.$uid ){
+            if ( cfg.$uid === undefined ){
                 cfg.$uid = cfgUid++;
             }
 
             if ( !cfg.ref ){
                 cfg.ref = {};
             }
+            ref = cfg.ref;
 
-            if ( !cfg.ref.name ){
-                cfg.ref.name = cfg.name;
+            if ( !ref.name ){
+                ref.name = cfg.name;
             }
 
-            cfg.ref.field = cfg.ref.name;
+            ref.field = cfg.ref.name;
 
-            if ( !cfg.ref.view ){
-                cfg.ref.view = 'default';
+            if ( !ref.view ){
+                ref.view = GraphModel.defaultView;
+            }
+
+            if ( !ref.model ){
+                ref.model = GraphModel.defaultModel;
             }
             
-            cfg.ref.$view = graph.views[cfg.ref.view];
+            ref.$view = graph.views[ref.view];
 
             if ( cfg.pair ){
                 if ( cfg.pair.ref ){
@@ -130,17 +140,18 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 function connectToFeed( data ){
                     var lookup,
                         df = DataFeed.create( data, cfg.massage ),
-                        view = cfg.ref.$view,
-                        dataModel = view.dataModel;
+                        ref = cfg.ref,
+                        view = ref.$view,
+                        dataModel = view.pane.rawContainer;
 
                     lookup = lookupHash[df._$dfUid];
                     if ( !lookup ){
                         lookup = lookupHash[df._$dfUid] = {};
                     }
                     
-                    dataLoader = lookup[view.name];
+                    dataLoader = lookup[ref.$view.$vgvid];
                     if ( !dataLoader ){
-                        dataLoader = lookup[view.name] = new DataLoader(
+                        dataLoader = lookup[ref.$view.$vgvid] = new DataLoader(
                             df,
                             dataModel
                         );    
@@ -211,7 +222,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
             },
             // undefined =>  no value, so use last value, null => line break
             // this accepts sampled / filtered / raw
-            makeAreaCalc: function( view, cfg ){
+            makeAreaCalc: function( view ){
                 return d3.svg.area()
                     .defined(function(d){
                         return isNumeric(d[ name ]);
@@ -314,7 +325,6 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                             svgHtml +
                         '</g>','image/svg+xml'
                     )),
-                    children = parsed.childNodes,
                     g = parsed.childNodes[0],
                     result = g.childNodes;
 

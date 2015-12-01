@@ -17,7 +17,7 @@ angular.module( 'vgraph' ).directive( 'vgraphZone',
                             return d[ name ] === true;
                         })
                         .x(function( d ){
-                            return chart.x.scale( d.$interval );
+                            return chart.x.scale( d._$interval );
                         })
                         .y(function(){
                             return box.innerTop;

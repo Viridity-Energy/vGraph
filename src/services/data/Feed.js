@@ -45,6 +45,14 @@ angular.module( 'vgraph' ).factory( 'DataFeed',
                 dis.$trigger('ready');
             };
 
+            src.$error = function( err ){
+                dis.$trigger( 'error', err );
+            };
+
+            src.$reset = function(){
+                dis.$trigger( 'reset' );
+            };
+
             this.$push();
         };
 

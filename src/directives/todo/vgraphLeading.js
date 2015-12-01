@@ -54,7 +54,7 @@ angular.module( 'vgraph' ).directive( 'vgraphLeading',
                                 if ( pane.isValid(d) && d[name] ){
                                     points.push({
                                         el : el,
-                                        x : chart.x.scale( d.$interval ),
+                                        x : chart.x.scale( d._$interval ),
                                         y : chart.y.scale( d['$'+name] || d[name] ) // pick a calculated point first
                                     });
                                 }

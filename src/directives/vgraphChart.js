@@ -31,16 +31,13 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
 
         return {
             scope : {
-                graph : '=vgraphChart',
-                model : '=model'
+                graph : '=vgraphChart'
             },
             controller : ['$scope', function( $scope ){
-                var models = $scope.model,
-                    graph = $scope.graph;
+                var graph = $scope.graph;
 
                 this.graph = graph;
-
-                graph.addDataCollection( models );
+                graph.$scope = $scope;
 
                 graph.box.register(function(){
                     resize( graph.box );
