@@ -3189,7 +3189,8 @@ angular.module( 'vgraph' ).directive( 'vgraphCompare',
                         name1 = keys[0],
                         chart1 = graph.views[config[name1]],
                         name2 = keys[1],
-                        chart2 = graph.views[config[name2]];
+                        chart2 = graph.views[config[name2]],
+			reference = attrs.reference || '$compare';
 
                     function draw(){
                         fill.$d3.attr( 'd', fill.calc(graph.unified) );
@@ -3210,8 +3211,10 @@ angular.module( 'vgraph' ).directive( 'vgraphCompare',
                                 chart2, 
                                 name2,
                                 function( node, v1, v2, y1, y2 ){
-                                    node.$compare = {
+                                    node[reference] = {
                                         value: {
+					    dif1 : v1 - v2,
+					    dif2 : v2 - v1,
                                             middle : ( v1 + v2 ) / 2,
                                             difference : Math.abs( v1 - v2 ),
                                         },
