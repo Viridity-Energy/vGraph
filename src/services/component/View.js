@@ -1,89 +1,130 @@
-angular.module( 'vgraph' ).factory( 'ViewModel',
-    [ 'PaneModel', 'LinearModel',
-    function ( PaneModel, LinearModel ) {
+angular.module( 'vgraph' ).factory( 'ComponentView',
+    [ 'ComponentPane',
+    function ( ComponentPane ) {
         'use strict';
         
-        var id = 0;
+        var id = 1;
 
-        function ViewModel(){
-            this.x = {};
-            this.y = {};
+        function ComponentView(){
             this.$vgvid = id++;
-
-            this.pane = new PaneModel( new LinearModel(), false, this.x, this.y );
 
             this.models = {};
             this.components = [];
         }
 
-        ViewModel.prototype.addModel = function( name, dataModel ){
+        ComponentView.prototype.addModel = function( name, dataModel ){
             this.models[ name ] = dataModel;
 
             return this;
         };
 
-        ViewModel.prototype.configure = function( settings, box ){
-            var dis = this,
-                x = this.x,
-                y = this.y;
+        ComponentView.prototype.configure = function( settings, chartSettings, box, offset ){
+            var x, y,
+                models,
+                addModel = this.addModel.bind( this );
 
-            this.box = box || this.box;
-            this.makeInterval = settings.makeInterval;
-            this.adjustSettings = settings.adjustSettings;
+            if ( !settings ){
+                settings = {};
+            }
 
-            x.tick = settings.x.tick || {};
-            x.scale = settings.x.scale ? settings.x.scale() : d3.scale.linear();
-            x.center = function(){
-                return x.calc( (dis.pane.offset.$left+dis.pane.$offset.$right) / 2 );
+            console.log( settings );
+            x = {
+                min: settings.x ? settings.x.min : undefined,
+                max: settings.x ? settings.x.max : undefined
             };
-            x.padding = settings.x.padding;
-            x.massage = settings.x.massage;
-            x.format = settings.x.format || function( v ){
+            y = {
+                min: settings.y ? settings.y.min : undefined,
+                max: settings.y ? settings.y.max : undefined
+            };
+
+            this.x = x;
+            this.y = y;
+            
+            this.box = box;
+            this.pane = new ComponentPane( this.x, this.y );
+            this.managerName = settings.manager;
+            this.datumFactory = settings.datumFactory;
+
+            this.makeInterval = chartSettings.makeInterval;
+            this.adjustSettings = chartSettings.adjustSettings;
+            this.pane.fitToPane = chartSettings.fitToPane;
+
+            x.tick = chartSettings.x.tick || {};
+            x.scale = chartSettings.x.scale ? chartSettings.x.scale() : d3.scale.linear();
+            x.padding = chartSettings.x.padding;
+            x.massage = chartSettings.x.massage;
+            x.format = chartSettings.x.format || function( v ){
                 return v;
             };
 
-            y.tick = settings.y.tick || {};
-            y.scale = settings.y.scale ? settings.y.scale() : d3.scale.linear();
-            y.center = function(){
-                return ( y.calc(dis.viewport.minValue) + y.calc(dis.viewport.maxValue) ) / 2;
-            };
-            y.padding = settings.y.padding;
-            y.massage = settings.y.massage;
-            y.format = settings.y.format || function( v ){
+            y.tick = chartSettings.y.tick || {};
+            y.scale = chartSettings.y.scale ? chartSettings.y.scale() : d3.scale.linear();
+            y.padding = chartSettings.y.padding;
+            y.massage = chartSettings.y.massage;
+            y.format = chartSettings.y.format || function( v ){
                 return v;
             };
 
-            this.pane.fitToPane = settings.fitToPane;
+            if ( settings.models ){
+                if ( angular.isFunction(settings.models) ){
+                    models = settings.models();
+                }else{
+                    models = settings.models;
+                }
+
+                Object.keys( models ).forEach(function( modelName ){
+                    addModel( modelName, models[modelName] );
+                });
+            }
         };
 
-        ViewModel.prototype.register = function( component ){
+        ComponentView.prototype.setPage = function( page ){
+            var x = this.x;
+
+            this.manager = page.getManager( this.managerName );
+
+            if ( x && (x.min || x.min === 0) && x.max && x.interval && this.datumFactory ){
+                this.manager.data.$fillPoints( 
+                    x.min,
+                    x.max,
+                    x.interval,
+                    this.datumFactory
+                );
+            }
+        };
+
+        ComponentView.prototype.register = function( component ){
             this.components.push( component );
         };
 
-        ViewModel.prototype.hasData = function(){
-            return this.pane.rawContainer.data.length;
+        ComponentView.prototype.isReady = function(){
+            return this.manager && this.manager.ready;
         };
 
-        ViewModel.prototype.isReady = function(){
-            return this.pane.rawContainer.ready;
+        ComponentView.prototype.hasData = function(){
+            return this.isReady() && this.manager.data.length;
         };
 
-        ViewModel.prototype.sample = function(){
+        ComponentView.prototype.sample = function(){
             var dis = this,
+                keys,
+                offset,
                 filtered,
-                models = this.models,
                 box = this.box,
                 pane = this.pane,
-                keys;
+                models = this.models;
 
-            pane.filter();
-            filtered = pane.filtered;
-            
+            this.offset = {};
+            this.filtered = pane.filter( this.manager, this.offset );
+
+            filtered = this.filtered;
+            offset = this.offset;
+
             if ( filtered ){
                 this.x.scale
                     .domain([
-                        pane.offset.$left,
-                        pane.offset.$right
+                        offset.$left,
+                        offset.$right
                     ])
                     .range([
                         box.innerLeft,
@@ -91,17 +132,17 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
                     ]);
 
                 filtered.forEach(function( datum ){
-                    datum._$interval = dis.x.scale(datum.$index);
+                    datum._$interval = dis.x.scale(datum._$index);
                 });
 
                 keys = Object.keys(models);
                 keys.forEach(function(key){
-                    models[key].$follow( filtered );
+                    models[key].$follow( filtered, box );
                 });
             }
         };
 
-        ViewModel.prototype.setViewportValues = function( min, max ){
+        ComponentView.prototype.setViewportValues = function( min, max ){
             var step,
                 box = this.box;
 
@@ -130,7 +171,7 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
                 ]);
         };
 
-        ViewModel.prototype.setViewportIntervals = function( min, max ){
+        ComponentView.prototype.setViewportIntervals = function( min, max ){
             var box = this.box;
 
             this.viewport.minInterval = min;
@@ -147,17 +188,17 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
                 ]);
         };
 
-        ViewModel.prototype.parse = function(){
+        ComponentView.prototype.parse = function(){
             var min,
                 max,
                 models,
                 pane = this.pane,
-                raw = pane.rawContainer.data;
+                raw = this.manager.data;
 
             this.sample();
             models = this.models;
-
-            if ( pane.filtered ){
+            
+            if ( this.filtered ){
                 // TODO : this could have the max/min bug
                 this.components.forEach(function( component ){
                     var t;
@@ -182,11 +223,11 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
                 }
 
                 this.setViewportValues( min, max );
-                this.setViewportIntervals( pane.offset.$left, pane.offset.$right );
+                this.setViewportIntervals( this.offset.$left, this.offset.$right );
 
                 if ( this.adjustSettings ){
                     this.adjustSettings(
-                        this.pane.filtered.$maxIndex - this.pane.filtered.$minIndex,
+                        this.filtered.$maxIndex - this.filtered.$minIndex,
                         max - min,
                         raw.$maxIndex - raw.$minIndex
                     );
@@ -194,7 +235,7 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
             }
         };
 
-        ViewModel.prototype.build = function(){
+        ComponentView.prototype.build = function(){
             var models = this.models;
 
             this.components.forEach(function( component ){
@@ -204,7 +245,7 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
             });
         };
 
-        ViewModel.prototype.process = function(){
+        ComponentView.prototype.process = function(){
             var models = this.models;
 
             this.components.forEach(function( component ){
@@ -214,7 +255,7 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
             });
         };
 
-        ViewModel.prototype.finalize = function(){
+        ComponentView.prototype.finalize = function(){
             var models = this.models;
 
             this.components.forEach(function( component ){
@@ -224,23 +265,7 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
             });
         };
 
-        ViewModel.prototype.loading = function(){
-            this.components.forEach(function( component ){
-                if ( component.loading ){
-                    component.loading();
-                }
-            });
-        };
-
-        ViewModel.prototype.error = function(){
-            this.components.forEach(function( component ){
-                if ( component.error ){
-                    component.error();
-                }
-            });
-        };
-
-        ViewModel.prototype.getPoint = function( pos ){
+        ComponentView.prototype.getPoint = function( pos ){
             var sum = 0,
                 count = 0,
                 models = this.models,
@@ -263,16 +288,8 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
             return point;
         };
 
-        ViewModel.prototype.highlight = function( point ){
-            this.components.forEach(function( component ){
-                if ( component.highlight ){
-                    component.highlight( point );
-                }
-            });
-        };
-
         /*
-        ViewModel.prototype.publishStats = function(){
+        ComponentView.prototype.publishStats = function(){
             var i,
                 s,
                 data = this.dataModel.data,
@@ -300,7 +317,7 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
             };
         };
 
-        ViewModel.prototype.publishData = function( content, conf, calcPos ){
+        ComponentView.prototype.publishData = function( content, conf, calcPos ){
             publish( this.rawContainer.data, conf.name, content, calcPos, conf.format );
         };
 
@@ -338,6 +355,6 @@ angular.module( 'vgraph' ).factory( 'ViewModel',
             fill( content, last, content.length, null );
         }
         */
-        return ViewModel;
+        return ComponentView;
     }]
 );

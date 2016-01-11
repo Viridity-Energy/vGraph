@@ -18,14 +18,14 @@ angular.module( 'vgraph' ).factory( 'DrawArea',
 				v1 = [],
 				v2 = [];
 
-			for( i = 0, c = set.length; i < c; i++ ){
-				d = set[i];
-				interval = this.parseInterval(d);
-				v1.push( interval+','+this.parseValue1(d) );
-				v2.unshift( interval+','+this.parseValue2(d) );
-			}
+			if ( set.length ){
+				for( i = 0, c = set.length; i < c; i++ ){
+					d = set[i];
+					interval = this.parseInterval(d);
+					v1.push( interval+','+this.parseValue1(d) );
+					v2.unshift( interval+','+this.parseValue2(d) );
+				}
 
-			if ( v1.length ){
 				return 'M' + v1.join('L') + 'L' + v2.join('L') + 'Z';
 			}else{
 				return '';

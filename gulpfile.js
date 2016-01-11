@@ -25,6 +25,7 @@ var uglify = require('gulp-uglifyjs');
 var demoDir = './demos/',
     jsSrc = [
         './src/init.js',
+        './src/lib/*.js',
     	'./src/services/*.js',
         './src/services/**/*.js',
     	'./src/directives/*.js',
@@ -56,35 +57,23 @@ gulp.task('doc', function() {
         .pipe( gulp.dest('./doc') );
 });
 
-gulp.task( 'concat-less', function(){
-    console.log( lessSrc );
+gulp.task( 'build-less', function (){
     gulp.src( lessSrc )
-		.pipe( concat('vgraph.less') )
-		.pipe( gulp.dest('./build/') );
-});
-
-gulp.task( 'build-less', ['concat-less'], function (){
-    console.log( 'building less' );
-    gulp.src( './build/vgraph.less' )
+        .pipe( concat('vgraph.less') )
     	.pipe( less() )
     	.pipe( gulp.dest('./build/') )
         .pipe( gulp.dest('./demos/') );
 });
 
-gulp.task('concat-js', function() {
+gulp.task('build-js', function(){
     gulp.src( jsSrc )
         .pipe( concat('vgraph.js') )
-        .pipe( gulp.dest('./build/') )
-        .pipe( gulp.dest('./demos/') );
-});
-
-gulp.task('build-js', ['concat-js'], function(){
-    gulp.src( jsSrc )
+        .pipe( gulp.dest('./demos/') )
         .pipe( uglify('vgraph.min.js', {
             outSourceMap: true
         }) )
         .pipe( gulp.dest('./build/') )
-        .pipe( gulp.dest('./demos/') );
+        
 });
 
 var failOnError = function() {

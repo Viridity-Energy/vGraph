@@ -6,7 +6,8 @@ angular.module( 'vgraph' ).directive( 'vgraphMessage',
         return {
             require : ['^vgraphChart'],
             link : function( scope, el, attrs, requirements ){
-                var graph = requirements[0].graph,
+                var unsubscribe,
+                    graph = requirements[0],
                     box = graph.box,
                     $el = d3.select( el[0] )
                         .attr( 'class', 'error-view' ),
@@ -34,18 +35,19 @@ angular.module( 'vgraph' ).directive( 'vgraphMessage',
                     }
                 });
 
-                graph.register(
-                    function(){
+                unsubscribe = graph.$subscribe({
+                    'error': function(){
                         var msg = graph.message;
 
                         if ( msg && !graph.loading ){
                             $el.attr( 'visibility', 'visible' );
                             $text.text( msg );
-                        }else{
-                            $el.attr( 'visibility', 'hidden' );
                         }
+                    },
+                    'done': function(){
+                        $el.attr( 'visibility', 'hidden' );
                     }
-                );
+                });
             }
         };
     } ]

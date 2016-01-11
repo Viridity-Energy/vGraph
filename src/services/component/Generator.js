@@ -1,124 +1,47 @@
 angular.module( 'vgraph' ).factory( 'ComponentGenerator',
-    [ '$timeout', 'DrawLine', 'DrawArea', 'DataFeed', 'DataLoader', 'GraphModel',
-    function ( $timeout, DrawLine, DrawArea, DataFeed, DataLoader, GraphModel ) {
+    [ '$timeout', 'DrawLine', 'DrawArea', 'DrawBox', 'DataFeed', 'DataLoader', 'ComponentChart',
+    function ( $timeout, DrawLine, DrawArea, DrawBox, DataFeed, DataLoader, ComponentChart ) {
         'use strict';
 
-        function createConfig( scope, attrs ){
-            var view = attrs.control || GraphModel.defaultView,
-                model = attrs.model || GraphModel.defaultModel,
-                t = {
-                    ref: {
-                        name: attrs.name,
-                        view: view,
-                        model: model
-                    },
-                    pair: scope.pair,
-                    massage: scope.massage,
-                    interval: scope.interval,
-                    value: scope.value
-                };
+        var cfgUid = 0;
+        function normalizeConfig( cfg ){
+            var value,
+                interval;
 
-            if ( scope.pair ){
-                if ( scope.pair === '-' ){
-                    t.pair = {};
-                }else{
-                    t.pair = {
-                        ref: {
-                            name: attrs.name+'2',
-                            view: view,
-                            model: model
-                        },
-                        massage: scope.massage,
-                        interval: scope.interval,
-                        value: scope.pair
-                    };
-                }
+            if ( typeof(cfg) !== 'object' ){
+                return null;
             }
 
-            scope.$watch('feed', function( feed ){
-                t.feed = feed;
-
-                if ( t.pair && t.pair.ref ){
-                    t.pair.feed = feed;
-                }
-            });
-
-            return t;
-        }
-
-        var cfgUid = 0;
-        function normalizeConfig( cfg, graph ){
-            var ref,
-                value = cfg.value,
-                interval = cfg.interval;
+            value = cfg.value;
+            interval = cfg.interval;
 
             if ( cfg.$uid === undefined ){
                 cfg.$uid = cfgUid++;
             }
 
-            if ( !cfg.ref ){
-                cfg.ref = {};
-            }
-            ref = cfg.ref;
+            cfg.field = cfg.name;
 
-            if ( !ref.name ){
-                ref.name = cfg.name;
+            if ( !cfg.view ){
+                cfg.view = ComponentChart.defaultView;
             }
 
-            ref.field = cfg.ref.name;
-
-            if ( !ref.view ){
-                ref.view = GraphModel.defaultView;
+            if ( !cfg.model ){
+                cfg.model = ComponentChart.defaultModel;
             }
 
-            if ( !ref.model ){
-                ref.model = GraphModel.defaultModel;
-            }
-            
-            ref.$view = graph.views[ref.view];
-
-            if ( cfg.pair ){
-                if ( cfg.pair.ref ){
-                    normalizeConfig( cfg.pair, graph );
-                }
+            if ( !cfg.className ){
+                cfg.className = 'node-'+cfg.name;
             }
 
-            if ( !cfg.parseValue ){
-                if ( !value ){
-                    value = cfg.ref.name;
-                }
-
-                if ( typeof(value) === 'string' ){
-                    cfg.parseValue = function( d ){
-                        return d[ value ];
-                    };
-                }else{
-                    cfg.parseValue = value;
-                }
-            }
-
-            if ( !cfg.parseInterval ){
-                if ( typeof(interval) === 'string' ){
-                    cfg.parseInterval = function( d ){
-                        return d[ interval ];
-                    };
-                }else{
-                    cfg.parseInterval = interval;
-                }
+            // TODO : I need to put this into place, replacing datum[cfg.name]
+            if ( !cfg.getValue ){
+                cfg.getValue = function( d ){
+                    return d[ cfg.field ];
+                };
             }
 
             return cfg;
         }
-
-        function getConfig( scope, attrs, graph ){
-            var cfg;
-
-            cfg = scope.config || createConfig( scope, attrs );
-
-            return normalizeConfig( cfg, graph );
-        }
-
-        var lookupHash = {};
 
         function isNumeric( v ){
             if ( v === null ){
@@ -132,49 +55,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
 
         return {
             isNumeric: isNumeric,
-            getConfig: getConfig,
             normalizeConfig: normalizeConfig,
-            watchFeed: function( $scope, cfg ){
-                var dataLoader;
-
-                function connectToFeed( data ){
-                    var lookup,
-                        df = DataFeed.create( data, cfg.massage ),
-                        ref = cfg.ref,
-                        view = ref.$view,
-                        dataModel = view.pane.rawContainer;
-
-                    lookup = lookupHash[df._$dfUid];
-                    if ( !lookup ){
-                        lookup = lookupHash[df._$dfUid] = {};
-                    }
-                    
-                    dataLoader = lookup[ref.$view.$vgvid];
-                    if ( !dataLoader ){
-                        dataLoader = lookup[ref.$view.$vgvid] = new DataLoader(
-                            df,
-                            dataModel
-                        );    
-                    }
-                }
-
-                $scope.$watch( 
-                    function(){
-                        return cfg.feed;
-                    }, 
-                    function setFeed( data ){
-                        if ( data ){
-                            if ( dataLoader ){
-                                dataLoader.removeConf( cfg );
-                            }
-
-                            connectToFeed( data );
-
-                            dataLoader.addConf( cfg );
-                        }
-                    }
-                );
-            },
             // this accepts unified
             makeDiffCalc: function( view1, top, view2, bottom ){
                 var areaDrawer = new DrawArea();
@@ -237,7 +118,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                         return view.y.scale( d[name+'$Max'] );
                     });
             },
-            makeLineCalc: function( ref ){
+            makeLineCalc: function( graph, cfg ){
                 var view,
                     field,
                     lineDrawer = new DrawLine();
@@ -264,15 +145,16 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 };
 
                 return function( dataFeed ){
-                    field = ref.field;
-                    view = ref.$view;
+                    field = cfg.field;
+                    view = graph.views[cfg.view];
 
                     return lineDrawer.render( dataFeed ).join('');
                 };
             },
             // top and bottom are config objects
-            makeFillCalc: function( topRef, bottomRef ){
-                var view,
+            makeFillCalc: function( graph, topRef, bottomRef ){
+                var topView,
+                    bottomView,
                     topField,
                     bottomField,
                     areaDrawer = new DrawArea();
@@ -286,14 +168,14 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                     if ( bottomField ){
                         y2 = d[bottomField];
                     }else{
-                        y2 = view.viewport.minValue;
+                        y2 = bottomView.viewport.minValue;
                     }
 
                     if ( isNumeric(y1) && isNumeric(y2) ){
                         return {
                             interval: d._$interval,
-                            y1: view.y.scale( y1 ),
-                            y2: view.y.scale( y2 )
+                            y1: topView.y.scale( y1 ),
+                            y2: bottomView.y.scale( y2 )
                         };
                     }
                 };
@@ -309,14 +191,88 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 };
 
                 return function( dataFeed ){
-                    view = topRef.$view;
+                    topView = graph.views[topRef.view];
                     topField = topRef.field;
 
                     if ( bottomRef ){
+                        bottomView = graph.views[bottomRef.view] || topView;
                         bottomField = bottomRef.field;
+                    }else{
+                        bottomView = topView;
                     }
 
                     return areaDrawer.render( dataFeed ).join('');
+                };
+            },
+            makeBarCalc: function( graph, topRef, bottomRef, barWidth ){
+                var topView,
+                    bottomView,
+                    topField,
+                    bottomField,
+                    boxDrawer = new DrawBox();
+
+                boxDrawer.preParse = function( d ){
+                    var min,
+                        max,
+                        y1,
+                        y2,
+                        t,
+                        width;
+
+                    y1 = d[topField];
+                    
+                    if ( bottomField ){
+                        y2 = d[bottomField];
+                    }else{
+                        y2 = bottomView.viewport.minValue;
+                    }
+
+                    if ( barWidth ){
+                        width = parseInt( barWidth, 10 ) / 2;
+                    }else{
+                        width = 3;
+                    }
+
+                    if ( isNumeric(y1) && isNumeric(y2) && y1 !== y2 ){
+                        min = d._$interval - width;
+                        max = d._$interval + width;
+
+                        t = {
+                            interval1: min > d._$minInterval ? min : d._$minInterval,
+                            interval2: max > d._$maxInterval ? d._$maxInterval : max,
+                            y1: topView.y.scale( y1 ),
+                            y2: bottomView.y.scale( y2 )
+                        };
+                    }
+
+                    return t;
+                };
+
+                boxDrawer.parseInterval1 = function( d ){
+                    return d.interval1;
+                };
+                boxDrawer.parseInterval2 = function( d ){
+                    return d.interval2;
+                };
+                boxDrawer.parseValue1 = function( d ){
+                    return d.y1;
+                };
+                boxDrawer.parseValue2 = function( d ){
+                    return d.y2;
+                };
+
+                return function( dataFeed ){
+                    topView = graph.views[topRef.view];
+                    topField = topRef.field;
+
+                    if ( bottomRef ){
+                        bottomView = graph.views[bottomRef.view] || topView;
+                        bottomField = bottomRef.field;
+                    }else{
+                        bottomView = topView;
+                    }
+
+                    return boxDrawer.render( dataFeed ).join('');
                 };
             },
             svgCompile: function( svgHtml ){

@@ -6,13 +6,12 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
         return {
             require : ['^vgraphChart'],
             scope : {
-                highlight : '=vgraphInteract',
-                dragStart : '=?dBegin',
                 dragPos : '=?dChange',
-                dragStop : '=?dEnd'
+                dragStop : '=?dEnd',
+                dragStart : '=?dBegin'
             },
             link : function( scope, el, attrs, requirements ){
-                var graph = requirements[0].graph,
+                var graph = requirements[0],
                     dragging = false,
                     dragStart,
                     active,
@@ -22,58 +21,23 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
                         .style( 'opacity', '0' )
                         .attr( 'class', 'focal' )
                         .on( 'mousemove', function(){
-                            var pos = d3.mouse(this)[0];
+                            var pos = d3.mouse(this);
 
                             if ( !dragging ){
-                                highlightOn(
-                                    this,
-                                    pos,
-                                    graph.highlight( pos )
-                                );
+                                clearTimeout( active );
+                                graph.$trigger('focus',{
+                                    x: pos[0],
+                                    y: pos[1]
+                                });
                             }
                         })
                         .on( 'mouseout', function( d ){
                             if ( !dragging ){
-                                highlightOff( this, d );
+                                active = setTimeout(function(){
+                                    graph.$trigger('focus', null);
+                                }, 100);
                             }
                         });
-
-
-                function highlightOn( el, offset, point ){
-                    clearTimeout( active );
-
-                    scope.$apply(function(){
-                        var pos = d3.mouse( el );
-
-                        angular.forEach( scope.highlight.point, function( node ){
-                            $(node.$els).removeClass('active');
-                        });
-
-                        scope.highlight.point = point;
-                        scope.highlight.offset = offset;
-                        scope.highlight.position = {
-                            x : pos[ 0 ],
-                            y : pos[ 1 ]
-                        };
-
-                        angular.forEach( scope.highlight.point, function( node ){
-                            $(node.$els).addClass('active');
-                        });
-                    });
-                }
-
-                function highlightOff(){
-                    active = setTimeout(function(){
-                        scope.$apply(function(){
-                            angular.forEach( scope.highlight.point, function( node ){
-                                $(node.$els).removeClass('active');
-                            });
-                            scope.highlight.point = null;
-                            scope.highlight.closest = null;
-                            scope.highlight.offset = null;
-                        });
-                    }, 100);
-                }
 
                 $el.attr( 'class', 'interactive' );
 
@@ -83,7 +47,7 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
                         dragStart = d3.mouse( el[0] );
                         dragging = true;
 
-                        highlightOff();
+                        graph.$trigger('focus', null);
 
                         scope.dragStart = {
                             x : dragStart[ 0 ],
@@ -151,10 +115,6 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
                         }
                     });
                 });
-
-                if ( !scope.highlight ){
-                    scope.highlight = {};
-                }
 
                 if ( !scope.dragStart ){
                     scope.dragStart = {};

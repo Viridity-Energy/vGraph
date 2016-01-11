@@ -6,7 +6,7 @@ angular.module( 'vgraph' ).directive( 'vgraphFocus',
         return {
             require : ['^vgraphChart'],
             link : function( scope, el, attrs, requirements ){
-                var graph = requirements[0].graph,
+                var graph = requirements[0],
                     box = graph.box,
                     $el = d3.select( el[0] ),
                     $focus = $el.append( 'rect' )
@@ -74,18 +74,12 @@ angular.module( 'vgraph' ).directive( 'vgraphFocus',
                                 stop = stop - box.innerLeft;
                             }
 
-                            offset = graph.views[Object.keys(graph.views)[0]].pane.offset;
+                            offset = graph.views[Object.keys(graph.views)[0]].offset;
                             currentWidth = box.innerWidth * offset.right - box.innerWidth * offset.left;
                             
                             graph.setPane(
-                                {
-                                    'start' : '%' + ( box.innerWidth * offset.left + start / box.innerWidth * currentWidth ) / box.innerWidth,
-                                    'stop' : '%' + ( box.innerWidth * offset.right - (box.innerWidth-stop) / box.innerWidth * currentWidth ) / box.innerWidth
-                                },
-                                {
-                                    'start' : null,
-                                    'stop' : null
-                                }
+                                ( box.innerWidth * offset.left + start / box.innerWidth * currentWidth ) / box.innerWidth,
+                                ( box.innerWidth * offset.right - (box.innerWidth-stop) / box.innerWidth * currentWidth ) / box.innerWidth
                             );
 
                             graph.rerender();

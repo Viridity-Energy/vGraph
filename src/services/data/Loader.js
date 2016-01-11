@@ -3,41 +3,43 @@ angular.module( 'vgraph' ).factory( 'DataLoader',
 	function () {
 		'use strict';
 
-		function DataLoader( feed, dataModel ){
+        var uid = 1;
+
+		function DataLoader( feed, dataManager ){
             var dis = this,
-                confs = {},
+                confs = [],
                 proc = this._process.bind( this ),
                 readyReg = feed.$on( 'ready', function(){
                     dis.ready = true;
                 }),
                 dataReg = feed.$on( 'data', function( data ){
-                    var i, c;
-
-                    function procer( j ){
-                        var cfg = confs[j];
-                        proc( cfg, data.points[i], data.ref );
-                    }
+                    var i, c,
+                        j, co;
 
                     for( i = 0, c = data.points.length; i < c; i++ ){
-                        Object.keys(confs).forEach( procer );
+                        for( j = 0, co = confs.length; j < co; j++ ){
+                            proc( confs[j], data.points[i] );
+                        }
                     }
                 }),
                 errorState = feed.$on( 'error', function( error ){
-                    dataModel.setError( error );
+                    dataManager.setError( error );
                 }),
                 forceReset = feed.$on( 'reset', function(){
-                    dataModel.reset();
+                    dataManager.reset();
                     dis.ready = false;
                 });
 
+            this.$$loaderUid = uid++;
+
             this.feed = feed;
             this.confs = confs;
-            this.dataModel = dataModel;
+            this.dataManager = dataManager;
 
-            dataModel.$follow( this );
+            dataManager.$follow( this );
             
             this.$destroy = function(){
-                dataModel.$ignore( this );
+                dataManager.$ignore( this );
                 errorState();
                 forceReset();
                 readyReg();
@@ -45,92 +47,73 @@ angular.module( 'vgraph' ).factory( 'DataLoader',
             };
         }
 
-        var dataLoaders = {};
-
-        // ensures singletons
-        DataLoader.create = function( feed, dataModel, conf ){
-            var t;
-
-            if ( !dataLoaders[feed._$dfUid] ){
-                t = new DataLoader( feed, dataModel );
-                dataLoaders[feed._$dfUid] = t;
-            }
-
-            if ( conf ){
-                t.addConf( conf );
-            }
-
-            return t;
-        };
-
         DataLoader.unregister = function(){};
 
-        DataLoader.prototype.addConf = function( cfg ){
+        DataLoader.prototype.addConfig = function( cfg ){
+            var keys = Object.keys(cfg.readings),
+                proc = this._process.bind( this );
+
             /*
             -- it is assumed a feed will have the same exploder
-            conf.feed : {
-                data: override push event of feed
-                explode: run against the data nodes to generate child data nodes.  Expect result appends [name]$Ref
-            }
-            -- the rest are on an individual level
-            conf.ref {
-                name *
-                view
-                className
-            }
+            conf.explode: run against the data nodes to generate child data nodes.  Expect result appends [name]$Ref
             conf.isValid : check to see if the point should even be considered for parsing
-            conf.parseValue *
             conf.parseInterval *
-            conf.massage : run against the resulting data node ( importedPoint, dataNode )
+            conf.readings
             */
-            var proc = this._process.bind( this );
+            
+            keys.forEach(function( key ){
+                var fn = cfg.readings[ key ];
+                
+                if ( typeof(fn) === 'string' ){
+                    cfg.readings[key] = function( datum ){
+                        return datum[fn];
+                    };
+                }
+            });
 
-            if ( !this.confs[ cfg.$uid ] ){
-                this.feed._readAll(function( data ){
-                    var i, c,
-                        points = data.points;
-
-                    for( i = 0, c = points.length; i < c; i++ ){
-                        proc( cfg, points[i], data.ref );
-                    }
-                });
-
-                this.confs[ cfg.$uid ] = cfg;
+            if ( !cfg.parseInterval ){
+                cfg.parseInterval = function( datum ){
+                    return datum[ cfg.interval ];
+                };
             }
+
+            this.feed._readAll(function( data ){
+                var i, c,
+                    points = data.points;
+
+                for( i = 0, c = points.length; i < c; i++ ){
+                    proc( cfg, points[i] );
+                }
+            });
+
+            this.confs.push(cfg);
         };
 
-        DataLoader.prototype.removeConf = function( conf ){
+        DataLoader.prototype.removeConf = function( /* conf */ ){
+            /* TODO
             if ( this.confs[conf.$uid] ){
                 delete this.confs[conf.$uid];
             }
+            */
         };
 
-        DataLoader.prototype._process = function( conf, datum, reference ){
-            var point;
+        DataLoader.prototype._process = function( cfg, datum ){
+            var interval,
+                dm = this.dataManager,
+                keys = Object.keys(cfg.readings);
 
-            if ( conf.isDefined && !conf.isDefined(datum) ){
+            if ( cfg.isDefined && !cfg.isDefined(datum) ){
                 return;
             }
 
             try{
-                if ( conf.parseValue ){
-                    point = this.dataModel.setValue(
-                        conf.parseInterval( datum ),
-                        conf.ref.name,
-                        conf.parseValue( datum )
-                    );
-                }else{
-                    point = this.dataModel.getNode(
-                        conf.parseInterval( datum )
-                    );
-                }
-
-                if ( conf.massage ){
-                    conf.massage( point, datum, reference );
-                }
+                interval = cfg.parseInterval( datum );
+                keys.forEach(function( key ){
+                    dm.setValue( interval, key, cfg.readings[key](datum) );
+                });
             }catch( ex ){
-                console.log( 'failed to load', datum, conf.parseInterval(datum), conf.parseValue(datum) );
-                console.log( 'conf:', conf );
+                console.log( 'failed to load', datum, interval );
+                console.log( 'conf:', cfg );
                 console.log( ex );
             }
         };

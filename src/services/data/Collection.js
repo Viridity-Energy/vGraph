@@ -69,7 +69,7 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 		}
 
 		function DataCollection(){
-			this.$index = {};
+			this._$index = {};
 			this.$dirty = false;
 		}
 
@@ -77,19 +77,63 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 
 		DataCollection.isNumeric = isNumeric;
 
-		DataCollection.prototype._register = function( index, node ){
-			var dex = +index;
+		DataCollection.prototype.$fillPoints = function( start, stop, interval, factory ){
+			var i, c,
+				t;
 
-			if ( !this.$index[dex] ){
-				this.$index[dex] = node;
-				node.$index = dex;
+			for( i = start, c = stop + interval; i < c; i += interval ){
+				t = factory();
+				t._$index = i;
+				this._$index[ i ] = t;
+				this.push( t );
+			}
+		};
 
-				if ( this.length && dex < this[this.length-1].$index ){
-					this.$dirty = true;
+		DataCollection.prototype._register = function( index, node, shift ){
+			var hasValue,
+				dex = +index;
+
+			if ( !this._$index[dex] ){
+				this._$index[dex] = node;
+				
+
+				if ( shift ){
+					if ( this.length && dex > this[0]._$index ){
+						this.$dirty = true;
+					}
+
+					this.unshift(node);
+				}else{
+					if ( this.length && dex < this[this.length-1]._$index ){
+						this.$dirty = true;
+					}
+
+					this.push(node);
 				}
 
-				this.push(node);
+				Object.keys(node).forEach(function( key ){
+					var value = node[key];
+
+					if ( value || value === 0 ){ // truthy
+						hasValue = true;
+					}
+				});
+
+				if ( hasValue ){
+					if ( this.$minIndex === undefined ){
+						this.$minIndex = dex;
+						this.$maxIndex = dex;
+					}else if ( this.$maxIndex < dex ){
+						this.$maxIndex = dex;
+					}else if ( this.$minIndex > dex ){
+						this.$minIndex = dex;
+					}
+				}
+
+				node._$index = dex;
 			}
+
+			return node;
 		};
 
 		// TODO : $maxNode, $minNode
@@ -114,13 +158,28 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 		DataCollection.prototype.$getNode = function( index ){
 			var dex = +index;
 			
-			return this.$index[dex];
+			return this._$index[dex];
 		};
 
-		DataCollection.prototype._statNode = function( /* node */ ){};
-
 		DataCollection.prototype._setValue = function ( node, field, value ){
-			node[field] = value;
+			var dex = node._$index;
+
+			if ( node.$setValue ){
+				node.$setValue( field, value );
+			}else{
+				node[field] = value;	
+			}
+
+			if ( value || value === 0 ){
+				if ( this.$minIndex === undefined ){
+					this.$minIndex = dex;
+					this.$maxIndex = dex;
+				}else if ( this.$maxIndex < dex ){
+					this.$maxIndex = dex;
+				}else if ( this.$minIndex > dex ){
+					this.$minIndex = dex;
+				}
+			}
 		};
 
 		DataCollection.prototype.$setValue = function( index, field, value ){
@@ -128,19 +187,17 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 
 			this._setValue( node, field, value );
 
-			this._statNode( node );
-
 			return node;
 		};
 
-		DataCollection.prototype.$addNode = function( index, newNode ){
+		DataCollection.prototype.$addNode = function( index, newNode, shift ){
 			var f,
 				dex,
 				node;
 
 			if ( !newNode ){
 				newNode = index;
-				dex = newNode.$index;
+				dex = newNode._$index;
 			}else{
 				dex = +index;
 			}
@@ -148,27 +205,40 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 			node = this.$getNode( dex );
 
 			if ( node ){
-				f = this.$setValue.bind( this );
-				Object.keys( newNode ).forEach(function( key ){
-					if ( key !== '$index' ){
-						f( dex, key, newNode[key] );
-					}
-				});
-			}else if ( newNode.$index && newNode.$index !== dex ){
-				throw new Error('something wrong with index');
+				if ( node.$merge ){
+					node.$merge( newNode );
+				}else{
+					// copy values over
+					f = this._setValue.bind( this );
+					Object.keys( newNode ).forEach(function( key ){
+						if ( key !== '_$index' ){
+							f( node, key, newNode[key] );
+						}
+					});
+				}
 			}else{
-				node = newNode;
-				this._register( dex, newNode );
+				// just use the existing node
+				if ( this.$makeNode ){
+					node = this.$makeNode( newNode );
+				}else{
+					if ( newNode._$index && newNode._$index !== dex ){
+						throw new Error( 'something wrong with index -> ', newNode._$index, dex );
+					}
+					
+					node = newNode;
+				}
+				
+				this._register( dex, node, shift );
 			}
 
-			this._statNode( node );
+			return node;
 		};
 
 		DataCollection.prototype.$pos = function( value, field ){
 			var p;
 
 			if ( !field ){
-				field = '$index';
+				field = '_$index';
 			}
 
 			this.$sort();
@@ -203,54 +273,12 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 
 		DataCollection.prototype.$sort = function(){
 			if ( this.$dirty ){
-				this.$dirty = false;
-
 				this.sort(function(a, b){
-					return a.$index - b.$index;
+					return a._$index - b._$index;
 				});
+
+				this.$dirty = false;
 			}
-		};
-
-		DataCollection.prototype.$calcStats = function(){
-			this.$sort();
-
-			this.$minIndex = this[0].$index;
-			this.$maxIndex = this[this.length-1].$index;
-		};
-
-		DataCollection.prototype._fakeNode = function( index ){
-			var i, c,
-				keys,
-				key,
-				dx,
-				v0,
-				v1,
-				p = this.$getClosestPair( index ),
-				point = {};
-
-			if ( p.left !== p.right ){
-				keys = Object.keys( p.left );
-				dx = (index - p.left.$index) / (p.right.$index - p.left.$index);
-
-				for( i = 0, c = keys.length; i < c; i++ ){
-					key = keys[i];
-					v0 = p.left[key];
-					v1 = p.right[key];
-					
-					if ( v1 !== undefined && v1 !== null && 
-                        v0 !== undefined && v0 !== null ){
-                        point[key] = v0 + (v1 - v0) * dx;
-                    }
-				}
-			}
-
-			point.$index = index;
-
-			return point;
-		};
-
-		DataCollection.prototype.$makeNode = function( index ){
-			this.$addNode( this._fakeNode(index) );
 		};
 
 		DataCollection.prototype.$filter = function( startIndex, stopIndex ){
@@ -263,14 +291,16 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 			do{
 				i++;
 				node = this[i];
-			}while( node && node.$index < startIndex);
+			}while( node && node._$index < startIndex);
 
-			while( node && node.$index <= stopIndex){
+			while( node && node._$index <= stopIndex){
 				filtered.$addNode( node );
 				i++;
 				node = this[i];
 			}
 
+			filtered.$parent = this;
+			
 			return filtered;
 		};
 

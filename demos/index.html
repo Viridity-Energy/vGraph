@@ -7,6 +7,7 @@
 	<script src="bower_components/jquery/dist/jquery.js"></script>
 	<script src="bower_components/angular/angular.js"></script>
 	<script src="vgraph.js"></script>
+
 	<link href="vgraph.css" rel="stylesheet" type="text/css" />
 </head>
 <body ng-app="vgraph">
@@ -20,7 +21,7 @@
 			margin: 10px 0;
 		}
 
-		[vgraph-chart] {
+		svg[vgraph-chart], [vgraph-chart] svg{
 			margin: 10px 30px;
 			padding: 20px 40px;
 			width: 740;
@@ -73,22 +74,26 @@
 			fill: none;
 		}
 
-		.red.fill, circle.red, rect.red {
+		.red.fill, .red.point, rect.red, .red.bar {
+			stroke-width: 1;
 			stroke: red;
 			fill: red;
 		}
 
-		.blue.fill, circle.blue, rect.blue {
+		.blue.fill, .blue.point, rect.blue, .blue.bar {
+			stroke-width: 1;
 			stroke: blue;
 			fill: blue;
 		}
 
-		.green.fill, circle.green, rect.green {
+		.green.fill, .green.point, rect.green, .green.bar {
+			stroke-width: 1;
 			stroke: green;
 			fill: green;
 		}
 
-		.orange.fill, circle.orange, rect.orange {
+		.orange.fill, .orange.point, rect.orange, .orange.bar {
+			stroke-width: 1;
 			stroke: orange;
 			fill: orange;
 		}
@@ -123,585 +128,422 @@
 	<article ng-controller="AppCtrl">
 		<section class="controls">
 			<label>Simple<input type='checkbox' ng-checked="simple" ng-click="simple = !simple"/></label>
+			<label>Nulled<input type='checkbox' ng-checked="nulled" ng-click="nulled = !nulled"/></label>
+			<label>Resize<input type='checkbox' ng-checked="resize" ng-click="resize = !resize"/></label>
 			<label>Loading<input type='checkbox' ng-checked="loading" ng-click="loading = !loading"/></label>
-			<label>Growing<input type='checkbox' ng-checked="growing" ng-click="growing = !growing"/></label>
 			<label>Stacked<input type='checkbox' ng-checked="stacked" ng-click="stacked = !stacked"/></label>
-			<label>Standard<input type='checkbox' ng-checked="standard" ng-click="standard = !standard"/></label>
-			<label>Raw<input type='checkbox' ng-checked="raw" ng-click="raw = !raw"/></label>
-			<label>Null<input type='checkbox' ng-checked="nulled" ng-click="nulled = !nulled"/></label>
-			<label>Classed<input type='checkbox' ng-checked="classed" ng-click="classed = !classed"/></label>
-			<label>Bar<input type='checkbox' ng-checked="bar" ng-click="bar = !bar"/></label>
+			<label>Growing<input type='checkbox' ng-checked="growing" ng-click="growing = !growing"/></label>
+			<label>Buckets<input type='checkbox' ng-checked="buckets" ng-click="buckets = !buckets"/></label>
 			<label>Compare<input type='checkbox' ng-checked="compare" ng-click="compare = !compare"/></label>
-			<label>MultiAxis<input type='checkbox' ng-checked="multiAxis" ng-click="multiAxis = !multiAxis"/></label>
-			<label>Zooming<input type='checkbox' ng-checked="zoom" ng-click="zoom = !zoom"/></label>
-			<label>Export<input type='checkbox' ng-checked="export" ng-click="export = !export"/></label>
+			<label>Multiple<input type='checkbox' ng-checked="multiple" ng-click="multiple = !multiple"/></label>
 		</section>
 
-		<section ng-if="simple">
+		<div ng-if="simple" ng-controller="FloodCtrl">
 			<h5>Simple</h5>
-			<div ng-controller="FloodCtrl">
-				<div>{{highlight.point.default.linear.someLine1}}:{{highlight.point.default.linear.$index}}
-				<svg vgraph-chart="graph" model="model">
-					<g vgraph-axis="'left'"
-						axis-label="'foo'"
-						label-offset="50"
-						tick-length="4" tick-padding="-2"></g>
-					<g vgraph-axis="'right'"
-						axis-label="'bar'"
-						label-offset="40"
-						tick-length="4" tick-padding="-2"></g>
-					<g vgraph-axis="'bottom'"
-						axis-label="woot"
-						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					<g vgraph-line
-						feed="line" interval="'x'" 
-						value="'y1'" name="someLine1"
-						reference="l1"></g>
-					<path vgraph-line
-						feed="line" interval="'x'" 
-						value="'y2'" name="someLine2"
-						reference="l2"></path>
-					<path vgraph-line
-						feed="line" interval="'x'" 
-						value="'y3'" name="someLine3"
-						reference="l3"></path>
-					<g vgraph-line
-						feed="line" interval="'x'" 
-						value="'y4'" name="someLine4"
-						reference="l4"></g>
+			<div vgraph-page="page">
+				<section vgraph-chart="chart">
+					<div vgraph-highlight="point">
+						{{point.default.linear.someLine1}} : {{point.default.linear._$index}}
+					</div>
+					<svg>
+						<g vgraph-axis="'left'"
+							axis-label="'foo'"
+							label-offset="50"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'right'"
+							axis-label="'bar'"
+							label-offset="40"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'bottom'"
+							axis-label="woot"
+							tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
 
-					<g vgraph-target="['l1','l2','l3','l4']" 
-						point="highlight.point" point-radius="10"></g>
-					<g vgraph-tooltip="'l2'"
-						point="highlight.point"></g>
+						<path vgraph-line="config[0]" class-name="red"></path>
+						<path vgraph-line="config[1]" class-name="green"></path>
+						<path vgraph-line="config[2]" class-name="blue"></path>
+						<path vgraph-line="config[3]"></path>
 
-					<g vgraph-interact="highlight"></g>
-				</svg>
+						<g vgraph-indicator="config[2]"
+							outer-radius="10"
+							point-radius="5"></g>
+							
+						<g vgraph-target="[config[0],config[1],config[3]]" point-radius="4"></g>
+						<g vgraph-tooltip="config[1]"></g>
+
+						<g vgraph-interact></g>
+					</svg>
+				</section>
+				
+				<section vgraph-chart="graph">
+					<div vgraph-highlight="other">
+						{{other.default.linear.someLine1}}:{{other.default.linear._$index}}
+					</div>
+					<svg>
+						<g vgraph-axis="'left'"
+							axis-label="'foo'"
+							label-offset="50"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'right'"
+							axis-label="'bar'"
+							label-offset="40"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'bottom'"
+							axis-label="woot"
+							tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+						
+						<g vgraph-line="config[0]"
+							pair="'-'"
+							class-name="red"></g>
+						<g vgraph-line="config[1]"
+							class-name="green"></g>
+						<g vgraph-line="config[2]"
+							pair="config[3]"
+							class-name="blue"></g>
+
+						<g vgraph-indicator="config[2]"
+							outer-radius="10"
+							point-radius="5"></g>
+
+						<g vgraph-target="[config[2],config[3]]" point-radius="5"></g>
+						
+						<g vgraph-interact></g>
+					</svg>
+				</section>
+
+				<section vgraph-chart="graph">
+					<div vgraph-highlight="point">
+						{{point.default.linear.someLine1}}:{{point.default.linear._$index}}
+					</div>
+					<svg>
+						<g vgraph-axis="'left'"
+							axis-label="'foo'"
+							label-offset="50"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'right'"
+							axis-label="'bar'"
+							label-offset="40"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'bottom'"
+							axis-label="woot"
+							tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+
+						<path ng-repeat="cfg in config" vgraph-line="cfg"></path>
+
+						<g vgraph-leading="config"></g>
+						
+						<g vgraph-target="config" point-radius="10"></g>
+						<g vgraph-tooltip="config[0]"></g>
+
+						<g vgraph-interact></g>
+					</svg>
+				</section>
+
+				<section vgraph-chart="graph">
+					<div vgraph-highlight="point">
+						{{point.default.linear.someLine1}}:{{point.default.linear._$index}}
+					</div>
+					<svg>
+						<g vgraph-axis="'left'"
+							axis-label="'foo'"
+							label-offset="50"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'right'"
+							axis-label="'bar'"
+							label-offset="40"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'bottom'"
+							axis-label="woot"
+							tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+
+						<path vgraph-bar="config[0]" reference="bar"></path>
+
+						<g vgraph-target="[config[0]]" point-radius="10"></g>
+						<g vgraph-tooltip="config[0]"></g>
+
+						<g vgraph-interact></g>
+					</svg>
+				</section>
 			</div>
-			
-			<div ng-controller="FloodCtrl">
-				<div>{{highlight.point.default.linear.someLine1}}:{{highlight.point.default.linear.$index}}
-				<svg vgraph-chart="graph" model="model">
-					<g vgraph-axis="'left'"
-						axis-label="'foo'"
-						label-offset="50"
-						tick-length="4" tick-padding="-2"></g>
-					<g vgraph-axis="'right'"
-						axis-label="'bar'"
-						label-offset="40"
-						tick-length="4" tick-padding="-2"></g>
-					<g vgraph-axis="'bottom'"
-						axis-label="woot"
-						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					
-					<g vgraph-line
-						feed="line" interval="'x'" 
-						value="'y1'" name="someLine1"
-						pair="'-'"></g>
-					
-					<g vgraph-line
-						feed="line" interval="'x'" 
-						value="'y4'" name="someLine2"
-						pair="'y2'"
-						reference="t1"
-						pair-reference="t2"></g>
-
-					<g vgraph-target="['t1','t2']" point="highlight.point" point-radius="5"></g>
-					<g vgraph-interact="highlight"></g>
-				</svg>
-			</div>
-
-			<div ng-controller="FloodCtrl">
-				<div>{{highlight.point.default.linear.someLine1}}:{{highlight.point.default.linear.$index}}
-				<svg vgraph-chart="graph">
-					<g vgraph-axis="'left'"
-						axis-label="'foo'"
-						label-offset="50"
-						tick-length="4" tick-padding="-2"></g>
-					<g vgraph-axis="'right'"
-						axis-label="'bar'"
-						label-offset="40"
-						tick-length="4" tick-padding="-2"></g>
-					<g vgraph-axis="'bottom'"
-						axis-label="woot"
-						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-
-					<path ng-repeat="cfg in config" vgraph-line="cfg"></path>
-
-					<g vgraph-target="targets" 
-						point="highlight.point" point-radius="10"></g>
-					<g vgraph-tooltip="'l2'"
-						point="highlight.point"></g>
-
-					<g vgraph-interact="highlight"></g>
-				</svg>
-			</div>
-		</section>
+		</div>
 
 		<section ng-if="loading">
 			<h5>Loading</h5>
 			<div ng-controller="LoadingCtrl">
-				<svg vgraph-chart="graph" model="model">
-					<g vgraph-axis="'left'"
-						tick-length="4" tick-padding="-2"></g>
-					<g vgraph-axis="'bottom'"
-						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					
-					<g vgraph-loading></g>
-					
-					<g vgraph-line feed="line" interval="'x'" 
-						value="'y1'" name="someLine1"></g>
-					<g vgraph-line feed="line" interval="'x'" 
-						value="'y2'" name="someLine2"></g>
-					<g vgraph-line feed="line" interval="'x'" 
-						value="'y3'" name="someLine3"></g>
-					<g vgraph-line feed="line" interval="'x'" 
-						value="'y4'" name="someLine4"></g>
+				<div vgraph-page="page">
+					<svg vgraph-chart="graph" interface="interface">
+						<g vgraph-axis="'left'"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'bottom'"
+							tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+						
+						<path ng-repeat="cfg in config" vgraph-line="cfg"></path>
+						<g ng-repeat="cfg in config" vgraph-indicator="cfg"></g>
 
-					<g vgraph-message></g>
-				</svg>
-			</div>
-		</section>
-
-		<section ng-if="growing">
-			<h5>Growing</h5>
-			<div ng-controller="GrowingCtrl">
-				<svg vgraph-chart="graph" model="model">
-					<g vgraph-axis="'left'"
-						tick-length="4" tick-padding="-2"></g>
-					<g vgraph-axis="'bottom'"
-						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-
-					<g vgraph-line
-						feed="line" interval="'x'" 
-						value="'y'" name="someLine"
-						reference="line1"></g>
-					<g vgraph-indicator="line1"
-						point-radius="5"></g>
-				</svg>
-			</div>
-		</section>
-
-		<section ng-if="stacked">
-			<h5>Stacked</h5>
-			<div ng-controller="StackedCtrl">
-				{{ highlight.point }}
-				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" model="model" version="1.1">
-					<g vgraph-stack="config"></g>
-					<g vgraph-interact="highlight"></g>
-				</svg>
-			</div>
-		</section>
-
-		<section ng-if="standard">
-			<h5>Standard</h5>
-			
-			<div ng-controller="SpeedCtrl">
-				<svg vgraph-chart="graph" model="model">
-					<g vgraph-line
-						feed="line" interval="'x'" 
-						value="'y1'" name="someLine1"></g>
-					<g vgraph-line
-						feed="line" interval="'x'" 
-						value="'y2'" name="someLine2"></g>
-					<g vgraph-line 
-						feed="line" interval="'x'" 
-						value="'y3'" name="someLine3"></g>
-					<g vgraph-line
-						feed="line" interval="'x'" 
-						value="'y4'" name="someLine4"></g>
-				</svg>
-			</div>
-
-			<div ng-controller="StaticCtrl">
-				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" model="model" version="1.1">
-					<g vgraph-axis="'left'"
-						tick-length="4" tick-padding="-2"></g>
-					<g vgraph-axis="'bottom'"
-						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					<g vgraph-line
-						feed="line" interval="'x'" 
-						value="'y'" name="someLine"
-						reference="someLine"></g>
-					<g vgraph-indicator="someLine"
-						outer-radius="10"
-						point-radius="5"></g>
-				</svg>
-			</div>
-
-			<div ng-controller="MultiCtrl">
-				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" model="model" version="1.1">
-					<g vgraph-axis="'left'"
-						tick-length="4" tick-padding="-2"></g>
-					<g vgraph-axis="'bottom'"
-						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					<g vgraph-multi-line="config" feed="line"></g>
-				</svg>
-			</div>
-
-			<div ng-controller="StackedClassCtrl">
-				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" model="model" version="1.1">
-					<g vgraph-axis="'left'"
-						tick-length="4" tick-padding="-2"></g>
-					<g vgraph-axis="'bottom'"
-						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					<g vgraph-stack="config"></g>
-				</svg>
-			</div>
-		</section>
-
-		<section ng-if="raw">
-			<h5>Raw Data</h5>
-
-			<div ng-controller="RawCtrl">
-				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" model="model" version="1.1">
-					<g vgraph-multi-line="config"></g>
-					<!-- <g vgraph-leading config="config"></g> -->
-				</svg>
+						<g vgraph-loading></g>
+						<g vgraph-message></g>
+					</svg>
+				</div>
 			</div>
 		</section>
 
 		<section ng-if="nulled">
 			<h5>Null Data</h5>
 			<div ng-controller="NullCtrl">
-				{{graph.loading}} :: {{graph.message}}
-				<hr>
-				<span ng-repeat="conf in config">|{{highlight.point.default[conf.name]}}|</span>
-				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" model="model" version="1.1">
-					<g vgraph-axis="'left'"
-						tick-length="4" tick-padding="-2"></g>
-					<g vgraph-axis="'bottom'"
-						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					<g vgraph-multi-line="config"></g>
-					<g vgraph-multi-indicator="config"></g>
-					<g vgraph-target="config" target="highlight" point-radius="5"></g>
-					<g vgraph-loading="Loading Data"
-						></g>
-					<g vgraph-interact="highlight"></g>
-				</svg>
-			</div>
+				<div vgraph-page="page">
+					<div vgraph-chart="graph">
+						{{graph.loading}} : {{graph.message}}
+						<svg xmlns="http://www.w3.org/2000/svg"  version="1.1">
+							<g vgraph-axis="'left'"
+								tick-length="4" tick-padding="-2"></g>
+							<g vgraph-axis="'bottom'"
+								tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
 
-			<div ng-controller="NullCtrl">
-				{{graph.loading}} :: {{graph.message}}
-				<hr>
-				<span ng-repeat="conf in config">|{{highlight.point.default[conf.name]}}|</span>
-				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" model="model" version="1.1">
-					<g vgraph-axis="'left'"
-						tick-length="4" tick-padding="-2"></g>
-					<g vgraph-axis="'bottom'"
-						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					<g vgraph-multi-line="config"></g>
-					<g vgraph-target="config" target="highlight" point-radius="5"></g>
-					<g vgraph-loading="Loading Data"></g>
-					<g vgraph-interact="highlight"></g>
-					<g vgraph-area config="config"></g>
-				</svg>
+							<g ng-repeat="cfg in config" vgraph-line="cfg"></g>
+							<g ng-repeat="cfg in config" vgraph-indicator="cfg"></g>
+
+							<g vgraph-target="config" point-radius="5"></g>
+							<g vgraph-loading="Loading Data"></g>
+
+							<g vgraph-interact></g>
+						</svg>
+					</div>
+				</div>
 			</div>
 		</section>
 
-		<section ng-if="classed">
-			<h5>Classed - Multi Data Sources</h5>
-			<div ng-controller="StackedMultiCtrl">
-				{{highlight}}
-				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" model="model" version="1.1">
-					<g vgraph-axis="'left'"
-						tick-length="4" tick-padding="-2"></g>
-					<g vgraph-axis="'bottom'"
-						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					<g vgraph-stack="config"></g>
-					<g vgraph-target="config" target="highlight" point-radius="5"></g>
-					<g vgraph-interact="highlight"></g>
-				</svg>
-			</div>
-			
+		<section ng-if="resize">
 			<div ng-controller="ResizeCtrl">
-				{{graph.loading}}
-				<span ng-repeat="conf in config">|{{highlight.point.default[conf.name]}}|</span>
-				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" model="model" version="1.1">
-					<g vgraph-axis="'left'"
-						tick-length="4" tick-padding="-2"></g>
-					<g vgraph-axis="'bottom'"
-						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					<g vgraph-multi-line="config"></g>
-					<g vgraph-multi-indicator="config"></g>
-					<g vgraph-target="config" target="highlight" point-radius="5"></g>
-					<g vgraph-loading="Loading Data"
-						></g>
-					<g vgraph-interact="highlight"></g>
-				</svg>
-				<div>
-					<button ng-click="resize()">Resize</button>
+				<div vgraph-page="page">
+					<svg vgraph-chart="graph" interface="interface">
+						<g vgraph-axis="'left'"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'bottom'"
+							tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+
+						<g ng-repeat="cfg in config" vgraph-line="cfg"></g>
+					</svg>
+					<div>
+						<button ng-click="resize()">Resize</button>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<section ng-if="stacked" ng-controller="StackedCtrl">
+			<h5>Stacked</h5>
+			<div vgraph-page="page">
+				<div vgraph-chart="graph">
+					<pre vgraph-highlight="point">
+	{{ config[0].field }} : {{ point.default.linear.y1 }} : {{ point.default.linear.$stack$y1 }} : {{ config[0].className }}
+	{{ config[1].field }} : {{ point.default.linear.y2 }} : {{ point.default.linear.$stack$y2 }} : {{ config[1].className }}
+	{{ config[2].field }} : {{ point.default.linear.y3 }} : {{ point.default.linear.$stack$y3 }} : {{ config[2].className }}
+	{{ config[3].field }} : {{ point.default.linear.y4 }} : {{ point.default.linear.$stack$y4 }} : {{ config[3].className }}
+					</pre>
+					<svg>
+						<g vgraph-axis="'left'"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'bottom'"
+							tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+
+						<g vgraph-stack="config">
+							<path ng-repeat="cfg in config" vgraph-line="cfg"></path>
+						</g>
+
+						<g vgraph-target="config" point-radius="3"></g>
+
+						<g vgraph-interact></g>
+					</svg>
+				</div>
+
+				<div vgraph-chart="graph">
+					<pre vgraph-highlight="point">
+	{{ config[0].field }} : {{ point.default.linear.y1 }} : {{ point.default.linear.$stack$y1 }} : {{ config[0].className }}
+	{{ config[1].field }} : {{ point.default.linear.y2 }} : {{ point.default.linear.$stack$y2 }} : {{ config[1].className }}
+	{{ config[2].field }} : {{ point.default.linear.y3 }} : {{ point.default.linear.$stack$y3 }} : {{ config[2].className }}
+	{{ config[3].field }} : {{ point.default.linear.y4 }} : {{ point.default.linear.$stack$y4 }} : {{ config[3].className }}
+					</pre>
+					<svg>
+						<g vgraph-axis="'left'"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'bottom'"
+							tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+
+						<g vgraph-stack="config">
+							<path ng-repeat="cfg in config" vgraph-line="cfg" pair="config[$index-1]"></path>
+						</g>
+
+						<g vgraph-target="config" point-radius="3"></g>
+
+						<g vgraph-interact></g>
+					</svg>
+				</div>
+
+				<div vgraph-chart="graph">
+					<pre vgraph-highlight="point">
+						{{ point.default.linear.$stack$y1 }} : {{ point.default.linear.y1 }}
+						{{ point.default.linear.$stack$y2 }} : {{ point.default.linear.y2 }}
+						{{ point.default.linear.$stack$y3 }} : {{ point.default.linear.y3 }}
+						{{ point.default.linear.$stack$y4 }} : {{ point.default.linear.y4 }}
+					</pre>
+					<svg>
+						<g vgraph-axis="'left'"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'bottom'"
+							tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+
+						<g vgraph-stack="config">
+							<path ng-repeat="cfg in config" vgraph-bar="cfg" pair="config[$index-1]"></path>
+						</g>
+
+						<g vgraph-target="config" point-radius="3"></g>
+
+						<g vgraph-interact></g>
+					</svg>
+				</div>
+			</div>
+		</section>
+
+		<section ng-if="growing">
+			<h5>Dynamic Bounds</h5>
+			<div ng-controller="GrowingCtrl" no-bounds="true">
+				<div vgraph-page="page">
+					<svg vgraph-chart="graph" model="model">
+						<g vgraph-axis="'left'"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'bottom'"
+							tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+
+						<g vgraph-line="ctrl"></g>
+
+						<g vgraph-indicator="ctrl"
+							point-radius="5"></g>
+					</svg>
+				</div>
+			</div>
+
+			<h5>Static Bounds</h5>
+			<div ng-controller="GrowingCtrl">
+				<div vgraph-page="page">
+					<svg vgraph-chart="graph">
+						<g vgraph-axis="'left'"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'bottom'"
+							tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+
+						<g vgraph-line="ctrl"></g>
+
+						<g vgraph-indicator="ctrl"
+							outer-radius="10"
+							point-radius="5"></g>
+					</svg>
+				</div>
+			</div>
+		</section>
+
+		<section ng-if="buckets">
+			<h5>Buckets</h5>
+			<div ng-controller="BucketsCtrl">
+				<div vgraph-page="page">
+					<div vgraph-chart="graph">
+						<svg>
+							<g vgraph-axis="'left'" view="primary"
+								tick-length="4" tick-padding="-2"></g>
+							<g vgraph-axis="'bottom'" view="primary"
+								tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+
+							<path ng-repeat="cfg in config" vgraph-line="cfg"></path>
+
+							<g vgraph-target="config" point-radius="5"></g>
+
+							<g vgraph-interact></g>
+						</svg>
+					</div>
+
+					<div vgraph-chart="graph">
+						<span vgraph-highlight="point">{{point}}</span>
+						<svg>
+							<g vgraph-axis="'left'" view="primary"
+								tick-length="4" tick-padding="-2"></g>
+							<g vgraph-axis="'bottom'" view="primary"
+								tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+
+							<path vgraph-bar="config[0]" width="4"></path>
+
+							<g vgraph-target="[config[0]]" point-radius="5"></g>
+
+							<g vgraph-interact></g>
+						</svg>
+					</div>
 				</div>
 			</div>
 		</section>
 
 		<section ng-if="compare">
 			<h5>Other Stuff</h5>
-			<div ng-controller="MixerCtrl">
-				{{ highlight.point.compare }}
-				{{ getX }} :: {{ getY }}
-				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" model="model" version="1.1">
-					<g vgraph-compare config1="config[0]" config2="config[1]" reference="compare"></g>
-					<g vgraph-multi-line="config"></g>
-					<g vgraph-target="config" target="highlight" point-radius="5"></g>
-					<g vgraph-tooltip="config"
-						point="highlight.point" 
-						reference="compare"></g>
-					<g vgraph-interact="highlight"></g>
-				</svg>
+			<div ng-controller="CompareCtrl">
+				<div vgraph-page="page">
+					<div vgraph-chart="graph">
+						<span vgraph-highlight="point">
+							{{ point.compare }} | {{ getX }} :: {{ getY }}
+						</span>
+						<svg xmlns="http://www.w3.org/2000/svg" version="1.1">
+
+							<g vgraph-compare config1="config[0]" config2="config[1]" reference="compare"></g>
+							<g ng-repeat="cfg in config" vgraph-line="cfg"></g>
+							
+							<g vgraph-target="config" point-radius="5"></g>
+							<g vgraph-tooltip="config"
+								reference="compare"></g>
+
+							<g vgraph-interact="highlight"></g>
+						</svg>
+					<div>
+				</div>
 			</div>
 		</section>
 
-		<section ng-if="bar">
-			<div ng-controller="StackedMultiCtrl">
-				{{ highlight.point.default.$bar }}
-				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" model="model" version="1.1">
-					<g vgraph-axis="'left'"
-						tick-length="4" tick-padding="-2"></g>
-					<g vgraph-axis="'bottom'"
-						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					<g vgraph-bar config="config" padding="2" min-width="4"></g>
-					<g vgraph-tooltip="highlight" text-formatter="formatter" value="getBar"></g>
-					<g vgraph-interact="highlight"></g>
-				</svg>
-			</div>
-
-			<div ng-controller="SimpleStackedMultiCtrl">
-				{{ highlight.point.default.$bar }}
-				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" model="model" version="1.1">
-					<g vgraph-axis="'left'"
-						tick-length="4" tick-padding="-2"></g>
-					<g vgraph-axis="'bottom'"
-						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					<g vgraph-bar config="config" padding="2" min-width="4"></g>
-					<g vgraph-icon="data" 
-						true-value="iconValue"
-						interval="'x'"
-						name="high" show-under="true"
-						><text>H</text></g>
-					<g vgraph-tooltip="highlight" text-formatter="formatter" value="getBar"></g>
-					<g vgraph-interact="highlight"></g>
-					<g vgraph-classifier="data" 
-						interval="'x'"
-						classes="classTests"
-						massage="classParser"></g>
-				</svg>
-			</div>
-		</section>
-
-		<section ng-if="multiAxis">
+		<section ng-if="multiple">
 			<h5>Multi Axis</h5>
 			<strong>two different x-y scales</strong>
 			<div ng-controller="MultiAxisCtrl" class='grid-on'>
-				({{highlight.point.firstModel.$index}},{{highlight.point.firstModel.firstLine}}) : 
-				({{highlight.point.secondModel.$index}},{{highlight.point.secondModel.secondLine}})
-				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" 
-					model="{ firstModel:firstModel, secondModel:secondModel }" version="1.1">
-					<g vgraph-axis="'left'" control="firstModel"
-						tick-length="4" tick-padding="-2"></g>
-					<g vgraph-axis="'bottom'" control="firstModel"
-						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					<g vgraph-axis="'right'" control="secondModel"
-						tick-length="4" tick-padding="-2"></g>
-					<g vgraph-axis="'top'" control="secondModel"
-						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					<g vgraph-line
-						feed="line" interval="'x'"
-						control="firstModel"
-						value="'y1'" name="firstLine"
-						reference="l1"></g>
-					<g vgraph-line 
-						feed="line" interval="'x2'"
-						control="secondModel"
-						value="'y2'" name="secondLine"
-						reference="l2"></g>
-					<g vgraph-target="['l1','l2']" target="highlight" point-radius="5"></g>
-					<g vgraph-interact="highlight"></g>
-				</svg>
-			</div>
+				<div vgraph-page="page">
+					<div vgraph-chart="graph" name="primary">
+						<span vgraph-highlight="point">
+							({{point.firstView.someModel.$x}},{{point.firstView.someModel.y}}) : 
+							({{point.secondView.someModel.$x}},{{point.secondView.someModel.y}})
+						</span>
+						<svg>
+							<g vgraph-axis="'left'" view="firstView"
+								tick-length="4" tick-padding="-2"></g>
+							<g vgraph-axis="'bottom'" view="firstView"
+								tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+							<g vgraph-axis="'right'" view="secondView"
+								tick-length="4" tick-padding="-2"></g>
+							<g vgraph-axis="'top'" view="secondView"
+								tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
 
-			<strong>two x, one y scale (normalizeY)</strong>
-			<div ng-controller="MultiAxis2Ctrl" class='grid-on'>
-				({{highlight.point.firstModel.$interval}},{{highlight.point.firstModel.firstLine}}) : 
-				({{highlight.point.secondModel.$interval}},{{highlight.point.secondModel.secondLine}})
-				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" 
-					model="{ firstModel:firstModel, secondModel:secondModel }" version="1.1">
-					<g vgraph-axis="'left'" control="firstModel"
-						tick-length="4" tick-padding="-2"></g>
-					<g vgraph-axis="'bottom'" control="firstModel"
-						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					<g vgraph-axis="'right'" control="secondModel"
-						tick-length="4" tick-padding="-2"></g>
-					<g vgraph-axis="'top'" control="secondModel"
-						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					<g vgraph-line
-						feed="line" interval="'x'" control="firstModel"
-						value="'y1'" name="firstLine"
-						reference="l1"></g>
-					<g vgraph-line
-						feed="line" interval="'x2'" control="secondModel"
-						value="'y2'" name="secondLine"
-						reference="l2"></g>
-					<g vgraph-target="['l1','l2']" target="highlight" point-radius="5"></g>
-					<g vgraph-interact="highlight"></g>
-				</svg>
-			</div>
-		</section>
+							<path ng-repeat="cfg in config" vgraph-line="cfg"></path>
 
-		<section ng-if="zoom">
-			<!--
-			<h5>Zooming</h5>
-			<div ng-controller="MultiAxisCtrl" class='grid-on'>
-				({{highlight.point.firstModel.$interval}},{{highlight.point.firstModel.firstLine}}) : 
-				({{highlight.point.secondModel.$interval}},{{highlight.point.secondModel.secondLine}})
-				<svg vgraph-chart="graph" 
-					model="{ firstModel:firstModel, secondModel:secondModel }">
-					<g vgraph-axis="'left'" control="firstModel"
-						tick-length="4" tick-padding="-2"></g>
-					<g vgraph-axis="'bottom'" control="firstModel"
-						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					<g vgraph-axis="'right'" control="secondModel"
-						tick-length="4" tick-padding="-2"></g>
-					<g vgraph-axis="'top'" control="secondModel"
-						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					
-					<g vgraph-line="line" interval="'x'" control="firstModel"
-						value="'y1'" name="firstLine"></g>
-					<g vgraph-line="line" interval="'x2'" control="secondModel"
-						value="'y2'" name="secondLine"></g>
+							<g vgraph-target="config" point-radius="5"></g>
 
-					<g vgraph-target="highlight" point-radius="5"
-						config="{firstModel:[{name:'firstLine',className:'blue'}], secondModel:[{name:'secondLine',className:'red'}]}"></g>
+							<g vgraph-focus="dragPos" lose-focus="dragStop"></g>
+							<g vgraph-interact d-begin="dragStart" d-change="dragPos" d-end="dragStop"></g>
+						</svg>
+					</div>
 
-					<g vgraph-focus="dragPos" lose-focus="dragStop"></g>
-					<g vgraph-interact="highlight" d-begin="dragStart" d-change="dragPos" d-end="dragStop"></g>
-				</svg>
+					<div vgraph-chart="zoom">
+						<svg>
+							<g vgraph-axis="'top'" view="secondView"
+								tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+							<g vgraph-axis="'bottom'" view="firstView"
+								tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+							
+							<path ng-repeat="cfg in config" vgraph-line="cfg"></path>
 
-				<svg class="zoom" vgraph-chart="zoom" model="graphModel">
-					<g vgraph-axis="'bottom'" control="firstModel"
-						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					<g vgraph-axis="'top'" control="secondModel"
-						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-
-					<g vgraph-multi-line config="config"></g>
-
-					<g vgraph-zoom="graph" control="firstModel"></g>
-				</svg>
-			</div>
-			-->
-			<h5>Zooming - offset</h5>
-			<div ng-controller="MultiZoomCtrl" class='grid-on'>
-				({{highlight.point.firstModel.$index}},{{highlight.point.firstModel.firstLine}}) : 
-				({{highlight.point.secondModel.$index}},{{highlight.point.secondModel.secondLine}})
-				:{{ feed1.length }}:{{ feed2.length }}
-				<svg vgraph-chart="graph">
-					<g vgraph-axis="'left'" control="firstModel"
-						tick-length="4" tick-padding="-2"></g>
-					<g vgraph-axis="'bottom'" control="firstModel"
-						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					<g vgraph-axis="'right'" control="secondModel"
-						tick-length="4" tick-padding="-2"></g>
-					<g vgraph-axis="'top'" control="secondModel"
-						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					
-					<g vgraph-line="config[0]" class="line red"></g>
-					<g vgraph-line="config[1]" class="line blue"></g>
-
-					<g vgraph-focus="dragPos" lose-focus="dragStop"></g>
-					<g vgraph-interact="highlight" d-begin="dragStart" d-change="dragPos" d-end="dragStop"></g>
-				</svg>
-				<svg class="zoom" vgraph-chart="zoom">
-					<g vgraph-axis="'bottom'" control="firstModel"
-						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					<g vgraph-axis="'top'" control="secondModel"
-						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-
-					<g vgraph-multi-line="config"></g>
-
-					<g vgraph-zoom="graph" control="firstModel"></g>
-				
-				</svg>
-			</div>
-		</section>
-
-		<section ng-if="export">
-			<h5>Export</h5>
-			<div ng-controller="MultiAxisCtrl" class='grid-on'>
-				({{highlight.point.firstModel.$interval}},{{highlight.point.firstModel.firstLine}}) : 
-				({{highlight.point.secondModel.$interval}},{{highlight.point.secondModel.secondLine}})
-				<svg vgraph-chart="graph" 
-					model="{ firstModel:firstModel, secondModel:secondModel }">
-					<g vgraph-axis="'left'" control="firstModel"
-						tick-length="4" tick-padding="-2"></g>
-					<g vgraph-axis="'bottom'" control="firstModel"
-						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					<g vgraph-axis="'right'" control="secondModel"
-						tick-length="4" tick-padding="-2"></g>
-					<g vgraph-axis="'top'" control="secondModel"
-						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-					
-					<g vgraph-line="line" interval="'x'" control="firstModel"
-						value="'y1'" name="firstLine"></g>
-					<g vgraph-line="line" interval="'x2'" control="secondModel"
-						value="'y2'" name="secondLine"></g>
-
-					<g vgraph-focus="dragPos" lose-focus="dragStop"></g>
-					<g vgraph-interact="highlight" d-begin="dragStart" d-change="dragPos" d-end="dragStop"></g>
-				</svg>
-				<button ng-click="export()">Export</button>
-				<a class="link" ng-show="exportData" download='sample.csv'>Download</a>
-			</div>
-			<b>Offset - point</b>
-			<div ng-controller="ExportCtrl">
-				({{highlight.closest.firstModel.$interval}},{{highlight.closest.firstModel.firstLine}}) : 
-				({{highlight.closest.secondModel.$interval}},{{highlight.closest.secondModel.secondLine}})
-				<br>
-				{{highlight.point.$index}}
-				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" 
-					model="graphModel" version="1.1">
-					<g vgraph-multi-line config="config"></g>
-
-					<g vgraph-target="config" target="highlight" point-radius="5"></g>
-
-					<g vgraph-interact="highlight" d-begin="dragStart" d-change="dragPos" d-end="dragStop"></g>
-				</svg>
-				<button ng-click="export()">Export</button>
-				<a class="link" ng-show="exportData" download='sample.csv'>Download</a>
-			</div>
-
-			<b>Offset - off</b>
-			<div ng-controller="ExportCtrl">
-				({{highlight.closest.firstModel.$interval}},{{highlight.closest.firstModel.firstLine}}) : 
-				({{highlight.closest.secondModel.$interval}},{{highlight.closest.secondModel.secondLine}})
-				<br>
-				{{highlight.point.$index}}
-				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" 
-					model="graphModel" version="1.1">
-					<g vgraph-multi-line config="config"></g>
-
-					<g vgraph-target="config" target="highlight" point-radius="5" type="closest"></g>
-
-					<g vgraph-interact="highlight" d-begin="dragStart" d-change="dragPos" d-end="dragStop"></g>
-				</svg>
-				<button ng-click="export()">Export</button>
-				<a class="link" ng-show="exportData" download='sample.csv'>Download</a>
-			</div>
-
-			<b>Offset - on</b>
-			<div ng-controller="ExportCtrl">
-				({{highlight.closest.firstModel.$interval}},{{highlight.closest.firstModel.firstLine}}) : 
-				({{highlight.closest.secondModel.$interval}},{{highlight.closest.secondModel.secondLine}})
-				<svg xmlns="http://www.w3.org/2000/svg" vgraph-chart="graph" 
-					model="graphModel" version="1.1">
-					<g vgraph-multi-line config="config"></g>
-
-					<g vgraph-target="config" target="highlight" point-radius="5" type="closest"
-						offset="true"></g>
-
-					<g vgraph-interact="highlight" d-begin="dragStart" d-change="dragPos" d-end="dragStop"></g>
-				</svg>
-				<button ng-click="export()">Export</button>
-				<a class="link" ng-show="exportData" download='sample.csv'>Download</a>
+							<g vgraph-zoom="primary"></g>
+						</svg>
+					</div>
+				</div>
 			</div>
 		</section>
 	</article>

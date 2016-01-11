@@ -1,4 +1,4 @@
-angular.module( 'vgraph' ).factory( 'BoxModel',
+angular.module( 'vgraph' ).factory( 'ComponentBox',
     [
     function () {
         'use strict';
@@ -71,7 +71,7 @@ angular.module( 'vgraph' ).factory( 'BoxModel',
             model.ratio = model.outerWidth + ' x ' + model.outerHeight;
         }
 
-        function BoxModel( settings ){
+        function ComponentBox( settings ){
             this.registrations = [];
             extend( this, settings || {} );
         }
@@ -80,17 +80,17 @@ angular.module( 'vgraph' ).factory( 'BoxModel',
             return nVal !== undefined ? parseInt( nVal ) : oVal;
         }
 
-        BoxModel.prototype.register = function( cb ){
+        ComponentBox.prototype.register = function( cb ){
             this.registrations.push( cb );
         };
 
-        BoxModel.prototype.targetSvg = function( $el ){
-            this.$element = $el;
+        ComponentBox.prototype.targetSvg = function( el ){
+            this.$element = jQuery(el); // I'd like not to need this
 
             this.resize();
         };
 
-        BoxModel.prototype.resize = function(){
+        ComponentBox.prototype.resize = function(){
             var i, c,
                 el = this.$element;
 
@@ -132,6 +132,6 @@ angular.module( 'vgraph' ).factory( 'BoxModel',
             }
         };
 
-        return BoxModel;
+        return ComponentBox;
     }]
 );

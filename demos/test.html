@@ -1,37 +1,48 @@
 <body>
-<svg id="test_target" width="5000" height="3000"></svg>
 <script>
-var start = +(new Date), 
-	svgns = "http://www.w3.org/2000/svg";
+var i, c,
+    t,
+    iterations = 1000000,
+    arr1 = [],
+    arr2 = [],
+    arr3 = [],
+    start;
 
-for (var x = 0; x < 5000; x += 50) {
-    for (var y = 0; y < 3000; y += 50) {
-        var rect = document.createElementNS(svgns, 'rect');
-        rect.setAttributeNS(null, 'x', x);
-        rect.setAttributeNS(null, 'y', y);
-        rect.setAttributeNS(null, 'height', '50');
-        rect.setAttributeNS(null, 'width', '50');
-        rect.setAttributeNS(null, 'fill', '#'+Math.round(0xffffff * Math.random()).toString(16));
-        document.getElementById('test_target').appendChild(rect);
-    }
+function factory(){
+    return {
+        v1: null,
+        v2: null
+    };
 }
-alert( +(new Date) - start );
-start = +(new Date)
-for (var x = 0; x < 5000; x = nextX ) {
-	var nextY,
-		nextX = x + 50,
-		line = '',
-		rect = document.createElementNS(svgns, 'path');
 
-	for (var y = 0; y < 3000; y = nextY ) {
-    	nextY = y + 50;
-    	line += 'M'+x+','+y+'L'+nextX+','+y+'L'+nextX+','+nextY+'L'+x+','+nextY+'Z';
+function nullOut( keys ){
+    var i, c,
+        t = {};
+
+    for( i = 0, c = keys.length; i < c; i++ ){
+        t[keys[i]] = null;
     }
-    rect.setAttributeNS(null, 'd', line);
-    rect.setAttributeNS(null, 'fill', '#'+Math.round(0xffffff * Math.random()).toString(16));
-    document.getElementById('test_target').appendChild(rect);
-}
-alert( +(new Date) - start ); 
 
+    return t;
+}
+
+start = +( new Date() );
+for( i = 0, c = iterations; i < c; i++ ){
+    arr1.push( nullOut(['v1','v2']) );
+}
+console.log( 'loop 1: ', +( new Date() ) - start );
+
+start = +( new Date() );
+t = factory();
+for( i = 0, c = iterations; i < c; i++ ){
+    arr1.push( Object.create(t) );
+}
+console.log( 'loop 2: ', +( new Date() ) - start );
+
+start = +( new Date() );
+for( i = 0, c = iterations; i < c; i++ ){
+    arr1.push( factory() );
+}
+console.log( 'loop 3: ', +( new Date() ) - start );
 </script>
 </body>

@@ -6,7 +6,8 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
         return {
             require : ['^vgraphChart'],
             link : function( scope, el, attrs, requirements ){
-                var graph = requirements[0].graph,
+                var unsubscribe,
+                    graph = requirements[0],
                     pulsing = false,
                     interval,
                     box = graph.box,
@@ -115,16 +116,22 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
                     }
                 });
 
+                startPulse();
+                
+                unsubscribe = graph.$subscribe({
+                    'done': function(){
+                        stopPulse();
+
+                        if ( graph.loading && box.ratio ){
+                            startPulse();
+                        }
+                    },
+                    'error': stopPulse
+                });
+
                 scope.$on('$destroy', function(){
                     stopPulse();
-                });
-                
-                graph.register(function(){
-                    stopPulse();
-
-                    if ( graph.loading && box.ratio ){
-                        startPulse();
-                    }
+                    unsubscribe();
                 });
             }
         };

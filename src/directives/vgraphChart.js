@@ -1,14 +1,9 @@
 angular.module( 'vgraph' ).directive( 'vgraphChart',
-    [ 
-    function(){
+    [ 'ComponentChart',
+    function( ComponentChart ){
         'use strict';
 
-        function resize( box, el ){
-            if ( el ){
-                box.$mat = d3.select( el ).insert( 'rect',':first-child' );
-                box.$frame = d3.select( el ).insert( 'rect',':first-child' );
-            }
-
+        function resize( box ){
             if ( box.$mat && box.innerWidth ){
                 // this isn't the bed way to do it, but since I'm already planning on fixing stuff up, I'm leaving it
                 box.$mat.attr( 'class', 'mat' )
@@ -31,44 +26,52 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
 
         return {
             scope : {
-                graph : '=vgraphChart'
+                settings : '=vgraphChart',
+                interface : '=?interface'
             },
-            controller : ['$scope', function( $scope ){
-                var graph = $scope.graph;
+            controller : ComponentChart,
+            require : ['vgraphChart','^vgraphPage'],
+            link: function ( $scope, $el, $attrs, requirements ){
+                var el,
+                    page = requirements[1],
+                    graph = requirements[0],
+                    box = graph.box;
 
-                this.graph = graph;
-                graph.$scope = $scope;
+                if ( $el[0].tagName === 'svg' ){
+                    el = $el[0];
+                }else{
+                    el = $el.find('svg')[0];
+                }
 
-                graph.box.register(function(){
-                    resize( graph.box );
+                graph.$root = $el[0]; 
+
+                box.register(function(){
+                    resize( box );
                     graph.rerender(function(){
                         $scope.$apply();
                     });
                 });
-            }],
-            require : ['vgraphChart'],
-            link: function ( scope, el, $attrs, requirements ){
-                var graph = requirements[0].graph;
 
-                graph.box.targetSvg( el );
+                box.targetSvg( el );
 
-                resize( graph.box, el[0] );
+                box.$mat = d3.select( el ).insert( 'rect',':first-child' );
+                box.$frame = d3.select( el ).insert( 'rect',':first-child' );
 
-                scope.$watch( 'model.loading', function( loading ){
-                    if ( loading ){
-                        el.addClass( 'loading' );
-                    } else {
-                        el.removeClass( 'loading' );
-                    }
+                resize( box );
+
+                $scope.$watch('settings', function( settings ){
+                    graph.configure( page, settings );
                 });
 
-                scope.$watch( 'model.error', function( error ){
-                    if ( error ){
-                        el.addClass( 'hasError' );
-                    } else {
-                        el.removeClass( 'hasError' );
-                    }
-                });
+                if ( $scope.interface ){
+                    $scope.interface.resize = box.resize.bind( box );
+                    $scope.interface.error = graph.error.bind( graph );
+                    // TODO : clear, reset
+                }
+
+                if ( $attrs.name ){
+                    page.setChart( $attrs.name, graph );
+                }
             },
             restrict: 'A'
         };

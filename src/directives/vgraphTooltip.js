@@ -7,48 +7,35 @@ angular.module( 'vgraph' ).directive( 'vgraphTooltip',
             var cfg = $scope.config;
 
             if ( $attrs.reference ){
-                return makeByPointReference( $attrs.reference );
-            }else if ( cfg ){
-                if ( cfg.ref ){
-                    return makeByConfig(cfg.ref);
-                }else if ( angular.isString(cfg) ){
-                    return makeByConfigReference( graph, cfg );
-                }else{
-                    return cfg;
-                }
+                return {
+                    formatter: function( point ){
+                        return point[$attrs.reference].value;
+                    },
+                    xParse: function( point ){
+                        return point[$attrs.reference].x;
+                    },
+                    yParse: function( point ){
+                        return point[$attrs.reference].y;
+                    }
+                };
+            }else if ( !cfg.formatter ){
+                return makeByConfig(graph,cfg);
             }else{
-                console.log( 'can not parse tooltip config' );
+                return cfg;
             }
         }
 
-        function makeByConfig( ref ){
+        function makeByConfig( graph, cfg ){
             return {
                 formatter: function( point ){
-                    return point[ref.view][ref.model][ref.field];
+                    return cfg.getValue( point[cfg.view][cfg.model] );
                 },
                 xParse: function( point ){
-                    return point[ref.view][ref.model]._$interval;
+                    return point[cfg.view][cfg.model]._$interval;
                 },
                 yParse: function( point ){
-                    return ref.$view.y.scale( point[ref.view][ref.model][ref.field] );
-                }
-            };
-        }
-
-        function makeByConfigReference( graph, ref ){
-            return makeByConfig( graph.references[ref] );
-        }
-
-        function makeByPointReference( reference ){
-            return {
-                formatter: function( point ){
-                    return point[reference].value;
-                },
-                xParse: function( point ){
-                    return point[reference].x;
-                },
-                yParse: function( point ){
-                    return point[reference].y;
+                    return graph.views[cfg.view].y
+                        .scale( cfg.getValue(point[cfg.view][cfg.model]) );
                 }
             };
         }
@@ -56,8 +43,7 @@ angular.module( 'vgraph' ).directive( 'vgraphTooltip',
         return {
             require : ['^vgraphChart'],
             scope : {
-                config: '=?vgraphTooltip',
-                point: '=?point'
+                config: '=?vgraphTooltip'
             },
             /*
             config
@@ -78,7 +64,7 @@ angular.module( 'vgraph' ).directive( 'vgraphTooltip',
             }
             */
             link : function( scope, el, attrs, requirements ){
-                var graph = requirements[0].graph,
+                var graph = requirements[0],
                     cfg = makeConfig( graph, scope, attrs ),
                     xOffset = parseInt(attrs.offsetX) || 0,
                     yOffset = parseInt(attrs.offsetY) || 0,
@@ -92,7 +78,7 @@ angular.module( 'vgraph' ).directive( 'vgraphTooltip',
                         .style( 'font-size', '16' )
                         .attr( 'class', 'label' );
 
-                scope.$watch('point', function( point ){
+                graph.$on('highlight', function( point ){
                     var $y,
                         $x,
                         value,

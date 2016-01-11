@@ -7,11 +7,10 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
             require : ['^vgraphChart'],
             scope : {
                 pointRadius: '=pointRadius',
-                config: '=vgraphTarget',
-                point: '=point'
+                config: '=vgraphTarget'
             },
             link : function( $scope, el, attrs, requirements ){
-                var graph = requirements[0].graph,
+                var graph = requirements[0],
                     box = graph.box,
                     $el = d3.select( el[0] )
                         .attr( 'class', 'target' ),
@@ -24,32 +23,31 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
                     curX,
                     watches;
 
-                function setBar( p ){
-                    curX = p;
+                function highlight( point ){
+                    if ( point ){
+                        curX = point.$pos;
 
-                    if ( p ){
                         $el.style( 'visibility', 'visible' )
-                                .attr( 'transform', 'translate(' + p + ',0)' );
+                                .attr( 'transform', 'translate(' + curX + ',0)' );
 
                         if ( attrs.noDots === undefined ){
                             angular.forEach( $scope.config, function( cfg ){
                                 var node,
-                                    ref = (angular.isString(cfg) ? graph.references[cfg] : cfg.ref) || cfg,
-                                    view = ref.$view,
-                                    name = ref.name,
-                                    field = ref.field,
-                                    datum = $scope.point[ref.view][ref.model],
-                                    className = 'plot-'+name,
+                                    view = graph.getView(cfg.view),
+                                    name = cfg.name,
+                                    field = cfg.field,
+                                    datum = point[cfg.view][cfg.model],
+                                    className = cfg.className,
                                     value = datum[field];
                                 
-                                if ( value !== undefined ){
+                                if ( value !== undefined && value !== null ){
                                     node = $dots.selectAll( 'circle.point.'+className );
                                     if ( !node[0].length ){
                                         node = $dots.append( 'circle' )
-                                            .attr( 'class', 'point '+className+' '+view.name );
+                                            .attr( 'class', 'point '+className+' '+cfg.classExtend );
                                     }
 
-                                    node.attr( 'cx', attrs.offset ? point._$interval - p : 0 )
+                                    node.attr( 'cx', attrs.offset ? point._$interval - curX : 0 )
                                         .attr( 'cy', view.y.scale(value) )
                                         .attr( 'r', $scope.$eval( attrs.pointRadius ) || 3 );
                                 }else{
@@ -62,12 +60,8 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
                     }
                 }
 
-                //if ( attrs.offset ){
-                //    $scope.$watch('target.offset', setBar );
-                //}else{
-                $scope.$watch('point.$pos', function( dex ){
-                    setBar( dex ); 
-                });
+                $el.style( 'visibility', 'hidden' );
+                graph.$on( 'highlight', highlight );
 
                 box.register(function(){
                     $highlight.attr( 'y1', box.innerTop )

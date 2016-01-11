@@ -1,10 +1,10 @@
 [vgraph-chart] {
-    > .frame {
+    .frame {
         fill: transparent;
         stroke: none;
     }
 
-    > .mat {
+    .mat {
         fill: transparent;
         stroke: none;
     }
@@ -22,8 +22,18 @@
         }
     }
 
-    [vgraph-line] path {
+    .line {
         stroke-width: 2;
+    }
+
+    .fill {
+        stroke-width: 1;
+        fill: grey;
+    }
+
+    .point {
+        stroke-width: 0;
+        fill: black;
     }
 
     [vgraph-target] {
@@ -95,16 +105,6 @@
     }
 
     [vgraph-indicator] {
-        .inner {
-            stroke-width: 0;
-            fill: black;
-        }
-        .outer {
-            stroke-width: 1;
-            stroke: black;
-            fill: transparent;
-        }
-
         &:not([outer-radius]){
             .outer {
                 -webkit-animation: pulse 3s ease infinite;

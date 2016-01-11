@@ -1,118 +1,72 @@
 angular.module( 'vgraph' ).directive( 'vgraphArea',
-    ['$compile', 'ComponentGenerator',
-    function( $compile, ComponentGenerator ){
+    [ 'ComponentGenerator', 'StatCalculations', 'GraphModel',
+    function( ComponentGenerator, StatCalculations, GraphModel ) {
         'use strict';
-
-        var uid = 0;
 
         return {
             require : ['^vgraphChart'],
             scope : {
-                data : '=vgraphArea',
-                config : '=config'
+                config: '=?vgraphArea'
             },
             link : function( scope, $el, attrs, requirements ){
-                var control = attrs.control || 'default',
+                var ref,
+                    $path,
+                    drawer,
+                    className,
+                    references,
                     graph = requirements[0].graph,
-                    views = {},
-                    viewLines = {},
-                    childScopes = [],
-                    el = $el[0],
-                    names,
-                    id = uid++,
-                    unwatch;
+                    cfg = ComponentGenerator.loadConfig( scope, attrs, graph );
 
-                el.$id = id;
-
-                function parseConf( config ){
-                    var $new,
-                        i, c,
-                        view,
-                        lines,
-                        line;
-
-                    names = [];
-
-                    if ( config ){
-                        d3.select( el ).selectAll( 'path' ).remove();
-                        while( childScopes.length ){
-                            childScopes.pop().$destroy();
-                        }
-                        
-                        lines = ComponentGenerator.compileConfig( scope, config, 'line' );
-                        viewLines = {};
-
-                        for( i = 0, c = lines.length; i < c; i++ ){
-                            line = lines[ i ];
-
-                            view = graph.views[ line.$conf.control || control ]; // allow the config to override
-                            if ( !viewLines[view.name] ){
-                                viewLines[view.name] = [];
-                                registerView(view);
-                            }
-                            viewLines[view.name].push(line);
-
-                            // I want the first calculated value, lowest on the DOM
-                            el.appendChild( line.element );
-                            line.calc = ComponentGenerator.makeAreaCalc(
-                                view,
-                                line.name
-                            );
-
-                            $new = scope.$new();
-                            childScopes.push( $new );
-
-                            $compile( line.element )( $new );
-                        }
-                    }
+                if ( $el[0].tagName === 'path' ){
+                    $path = d3.select( $el[0] );
+                }else{
+                    $path = d3.select( $el[0] ).append('path');
                 }
 
-                unwatch = scope.$watchCollection('config', parseConf );
-                scope.$on('$destroy', function(){
-                    while( childScopes.length ){
-                        childScopes.pop().$destroy();
+                scope.$watch(
+                    function(){
+                        return cfg.pair;
+                    },
+                    function( pair ){
+                        var className;
+
+                        ref = cfg.ref
+
+                        className = 'bar ';
+                        if ( ref.classExtend ){
+                            className += ref.classExtend + ' ';
+                        }
+
+                        drawer = ComponentGenerator.makeBarCalc( graph, ref, pair, attrs.width );
+                        references = [ref,pair];
+                        
+                        className += attrs.className || ref.className;
+
+                        $path.attr( 'class', className );
                     }
+                );
 
-                    unwatch();
-                });
-
-                function registerView( view ){
-                    if ( !views[view.name] ){
-                        views[view.name] = view;
-                        view.register({
-                            parse : function( data ){
-                                var i, c,
-                                    names = [],
-                                    lines = viewLines[view.name];
-                        
-                                if ( lines ){
-                                    for( i = 0, c = lines.length; i < c; i++ ){
-                                        names.push( lines[i].name );
-                                    }
-                                }
-
-                                return ComponentGenerator.parseSegmentedLimits( data, names );
+                scope.$watch(
+                    function(){
+                        return ref;
+                    },
+                    function( ref ){
+                        // TODO : unregister?
+                        graph.views[ref.view].register({
+                            parse: function( models ){
+                                return StatCalculations.limits( references, models[ref.model] );
                             },
-                            finalize : function( pane, data ){
-                                var i, c,
-                                    line,
-                                    lines = viewLines[view.name];
-                        
-                                if ( lines ){
-                                    for( i = 0, c = lines.length; i < c; i++ ){
-                                        line = lines[ i ];
-                                        line.$d3.attr( 'd', line.calc(data) );
-                                    }
-                                }
+                            finalize: function( models ){
+                                $path.attr( 'd', drawer(models[ref.model]) );
+                            },
+                            publish: function( data, headers, content, calcPos ){
+                                headers.push( name );
+                                ComponentGenerator.publish( data, name, content, calcPos );
                             }
                         });
                     }
-                }
+                );
             }
         };
-    }]
+    } ]
 );
-
-/*
-
-*/

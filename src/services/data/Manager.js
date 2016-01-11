@@ -1,11 +1,13 @@
-angular.module( 'vgraph' ).factory( 'LinearModel',
+angular.module( 'vgraph' ).factory( 'DataManager',
     [ 'DataCollection',
     function ( DataCollection ) {
         'use strict';
 
-        var modelC = 0;
+        var uid = 1;
 
-    	function LinearModel(){
+    	function DataManager(){
+            this.$$managerUid = uid++;
+
             this.$dataProc = regulator( 20, 200, function( lm ){
                 var registrations = lm.registrations;
 
@@ -18,10 +20,8 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
             this.reset();
         }
 
-        LinearModel.prototype.construct = function(){
+        DataManager.prototype.construct = function(){
             var loaders = [];
-
-            this.$modelId = modelC++;
 
             this.registrations = [];
             this.errorRegistrations = [];
@@ -43,7 +43,7 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
             };
         };
 
-        LinearModel.prototype.reset = function(){
+        DataManager.prototype.reset = function(){
             this.data = new DataCollection();
             this.ready = false;
 
@@ -51,11 +51,11 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
         };
         // expect a seed function to be defined
 
-        LinearModel.prototype.onError = function( cb ){
+        DataManager.prototype.onError = function( cb ){
             this.errorRegistrations.push( cb );
         };
 
-        LinearModel.prototype.setError = function( error ){
+        DataManager.prototype.setError = function( error ){
             var i, c;
 
             for( i = 0, c = this.errorRegistrations.length; i < c; i++ ){
@@ -63,20 +63,23 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
             }
         };
 
-        LinearModel.prototype.getNode = function( interval ){
+        DataManager.prototype.getNode = function( interval ){
             this.dataReady();
 
             return this.data.$getNode( interval );
         };
 
-        LinearModel.prototype.setValue = function( interval, name, value ){
+        DataManager.prototype.setValue = function( interval, name, value ){
             this.dataReady();
-            this.ready = true;
+            
+            if ( !this.ready && (value||value === 0) ){
+                this.ready = true;
+            }
             
             return this.data.$setValue( interval, name, value );
         };
 
-        LinearModel.prototype.removePlot = function(){
+        DataManager.prototype.removePlot = function(){
            // TODO : redo
         };
 
@@ -109,7 +112,7 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
             };
         }
 
-        LinearModel.prototype.dataReady = function( force ){
+        DataManager.prototype.dataReady = function( force ){
             var registrations = this.registrations;
 
             if ( force ){
@@ -121,14 +124,46 @@ angular.module( 'vgraph' ).factory( 'LinearModel',
             }
         };
 
-        LinearModel.prototype.register = function( cb ){
+        DataManager.prototype.register = function( cb ){
             this.registrations.push( cb );
         };
 
-        LinearModel.prototype.clean = function(){
-            this.data.$calcStats();
+        DataManager.prototype.clean = function(){
+            this.data.$sort();
         };
 
-        return LinearModel;
+        DataManager.prototype.$makePoint = function( pos ){
+            var r, l,
+                d,
+                dx,
+                p = this.data.$pos( pos, '_$index' );
+
+            if ( p.right === p.left ){
+                return this.data[p.right];
+            }else{
+                r = this.data[p.right];
+                l = this.data[p.left];
+                d = {};
+                dx = (pos - l._$index) / (r._$index - l._$index);
+
+                Object.keys(r).forEach(function( key ){
+                    var v1 = l[key], 
+                        v2 = r[key];
+
+                    // both must be numeric
+                    if ( v1 !== undefined && v1 !== null && 
+                        v2 !== undefined && v2 !== null ){
+                        d[key] = v1 + (v2 - v1) * dx;
+                    }
+                });
+
+                d.$faux = true;
+                d._$index = pos;
+
+                return d;
+            }
+        };
+
+        return DataManager;
     } ]
 );

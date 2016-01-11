@@ -6,17 +6,15 @@ angular.module( 'vgraph' ).directive( 'vgraphLeading',
         return {
             require : ['^vgraphChart'],
             scope : {
-                config : '=config'
+                config : '=vgraphLeading'
             },
             link : function( scope, el, attrs, requirements ){
-                var control = attrs.control || 'default',
-                    graph = requirements[0].graph,
-                    chart = graph.views[control],
+                var graph = requirements[0].graph,
                     $el = d3.select( el[0] ),
                     names;
 
                 function parseConf( config ){
-                    var conf,
+                    var cfg,
                         i, c;
                     
                     names = {};
@@ -25,9 +23,9 @@ angular.module( 'vgraph' ).directive( 'vgraphLeading',
 
                     if ( config ){
                         for( i = 0, c = config.length; i < c; i++ ){
-                            conf = config[ i ];
+                            cfg = config[ i ];
 
-                            names[ conf.name ] = $el.append('line').attr( 'class', conf.className );
+                            names[ cfg.name ] = $el.append('line').attr( 'class', 'line '+cfg.className );
                         }
                     }
                 }
@@ -36,61 +34,73 @@ angular.module( 'vgraph' ).directive( 'vgraphLeading',
                     $el.attr( 'visibility', 'hidden' );
                 }
 
+                function drawComponent(){
+                    var last,
+                        isValid = true,
+                        xMax,
+                        points = [];
+
+                    angular.forEach( scope.config, function( cfg ){
+                        var model = graph.views[cfg.view].models[cfg.model],
+                            datum = model[model.length-1],
+                            value = datum[ cfg.field ];
+
+                        if ( datum._$index < model.$parent.$maxIndex ){
+                            isValid = false;
+                        }else{ 
+                            if ( xMax === undefined || datum.$_interval > xMax ){
+                                xMax = datum._$interval;
+                            }
+
+                            datum = model._$index[model.$stats[cfg.field]];
+                            value = datum[ cfg.field ];
+
+                            points.push({
+                                el : names[cfg.name],
+                                y : graph.views[cfg.view].y.scale( value )
+                            });
+                        }
+                    });
+
+                    // sort the points form top to bottom
+                    points.sort(function( a, b ){
+                        return a.y - b.y;
+                    });
+
+                    angular.forEach( points, function( p ){
+                        if ( last ){
+                            last.el
+                                .attr( 'x1', xMax )
+                                .attr( 'x2', xMax )
+                                .attr( 'y1', last.y )
+                                .attr( 'y2', p.y );
+                        }
+
+                        last = p;
+                    });
+
+                    if ( last && isValid ){
+                        $el.attr( 'visibility', 'visible' );
+
+                        last.el
+                            .attr( 'x1', xMax )
+                            .attr( 'x2', xMax )
+                            .attr( 'y1', last.y )
+                            .attr( 'y2', graph.box.innerBottom );
+                    }else{
+                        clearComponent();
+                    }
+                }
+
                 scope.$watchCollection('config', parseConf );
 
-                chart.register({
-                    error: clearComponent,
-                    loading: clearComponent,
-                    finalize : function( pane ){
-                        var d,
-                            last,
-                            model = chart.model,
-                            points = [];
-
-                        angular.forEach( names, function( el, name ){
-                            if ( model.plots[name] ){
-                                d = model.plots[name].x.max;
-
-                                if ( pane.isValid(d) && d[name] ){
-                                    points.push({
-                                        el : el,
-                                        x : chart.x.scale( d._$interval ),
-                                        y : chart.y.scale( d['$'+name] || d[name] ) // pick a calculated point first
-                                    });
-                                }
-                            }
-                        });
-
-                        // sort the points form top to bottom
-                        points.sort(function( a, b ){
-                            return a.y - b.y;
-                        });
-
-                        angular.forEach( points, function( p ){
-                            if ( last ){
-                                last.el
-                                    .attr( 'x1', last.x )
-                                    .attr( 'x2', p.x )
-                                    .attr( 'y1', last.y )
-                                    .attr( 'y2', p.y );
-                            }
-
-                            last = p;
-                        });
-
-                        if ( last ){
-                            $el.attr( 'visibility', 'visible' );
-
-                            last.el
-                                .attr( 'x1', last.x )
-                                .attr( 'x2', last.x )
-                                .attr( 'y1', last.y )
-                                .attr( 'y2', graph.box.innerBottom );
-                        }else{
-                            $el.attr( 'visibility', 'hidden' );
-                        }
-                    }
-                });
+                scope.$on('$destroy',
+                    graph.$subscribe({
+                        'error': clearComponent,
+                        'loading': clearComponent,
+                        'success': drawComponent
+                    })
+                );
             }
         };
     } ]

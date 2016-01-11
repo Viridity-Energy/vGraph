@@ -1,6 +1,6 @@
 angular.module( 'vgraph' ).directive( 'vgraphStack',
-    [ '$compile', 'ComponentGenerator', 'StatCalculations', 'GraphModel',
-    function( $compile, ComponentGenerator, StatCalculations, GraphModel ) {
+    [ '$compile', 'ComponentGenerator', 'StatCalculations', 'ComponentChart',
+    function( $compile, ComponentGenerator, StatCalculations, ComponentChart ) {
         'use strict';
 
         return {
@@ -10,10 +10,11 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                 feed: '=?feed'
             },
             link : function( scope, $el, attrs, requirements ){
-                var viewName = attrs.control || GraphModel.defaultView,
-                    model = GraphModel.defaultModel, // TODO : model
-                    graph = requirements[0].graph,
-                    view = graph.views[viewName],
+                var viewName = attrs.view || ComponentChart.defaultView,
+                    childTag = attrs.childTag,
+                    model = attrs.model || ComponentChart.defaultModel, 
+                    graph = requirements[0],
+                    view = graph.getView(viewName),
                     el = $el[0],
                     unwatch,
                     childScope,
@@ -21,10 +22,32 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                     lines,
                     fieldNames;
 
-                function parseConf( configs ){
+                function pairElements( configs ){
                     var i, c,
                         cfg,
-                        last = {},
+                        last = {};
+
+                    for( i = 0, c = configs.length; i < c; i++ ){
+                        cfg = configs[i];
+                        cfg.$pos = i;
+
+                        if ( !cfg.feed ){
+                            cfg.feed = scope.feed;
+                        }
+                        if ( !cfg.ref ){
+                            cfg.ref = {
+                                name: cfg.name,
+                                view: viewName
+                            };
+                        }
+
+                        cfg.pair = last;
+                        last = cfg.ref;
+                    }
+                }
+
+                function parseConf( configs ){
+                    var i, c,
                         lines,
                         elements;
 
@@ -32,47 +55,36 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                     fieldNames = [];
 
                     if ( configs ){
-                        d3.select( $el[0] ).selectAll( 'g' ).remove();
+                        pairElements( configs );
 
-                        if ( childScope ){
-                            childScope.$destroy();
-                        }
+                        if ( childTag ){
+                            d3.select( $el[0] ).selectAll( 'g' ).remove();
 
-                        lines = '';
+                            if ( childScope ){
+                                childScope.$destroy();
+                            }
 
-                        for( i = 0, c = configs.length; i < c; i++ ){
-                            cfg = configs[i];
+                            lines = '';
+
+                            for( i = 0, c = configs.length; i < c; i++ ){
+                                lines += '<g '+childTag+'="config['+i+']"></g>';
+                            }
+
+                            elements = ComponentGenerator.svgCompile( lines );
                             
-                            if ( !cfg.feed ){
-                                cfg.feed = scope.feed;
-                            }
-                            if ( !cfg.ref ){
-                                cfg.ref = {
-                                    name: cfg.name,
-                                    view: viewName
-                                };
+                            for( i = 0, c = elements.length; i < c; i++ ){
+                                $el[0].appendChild( elements[i] );
                             }
 
-                            cfg.pair = last;
-                            last = cfg.ref;
-
-                            lines += '<g vgraph-line="config['+i+']"></g>';
+                            childScope = scope.$new();
+                            $compile( elements )( childScope );
                         }
-
-                        elements = ComponentGenerator.svgCompile( lines );
-                        
-                        for( i = 0, c = elements.length; i < c; i++ ){
-                            $el[0].appendChild( elements[i] );
-                        }
-
-                        childScope = scope.$new();
-                        $compile( elements )( childScope );
                     }
                 }
 
-                scope.$watchCollection('config', parseConf );
+                scope.$watchCollection( 'config', parseConf );
 
-                unwatch = scope.$watchCollection('config', parseConf );
+                unwatch = scope.$watchCollection( 'config', parseConf );
 
                 scope.$on('$destroy', function(){
                     childScope.$destroy();

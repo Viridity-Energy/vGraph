@@ -5,16 +5,15 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
 
         return {
             scope : {
-                target : '=vgraphZoom',
                 min : '=zoomMin',
                 max : '=zoomMax'
             },
-            require : ['^vgraphChart'],
+            require : ['^vgraphChart','^vgraphPage'],
             link : function( scope, el, attrs, requirements ){
-                var graph = requirements[0].graph,
+                var graph = requirements[0],
+                    page = requirements[1],
                     box = graph.box,
-                    target = scope.target,
-                    targetView = target.views[Object.keys(target.views)[0]],
+                    target = page.getChart(attrs.vgraphZoom),
                     dragging = false,
                     zoomed = false,
                     dragStart,
@@ -76,14 +75,8 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
                     if ( !noApply ){
                         scope.$apply(function(){
                             target.setPane(
-                                {
-                                    'start' : '%' + ( minPos / box.innerWidth ),
-                                    'stop' : '%' + ( maxPos / box.innerWidth )
-                                },
-                                {
-                                    'start' : null,
-                                    'stop' : null
-                                }
+                                minPos / box.innerWidth,
+                                maxPos / box.innerWidth
                             );
 
                             target.rerender();
@@ -202,42 +195,19 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
                     $focus.attr( 'height', box.innerHeight );
                 });
 
-                targetView.register({
-                    // TODO : There has to be a better way, this really should be on graph level
-                    finalize: function(){
-                        var pane = targetView.pane;
-
-                        if ( !dragging ){
-                            if ( pane.offset ) {
-                                minPos = pane.offset.left * box.innerWidth;
-                                maxPos = pane.offset.right * box.innerWidth;
-                            }else{
-                                minPos = 0;
-                                maxPos = box.innerWidth;
-                            }
-
-                            redraw( true );
+                target.$on('success', function( primaryView ){
+                    if ( !dragging ){
+                        if ( primaryView.offset ) {
+                            minPos = primaryView.offset.left * box.innerWidth;
+                            maxPos = primaryView.offset.right * box.innerWidth;
+                        }else{
+                            minPos = 0;
+                            maxPos = box.innerWidth;
                         }
-                    },
-                });
 
-                /* this is just duplicate functionality
-                view.register({
-                    finalize: function( pane ){
-                        if ( !dragging ){
-                            if ( pane.offset ) {
-                                minPos = box.innerWidth * pane.offset.left;
-                                maxPos = box.innerWidth * pane.offset.right;
-                            }else{
-                                minPos = 0;
-                                maxPos = box.innerWidth;
-                            }
-
-                            redraw( true );
-                        }
+                        redraw( true );
                     }
                 });
-                */
             }
         };
     } ]

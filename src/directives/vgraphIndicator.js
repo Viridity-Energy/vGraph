@@ -1,36 +1,30 @@
 angular.module( 'vgraph' ).directive( 'vgraphIndicator',
-    [ 'GraphModel',
-    function( GraphModel ){
+    [
+    function(){
         'use strict';
 
         return {
             require : ['^vgraphChart'],
             scope : {
-                ref: '=?vgraphIndicator'
+                cfg: '=?vgraphIndicator'
             },
             link : function( scope, el, attrs, requirements ){
-                var ref,
+                var view,
                     pulse,
-                    showing,
-                    model = GraphModel.defaultModel, // TODO : model
+                    cfg = scope.cfg,
+                    graph = requirements[0],
                     radius = scope.$eval( attrs.pointRadius ) || 3,
                     outer = scope.$eval( attrs.outerRadius ),
                     $el = d3.select( el[0] )
-                        .attr( 'transform', 'translate(1000,1000)' ),
-                    $circle = $el.append( 'circle' )
-                        .attr( 'class', 'point inner' )
-                        .attr( 'r', radius )
+                        .attr( 'transform', 'translate(1000,1000)' )
                         .attr( 'visibility', 'hidden' ),
+                    $circle = $el.append( 'circle' )
+                        .attr( 'r', radius ),
                     $outer = $el.append( 'circle' )
-                        .attr( 'class', 'point outer' )
-                        .attr( 'r', radius )
-                        .attr( 'visibility', 'hidden' );
+                        .attr( 'r', radius );
 
-                if ( !scope.ref ){
-                    ref = requirements[0].graph.references[attrs.vgraphIndicator];
-                }else{
-                    ref = scope.ref;
-                }
+                $circle.attr( 'class', 'point inner '+cfg.className );
+                $outer.attr( 'class', 'line outer '+cfg.className );
 
                 if ( outer ){
                     pulse = function() {
@@ -55,37 +49,35 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
                     $el.attr( 'visibility', 'hidden' );
                 }
 
-                ref.$view.register({
-                    error: clearComponent,
-                    loading: clearComponent,
-                    finalize : function( models ){
-                        var d,
-                            x,
-                            y,
-                            name = ref.alias || ref.name,
-                            myModel = models[model];
+                scope.$on('$destroy',
+                    graph.$subscribe({
+                        'error': clearComponent,
+                        'loading': clearComponent
+                    })
+                );
 
-                        d = myModel[myModel.length-1];
-                        if ( d && d[name] ){
+                view = graph.getView(cfg.view);
+                view.register({
+                    finalize : function( models ){
+                        var x,
+                            y,
+                            d,
+                            name = cfg.field,
+                            model = models[cfg.model];
+
+                        d = model[model.length-1];
+
+                        if ( d && d[name] && model.$parent.$maxIndex === model.$parent.$parent.$maxIndex ){
                             x = d._$interval;
-                            y = ref.$view.y.scale( d[name] );
+                            y = view.y.scale( d[name] );
 
                             if ( x && y ){
-                                showing = true;
                                 $el.attr( 'transform', 'translate(' + x + ',' + y + ')' );
                             
-                                $circle.attr( 'visibility', 'visible' );
-                                if ( $outer ){
-                                    $outer.attr( 'visibility', 'visible' );
-                                }
+                                $el.attr( 'visibility', 'visible' );
                             }
                         }else{
-                            showing = false;
-
-                            $circle.attr( 'visibility', 'hidden' );
-                            if ( $outer ){
-                                $outer.attr( 'visibility', 'hidden' );
-                            }
+                            clearComponent();
                         }
                     }
                 });

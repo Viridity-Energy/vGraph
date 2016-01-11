@@ -10,30 +10,31 @@ angular.module( 'vgraph' ).directive( 'vgraphCompare',
                 config2: '=config2'
             },
             link : function( scope, $el, attrs, requirements ){
-                var graph = requirements[0].graph,
+                var unsubscribe,
+                    graph = requirements[0],
                     element = ComponentGenerator.svgCompile( 
-                        '<g vgraph-line="config1" pair="config2" class="compare"></g>'
+                        '<path vgraph-line="config1" pair="config2" class-name="'+attrs.className+'"></path>'
                     );
 
                 $el[0].appendChild( element[0] );
                 $compile( element )( scope );
 
-                ComponentGenerator.normalizeConfig( scope.config1, graph );
+                unsubscribe = graph.$on( 'focus-point', function( point ){
+                    var ref1 = scope.config1,
+                        ref2 = scope.config2,
+                        p1 = point[ref1.view][ref1.model],
+                        p2 = point[ref2.view][ref2.model],
+                        view1 = graph.getView(ref1.view),
+                        view2 = graph.getView(ref2.view);
 
-                scope.config1.ref.$view.register({
-                    highlight: function( point ){
-                        var ref1 = scope.config1.ref,
-                            ref2 = scope.config2.ref,
-                            p1 = point[ref1.view][ref1.model],
-                            p2 = point[ref2.view][ref2.model];
-
-                        point[ attrs.reference || 'compare' ] = {
-                            value: Math.abs( p1[ref1.field] - p2[ref2.field] ),
-                            y: ( ref1.$view.y.scale(p1[ref1.field]) + ref2.$view.y.scale(p2[ref2.field]) ) / 2,
-                            x: ( p1._$interval + p2._$interval ) / 2
-                        };
-                    }
+                    point[ attrs.reference || 'compare' ] = {
+                        value: Math.abs( p1[ref1.field] - p2[ref2.field] ),
+                        y: ( view1.y.scale(p1[ref1.field]) + view2.y.scale(p2[ref2.field]) ) / 2,
+                        x: ( p1._$interval + p2._$interval ) / 2
+                    };
                 });
+
+                scope.$on('$destroy', unsubscribe );
             }
         };
     } ]

@@ -14,12 +14,16 @@ angular.module( 'vgraph' ).factory( 'DrawLine',
 			var i, c,
 				d;
 
-			for( i = 0, c = set.length; i < c; i++ ){
-				d = set[i];
-				set[i] = this.parseInterval(d) + ',' + this.parseValue(d);
-			}
+			if ( set.length ){
+				for( i = 0, c = set.length; i < c; i++ ){
+					d = set[i];
+					set[i] = this.parseInterval(d) + ',' + this.parseValue(d);
+				}
 
-			return 'M' + set.join('L');
+				return 'M' + set.join('L');
+			}else{
+				return '';
+			}
 		};
 
 		return DrawLine;

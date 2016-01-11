@@ -1,33 +1,16 @@
 angular.module( 'vgraph' ).factory( 'DataFeed',
-	[
-	function () {
+	[ 'makeEventing',
+	function ( makeEventing ) {
 		'use strict';
 
-		var uid = 1,
-            dataFeeds = {};
+		var uid = 1;
             
         function DataFeed( data /* array */, explode ){
             this.explode = explode;
             this.setSource( data );
 
-            this._$dfUid = uid++;
+            this.$$feedUid = uid++;
         }
-
-        // ensures singletons
-        DataFeed.create = function( data, explode ){
-            var t;
-
-            if ( !(data._$dfUid && dataFeeds[data._$dfUid]) ){
-                t = new DataFeed( data, explode );
-
-                data._$dfUid = t._$dfUid;
-                dataFeeds[t._$dfUid] = t;
-            }else{
-                t = dataFeeds[ data._$dfUid ];
-            }
-
-            return t;
-        };
 
         DataFeed.prototype.setSource = function( src ){
             var dis = this,
@@ -51,46 +34,14 @@ angular.module( 'vgraph' ).factory( 'DataFeed',
 
             src.$reset = function(){
                 dis.$trigger( 'reset' );
+                dis._readPos = 0;
+                dis.data.length = 0;
             };
 
             this.$push();
         };
 
-        DataFeed.prototype.$on = function( event, cb ){
-            var dis = this;
-
-            if ( !this._$listeners ){
-                this._$listeners = {};
-            }
-
-            if ( !this._$listeners[event] ){
-                this._$listeners[event] = [];
-            }
-
-            this._$listeners[event].push( cb );
-
-            return function clear$on(){
-                dis._$listeners[event].splice(
-                    dis._$listeners[event].indexOf( cb ),
-                    1
-                );
-            };
-        };
-
-        DataFeed.prototype.$trigger = function( event, arg ){
-            var listeners,
-                i, c;
-
-            if ( this._$listeners ){
-                listeners = this._$listeners[event];
-
-                if ( listeners ){
-                    for( i = 0, c = listeners.length; i < c; i++ ){
-                        listeners[i]( arg );
-                    }
-                }                   
-            }
-        };
+        makeEventing( DataFeed.prototype );
 
         DataFeed.prototype.$push = function(){
             var dis = this;
@@ -149,7 +100,7 @@ angular.module( 'vgraph' ).factory( 'DataFeed',
                     };
                 }else{
                     return {
-                        points: data,
+                        points: data.slice(pos),
                         next: data.length
                     };
                 }

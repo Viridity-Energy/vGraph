@@ -4,20 +4,20 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 		'use strict';
 
 		function isNumeric( v ){
-            if ( v === null ){
-                return false;
-            }else if ( Number.isFinite ){
-                return Number.isFinite(v) && !Number.isNaN(v);
-            }else{
-                return isFinite(v) && !isNaN(v);
-            }
-        }
+			if ( v === null ){
+				return false;
+			}else if ( Number.isFinite ){
+				return Number.isFinite(v) && !Number.isNaN(v);
+			}else{
+				return isFinite(v) && !isNaN(v);
+			}
+		}
 
 		function createNames( config, prefix ){
 			var arr = [];
 
 			config.forEach(function(cfg){
-				arr.push( '$'+prefix+'$'+cfg.ref.field );
+				arr.push( '$'+prefix+'$'+cfg.field );
 			}); 
 
 			return arr;
@@ -25,52 +25,34 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 
 		return {
 			$resetCalcs: function( config ){
-				config.forEach(function( cfg ){
-					cfg.ref.field = cfg.ref.name;
-				});
+				var i, c;
+
+				for( i = 0, c = config.length; i < c; i++ ){
+					config[i].field = config[i].name;
+				}
 			},
 			$getFields: function( config ){
 				var i, c,
-					ref,
 					fields = [];
 
 				for( i = 0, c = config.length; i < c; i++ ){
-					ref = config[i].ref;
-					fields.push( ref.field );
+					fields.push( config[i].field );
 				}
 
 				return fields;
 			},
 			$setFields: function( config, calcedFields ){
-				var i, c,
-					ref;
+				var i, c;
 
 				for( i = 0, c = config.length; i < c; i++ ){
-					ref = config[i];
-					if ( ref.ref ){
-						ref = ref.ref;
-					}
-
-					ref.field = calcedFields[i];
+					config[i].field = calcedFields[i];
 				}
-			},
-			$getReferences: function( config ){
-				var i, c,
-					ref,
-					refs = [];
-
-				for( i = 0, c = config.length; i < c; i++ ){
-					ref = config[i].ref;
-					refs.push( ref );
-				}
-
-				return refs;
 			},
 			sum: function( config, collection ){
 				var nameAs = createNames( config, 'sum' );
 
 				config.forEach(function( cfg, key ){
-					var field = cfg.ref.field,
+					var field = cfg.field,
 						alias = nameAs[key],
 						sum = 0;
 
@@ -83,7 +65,7 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 					});
 
 					collection[ alias ] = sum;
-					cfg.ref.field = alias;
+					cfg.field = alias;
 				});
 
 				return nameAs;
@@ -92,7 +74,7 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 				var nameAs = createNames( config, 'average' );
 
 				config.forEach(function( cfg, key ){
-					var field = cfg.ref.field,
+					var field = cfg.field,
 						alias = nameAs[key],
 						sum = 0,
 						count = 0;
@@ -109,7 +91,7 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 					});
 
 					collection[ alias ] = sum / count;
-					cfg.ref.field = alias;
+					cfg.field = alias;
 				});
 
 				return nameAs;
@@ -131,59 +113,61 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 				});
 
 				config.forEach(function( cfg, key ){
-					cfg.ref.field = nameAs[key];
+					cfg.field = nameAs[key];
 				});
 
 				return nameAs;
 			},
-			limits: function( ref, data ){
-                var i, c,
-                    d,
-                    v,
-                    min,
-                    max,
-                    field = ref.field;
+			limits: function( cfg, data ){
+				var i, c,
+					d,
+					v,
+					min,
+					max,
+					field;
 
-                if ( angular.isArray(ref) ){
-                	// go through an array of names
-                    for( i = 0, c = ref.length; i < c; i++ ){
-                        v = this.limits( ref[i], data );
-                        if ( min === undefined ){
-                            min = v.min;
-                            max = v.max;
-                        }else{
-                            if ( v.min < min ){
-                                min = v.min;
-                            }
+				if ( angular.isArray(cfg) ){
+					// go through an array of names
+					for( i = 0, c = cfg.length; i < c; i++ ){
+						v = this.limits( cfg[i], data );
+						if ( min === undefined ){
+							min = v.min;
+							max = v.max;
+						}else{
+							if ( v.min < min ){
+								min = v.min;
+							}
 
-                            if ( v.max > max ){
-                                max = v.max;
-                            }
-                        }
-                    }
-                } else {
-                    // used to reduce the checks for parser
-                    for( i = 0, c = data.length; i < c; i++ ){
-                        d = data[i];
-                        v = d[field];
-                        if ( isNumeric(v) ){
-                            if ( min === undefined ){
-                                min = v;
-                                max = v;
-                            }else if ( min > v ){
-                                min = v;
-                            }else if ( max < v ){
-                                max = v;
-                            }
-                        }
-                    }
-                }
+							if ( v.max > max ){
+								max = v.max;
+							}
+						}
+					}
+				} else if ( cfg ){
+					field = cfg.field;
+				
+					// used to reduce the checks for parser
+					for( i = 0, c = data.length; i < c; i++ ){
+						d = data[i];
+						v = d[field];
+						if ( isNumeric(v) ){
+							if ( min === undefined ){
+								min = v;
+								max = v;
+							}else if ( min > v ){
+								min = v;
+							}else if ( max < v ){
+								max = v;
+							}
+						}
+					}
+				}
 
-                return {
-                    min : min,
-                    max : max
-                };
-            }
+				return {
+					min : min,
+					max : max
+				};
+			}
 		};
 	}]
 );

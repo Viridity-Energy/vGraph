@@ -28,8 +28,8 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
             },
             require : ['^vgraphChart'],
             link : function( scope, el, attrs, requirements ){
-                var graph = requirements[0].graph,
-                    view = graph.views[attrs.control || 'default'], // TODO
+                var graph = requirements[0],
+                    view = graph.getView( attrs.view || 'default' ),
                     makeTicks,
                     express,
                     axis = d3.svg.axis(),
@@ -438,10 +438,18 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                         break;
                 }
 
+                function hide(){
+                    $el.attr( 'visibility', 'hidden' );
+                }
+
+                scope.$on('$destroy',
+                    graph.$subscribe({
+                        'error': hide,
+                        'loading': hide
+                    })
+                );
+
                 view.register({
-                    loading: function(){
-                        $el.attr( 'visibility', 'hidden' );
-                    },
                     build : function(){
                         if ( ticks === undefined ){
                             makeTicks();
@@ -485,7 +493,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                         }
                     },
                     finalize : function(){
-                        var data = view.pane.filtered,
+                        var data = view.filtered,
                             valid,
                             t,
                             p,
