@@ -18,7 +18,7 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
             return this;
         };
 
-        ComponentView.prototype.configure = function( settings, chartSettings, box, offset ){
+        ComponentView.prototype.configure = function( settings, chartSettings, box ){
             var x, y,
                 models,
                 addModel = this.addModel.bind( this );
@@ -27,7 +27,6 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
                 settings = {};
             }
 
-            console.log( settings );
             x = {
                 min: settings.x ? settings.x.min : undefined,
                 max: settings.x ? settings.x.max : undefined
@@ -192,7 +191,6 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
             var min,
                 max,
                 models,
-                pane = this.pane,
                 raw = this.manager.data;
 
             this.sample();

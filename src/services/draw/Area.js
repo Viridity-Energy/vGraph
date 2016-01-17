@@ -11,7 +11,7 @@ angular.module( 'vgraph' ).factory( 'DrawArea',
 		DrawArea.prototype.parseValue2 = null;
 		DrawArea.prototype.parseInterval = null;
 		
-		DrawArea.prototype.build = function( set ){
+		DrawArea.prototype.render = function( set ){
 			var i, c,
 				d,
 				interval,

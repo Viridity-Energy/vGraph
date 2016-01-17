@@ -1,6 +1,6 @@
 angular.module( 'vgraph' ).factory( 'ComponentGenerator',
-    [ '$timeout', 'DrawLine', 'DrawArea', 'DrawBox', 'DataFeed', 'DataLoader', 'ComponentChart',
-    function ( $timeout, DrawLine, DrawArea, DrawBox, DataFeed, DataLoader, ComponentChart ) {
+    [ '$timeout', 'DrawLine', 'DrawArea', 'DrawBox', 'DrawIcon', 'ComponentChart',
+    function ( $timeout, DrawLine, DrawArea, DrawBox, DrawIcon, ComponentChart ) {
         'use strict';
 
         var cfgUid = 0;
@@ -33,8 +33,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 cfg.className = 'node-'+cfg.name;
             }
 
-            // TODO : I need to put this into place, replacing datum[cfg.name]
-            if ( !cfg.getValue ){
+            if ( cfg.getValue === undefined ){
                 cfg.getValue = function( d ){
                     return d[ cfg.field ];
                 };
@@ -98,27 +97,12 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 };
 
                 return function( dataFeed ){
-                    return areaDrawer.render( dataFeed ).join('');
+                    return areaDrawer.build( dataFeed ).join('');
                 };
             },
             // undefined =>  no value, so use last value, null => line break
             // this accepts sampled / filtered / raw
-            makeAreaCalc: function( view ){
-                return d3.svg.area()
-                    .defined(function(d){
-                        return isNumeric(d[ name ]);
-                    })
-                    .x(function( d ){
-                        return d._$interval;
-                    })
-                    .y(function( d ){
-                        return view.y.scale( d[name+'$Min'] );
-                    })
-                    .y1(function( d ){
-                        return view.y.scale( d[name+'$Max'] );
-                    });
-            },
-            makeLineCalc: function( graph, cfg ){
+            makeLineCalc: function( graph, ref ){
                 var view,
                     field,
                     lineDrawer = new DrawLine();
@@ -145,10 +129,10 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 };
 
                 return function( dataFeed ){
-                    field = cfg.field;
-                    view = graph.views[cfg.view];
+                    field = ref.field;
+                    view = graph.views[ref.view];
 
-                    return lineDrawer.render( dataFeed ).join('');
+                    return lineDrawer.build( dataFeed ).join('');
                 };
             },
             // top and bottom are config objects
@@ -201,7 +185,111 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                         bottomView = topView;
                     }
 
-                    return areaDrawer.render( dataFeed ).join('');
+                    return areaDrawer.build( dataFeed ).join('');
+                };
+            },
+            makeBoxCalc: function( graph, ref, elemental ){
+                var view,
+                    isValid,
+                    getValue,
+                    boxDrawer = new DrawBox(elemental);
+
+                boxDrawer.preParse = function( d ){
+                    var y;
+
+                    if ( isValid(d) ){
+                        if ( getValue ){
+                            y = view.y.scale( getValue(d) );
+                            return {
+                                interval: d._$interval,
+                                y1: y,
+                                y2: y
+                            };
+                        }else{
+                            return {
+                                interval: d._$interval,
+                                y1: view.y.scale( view.viewport.minValue ),
+                                y2: view.y.scale( view.viewport.maxValue )
+                            };
+                        }
+                    }
+                };
+
+                boxDrawer.parseInterval1 = function( d ){
+                    return d.interval;
+                };
+                boxDrawer.parseInterval2 = function( d ){
+                    return d.interval;
+                };
+                boxDrawer.parseValue1 = function( d ){
+                    return d.y1;
+                };
+                boxDrawer.parseValue2 = function( d ){
+                    return d.y2;
+                };
+
+                return function( dataFeed ){
+                    var t;
+
+                    view = graph.getView(ref.view);
+                    isValid = ref.isValid;
+                    getValue = ref.getValue;
+
+                    t = boxDrawer.build( dataFeed );
+
+                    if ( t.join ){
+                        return t.join('');
+                    }else{
+                        return t;
+                    }
+                };
+            },
+            makeIconCalc: function( graph, ref, box, content ){
+                var view,
+                    isValid,
+                    getValue,
+                    iconDrawer = new DrawIcon( box, content );
+
+                iconDrawer.preParse = function( d ){
+                    var y;
+
+                    if ( isValid(d) ){
+                        if ( getValue ){
+                            y = view.y.scale( getValue(d) );
+                            return {
+                                interval: d._$interval,
+                                y1: y,
+                                y2: y
+                            };
+                        }else{
+                            return {
+                                interval: d._$interval,
+                                y1: view.y.scale( view.viewport.maxValue ),
+                                y2: view.y.scale( view.viewport.maxValue )
+                            };
+                        }
+                    }
+                };
+
+                iconDrawer.parseInterval1 = function( d ){
+                    return d.interval;
+                };
+                iconDrawer.parseInterval2 = function( d ){
+                    return d.interval;
+                };
+                iconDrawer.parseValue1 = function( d ){
+                    return d.y1;
+                };
+                iconDrawer.parseValue2 = function( d ){
+                    return d.y2;
+                };
+
+                return function( dataFeed ){
+                    view = graph.getView(ref.view);
+                    isValid = ref.isValid;
+                    getValue = ref.getValue;
+
+                    return iconDrawer.build( dataFeed );
                 };
             },
             makeBarCalc: function( graph, topRef, bottomRef, barWidth ){
@@ -248,6 +336,10 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                     return t;
                 };
 
+                boxDrawer.breakSet = function(){
+                    return true;
+                };
+
                 boxDrawer.parseInterval1 = function( d ){
                     return d.interval1;
                 };
@@ -272,7 +364,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                         bottomView = topView;
                     }
 
-                    return boxDrawer.render( dataFeed ).join('');
+                    return boxDrawer.build( dataFeed ).join('');
                 };
             },
             svgCompile: function( svgHtml ){
@@ -285,137 +377,6 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                     result = g.childNodes;
 
                 return Array.prototype.slice.call( result, 0 );
-            },
-            parseStackedLimits: function( data, lines ){
-                var i, c,
-                    j, co,
-                    d,
-                    v,
-                    min,
-                    max,
-                    name,
-                    last;
-
-                if ( lines && lines.length ){
-                    for( i = 0, c = data.length; i < c; i++ ){
-                        last = 0;
-                        v = undefined;
-                        d = data[i];
-
-                        name = lines[0].name;
-                        v = d[ name ] || 0;
-                        if ( min === undefined ){
-                            min = v;
-                            max = v;
-                        }else if ( min > v ){
-                            min = v;
-                        }
-
-                        d['$'+name] = v;
-                        last = v;
-
-                        for( j = 1, co = lines.length; j < co; j++ ){
-                            name = lines[j].name;
-                            v = d[ name ] || 0;
-
-                            last = last + v;
-
-                            d['$'+name] = last;
-                        }
-
-                        d.$total = last;
-
-                        if ( last > max ){
-                            max = last;
-                        }
-                    }
-                }
-
-                return {
-                    min : min,
-                    max : max
-                };
-            },
-            parseSegmentedLimits: function( data, names, parser, start ){
-                var i, c,
-                    d,
-                    v,
-                    min,
-                    max,
-                    next = {},
-                    stretch = [];
-
-                function normalize( d ){
-                    d[names+'$Max'] = max;
-                    d[names+'$Min'] = min;
-                }
-
-                if ( !start ){
-                    start = 0;
-                }
-
-                if ( angular.isString(names) ){
-                    if ( !parser ){
-                        parser = function( i, v ){
-                            return v;
-                        };
-                    }
-
-                    while( start < data.length && !isNumeric(parser(data[start],data[start][names])) ){
-                        start++;
-                    }
-
-                    for( i = start, c = data.length; i < c; i++ ){
-                        d = data[i];
-                        v = parser( d, d[names] );
-                        if ( isNumeric(v) ){
-                            if ( min === undefined ){
-                                min = v;
-                                max = v;
-                            }else if ( min > v ){
-                                min = v;
-                            }else if ( max < v ){
-                                max = v;
-                            }
-
-                            stretch.push(d);
-                        }else{
-                            stretch.forEach( normalize );
-                            next = this.parseSegmentedLimits( data, names, parser, i+1 );
-                            i = data.length;
-                        }
-                    }
-
-                    if ( isNumeric(next.min) && next.min < min ){
-                        min = next.min;
-                    }
-
-                    if ( isNumeric(next.max) && next.max > max ){
-                        max = next.max;
-                    }
-                }else{
-                    // go through an array of names
-                    for( i = 0, c = names.length; i < c; i++ ){
-                        v = this.parseSegmentedLimits( data, names[i], parser );
-                        if ( min === undefined ){
-                            min = v.min;
-                            max = v.max;
-                        }else{
-                            if ( v.min < min ){
-                                min = v.min;
-                            }
-
-                            if ( v.max > max ){
-                                max = v.max;
-                            }
-                        }
-                    }
-                }
-                
-                return {
-                    min : min,
-                    max : max
-                };
             }
         };
     }]

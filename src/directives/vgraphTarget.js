@@ -19,13 +19,11 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
                         .attr( 'x1', 0 )
                         .attr( 'x2', 0 ),
                     $dots = $el.append( 'g' ),
-                    type = attrs.type || 'point',
-                    curX,
-                    watches;
+                    curX;
 
                 function highlight( point ){
                     if ( point ){
-                        curX = point.$pos;
+                        curX = point.pos.x;
 
                         $el.style( 'visibility', 'visible' )
                                 .attr( 'transform', 'translate(' + curX + ',0)' );
@@ -34,7 +32,6 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
                             angular.forEach( $scope.config, function( cfg ){
                                 var node,
                                     view = graph.getView(cfg.view),
-                                    name = cfg.name,
                                     field = cfg.field,
                                     datum = point[cfg.view][cfg.model],
                                     className = cfg.className,
@@ -47,7 +44,7 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
                                             .attr( 'class', 'point '+className+' '+cfg.classExtend );
                                     }
 
-                                    node.attr( 'cx', attrs.offset ? point._$interval - curX : 0 )
+                                    node.attr( 'cx', datum._$interval - curX )
                                         .attr( 'cy', view.y.scale(value) )
                                         .attr( 'r', $scope.$eval( attrs.pointRadius ) || 3 );
                                 }else{

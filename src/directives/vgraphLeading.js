@@ -9,7 +9,7 @@ angular.module( 'vgraph' ).directive( 'vgraphLeading',
                 config : '=vgraphLeading'
             },
             link : function( scope, el, attrs, requirements ){
-                var graph = requirements[0].graph,
+                var graph = requirements[0],
                     $el = d3.select( el[0] ),
                     names;
 
@@ -37,26 +37,21 @@ angular.module( 'vgraph' ).directive( 'vgraphLeading',
                 function drawComponent(){
                     var last,
                         isValid = true,
-                        xMax,
                         points = [];
 
                     angular.forEach( scope.config, function( cfg ){
                         var model = graph.views[cfg.view].models[cfg.model],
-                            datum = model[model.length-1],
+                            datum = model._$index[model.$stats[cfg.field]],
                             value = datum[ cfg.field ];
 
                         if ( datum._$index < model.$parent.$maxIndex ){
                             isValid = false;
                         }else{ 
-                            if ( xMax === undefined || datum.$_interval > xMax ){
-                                xMax = datum._$interval;
-                            }
-
-                            datum = model._$index[model.$stats[cfg.field]];
                             value = datum[ cfg.field ];
 
                             points.push({
                                 el : names[cfg.name],
+                                x : datum._$interval,
                                 y : graph.views[cfg.view].y.scale( value )
                             });
                         }
@@ -70,8 +65,8 @@ angular.module( 'vgraph' ).directive( 'vgraphLeading',
                     angular.forEach( points, function( p ){
                         if ( last ){
                             last.el
-                                .attr( 'x1', xMax )
-                                .attr( 'x2', xMax )
+                                .attr( 'x1', last.x )
+                                .attr( 'x2', p.x )
                                 .attr( 'y1', last.y )
                                 .attr( 'y2', p.y );
                         }
@@ -83,8 +78,8 @@ angular.module( 'vgraph' ).directive( 'vgraphLeading',
                         $el.attr( 'visibility', 'visible' );
 
                         last.el
-                            .attr( 'x1', xMax )
-                            .attr( 'x2', xMax )
+                            .attr( 'x1', last.x )
+                            .attr( 'x2', last.x )
                             .attr( 'y1', last.y )
                             .attr( 'y2', graph.box.innerBottom );
                     }else{

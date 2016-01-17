@@ -1,29 +1,26 @@
-A way to thread the rendering….
+- area conversion
+- icon conversion
+- leading conversion
 
+- create dot visual
+- convert messaging for focus
 
-if min and max are ===, then we need to create an artificial min and max
+- allow bars / areas to be own blocks or parts of line
 
-clear() // wipe out the existing calls
-loop( arr, [start, stop,] function( o, i ){
-}, ctx)
+- linear 
+	- move all applicable directives under linear directory
 
-run(function(){
-}), ctx}
-——
-ops
-[ looping / single ]
+- heat map
+	- create grid directory
 
-looping
-{
-  data,
-  start,
-  stop,
-  op
-  ctx
-}
+- pie chart
+	- create pie director
 
-single run
-{
-  op
-  ctx
-}
+- export functionality
+	- export from models or from raw DataManager
+
+- configer
+	* manages an array of inputs
+	- object with both page and chart
+
+- create editor

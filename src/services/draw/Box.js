@@ -3,17 +3,25 @@ angular.module( 'vgraph' ).factory( 'DrawBox',
 	function( DrawBuilder ){
 		'use strict';
 		
-		function DrawBox(){}
+		function build( template ){
+            return (new DOMParser().parseFromString(
+                '<g xmlns="http://www.w3.org/2000/svg">' +
+                    template +
+                '</g>','image/svg+xml'
+            )).childNodes[0].childNodes;
+        }
+
+		function DrawBox( elemental ){
+			this.elemental = elemental;
+		}
 
 		DrawBox.prototype = new DrawBuilder();
 
+		// default is to have one box per datum, all points valid
 		DrawBox.prototype.parseValue1 = null;
 		DrawBox.prototype.parseValue2 = null;
 		DrawBox.prototype.parseInterval1 = null;
 		DrawBox.prototype.parseInterval2 = null;
-		DrawBox.prototype.breakBox = function(){
-			return true;
-		};
 		
 		function calcBox( v1, v2, i1, i2, box ){
 			var t;
@@ -58,50 +66,58 @@ angular.module( 'vgraph' ).factory( 'DrawBox',
 			return box;
 		}
 
-		function drawBox( carryOver ){
-			return 'M' + 
-				(carryOver.i1+','+carryOver.v1) + 'L' +
-				(carryOver.i2+','+carryOver.v1) + 'L' +
-				(carryOver.i2+','+carryOver.v2) + 'L' +
-				(carryOver.i1+','+carryOver.v2) + 'Z';
-		}
-
-		DrawBox.prototype.build = function( set ){
+		DrawBox.prototype.make = function( set ){
 			var i, c,
 				d,
 				v1,
 				v2,
 				i1,
 				i2,
-				carryOver,
-				boxes = '';
+				boxInfo;
 
 			if ( set.length ){
 				for( i = 0, c = set.length; i < c; i++ ){
+					
 					d = set[i];
 					v1 = this.parseValue1( d );
 					v2 = this.parseValue2( d );
 					i1 = this.parseInterval1( d );
 					i2 = this.parseInterval2( d );
 
-					carryOver = calcBox( v1, v2, i1, i2, carryOver );
-
-					if ( this.breakBox(d) ){
-						boxes += drawBox(carryOver);
-						carryOver = null;
-					}
+					boxInfo = calcBox( v1, v2, i1, i2, boxInfo );
 				}
 
-				if ( carryOver ){
-					boxes += drawBox(carryOver);
-				}
-
-				return boxes;
-			}else{
-				return '';
+				return this.render(boxInfo);
 			}
 		};
 
+		DrawBox.prototype.build = function( modelData ){
+			var t = DrawBuilder.prototype.build.call( this, modelData );
+
+			if ( this.elemental ){
+				return build( t );
+			}else{
+				return t;
+			}
+		};
+
+		DrawBox.prototype.render = function( boxInfo ){
+			if ( boxInfo ){
+				if ( this.elemental ){
+					return '<rect x="'+boxInfo.i1+
+						'" y="'+boxInfo.v1+
+						'" width="'+(boxInfo.i2 - boxInfo.i1)+
+						'" height="'+(boxInfo.v2 - boxInfo.v1)+'"/>';
+				}else{
+					return 'M' + 
+						(boxInfo.i1+','+boxInfo.v1) + 'L' +
+						(boxInfo.i2+','+boxInfo.v1) + 'L' +
+						(boxInfo.i2+','+boxInfo.v2) + 'L' +
+						(boxInfo.i1+','+boxInfo.v2) + 'Z';
+				}
+			}
+		};
+		
 		return DrawBox;
 	}]
 );

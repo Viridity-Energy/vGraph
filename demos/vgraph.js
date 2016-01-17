@@ -131,6 +131,2086 @@ angular.module( 'vgraph' ).factory( 'Scheduler',
         return Scheduler;
     }]
 );
+angular.module( 'vgraph' ).factory( 'ComponentBox',
+    [
+    function () {
+        'use strict';
+
+        function extend( model, settings ){
+            var padding = settings.padding,
+                oPadding = model.padding,
+                margin = settings.margin,
+                oMargin = model.margin;
+
+            // compute the margins
+            if ( !oMargin ){
+                model.margin = oMargin = {
+                    top : 0,
+                    right : 0,
+                    bottom : 0,
+                    left : 0
+                };
+            }
+
+            if ( margin ){
+                oMargin.top = merge( margin.top , oMargin.top );
+                oMargin.right = merge( margin.right, oMargin.right );
+                oMargin.bottom = merge( margin.bottom, oMargin.bottom );
+                oMargin.left = merge( margin.left, oMargin.left );
+            }
+
+            // compute the paddings
+            if ( !oPadding ){
+                model.padding = oPadding = {
+                    top : 0,
+                    right : 0,
+                    bottom : 0,
+                    left : 0
+                };
+            }
+
+            if ( padding ){
+                oPadding.top = merge( padding.top, oPadding.top );
+                oPadding.right = merge( padding.right, oPadding.right );
+                oPadding.bottom = merge( padding.bottom, oPadding.bottom );
+                oPadding.left = merge( padding.left, oPadding.left );
+            }
+
+            // set up the knowns
+            model.outerWidth = merge( settings.outerWidth, model.outerWidth ) || 0;
+            model.outerHeight = merge( settings.outerHeight, model.outerHeight ) || 0;
+
+            // where is the box
+            model.top = oMargin.top;
+            model.bottom = model.outerHeight - oMargin.bottom;
+            model.left = oMargin.left;
+            model.right = model.outerWidth - oMargin.right;
+
+            model.center = ( model.left + model.right ) / 2;
+            model.middle = ( model.top + model.bottom ) / 2;
+
+            model.width = model.right - model.left;
+            model.height = model.bottom - model.top;
+
+            // where are the inners
+            model.innerTop = model.top + oPadding.top;
+            model.innerBottom = model.bottom - oPadding.bottom;
+            model.innerLeft = model.left + oPadding.left;
+            model.innerRight = model.right - oPadding.right;
+
+            model.innerWidth = model.innerRight - model.innerLeft;
+            model.innerHeight = model.innerBottom - model.innerTop;
+
+            model.ratio = model.outerWidth + ' x ' + model.outerHeight;
+        }
+
+        function ComponentBox( settings ){
+            this.registrations = [];
+            extend( this, settings || {} );
+        }
+
+        function merge( nVal, oVal ){
+            return nVal !== undefined ? parseInt( nVal ) : oVal;
+        }
+
+        ComponentBox.prototype.register = function( cb ){
+            this.registrations.push( cb );
+        };
+
+        ComponentBox.prototype.targetSvg = function( el ){
+            this.$element = jQuery(el); // I'd like not to need this
+
+            this.resize();
+        };
+
+        ComponentBox.prototype.resize = function(){
+            var i, c,
+                el = this.$element;
+
+            el.attr( 'width', null )
+                .attr( 'height', null );
+
+            el[0].style.cssText = null;
+
+            extend( this, {
+                outerWidth : el.outerWidth( true ),
+                outerHeight : el.outerHeight( true ),
+                margin : {
+                    top : el.css('margin-top'),
+                    right : el.css('margin-right'),
+                    bottom : el.css('margin-bottom'),
+                    left : el.css('margin-left')
+                },
+                padding : {
+                    top : el.css('padding-top'),
+                    right : el.css('padding-right'),
+                    bottom : el.css('padding-bottom'),
+                    left : el.css('padding-left')
+                }
+            });
+
+            el.css('margin', '0')
+                .css('padding', '0')
+                .attr( 'width', this.outerWidth )
+                .attr( 'height', this.outerHeight )
+                .css({
+                    width : this.outerWidth+'px',
+                    height : this.outerHeight+'px'
+                });
+
+            if ( this.innerWidth && this.innerHeight ){
+                for( i = 0, c = this.registrations.length; i < c; i++ ){
+                    this.registrations[ i ]();
+                }
+            }
+        };
+
+        return ComponentBox;
+    }]
+);
+
+/* cfg for inputs
+    - name
+    - view
+    - model
+    - getValue
+    - getInterval
+    - massage
+    - isValid
+*/
+
+/** cfg for graph
+    x: {
+        scale : some scaling function
+        padding: amount to add padding // TODO
+        format: value formatting function
+    }
+    y: {
+        scale : some scaling function
+        padding: amount to add padding
+        format: value formatting function
+    },
+    fitToPane: boolean if data should fit to pane or cut off
+    makeInterval: function for creating interval value, runs off _$index ( $interval: converted, _interval: coord )
+    views: {
+        viewName: ViewModel
+    },
+    normalizeX: boolean if make all the x values align between views,
+    normalizeY: boolean if make all the y values align between views
+**/
+
+/** cfg for view 
+    manager: the manager to lock the view onto
+**/
+angular.module( 'vgraph' ).factory( 'ComponentChart',
+    [ '$timeout', 
+        'ComponentView', 'ComponentBox', 'DataCollection', 'LinearSamplerModel', 'makeEventing', 'Scheduler',
+    function ( $timeout, 
+        ComponentView, ComponentBox, DataCollection, LinearSamplerModel, makeEventing, Scheduler ) {
+        'use strict';
+
+        var schedule = new Scheduler(),
+            ids = 1;
+        
+        function ComponentChart(){
+            var trigger = this.$trigger.bind( this ),
+                views = {};
+
+            this.$vguid = ++ids;
+            this.box = new ComponentBox();
+            this.views = views;
+            this.models = [];
+            this.waiting = {};
+            this.references = {};
+            this.loading = true;
+            this.message = null;
+            
+            this.$on('focus',function( pos ){
+                var sum = 0,
+                    count = 0,
+                    points = {};
+
+                if ( pos ){
+                    angular.forEach( views, function( view, viewName ){
+                        var p;
+
+                        points[viewName] = view.getPoint( pos.x );
+                        p = points[viewName].$pos;
+
+                        if ( p !== undefined ){
+                            count++;
+                            sum += p;
+                        }
+                    });
+
+                    points.$pos = sum / count;
+                    points.pos = pos;
+
+                    trigger('focus-point',points);
+                    trigger('highlight',points);
+                }else{
+                    trigger('highlight',null);
+                }
+            });
+        }
+
+        makeEventing(ComponentChart.prototype);
+
+        ComponentChart.defaultView = 'default';
+        ComponentChart.defaultModel = 'linear';
+
+        ComponentChart.prototype.setPage = function( page ){
+            this.page = page;
+        };
+
+        ComponentChart.prototype.configure = function( page, settings ){
+            var t,
+                views,
+                addView = this.addView.bind(this);
+
+            if ( !settings ){
+                settings = {};
+            }
+
+            if ( !settings.x ){
+                settings.x = {};
+            }
+
+            if ( !settings.y ){
+                settings.y = {};
+            }
+
+            this.page = page;
+            this.settings = settings;
+
+            this.normalizeY = settings.normalizeY;
+            this.normalizeX = settings.normalizeX;
+
+            views = settings.views;
+            if ( !views ){
+                t = {};
+                t[ ComponentChart.defaultModel ] = new LinearSamplerModel(function(datum){
+                    return Math.round(datum._$interval);
+                });
+
+                views = {};
+                views[ ComponentChart.defaultView ] = {
+                    models: t
+                };
+            }else if ( angular.isFunction(views) ){
+                views = views();
+            }
+            
+            angular.forEach( views, addView );
+        };
+
+        function normalizeY( views ){
+            var min, max;
+
+            views.forEach(function( view ){
+                var vp = view.viewport;
+
+                if ( min === undefined || min > vp.minValue ){
+                    min = vp.minValue;
+                }
+
+                if ( max === undefined || max < vp.maxValue ){
+                    max = vp.maxValue;
+                }
+            });
+
+            views.forEach(function( view ){
+                view.setViewportValues( min, max );
+            });
+        }
+
+        function normalizeX( views ){
+            var min, max;
+
+            views.forEach(function( view ){
+                var vp = view.viewport;
+
+                if ( min === undefined || min > vp.minInterval ){
+                    min = vp.minInterval;
+                }
+
+                if ( max === undefined || max < vp.maxInterval ){
+                    max = vp.maxInterval;
+                }
+            });
+
+            views.forEach(function( view ){
+                view.setViewportIntervals( min, max );
+            });
+        }
+
+        ComponentChart.prototype.setInputReference = function( reference, ref ){
+            this.references[ reference ] = ref;
+        };
+
+        ComponentChart.prototype.render = function(){
+            var currentView,
+                dis = this,
+                activeViews = [],
+                isReady = false,
+                hasViews = 0;
+
+            try{
+                angular.forEach( this.views, function( view, name ){
+                    currentView = name;
+                    view.parse();
+                });
+                currentView = null;
+
+                angular.forEach( this.views, function( view, name ){
+                    currentView = name;
+                    if ( view.hasData() ){
+                        activeViews.push( view );
+                        isReady = true;
+                    }else if ( view.isReady() ){
+                        isReady = true;
+                    }
+                });
+                currentView = null;
+
+                if ( this.normalizeY ){
+                    normalizeY( activeViews );
+                }
+
+                if ( this.normalizeX ){
+                    normalizeX( activeViews );
+                }
+            }catch( ex ){
+                console.log( 'parsing error', currentView, ex.stack );
+            }
+
+            hasViews = activeViews.length;
+            this.loading = !isReady;
+
+            schedule.startScript( this.$vguid );
+
+            if ( this.loading ){
+                dis.$trigger('loading');
+
+                schedule.func(function(){
+                    dis.loading = true;
+                    dis.pristine = false;
+                });
+            }else if ( hasViews ){
+                schedule.func(function(){
+                    dis.message = null;
+                });
+
+                schedule.loop( activeViews, function( view ){
+                    view.build();
+                });
+
+                schedule.loop( activeViews, function( view ){
+                    view.process();
+                });
+
+                schedule.loop( activeViews, function( view ){
+                    view.finalize();
+                });
+
+                schedule.func(function(){
+                    dis.loading = false;
+                    dis.pristine = true;
+                });
+            }else{
+                dis.$trigger('error');
+
+                schedule.func(function(){
+                    dis.message = 'No Data Available';
+                    dis.pristine = false;
+                });
+            }
+
+            schedule.endScript(
+                function(){
+                    // always
+                    dis.$trigger('done');
+                },
+                function(){
+                    // if success
+                    dis.$trigger('success', activeViews[0]);
+                },
+                function(){ 
+                    // if error
+                    dis.pristine = false;
+                    dis.message = 'Unable to Render';
+
+                    dis.$trigger('error');
+                }
+            );
+            schedule.run();
+        };
+
+        ComponentChart.prototype.scheduleRender = function( cb ){
+            var dis = this;
+
+            if ( !this.nrTimeout ){
+                this.nrTimeout = $timeout(function(){
+                    dis.render( dis.waiting, cb );
+                    dis.waiting = {};
+                    dis.nrTimeout = null;
+                }, 30 );
+            }
+        };
+
+        ComponentChart.prototype.rerender = function( cb ){
+            this.scheduleRender( cb );
+            this.waiting = this.views;
+        };
+
+        ComponentChart.prototype.needsRender = function( view, cb ){
+            this.scheduleRender( cb );
+            if ( !this.waiting[view.name] ){
+                this.waiting[view.name] = view;
+            }
+        };
+
+        ComponentChart.prototype.getView = function( viewName ){
+            var t = this.views[ viewName ];
+
+            if ( !t ){
+                t = new ComponentView();
+                this.views[ viewName ] = t;
+            }
+
+            return t;
+        };
+
+        ComponentChart.prototype.addView = function( viewSettings, viewName ){
+            var dis = this,
+                settings = this.settings,
+                viewModel = this.getView( viewName );
+
+            viewModel.configure(
+                viewSettings,
+                settings,
+                this.box
+            );
+
+            viewModel.setPage( this.page );
+
+            if ( settings.x.min !== undefined ){
+                viewModel.pane.setBounds({
+                    min: settings.x.min, 
+                    max: settings.x.max 
+                });
+
+                if ( settings.x.interval && settings.x.max && settings.datumFactory ){
+                    viewModel.manager.data.$fillPoints( 
+                        settings.x.min,
+                        settings.x.max,
+                        settings.x.interval,
+                        settings.datumFactory
+                    );
+                }
+            }
+
+            if ( this.settings.x.minPane !== undefined ){
+                viewModel.pane.setPane( this.settings.x.minPane, this.settings.x.maxPane );
+            }
+
+            viewModel.manager.register(function(){
+                dis.needsRender(viewModel);
+            });
+
+            viewModel.manager.onError(function( error ){
+                dis.error( error );
+            });
+        };
+
+        ComponentChart.prototype.error = function( error ){
+            if ( error ){
+                this.loading = false;
+                this.message = error;
+            }else{
+                this.message = null;
+            }
+
+            this.$trigger('error');
+        };
+
+        ComponentChart.prototype.setPane = function( leftPercent, rightPercent ){
+            var views = this.views,
+                viewNames = Object.keys(this.views);
+
+            this.settings.x.minPane = leftPercent;
+            this.settings.x.maxPane = rightPercent;
+
+            viewNames.forEach(function( viewName ){
+                views[viewName].pane.setPane({
+                    start: leftPercent,
+                    stop: rightPercent
+                });
+            });
+        };
+
+        /*
+        function reduce( arr, target ){
+            var ar,
+                i, c,
+                j, co;
+
+            for( i = 0, c = arr.length; i < c; i++ ){
+                ar = arr[i];
+
+                for( j = 0, co = ar.length; j < co; j++ ){
+                    if ( ar[j] !== null ){
+                        target[i].unshift( ar[j] );
+                        j = co;
+                    }
+                }
+            }
+        }
+
+        function publish( config, views, stats, width, size ){
+            var i,
+                headers = [],
+                content = [];
+
+            for( i = 0; i < size; i++ ){
+                content.push([]);
+            }
+            content.push([]); // size is the limit, so it needs one more
+
+            angular.forEach( config, function( conf ){
+                var view = views[conf.view],
+                    stat = stats[view.name];
+
+                headers.push( conf.label );
+                view.publishData( content, conf, function(p){
+                    return Math.round( (p.$x-stat.data.min) / width * size );
+                });
+            });
+
+            return {
+                header: headers,
+                body: content
+            };
+        }
+
+        ComponentChart.prototype.publish = function( config, index ){
+            var width,
+                size,
+                step,
+                views = {},
+                stats = {},
+                content;
+
+            angular.forEach( config, function( conf ){
+                var view = this.views[conf.view];
+                if ( view && !views[view.name] ){
+                    views[view.name] =  view;
+                }
+            }, this );
+
+            // this assumes each interval is the same units
+            angular.forEach( views, function( view ){
+                var stat = view.publishStats(),
+                    s = stat.data.max-stat.data.min;
+                // expect min, max, step
+
+                stats[view.name] = stat;
+
+                if ( !width || s > width ){
+                    width = s;
+                }
+
+                if ( !step || stat.step < step ){
+                    step = stat.step;
+                }
+            });
+
+            size = Math.ceil( width / step );
+
+            content = publish( config, views, stats, width, size );
+            if ( index ){
+                index = publish( index, views, stats, width, size );
+                reduce( index.body, content.body );
+                content.header.unshift( index.header[0] );
+            }
+
+            content.body.unshift( content.header );
+
+            return content.body;
+        };
+        */
+
+        return ComponentChart;
+    } ]
+);
+
+angular.module( 'vgraph' ).factory( 'ComponentGenerator',
+    [ '$timeout', 'DrawLine', 'DrawArea', 'DrawBox', 'DrawIcon', 'ComponentChart',
+    function ( $timeout, DrawLine, DrawArea, DrawBox, DrawIcon, ComponentChart ) {
+        'use strict';
+
+        var cfgUid = 0;
+        function normalizeConfig( cfg ){
+            var value,
+                interval;
+
+            if ( typeof(cfg) !== 'object' ){
+                return null;
+            }
+
+            value = cfg.value;
+            interval = cfg.interval;
+
+            if ( cfg.$uid === undefined ){
+                cfg.$uid = cfgUid++;
+            }
+
+            cfg.field = cfg.name;
+
+            if ( !cfg.view ){
+                cfg.view = ComponentChart.defaultView;
+            }
+
+            if ( !cfg.model ){
+                cfg.model = ComponentChart.defaultModel;
+            }
+
+            if ( !cfg.className ){
+                cfg.className = 'node-'+cfg.name;
+            }
+
+            if ( cfg.getValue === undefined ){
+                cfg.getValue = function( d ){
+                    return d[ cfg.field ];
+                };
+            }
+
+            return cfg;
+        }
+
+        function isNumeric( v ){
+            if ( v === null ){
+                return false;
+            }else if ( Number.isFinite ){
+                return Number.isFinite(v) && !Number.isNaN(v);
+            }else{
+                return isFinite(v) && !isNaN(v);
+            }
+        }
+
+        return {
+            isNumeric: isNumeric,
+            normalizeConfig: normalizeConfig,
+            // this accepts unified
+            makeDiffCalc: function( view1, top, view2, bottom ){
+                var areaDrawer = new DrawArea();
+
+                if ( !view2 ){
+                     view2 = view1;
+                }
+
+                areaDrawer.preParse = function( d ){
+                    var c1 = d[view1.name],
+                        c2 = d[view2.name],
+                        y1,
+                        y2;
+
+                    if ( c1 ){
+                        y1 = c1[top];
+                    }
+
+                    if ( c2 ){
+                        y2 = c2[bottom];
+                    }
+
+                    if ( isNumeric(y1) && isNumeric(y2) ){
+                        return {
+                            interval: ( c1._$interval + c2._$interval ) / 2, // average the differnce
+                            y1: view1.y.scale( y1 ),
+                            y2: view2.y.scale( y2 )
+                        };
+                    }
+                };
+
+                areaDrawer.parseInterval = function( d ){
+                    return d.interval;
+                };
+                areaDrawer.parseValue1 = function( d ){
+                    return d.y1;
+                };
+                areaDrawer.parseValue2 = function( d ){
+                    return d.y2;
+                };
+
+                return function( dataFeed ){
+                    return areaDrawer.build( dataFeed ).join('');
+                };
+            },
+            // undefined =>  no value, so use last value, null => line break
+            // this accepts sampled / filtered / raw
+            makeLineCalc: function( graph, ref ){
+                var view,
+                    field,
+                    lineDrawer = new DrawLine();
+
+                lineDrawer.preParse = function( d, last ){
+                    var y = d[ field ];
+                            
+                    if ( isNumeric(y) ){
+                        return d;
+                    }else if ( last && y === undefined ){
+                        d[field] = last[field];
+                        return d;
+                    }else{
+                        return null;
+                    }
+                };
+
+                lineDrawer.parseValue = function( d ){
+                    return view.y.scale( d[field] );
+                };
+
+                lineDrawer.parseInterval = function( d ){
+                    return d._$interval;
+                };
+
+                return function( dataFeed ){
+                    field = ref.field;
+                    view = graph.views[ref.view];
+
+                    return lineDrawer.build( dataFeed ).join('');
+                };
+            },
+            // top and bottom are config objects
+            makeFillCalc: function( graph, topRef, bottomRef ){
+                var topView,
+                    bottomView,
+                    topField,
+                    bottomField,
+                    areaDrawer = new DrawArea();
+
+                areaDrawer.preParse = function( d ){
+                    var y1,
+                        y2;
+
+                    y1 = d[topField];
+                    
+                    if ( bottomField ){
+                        y2 = d[bottomField];
+                    }else{
+                        y2 = bottomView.viewport.minValue;
+                    }
+
+                    if ( isNumeric(y1) && isNumeric(y2) ){
+                        return {
+                            interval: d._$interval,
+                            y1: topView.y.scale( y1 ),
+                            y2: bottomView.y.scale( y2 )
+                        };
+                    }
+                };
+
+                areaDrawer.parseInterval = function( d ){
+                    return d.interval;
+                };
+                areaDrawer.parseValue1 = function( d ){
+                    return d.y1;
+                };
+                areaDrawer.parseValue2 = function( d ){
+                    return d.y2;
+                };
+
+                return function( dataFeed ){
+                    topView = graph.views[topRef.view];
+                    topField = topRef.field;
+
+                    if ( bottomRef ){
+                        bottomView = graph.views[bottomRef.view] || topView;
+                        bottomField = bottomRef.field;
+                    }else{
+                        bottomView = topView;
+                    }
+
+                    return areaDrawer.build( dataFeed ).join('');
+                };
+            },
+            makeBoxCalc: function( graph, ref, elemental ){
+                var view,
+                    isValid,
+                    getValue,
+                    boxDrawer = new DrawBox(elemental);
+
+                boxDrawer.preParse = function( d ){
+                    var y;
+
+                    if ( isValid(d) ){
+                        if ( getValue ){
+                            y = view.y.scale( getValue(d) );
+                            return {
+                                interval: d._$interval,
+                                y1: y,
+                                y2: y
+                            };
+                        }else{
+                            return {
+                                interval: d._$interval,
+                                y1: view.y.scale( view.viewport.minValue ),
+                                y2: view.y.scale( view.viewport.maxValue )
+                            };
+                        }
+                    }
+                };
+
+                boxDrawer.parseInterval1 = function( d ){
+                    return d.interval;
+                };
+                boxDrawer.parseInterval2 = function( d ){
+                    return d.interval;
+                };
+                boxDrawer.parseValue1 = function( d ){
+                    return d.y1;
+                };
+                boxDrawer.parseValue2 = function( d ){
+                    return d.y2;
+                };
+
+                return function( dataFeed ){
+                    var t;
+
+                    view = graph.getView(ref.view);
+                    isValid = ref.isValid;
+                    getValue = ref.getValue;
+
+                    t = boxDrawer.build( dataFeed );
+
+                    if ( t.join ){
+                        return t.join('');
+                    }else{
+                        return t;
+                    }
+                };
+            },
+            makeIconCalc: function( graph, ref, box, content ){
+                var view,
+                    isValid,
+                    getValue,
+                    iconDrawer = new DrawIcon( box, content );
+
+                iconDrawer.preParse = function( d ){
+                    var y;
+
+                    if ( isValid(d) ){
+                        if ( getValue ){
+                            y = view.y.scale( getValue(d) );
+                            return {
+                                interval: d._$interval,
+                                y1: y,
+                                y2: y
+                            };
+                        }else{
+                            return {
+                                interval: d._$interval,
+                                y1: view.y.scale( view.viewport.maxValue ),
+                                y2: view.y.scale( view.viewport.maxValue )
+                            };
+                        }
+                    }
+                };
+
+                iconDrawer.parseInterval1 = function( d ){
+                    return d.interval;
+                };
+                iconDrawer.parseInterval2 = function( d ){
+                    return d.interval;
+                };
+                iconDrawer.parseValue1 = function( d ){
+                    return d.y1;
+                };
+                iconDrawer.parseValue2 = function( d ){
+                    return d.y2;
+                };
+
+                return function( dataFeed ){
+                    view = graph.getView(ref.view);
+                    isValid = ref.isValid;
+                    getValue = ref.getValue;
+
+                    return iconDrawer.build( dataFeed );
+                };
+            },
+            makeBarCalc: function( graph, topRef, bottomRef, barWidth ){
+                var topView,
+                    bottomView,
+                    topField,
+                    bottomField,
+                    boxDrawer = new DrawBox();
+
+                boxDrawer.preParse = function( d ){
+                    var min,
+                        max,
+                        y1,
+                        y2,
+                        t,
+                        width;
+
+                    y1 = d[topField];
+                    
+                    if ( bottomField ){
+                        y2 = d[bottomField];
+                    }else{
+                        y2 = bottomView.viewport.minValue;
+                    }
+
+                    if ( barWidth ){
+                        width = parseInt( barWidth, 10 ) / 2;
+                    }else{
+                        width = 3;
+                    }
+
+                    if ( isNumeric(y1) && isNumeric(y2) && y1 !== y2 ){
+                        min = d._$interval - width;
+                        max = d._$interval + width;
+
+                        t = {
+                            interval1: min > d._$minInterval ? min : d._$minInterval,
+                            interval2: max > d._$maxInterval ? d._$maxInterval : max,
+                            y1: topView.y.scale( y1 ),
+                            y2: bottomView.y.scale( y2 )
+                        };
+                    }
+
+                    return t;
+                };
+
+                boxDrawer.breakSet = function(){
+                    return true;
+                };
+
+                boxDrawer.parseInterval1 = function( d ){
+                    return d.interval1;
+                };
+                boxDrawer.parseInterval2 = function( d ){
+                    return d.interval2;
+                };
+                boxDrawer.parseValue1 = function( d ){
+                    return d.y1;
+                };
+                boxDrawer.parseValue2 = function( d ){
+                    return d.y2;
+                };
+
+                return function( dataFeed ){
+                    topView = graph.views[topRef.view];
+                    topField = topRef.field;
+
+                    if ( bottomRef ){
+                        bottomView = graph.views[bottomRef.view] || topView;
+                        bottomField = bottomRef.field;
+                    }else{
+                        bottomView = topView;
+                    }
+
+                    return boxDrawer.build( dataFeed ).join('');
+                };
+            },
+            svgCompile: function( svgHtml ){
+                var parsed = (new DOMParser().parseFromString(
+                        '<g xmlns="http://www.w3.org/2000/svg">' +
+                            svgHtml +
+                        '</g>','image/svg+xml'
+                    )),
+                    g = parsed.childNodes[0],
+                    result = g.childNodes;
+
+                return Array.prototype.slice.call( result, 0 );
+            }
+        };
+    }]
+);
+
+angular.module( 'vgraph' ).factory( 'ComponentPage',
+    [ 'DataFeed', 'DataLoader', 'DataManager',
+    function ( DataFeed, DataLoader, DataManager ) {
+        'use strict';
+        
+        var uid = 1;
+
+        function ComponentPage(){
+            this.$$pageUid = uid++;
+            
+            this.feeds = {};
+            this.charts = {};
+            this.managers = {};
+            this.connections = {};
+        }
+
+        /* cfg structure
+            - src
+            - manager
+            - parseInterval
+            - explode
+            - readings
+        */
+
+        ComponentPage.defaultManager = 'default';
+
+        ComponentPage.prototype.configure = function( settings ){
+            var i, c;
+
+            if ( angular.isArray(settings) ){
+                for( i = 0, c = settings.length; i < c; i++ ){
+                    this.addFeed( settings[i] );
+                }
+            }else{
+                this.addFeed( settings );
+            }
+        };
+
+        ComponentPage.prototype.addFeed = function( cfg ){
+            var feed,
+                loader,
+                manager,
+                managerName,
+                source = cfg.src || [];
+
+            if ( !cfg.manager ){
+                cfg.manager = ComponentPage.defaultManager;
+            }
+            managerName = cfg.manager;
+
+            if ( source._$feedUid ){
+                feed = this.feeds[ source._$feedUid ];
+            }else{
+                feed = new DataFeed( source, cfg.explode );
+                this.feeds[ feed.$$feedUid ] = feed;
+                source._$feedUid = feed.$$feedUid;
+            }
+            
+            manager = this.getManager( managerName );
+
+            if ( !this.connections[feed.$$feedUid] ){
+                this.connections[feed.$$feedUid] = {};
+            }
+
+            loader = this.connections[feed.$$feedUid][manager.$$managerUid];
+            if ( !loader ){
+                loader = new DataLoader( feed, manager );
+                this.connections[feed.$$feedUid][manager.$$managerUid] = loader;
+            }
+
+            loader.addConfig(cfg);
+
+            return source;
+        };
+
+        ComponentPage.prototype.getManager = function( managerName ){
+            var name = managerName || ComponentPage.defaultManager,
+                manager = this.managers[name];
+
+            if ( !manager ){
+                manager = new DataManager();
+                this.managers[name] = manager;
+            }
+            
+            return manager;
+        };
+
+        ComponentPage.prototype.setChart = function( chartName, chart ){
+            this.charts[chartName] = chart;
+        };
+
+        ComponentPage.prototype.getChart = function( chartName ){
+            return this.charts[chartName];
+        };
+
+        return ComponentPage;
+    }]
+);
+angular.module( 'vgraph' ).factory( 'ComponentPane',
+    [
+    function () {
+        'use strict';
+
+        function ComponentPane( fitToPane, xObj, yObj ){
+            this.x = xObj;
+            this.y = yObj;
+            this.fitToPane = false;
+            
+            this._pane = {};
+            this._bounds = {};
+            
+            if ( !xObj ){
+                xObj = {};
+            }
+
+            if ( !yObj ){
+                yObj = {};
+            }
+
+            this.setBounds( {min:xObj.min,max:xObj.max}, {min:yObj.min,max:yObj.max} );
+        }
+
+        ComponentPane.prototype.setBounds = function( x, y ){
+            this._bounds.x = x;
+            this._bounds.y = y;
+
+            return this;
+        };
+
+        ComponentPane.prototype.setPane = function( x, y ){
+            this._pane.x = x;
+            this._pane.y = y;
+
+            return this;
+        };
+
+        // TODO : where is this used?
+        ComponentPane.prototype.isValid = function( d ) {
+            var index;
+            if ( this.filtered ){
+                index = d._$index;
+                return this.filtered.$minIndex <= index && index <= this.filtered.$maxIndex;
+            }else{
+                return false;
+            }
+        };
+        
+        ComponentPane.prototype.filter = function( dataManager, offset ){
+            var $min,
+                $max,
+                change,
+                filtered,
+                minInterval,
+                maxInterval,
+                x = this.x,
+                data = dataManager.data;
+
+            if ( data.length ){
+                dataManager.clean();
+                
+                $min = this._bounds.x.min || data.$minIndex;
+                $max = this._bounds.x.max || data.$maxIndex;
+
+                x.$min = $min;
+                x.$max = $max;
+
+                if ( this._pane.x && this._pane.x.stop ){
+                    change = this._pane.x;
+                   
+                    minInterval = $min + change.start * ($max - $min);
+                    maxInterval = $min + change.stop * ($max - $min);
+                }else{
+                    minInterval = $min;
+                    maxInterval = $max;
+                }
+
+                offset.$left = minInterval;
+                offset.left = (minInterval - $min) / ($max - $min);
+                offset.$right = maxInterval;
+                offset.right = (maxInterval - $min) / ($max - $min);
+
+                // calculate the filtered points
+                filtered = data.$filter( minInterval, maxInterval );
+
+                if ( this.fitToPane ){
+                    filtered.$addNode( minInterval, dataManager.$makePoint(minInterval), true );
+                    filtered.$addNode( dataManager.$makePoint(maxInterval) );
+                }
+
+                filtered.$sort();
+            }
+
+            return filtered;
+        };
+
+        return ComponentPane;
+    }]
+);
+angular.module( 'vgraph' ).factory( 'ComponentView',
+    [ 'ComponentPane',
+    function ( ComponentPane ) {
+        'use strict';
+        
+        var id = 1;
+
+        function ComponentView(){
+            this.$vgvid = id++;
+
+            this.models = {};
+            this.components = [];
+        }
+
+        ComponentView.prototype.addModel = function( name, dataModel ){
+            this.models[ name ] = dataModel;
+
+            return this;
+        };
+
+        ComponentView.prototype.configure = function( settings, chartSettings, box ){
+            var x, y,
+                models,
+                addModel = this.addModel.bind( this );
+
+            if ( !settings ){
+                settings = {};
+            }
+
+            x = {
+                min: settings.x ? settings.x.min : undefined,
+                max: settings.x ? settings.x.max : undefined
+            };
+            y = {
+                min: settings.y ? settings.y.min : undefined,
+                max: settings.y ? settings.y.max : undefined
+            };
+
+            this.x = x;
+            this.y = y;
+            
+            this.box = box;
+            this.pane = new ComponentPane( this.x, this.y );
+            this.managerName = settings.manager;
+            this.datumFactory = settings.datumFactory;
+
+            this.makeInterval = chartSettings.makeInterval;
+            this.adjustSettings = chartSettings.adjustSettings;
+            this.pane.fitToPane = chartSettings.fitToPane;
+
+            x.tick = chartSettings.x.tick || {};
+            x.scale = chartSettings.x.scale ? chartSettings.x.scale() : d3.scale.linear();
+            x.padding = chartSettings.x.padding;
+            x.massage = chartSettings.x.massage;
+            x.format = chartSettings.x.format || function( v ){
+                return v;
+            };
+
+            y.tick = chartSettings.y.tick || {};
+            y.scale = chartSettings.y.scale ? chartSettings.y.scale() : d3.scale.linear();
+            y.padding = chartSettings.y.padding;
+            y.massage = chartSettings.y.massage;
+            y.format = chartSettings.y.format || function( v ){
+                return v;
+            };
+
+            if ( settings.models ){
+                if ( angular.isFunction(settings.models) ){
+                    models = settings.models();
+                }else{
+                    models = settings.models;
+                }
+
+                Object.keys( models ).forEach(function( modelName ){
+                    addModel( modelName, models[modelName] );
+                });
+            }
+        };
+
+        ComponentView.prototype.setPage = function( page ){
+            var x = this.x;
+
+            this.manager = page.getManager( this.managerName );
+
+            if ( x && (x.min || x.min === 0) && x.max && x.interval && this.datumFactory ){
+                this.manager.data.$fillPoints( 
+                    x.min,
+                    x.max,
+                    x.interval,
+                    this.datumFactory
+                );
+            }
+        };
+
+        ComponentView.prototype.register = function( component ){
+            this.components.push( component );
+        };
+
+        ComponentView.prototype.isReady = function(){
+            return this.manager && this.manager.ready;
+        };
+
+        ComponentView.prototype.hasData = function(){
+            return this.isReady() && this.manager.data.length;
+        };
+
+        ComponentView.prototype.sample = function(){
+            var dis = this,
+                keys,
+                offset,
+                filtered,
+                box = this.box,
+                pane = this.pane,
+                models = this.models;
+
+            this.offset = {};
+            this.filtered = pane.filter( this.manager, this.offset );
+
+            filtered = this.filtered;
+            offset = this.offset;
+
+            if ( filtered ){
+                this.x.scale
+                    .domain([
+                        offset.$left,
+                        offset.$right
+                    ])
+                    .range([
+                        box.innerLeft,
+                        box.innerRight
+                    ]);
+
+                filtered.forEach(function( datum ){
+                    datum._$interval = dis.x.scale(datum._$index);
+                });
+
+                keys = Object.keys(models);
+                keys.forEach(function(key){
+                    models[key].$follow( filtered, box );
+                });
+            }
+        };
+
+        ComponentView.prototype.setViewportValues = function( min, max ){
+            var step,
+                box = this.box;
+
+            if ( this.y.padding ){
+                if ( max === min ){
+                    step = min * this.y.padding;
+                }else{
+                    step = ( max - min ) * this.y.padding;
+                }
+
+                max = max + step;
+                min = min - step;
+            }
+
+            this.viewport.minValue = min;
+            this.viewport.maxValue = max;
+
+            this.y.scale
+                .domain([
+                    min,
+                    max
+                ])
+                .range([
+                    box.innerBottom,
+                    box.innerTop
+                ]);
+        };
+
+        ComponentView.prototype.setViewportIntervals = function( min, max ){
+            var box = this.box;
+
+            this.viewport.minInterval = min;
+            this.viewport.maxInterval = max;
+
+            this.x.scale
+                .domain([
+                    min,
+                    max
+                ])
+                .range([
+                    box.innerLeft,
+                    box.innerRight
+                ]);
+        };
+
+        ComponentView.prototype.parse = function(){
+            var min,
+                max,
+                models,
+                raw = this.manager.data;
+
+            this.sample();
+            models = this.models;
+            
+            if ( this.filtered ){
+                // TODO : this could have the max/min bug
+                this.components.forEach(function( component ){
+                    var t;
+
+                    if ( component.parse ){
+                        t = component.parse( models );
+                        if ( t ){
+                            if ( t.min !== null && (!min && min !== 0 || min > t.min) ){
+                                min = t.min;
+                            }
+
+                            if ( t.max !== null && (!max && max !== 0 || max < t.max) ){
+                                max = t.max;
+                            }
+                        }
+                    }
+                });
+
+                // TODO : normalize config stuff
+                if ( !this.viewport ){
+                    this.viewport = {};
+                }
+
+                this.setViewportValues( min, max );
+                this.setViewportIntervals( this.offset.$left, this.offset.$right );
+
+                if ( this.adjustSettings ){
+                    this.adjustSettings(
+                        this.filtered.$maxIndex - this.filtered.$minIndex,
+                        max - min,
+                        raw.$maxIndex - raw.$minIndex
+                    );
+                }
+            }
+        };
+
+        ComponentView.prototype.build = function(){
+            var models = this.models;
+
+            this.components.forEach(function( component ){
+                if ( component.build ){
+                    component.build( models );
+                }
+            });
+        };
+
+        ComponentView.prototype.process = function(){
+            var models = this.models;
+
+            this.components.forEach(function( component ){
+                if ( component.process ){
+                    component.process( models );
+                }
+            });
+        };
+
+        ComponentView.prototype.finalize = function(){
+            var models = this.models;
+
+            this.components.forEach(function( component ){
+                if ( component.finalize ){
+                    component.finalize( models );
+                }
+            });
+        };
+
+        ComponentView.prototype.getPoint = function( pos ){
+            var sum = 0,
+                count = 0,
+                models = this.models,
+                point = {};
+
+            Object.keys(models).forEach(function( modelName ){
+                var p;
+
+                point[modelName] = models[modelName].$getClosest( pos, '_$interval' );
+                p = point[modelName]._$interval;
+
+                if ( p ){
+                    count++;
+                    sum += p;
+                }
+            });
+
+            point.$pos = sum / count;
+
+            return point;
+        };
+
+        /*
+        ComponentView.prototype.publishStats = function(){
+            var i,
+                s,
+                data = this.dataModel.data,
+                step = this.pane.x.$max || 9007199254740991, // max safe int
+                count = data.length;
+
+            for( i = 1; i < count; i++ ){
+                s = data[i].$x - data[i-1].$x;
+                if ( step > s ){
+                    step = s;
+                }
+            }
+
+            return {
+                step: step,
+                count: data.length,
+                bound: {
+                    min: this.pane.x.$min,
+                    max: this.pane.x.$max
+                },
+                data: {
+                    min: this.dataModel.x.$min,
+                    max: this.dataModel.x.$max
+                }
+            };
+        };
+
+        ComponentView.prototype.publishData = function( content, conf, calcPos ){
+            publish( this.rawContainer.data, conf.name, content, calcPos, conf.format );
+        };
+
+        function fill( content, start, stop, value ){
+            while ( start < stop ){
+                content[start].push( value );
+                start++;
+            }
+        }
+        
+        function publish( data, name, content, calcPos, format ){
+            var i, c,
+                value,
+                pos,
+                last = 0;
+
+            for( i = 0, c = data.length; i < c; i++ ){
+                value = data[i][name];
+
+                if ( value !== undefined && value !== null ){
+                    pos = calcPos( data[i] );
+                    if ( pos !== last ){
+                        fill( content, last, pos, null );
+                    }
+
+                    if ( format ){
+                        value = format( value );
+                    }
+                    content[pos].push( value );
+
+                    last = pos + 1;
+                }
+            }
+
+            fill( content, last, content.length, null );
+        }
+        */
+        return ComponentView;
+    }]
+);
+angular.module( 'vgraph' ).factory( 'DrawArea', 
+	['DrawBuilder',
+	function( DrawBuilder ){
+		'use strict';
+		
+		function DrawArea(){}
+
+		DrawArea.prototype = new DrawBuilder();
+
+		DrawArea.prototype.parseValue1 = null;
+		DrawArea.prototype.parseValue2 = null;
+		DrawArea.prototype.parseInterval = null;
+		
+		DrawArea.prototype.render = function( set ){
+			var i, c,
+				d,
+				interval,
+				v1 = [],
+				v2 = [];
+
+			if ( set.length ){
+				for( i = 0, c = set.length; i < c; i++ ){
+					d = set[i];
+					interval = this.parseInterval(d);
+					v1.push( interval+','+this.parseValue1(d) );
+					v2.unshift( interval+','+this.parseValue2(d) );
+				}
+
+				return 'M' + v1.join('L') + 'L' + v2.join('L') + 'Z';
+			}else{
+				return '';
+			}
+		};
+
+		return DrawArea;
+	}]
+);
+angular.module( 'vgraph' ).factory( 'DrawBox', 
+	['DrawBuilder',
+	function( DrawBuilder ){
+		'use strict';
+		
+		function build( template ){
+            return (new DOMParser().parseFromString(
+                '<g xmlns="http://www.w3.org/2000/svg">' +
+                    template +
+                '</g>','image/svg+xml'
+            )).childNodes[0].childNodes;
+        }
+
+		function DrawBox( elemental ){
+			this.elemental = elemental;
+		}
+
+		DrawBox.prototype = new DrawBuilder();
+
+		// default is to have one box per datum, all points valid
+		DrawBox.prototype.parseValue1 = null;
+		DrawBox.prototype.parseValue2 = null;
+		DrawBox.prototype.parseInterval1 = null;
+		DrawBox.prototype.parseInterval2 = null;
+		
+		function calcBox( v1, v2, i1, i2, box ){
+			var t;
+
+			if ( i1 > i2 ){
+				t = i1;
+				i1 = i2;
+				i2 = t;
+			}
+
+			if ( v1 > v2 ){
+				t = v1;
+				v1 = v2;
+				v2 = t;
+			}
+
+			if ( !box ){
+				return {
+					v1: v1,
+					v2: v2,
+					i1: i1,
+					i2: i2
+				};
+			}else{
+				if ( box.v1 > v1 ){
+					box.v1 = v1;
+				}
+
+				if ( v2 > box.v2 ){
+					box.v2 = v2;
+				}
+
+				if ( box.i1 > i1 ){
+					box.i1 = i1;
+				}
+
+				if ( i2 > box.i2 ){
+					box.i2 = i2;
+				}
+			}
+
+			return box;
+		}
+
+		DrawBox.prototype.make = function( set ){
+			var i, c,
+				d,
+				v1,
+				v2,
+				i1,
+				i2,
+				boxInfo;
+
+			if ( set.length ){
+				for( i = 0, c = set.length; i < c; i++ ){
+					
+					d = set[i];
+					v1 = this.parseValue1( d );
+					v2 = this.parseValue2( d );
+					i1 = this.parseInterval1( d );
+					i2 = this.parseInterval2( d );
+
+					boxInfo = calcBox( v1, v2, i1, i2, boxInfo );
+				}
+
+				return this.render(boxInfo);
+			}
+		};
+
+		DrawBox.prototype.build = function( modelData ){
+			var t = DrawBuilder.prototype.build.call( this, modelData );
+
+			if ( this.elemental ){
+				return build( t );
+			}else{
+				return t;
+			}
+		};
+
+		DrawBox.prototype.render = function( boxInfo ){
+			if ( boxInfo ){
+				if ( this.elemental ){
+					return '<rect x="'+boxInfo.i1+
+						'" y="'+boxInfo.v1+
+						'" width="'+(boxInfo.i2 - boxInfo.i1)+
+						'" height="'+(boxInfo.v2 - boxInfo.v1)+'"/>';
+				}else{
+					return 'M' + 
+						(boxInfo.i1+','+boxInfo.v1) + 'L' +
+						(boxInfo.i2+','+boxInfo.v1) + 'L' +
+						(boxInfo.i2+','+boxInfo.v2) + 'L' +
+						(boxInfo.i1+','+boxInfo.v2) + 'Z';
+				}
+			}
+		};
+		
+		return DrawBox;
+	}]
+);
+angular.module( 'vgraph' ).factory( 'DrawBuilder', 
+	[
+	function(){
+		'use strict';
+
+		function DrawBuilder(){}
+
+		// allows for very complex checks of if the value is defined, allows checking previous and next value
+		DrawBuilder.prototype.preParse = function( d ){
+			return d;
+		};
+
+		DrawBuilder.prototype.breakSet = function(){
+			return false;
+		};
+
+		DrawBuilder.prototype.parse = function( dataSet ){
+			var i, c,
+				d,
+				last,
+				set = [],
+				sets = [ set ],
+				preParse = this.preParse.bind(this),
+				breakSet = this.breakSet.bind(this);
+
+			// I need to start on the end, and find the last valid point.  Go until there
+			for( i = 0, c = dataSet.length; i < c; i++ ){
+				d = dataSet[i];
+				last = preParse( d, last ); // you can return something falsey and not have it defined
+											// or you can use breakSet to force a break, as bars do
+
+				if ( last ){
+					set.push( last );
+				}
+
+				if ( !last || breakSet(d) ){
+					if ( set.length !== 0 ){
+						set = [];
+						sets.push( set );
+					}
+				}
+			}
+
+			return sets;
+		};
+
+		DrawBuilder.prototype.build = function( modelData ){
+			var i, c,
+				t,
+				set,
+				res = [],
+				dataSet = this.parse( modelData );
+
+			for( i = 0, c = dataSet.length; i < c; i++ ){
+				set = dataSet[i];
+				t = this.make( set );
+				if ( t ){
+					res.push( t );
+				}
+			}
+
+			return res;
+		};
+
+		DrawBuilder.prototype.make = function( set ){
+			return this.render( set );
+		};
+
+		DrawBuilder.prototype.render = function(){
+			return 'M0,0Z';
+		};
+
+		return DrawBuilder;
+	}]
+);
+angular.module( 'vgraph' ).factory( 'DrawIcon', 
+	[ 'DrawBox',
+	function( DrawBox ){
+		'use strict';
+		
+		function DrawIcon( box, template ){
+			this.box = box;
+			this.template = template;
+			this.elemental = true;
+		}
+
+		DrawIcon.prototype = new DrawBox();
+
+		DrawIcon.prototype.render = function( boxInfo ){
+			var x, y;
+			
+			if ( boxInfo ){
+				x = (boxInfo.i1 + boxInfo.i2 - this.box.width ) / 2; // v / 2 - width / 2 
+				y = (boxInfo.v1 + boxInfo.v2 - this.box.height ) / 2;
+
+				return '<g transform="translate('+x+','+y+')">' + this.template + '</g>';
+			}
+		};
+
+		return DrawIcon;
+	}]
+);
+angular.module( 'vgraph' ).factory( 'DrawLine', 
+	['DrawBuilder',
+	function( DrawBuilder ){
+		'use strict';
+		
+		function DrawLine(){}
+
+		DrawLine.prototype = new DrawBuilder();
+
+		DrawLine.prototype.parseValue = null;
+		DrawLine.prototype.parseInterval = null;
+		
+		DrawLine.prototype.render = function( set ){
+			var i, c,
+				d;
+
+			if ( set.length ){
+				for( i = 0, c = set.length; i < c; i++ ){
+					d = set[i];
+					set[i] = this.parseInterval(d) + ',' + this.parseValue(d);
+				}
+
+				return 'M' + set.join('L');
+			}else{
+				return '';
+			}
+		};
+
+		return DrawLine;
+	}]
+);
+angular.module( 'vgraph' ).factory( 'makeEventing',
+    [
+    function () {
+        'use strict';
+
+        return function( obj ){
+            obj.$on = function( event, cb ){
+                var dis = this;
+
+                if ( !this._$listeners ){
+                    this._$listeners = {};
+                }
+
+                if ( !this._$listeners[event] ){
+                    this._$listeners[event] = [];
+                }
+
+                this._$listeners[event].push( cb );
+
+                return function clear$on(){
+                    dis._$listeners[event].splice(
+                        dis._$listeners[event].indexOf( cb ),
+                        1
+                    );
+                };
+            };
+
+            obj.$subscribe = function( subscriptions ){
+                var dis = this,
+                    kills = [],
+                    events =  Object.keys(subscriptions);
+
+
+                events.forEach(function( event ){
+                    var action = subscriptions[event];
+
+                    kills.push( dis.$on(event,action) );
+                });
+
+                return function killAll(){
+                    kills.forEach(function( kill ){
+                        kill();
+                    });
+                };
+            };
+
+            obj.$trigger = function( event, arg ){
+                var listeners,
+                    i, c;
+
+                if ( this._$listeners ){
+                    listeners = this._$listeners[event];
+
+                    if ( listeners ){
+                        for( i = 0, c = listeners.length; i < c; i++ ){
+                            listeners[i]( arg );
+                        }
+                    }                   
+                }
+            };
+        };
+    }]
+);
+
+angular.module( 'vgraph' ).factory( 'StatCalculations',
+	[
+	function () {
+		'use strict';
+
+		function isNumeric( v ){
+			if ( v === null ){
+				return false;
+			}else if ( Number.isFinite ){
+				return Number.isFinite(v) && !Number.isNaN(v);
+			}else{
+				return isFinite(v) && !isNaN(v);
+			}
+		}
+
+		function createNames( config, prefix ){
+			var arr = [];
+
+			config.forEach(function(cfg){
+				arr.push( '$'+prefix+'$'+cfg.field );
+			}); 
+
+			return arr;
+		}
+
+		return {
+			$resetCalcs: function( config ){
+				var i, c;
+
+				for( i = 0, c = config.length; i < c; i++ ){
+					config[i].field = config[i].name;
+				}
+			},
+			$getFields: function( config ){
+				var i, c,
+					fields = [];
+
+				for( i = 0, c = config.length; i < c; i++ ){
+					fields.push( config[i].field );
+				}
+
+				return fields;
+			},
+			$setFields: function( config, calcedFields ){
+				var i, c;
+
+				for( i = 0, c = config.length; i < c; i++ ){
+					config[i].field = calcedFields[i];
+				}
+			},
+			sum: function( config, collection ){
+				var nameAs = createNames( config, 'sum' );
+
+				config.forEach(function( cfg, key ){
+					var field = cfg.field,
+						alias = nameAs[key],
+						sum = 0;
+
+					collection.forEach(function( datum ){
+						var v = datum[field];
+
+						if ( v ){
+							sum += v;
+						}
+					});
+
+					collection[ alias ] = sum;
+					cfg.field = alias;
+				});
+
+				return nameAs;
+			},
+			average: function( config, collection ){
+				var nameAs = createNames( config, 'average' );
+
+				config.forEach(function( cfg, key ){
+					var field = cfg.field,
+						alias = nameAs[key],
+						sum = 0,
+						count = 0;
+
+					collection.forEach(function( datum ){
+						var v = datum[field];
+
+						if ( v ){
+							sum += v;
+							count++;
+						}else if ( v === 0 ){
+							count++;
+						}
+					});
+
+					collection[ alias ] = sum / count;
+					cfg.field = alias;
+				});
+
+				return nameAs;
+			},
+			stack: function( config, collection ){
+				var nameAs = createNames( config, 'stack' ),
+					fields = this.$getFields( config );
+
+				collection.forEach(function( datum ){
+					var sum = 0;
+
+					fields.forEach(function( field, key ){
+						var v = datum[field] || 0;
+
+						sum += v;
+						
+						datum[ nameAs[key] ] = sum;
+					});
+				});
+
+				config.forEach(function( cfg, key ){
+					cfg.field = nameAs[key];
+				});
+
+				return nameAs;
+			},
+			limits: function( cfg, data ){
+				var i, c,
+					d,
+					v,
+					min,
+					max;
+
+				if ( angular.isArray(cfg) ){
+					// go through an array of names
+					for( i = 0, c = cfg.length; i < c; i++ ){
+						v = this.limits( cfg[i], data );
+						if ( min === undefined ){
+							min = v.min;
+							max = v.max;
+						}else{
+							if ( v.min < min ){
+								min = v.min;
+							}
+
+							if ( v.max > max ){
+								max = v.max;
+							}
+						}
+					}
+				} else if ( cfg && cfg.getValue ){
+					// used to reduce the checks for parser
+					for( i = 0, c = data.length; i < c; i++ ){
+						d = data[i];
+						v = cfg.getValue(d);
+						if ( isNumeric(v) ){
+							if ( min === undefined ){
+								min = v;
+								max = v;
+							}else if ( min > v ){
+								min = v;
+							}else if ( max < v ){
+								max = v;
+							}
+						}
+					}
+				}
+
+				return {
+					min : min,
+					max : max
+				};
+			}
+		};
+	}]
+);
 angular.module( 'vgraph' ).factory( 'DataCollection',
 	[
 	function () {
@@ -904,2141 +2984,6 @@ angular.module( 'vgraph' ).factory( 'DataManager',
     } ]
 );
 
-angular.module( 'vgraph' ).factory( 'DrawArea', 
-	['DrawBuilder',
-	function( DrawBuilder ){
-		'use strict';
-		
-		function DrawArea(){}
-
-		DrawArea.prototype = new DrawBuilder();
-
-		DrawArea.prototype.parseValue1 = null;
-		DrawArea.prototype.parseValue2 = null;
-		DrawArea.prototype.parseInterval = null;
-		
-		DrawArea.prototype.build = function( set ){
-			var i, c,
-				d,
-				interval,
-				v1 = [],
-				v2 = [];
-
-			if ( set.length ){
-				for( i = 0, c = set.length; i < c; i++ ){
-					d = set[i];
-					interval = this.parseInterval(d);
-					v1.push( interval+','+this.parseValue1(d) );
-					v2.unshift( interval+','+this.parseValue2(d) );
-				}
-
-				return 'M' + v1.join('L') + 'L' + v2.join('L') + 'Z';
-			}else{
-				return '';
-			}
-		};
-
-		return DrawArea;
-	}]
-);
-angular.module( 'vgraph' ).factory( 'DrawBox', 
-	['DrawBuilder',
-	function( DrawBuilder ){
-		'use strict';
-		
-		function DrawBox(){}
-
-		DrawBox.prototype = new DrawBuilder();
-
-		DrawBox.prototype.parseValue1 = null;
-		DrawBox.prototype.parseValue2 = null;
-		DrawBox.prototype.parseInterval1 = null;
-		DrawBox.prototype.parseInterval2 = null;
-		DrawBox.prototype.breakBox = function(){
-			return true;
-		};
-		
-		function calcBox( v1, v2, i1, i2, box ){
-			var t;
-
-			if ( i1 > i2 ){
-				t = i1;
-				i1 = i2;
-				i2 = t;
-			}
-
-			if ( v1 > v2 ){
-				t = v1;
-				v1 = v2;
-				v2 = t;
-			}
-
-			if ( !box ){
-				return {
-					v1: v1,
-					v2: v2,
-					i1: i1,
-					i2: i2
-				};
-			}else{
-				if ( box.v1 > v1 ){
-					box.v1 = v1;
-				}
-
-				if ( v2 > box.v2 ){
-					box.v2 = v2;
-				}
-
-				if ( box.i1 > i1 ){
-					box.i1 = i1;
-				}
-
-				if ( i2 > box.i2 ){
-					box.i2 = i2;
-				}
-			}
-
-			return box;
-		}
-
-		function drawBox( carryOver ){
-			return 'M' + 
-				(carryOver.i1+','+carryOver.v1) + 'L' +
-				(carryOver.i2+','+carryOver.v1) + 'L' +
-				(carryOver.i2+','+carryOver.v2) + 'L' +
-				(carryOver.i1+','+carryOver.v2) + 'Z';
-		}
-
-		DrawBox.prototype.build = function( set ){
-			var i, c,
-				d,
-				v1,
-				v2,
-				i1,
-				i2,
-				carryOver,
-				boxes = '';
-
-			if ( set.length ){
-				for( i = 0, c = set.length; i < c; i++ ){
-					d = set[i];
-					v1 = this.parseValue1( d );
-					v2 = this.parseValue2( d );
-					i1 = this.parseInterval1( d );
-					i2 = this.parseInterval2( d );
-
-					carryOver = calcBox( v1, v2, i1, i2, carryOver );
-
-					if ( this.breakBox(d) ){
-						boxes += drawBox(carryOver);
-						carryOver = null;
-					}
-				}
-
-				if ( carryOver ){
-					boxes += drawBox(carryOver);
-				}
-
-				return boxes;
-			}else{
-				return '';
-			}
-		};
-
-		return DrawBox;
-	}]
-);
-angular.module( 'vgraph' ).factory( 'DrawBuilder', 
-	[
-	function(){
-		'use strict';
-
-		function DrawBuilder(){}
-
-		// allows for very complex checks of if the value is defined, allows checking previous and next value
-		DrawBuilder.prototype.preParse = function( d ){
-			return d;
-		};
-
-		DrawBuilder.prototype.parse = function( dataSet ){
-			var i, c,
-				d,
-				last,
-				set = [],
-				sets = [ set ],
-				preParse = this.preParse.bind(this);
-
-			// I need to start on the end, and find the last valid point.  Go until there
-			for( i = 0, c = dataSet.length; i < c; i++ ){
-				d = dataSet[i];
-				last = preParse( d, last ); // you can return something falsey and not have it defined
-
-				if ( last ){
-					set.push( last );
-				}else{
-					if ( set.length !== 0 ){
-						set = [];
-						sets.push( set );
-					}
-				}
-			}
-
-			return sets;
-		};
-
-		DrawBuilder.prototype.render = function( dataSet ){
-			var i, c,
-				d;
-
-			dataSet = this.parse( dataSet );
-
-			for( i = 0, c = dataSet.length; i < c; i++ ){
-				d = dataSet[i];
-				dataSet[i] = this.build( d );
-			}
-
-			return dataSet;
-		};
-
-		DrawBuilder.prototype.build = function(){
-			return 'M0,0Z';
-		};
-
-		return DrawBuilder;
-	}]
-);
-angular.module( 'vgraph' ).factory( 'DrawElement', 
-	[
-	function(){
-		'use strict';
-		
-		function svgCompile( svgHtml ){
-            return (new DOMParser().parseFromString(
-                '<g xmlns="http://www.w3.org/2000/svg">' +
-                    svgHtml +
-                '</g>','image/svg+xml'
-            )).childNodes[0].childNodes;
-        }
-
-		function DrawElement( tag, cfg, discrete ){
-			var node,
-				html;
-
-			if ( typeof(tag) === 'object' ){
-				node = tag;
-			}else{
-				html = '<'+this._tag+' class="'+cfg.className+'"></'+this._tag+'>'; 
-
-				if ( discrete ){
-					node = svgCompile('<g>'+html+'</g>')[0];
-				}else{
-					node = svgCompile(html)[0];
-				}
-			}
-			
-			this.getNode = function(){
-				return node;
-			};
-		}
-
-		DrawElement.svgCompile = svgCompile;
-
-		DrawElement.prototype.build = function( rendering ){
-			var i, c,
-				els,
-				node = this.getNode();
-
-			if ( node.tagName === 'g' ){
-				els = node.childNodes;
-				if ( els.length > rendering.length ){
-					while( els.length > rendering.length ){
-						node.removeChild( els.pop() );
-					}
-				}else if ( els.length < rendering.length ){
-					while( node.childNodes.length < rendering.length ){
-						node.appendChild( els[0].cloneNode() );
-					}
-				}
-
-				els = node.childNodes;
-				for( i = 0, c = rendering.length; i < c; i++ ){
-					els[i].setAttribute( 'd', rendering[i] );
-				}
-			}else{
-				node.setAttribute( 'd', rendering.join('') );
-			}
-		};
-
-		return DrawElement;
-	}]
-);
-angular.module( 'vgraph' ).factory( 'DrawLine', 
-	['DrawBuilder',
-	function( DrawBuilder ){
-		'use strict';
-		
-		function DrawLine(){}
-
-		DrawLine.prototype = new DrawBuilder();
-
-		DrawLine.prototype.parseValue = null;
-		DrawLine.prototype.parseInterval = null;
-		
-		DrawLine.prototype.build = function( set ){
-			var i, c,
-				d;
-
-			if ( set.length ){
-				for( i = 0, c = set.length; i < c; i++ ){
-					d = set[i];
-					set[i] = this.parseInterval(d) + ',' + this.parseValue(d);
-				}
-
-				return 'M' + set.join('L');
-			}else{
-				return '';
-			}
-		};
-
-		return DrawLine;
-	}]
-);
-angular.module( 'vgraph' ).factory( 'ComponentBox',
-    [
-    function () {
-        'use strict';
-
-        function extend( model, settings ){
-            var padding = settings.padding,
-                oPadding = model.padding,
-                margin = settings.margin,
-                oMargin = model.margin;
-
-            // compute the margins
-            if ( !oMargin ){
-                model.margin = oMargin = {
-                    top : 0,
-                    right : 0,
-                    bottom : 0,
-                    left : 0
-                };
-            }
-
-            if ( margin ){
-                oMargin.top = merge( margin.top , oMargin.top );
-                oMargin.right = merge( margin.right, oMargin.right );
-                oMargin.bottom = merge( margin.bottom, oMargin.bottom );
-                oMargin.left = merge( margin.left, oMargin.left );
-            }
-
-            // compute the paddings
-            if ( !oPadding ){
-                model.padding = oPadding = {
-                    top : 0,
-                    right : 0,
-                    bottom : 0,
-                    left : 0
-                };
-            }
-
-            if ( padding ){
-                oPadding.top = merge( padding.top, oPadding.top );
-                oPadding.right = merge( padding.right, oPadding.right );
-                oPadding.bottom = merge( padding.bottom, oPadding.bottom );
-                oPadding.left = merge( padding.left, oPadding.left );
-            }
-
-            // set up the knowns
-            model.outerWidth = merge( settings.outerWidth, model.outerWidth ) || 0;
-            model.outerHeight = merge( settings.outerHeight, model.outerHeight ) || 0;
-
-            // where is the box
-            model.top = oMargin.top;
-            model.bottom = model.outerHeight - oMargin.bottom;
-            model.left = oMargin.left;
-            model.right = model.outerWidth - oMargin.right;
-
-            model.center = ( model.left + model.right ) / 2;
-            model.middle = ( model.top + model.bottom ) / 2;
-
-            model.width = model.right - model.left;
-            model.height = model.bottom - model.top;
-
-            // where are the inners
-            model.innerTop = model.top + oPadding.top;
-            model.innerBottom = model.bottom - oPadding.bottom;
-            model.innerLeft = model.left + oPadding.left;
-            model.innerRight = model.right - oPadding.right;
-
-            model.innerWidth = model.innerRight - model.innerLeft;
-            model.innerHeight = model.innerBottom - model.innerTop;
-
-            model.ratio = model.outerWidth + ' x ' + model.outerHeight;
-        }
-
-        function ComponentBox( settings ){
-            this.registrations = [];
-            extend( this, settings || {} );
-        }
-
-        function merge( nVal, oVal ){
-            return nVal !== undefined ? parseInt( nVal ) : oVal;
-        }
-
-        ComponentBox.prototype.register = function( cb ){
-            this.registrations.push( cb );
-        };
-
-        ComponentBox.prototype.targetSvg = function( el ){
-            this.$element = jQuery(el); // I'd like not to need this
-
-            this.resize();
-        };
-
-        ComponentBox.prototype.resize = function(){
-            var i, c,
-                el = this.$element;
-
-            el.attr( 'width', null )
-                .attr( 'height', null );
-
-            el[0].style.cssText = null;
-
-            extend( this, {
-                outerWidth : el.outerWidth( true ),
-                outerHeight : el.outerHeight( true ),
-                margin : {
-                    top : el.css('margin-top'),
-                    right : el.css('margin-right'),
-                    bottom : el.css('margin-bottom'),
-                    left : el.css('margin-left')
-                },
-                padding : {
-                    top : el.css('padding-top'),
-                    right : el.css('padding-right'),
-                    bottom : el.css('padding-bottom'),
-                    left : el.css('padding-left')
-                }
-            });
-
-            el.css('margin', '0')
-                .css('padding', '0')
-                .attr( 'width', this.outerWidth )
-                .attr( 'height', this.outerHeight )
-                .css({
-                    width : this.outerWidth+'px',
-                    height : this.outerHeight+'px'
-                });
-
-            if ( this.innerWidth && this.innerHeight ){
-                for( i = 0, c = this.registrations.length; i < c; i++ ){
-                    this.registrations[ i ]();
-                }
-            }
-        };
-
-        return ComponentBox;
-    }]
-);
-
-/* cfg for inputs
-    - name
-    - view
-    - model
-    - getValue
-    - getInterval
-    - massage
-    - isValid
-*/
-
-/** cfg for graph
-    x: {
-        scale : some scaling function
-        padding: amount to add padding // TODO
-        format: value formatting function
-    }
-    y: {
-        scale : some scaling function
-        padding: amount to add padding
-        format: value formatting function
-    },
-    fitToPane: boolean if data should fit to pane or cut off
-    makeInterval: function for creating interval value, runs off _$index ( $interval: converted, _interval: coord )
-    views: {
-        viewName: ViewModel
-    },
-    normalizeX: boolean if make all the x values align between views,
-    normalizeY: boolean if make all the y values align between views
-**/
-
-/** cfg for view 
-    manager: the manager to lock the view onto
-**/
-angular.module( 'vgraph' ).factory( 'ComponentChart',
-    [ '$timeout', 
-        'ComponentView', 'ComponentBox', 'DataCollection', 'LinearSamplerModel', 'makeEventing', 'Scheduler',
-    function ( $timeout, 
-        ComponentView, ComponentBox, DataCollection, LinearSamplerModel, makeEventing, Scheduler ) {
-        'use strict';
-
-        var schedule = new Scheduler(),
-            ids = 1;
-        
-        function ComponentChart(){
-            var trigger = this.$trigger.bind( this ),
-                views = {};
-
-            this.$vguid = ++ids;
-            this.box = new ComponentBox();
-            this.views = views;
-            this.models = [];
-            this.waiting = {};
-            this.references = {};
-            this.loading = true;
-            this.message = null;
-            
-            this.$on('focus',function( pos ){
-                var sum = 0,
-                    count = 0,
-                    points = {};
-
-                if ( pos ){
-                    angular.forEach( views, function( view, viewName ){
-                        var p;
-
-                        points[viewName] = view.getPoint( pos.x );
-                        p = points[viewName].$pos;
-
-                        if ( p !== undefined ){
-                            count++;
-                            sum += p;
-                        }
-                    });
-
-                    points.$pos = sum / count;
-                    points.pos = pos;
-
-                    trigger('focus-point',points);
-                    trigger('highlight',points);
-                }else{
-                    trigger('highlight',null);
-                }
-            });
-        }
-
-        makeEventing(ComponentChart.prototype);
-
-        ComponentChart.defaultView = 'default';
-        ComponentChart.defaultModel = 'linear';
-
-        ComponentChart.prototype.setPage = function( page ){
-            this.page = page;
-        };
-
-        ComponentChart.prototype.configure = function( page, settings ){
-            var i, c,
-                t,
-                views,
-                keys = Object.keys(this.views),
-                addView = this.addView.bind(this);
-
-            if ( !settings ){
-                settings = {};
-            }
-
-            if ( !settings.x ){
-                settings.x = {};
-            }
-
-            if ( !settings.y ){
-                settings.y = {};
-            }
-
-            this.page = page;
-            this.settings = settings;
-
-            this.normalizeY = settings.normalizeY;
-            this.normalizeX = settings.normalizeX;
-
-            views = settings.views;
-            if ( !views ){
-                t = {};
-                t[ ComponentChart.defaultModel ] = new LinearSamplerModel(function(datum){
-                    return Math.round(datum._$interval);
-                });
-
-                views = {};
-                views[ ComponentChart.defaultView ] = {
-                    models: t
-                };
-            }else if ( angular.isFunction(views) ){
-                views = views();
-            }
-            
-            angular.forEach( views, addView );
-        };
-
-        function normalizeY( views ){
-            var min, max;
-
-            views.forEach(function( view ){
-                var vp = view.viewport;
-
-                if ( min === undefined || min > vp.minValue ){
-                    min = vp.minValue;
-                }
-
-                if ( max === undefined || max < vp.maxValue ){
-                    max = vp.maxValue;
-                }
-            });
-
-            views.forEach(function( view ){
-                view.setViewportValues( min, max );
-            });
-        }
-
-        function normalizeX( views ){
-            var min, max;
-
-            views.forEach(function( view ){
-                var vp = view.viewport;
-
-                if ( min === undefined || min > vp.minInterval ){
-                    min = vp.minInterval;
-                }
-
-                if ( max === undefined || max < vp.maxInterval ){
-                    max = vp.maxInterval;
-                }
-            });
-
-            views.forEach(function( view ){
-                view.setViewportIntervals( min, max );
-            });
-        }
-
-        ComponentChart.prototype.setInputReference = function( reference, ref ){
-            this.references[ reference ] = ref;
-        };
-
-        ComponentChart.prototype.render = function(){
-            var currentView,
-                dis = this,
-                activeViews = [],
-                isReady = false,
-                hasViews = 0;
-
-            try{
-                angular.forEach( this.views, function( view, name ){
-                    currentView = name;
-                    view.parse();
-                });
-                currentView = null;
-
-                angular.forEach( this.views, function( view, name ){
-                    currentView = name;
-                    if ( view.hasData() ){
-                        activeViews.push( view );
-                        isReady = true;
-                    }else if ( view.isReady() ){
-                        isReady = true;
-                    }
-                });
-                currentView = null;
-
-                if ( this.normalizeY ){
-                    normalizeY( activeViews );
-                }
-
-                if ( this.normalizeX ){
-                    normalizeX( activeViews );
-                }
-            }catch( ex ){
-                console.log( 'parsing error', currentView, ex.stack );
-            }
-
-            hasViews = activeViews.length;
-            this.loading = !isReady;
-
-            schedule.startScript( this.$vguid );
-
-            if ( this.loading ){
-                dis.$trigger('loading');
-
-                schedule.func(function(){
-                    dis.loading = true;
-                    dis.pristine = false;
-                });
-            }else if ( hasViews ){
-                schedule.func(function(){
-                    dis.message = null;
-                });
-
-                schedule.loop( activeViews, function( view ){
-                    view.build();
-                });
-
-                schedule.loop( activeViews, function( view ){
-                    view.process();
-                });
-
-                schedule.loop( activeViews, function( view ){
-                    view.finalize();
-                });
-
-                schedule.func(function(){
-                    dis.loading = false;
-                    dis.pristine = true;
-                });
-            }else{
-                dis.$trigger('error');
-
-                schedule.func(function(){
-                    dis.message = 'No Data Available';
-                    dis.pristine = false;
-                });
-            }
-
-            schedule.endScript(
-                function(){
-                    // always
-                    dis.$trigger('done');
-                },
-                function(){
-                    // if success
-                    dis.$trigger('success', activeViews[0]);
-                },
-                function(){ 
-                    // if error
-                    dis.pristine = false;
-                    dis.message = 'Unable to Render';
-
-                    dis.$trigger('error');
-                }
-            );
-            schedule.run();
-        };
-
-        ComponentChart.prototype.scheduleRender = function( cb ){
-            var dis = this;
-
-            if ( !this.nrTimeout ){
-                this.nrTimeout = $timeout(function(){
-                    dis.render( dis.waiting, cb );
-                    dis.waiting = {};
-                    dis.nrTimeout = null;
-                }, 30 );
-            }
-        };
-
-        ComponentChart.prototype.rerender = function( cb ){
-            this.scheduleRender( cb );
-            this.waiting = this.views;
-        };
-
-        ComponentChart.prototype.needsRender = function( view, cb ){
-            this.scheduleRender( cb );
-            if ( !this.waiting[view.name] ){
-                this.waiting[view.name] = view;
-            }
-        };
-
-        ComponentChart.prototype.getView = function( viewName ){
-            var t = this.views[ viewName ];
-
-            if ( !t ){
-                t = new ComponentView();
-                this.views[ viewName ] = t;
-            }
-
-            return t;
-        };
-
-        ComponentChart.prototype.addView = function( viewSettings, viewName ){
-            var dis = this,
-                settings = this.settings,
-                viewModel = this.getView( viewName );
-
-            viewModel.configure(
-                viewSettings,
-                settings,
-                this.box
-            );
-
-            viewModel.setPage( this.page );
-
-            if ( settings.x.min !== undefined ){
-                viewModel.pane.setBounds({
-                    min: settings.x.min, 
-                    max: settings.x.max 
-                });
-
-                if ( settings.x.interval && settings.x.max && settings.datumFactory ){
-                    viewModel.manager.data.$fillPoints( 
-                        settings.x.min,
-                        settings.x.max,
-                        settings.x.interval,
-                        settings.datumFactory
-                    );
-                }
-            }
-
-            if ( this.settings.x.minPane !== undefined ){
-                viewModel.pane.setPane( this.settings.x.minPane, this.settings.x.maxPane );
-            }
-
-            viewModel.manager.register(function(){
-                dis.needsRender(viewModel);
-            });
-
-            viewModel.manager.onError(function( error ){
-                dis.error( error );
-            });
-        };
-
-        ComponentChart.prototype.error = function( error ){
-            if ( error ){
-                this.loading = false;
-                this.message = error;
-            }else{
-                this.message = null;
-            }
-
-            this.$trigger('error');
-        };
-
-        ComponentChart.prototype.setPane = function( leftPercent, rightPercent ){
-            var views = this.views,
-                viewNames = Object.keys(this.views);
-
-            this.settings.x.minPane = leftPercent;
-            this.settings.x.maxPane = rightPercent;
-
-            viewNames.forEach(function( viewName ){
-                views[viewName].pane.setPane({
-                    start: leftPercent,
-                    stop: rightPercent
-                });
-            });
-        };
-
-        /*
-        function reduce( arr, target ){
-            var ar,
-                i, c,
-                j, co;
-
-            for( i = 0, c = arr.length; i < c; i++ ){
-                ar = arr[i];
-
-                for( j = 0, co = ar.length; j < co; j++ ){
-                    if ( ar[j] !== null ){
-                        target[i].unshift( ar[j] );
-                        j = co;
-                    }
-                }
-            }
-        }
-
-        function publish( config, views, stats, width, size ){
-            var i,
-                headers = [],
-                content = [];
-
-            for( i = 0; i < size; i++ ){
-                content.push([]);
-            }
-            content.push([]); // size is the limit, so it needs one more
-
-            angular.forEach( config, function( conf ){
-                var view = views[conf.view],
-                    stat = stats[view.name];
-
-                headers.push( conf.label );
-                view.publishData( content, conf, function(p){
-                    return Math.round( (p.$x-stat.data.min) / width * size );
-                });
-            });
-
-            return {
-                header: headers,
-                body: content
-            };
-        }
-
-        ComponentChart.prototype.publish = function( config, index ){
-            var width,
-                size,
-                step,
-                views = {},
-                stats = {},
-                content;
-
-            angular.forEach( config, function( conf ){
-                var view = this.views[conf.view];
-                if ( view && !views[view.name] ){
-                    views[view.name] =  view;
-                }
-            }, this );
-
-            // this assumes each interval is the same units
-            angular.forEach( views, function( view ){
-                var stat = view.publishStats(),
-                    s = stat.data.max-stat.data.min;
-                // expect min, max, step
-
-                stats[view.name] = stat;
-
-                if ( !width || s > width ){
-                    width = s;
-                }
-
-                if ( !step || stat.step < step ){
-                    step = stat.step;
-                }
-            });
-
-            size = Math.ceil( width / step );
-
-            content = publish( config, views, stats, width, size );
-            if ( index ){
-                index = publish( index, views, stats, width, size );
-                reduce( index.body, content.body );
-                content.header.unshift( index.header[0] );
-            }
-
-            content.body.unshift( content.header );
-
-            return content.body;
-        };
-        */
-
-        return ComponentChart;
-    } ]
-);
-
-angular.module( 'vgraph' ).factory( 'ComponentGenerator',
-    [ '$timeout', 'DrawLine', 'DrawArea', 'DrawBox', 'DataFeed', 'DataLoader', 'ComponentChart',
-    function ( $timeout, DrawLine, DrawArea, DrawBox, DataFeed, DataLoader, ComponentChart ) {
-        'use strict';
-
-        var cfgUid = 0;
-        function normalizeConfig( cfg ){
-            var value,
-                interval;
-
-            if ( typeof(cfg) !== 'object' ){
-                return null;
-            }
-
-            value = cfg.value;
-            interval = cfg.interval;
-
-            if ( cfg.$uid === undefined ){
-                cfg.$uid = cfgUid++;
-            }
-
-            cfg.field = cfg.name;
-
-            if ( !cfg.view ){
-                cfg.view = ComponentChart.defaultView;
-            }
-
-            if ( !cfg.model ){
-                cfg.model = ComponentChart.defaultModel;
-            }
-
-            if ( !cfg.className ){
-                cfg.className = 'node-'+cfg.name;
-            }
-
-            // TODO : I need to put this into place, replacing datum[cfg.name]
-            if ( !cfg.getValue ){
-                cfg.getValue = function( d ){
-                    return d[ cfg.field ];
-                };
-            }
-
-            return cfg;
-        }
-
-        function isNumeric( v ){
-            if ( v === null ){
-                return false;
-            }else if ( Number.isFinite ){
-                return Number.isFinite(v) && !Number.isNaN(v);
-            }else{
-                return isFinite(v) && !isNaN(v);
-            }
-        }
-
-        return {
-            isNumeric: isNumeric,
-            normalizeConfig: normalizeConfig,
-            // this accepts unified
-            makeDiffCalc: function( view1, top, view2, bottom ){
-                var areaDrawer = new DrawArea();
-
-                if ( !view2 ){
-                     view2 = view1;
-                }
-
-                areaDrawer.preParse = function( d ){
-                    var c1 = d[view1.name],
-                        c2 = d[view2.name],
-                        y1,
-                        y2;
-
-                    if ( c1 ){
-                        y1 = c1[top];
-                    }
-
-                    if ( c2 ){
-                        y2 = c2[bottom];
-                    }
-
-                    if ( isNumeric(y1) && isNumeric(y2) ){
-                        return {
-                            interval: ( c1._$interval + c2._$interval ) / 2, // average the differnce
-                            y1: view1.y.scale( y1 ),
-                            y2: view2.y.scale( y2 )
-                        };
-                    }
-                };
-
-                areaDrawer.parseInterval = function( d ){
-                    return d.interval;
-                };
-                areaDrawer.parseValue1 = function( d ){
-                    return d.y1;
-                };
-                areaDrawer.parseValue2 = function( d ){
-                    return d.y2;
-                };
-
-                return function( dataFeed ){
-                    return areaDrawer.render( dataFeed ).join('');
-                };
-            },
-            // undefined =>  no value, so use last value, null => line break
-            // this accepts sampled / filtered / raw
-            makeAreaCalc: function( view ){
-                return d3.svg.area()
-                    .defined(function(d){
-                        return isNumeric(d[ name ]);
-                    })
-                    .x(function( d ){
-                        return d._$interval;
-                    })
-                    .y(function( d ){
-                        return view.y.scale( d[name+'$Min'] );
-                    })
-                    .y1(function( d ){
-                        return view.y.scale( d[name+'$Max'] );
-                    });
-            },
-            makeLineCalc: function( graph, cfg ){
-                var view,
-                    field,
-                    lineDrawer = new DrawLine();
-
-                lineDrawer.preParse = function( d, last ){
-                    var y = d[ field ];
-                            
-                    if ( isNumeric(y) ){
-                        return d;
-                    }else if ( last && y === undefined ){
-                        d[field] = last[field];
-                        return d;
-                    }else{
-                        return null;
-                    }
-                };
-
-                lineDrawer.parseValue = function( d ){
-                    return view.y.scale( d[field] );
-                };
-
-                lineDrawer.parseInterval = function( d ){
-                    return d._$interval;
-                };
-
-                return function( dataFeed ){
-                    field = cfg.field;
-                    view = graph.views[cfg.view];
-
-                    return lineDrawer.render( dataFeed ).join('');
-                };
-            },
-            // top and bottom are config objects
-            makeFillCalc: function( graph, topRef, bottomRef ){
-                var topView,
-                    bottomView,
-                    topField,
-                    bottomField,
-                    areaDrawer = new DrawArea();
-
-                areaDrawer.preParse = function( d ){
-                    var y1,
-                        y2;
-
-                    y1 = d[topField];
-                    
-                    if ( bottomField ){
-                        y2 = d[bottomField];
-                    }else{
-                        y2 = bottomView.viewport.minValue;
-                    }
-
-                    if ( isNumeric(y1) && isNumeric(y2) ){
-                        return {
-                            interval: d._$interval,
-                            y1: topView.y.scale( y1 ),
-                            y2: bottomView.y.scale( y2 )
-                        };
-                    }
-                };
-
-                areaDrawer.parseInterval = function( d ){
-                    return d.interval;
-                };
-                areaDrawer.parseValue1 = function( d ){
-                    return d.y1;
-                };
-                areaDrawer.parseValue2 = function( d ){
-                    return d.y2;
-                };
-
-                return function( dataFeed ){
-                    topView = graph.views[topRef.view];
-                    topField = topRef.field;
-
-                    if ( bottomRef ){
-                        bottomView = graph.views[bottomRef.view] || topView;
-                        bottomField = bottomRef.field;
-                    }else{
-                        bottomView = topView;
-                    }
-
-                    return areaDrawer.render( dataFeed ).join('');
-                };
-            },
-            makeBarCalc: function( graph, topRef, bottomRef, barWidth ){
-                var topView,
-                    bottomView,
-                    topField,
-                    bottomField,
-                    boxDrawer = new DrawBox();
-
-                boxDrawer.preParse = function( d ){
-                    var min,
-                        max,
-                        y1,
-                        y2,
-                        t,
-                        width;
-
-                    y1 = d[topField];
-                    
-                    if ( bottomField ){
-                        y2 = d[bottomField];
-                    }else{
-                        y2 = bottomView.viewport.minValue;
-                    }
-
-                    if ( barWidth ){
-                        width = parseInt( barWidth, 10 ) / 2;
-                    }else{
-                        width = 3;
-                    }
-
-                    if ( isNumeric(y1) && isNumeric(y2) && y1 !== y2 ){
-                        min = d._$interval - width;
-                        max = d._$interval + width;
-
-                        t = {
-                            interval1: min > d._$minInterval ? min : d._$minInterval,
-                            interval2: max > d._$maxInterval ? d._$maxInterval : max,
-                            y1: topView.y.scale( y1 ),
-                            y2: bottomView.y.scale( y2 )
-                        };
-                    }
-
-                    return t;
-                };
-
-                boxDrawer.parseInterval1 = function( d ){
-                    return d.interval1;
-                };
-                boxDrawer.parseInterval2 = function( d ){
-                    return d.interval2;
-                };
-                boxDrawer.parseValue1 = function( d ){
-                    return d.y1;
-                };
-                boxDrawer.parseValue2 = function( d ){
-                    return d.y2;
-                };
-
-                return function( dataFeed ){
-                    topView = graph.views[topRef.view];
-                    topField = topRef.field;
-
-                    if ( bottomRef ){
-                        bottomView = graph.views[bottomRef.view] || topView;
-                        bottomField = bottomRef.field;
-                    }else{
-                        bottomView = topView;
-                    }
-
-                    return boxDrawer.render( dataFeed ).join('');
-                };
-            },
-            svgCompile: function( svgHtml ){
-                var parsed = (new DOMParser().parseFromString(
-                        '<g xmlns="http://www.w3.org/2000/svg">' +
-                            svgHtml +
-                        '</g>','image/svg+xml'
-                    )),
-                    g = parsed.childNodes[0],
-                    result = g.childNodes;
-
-                return Array.prototype.slice.call( result, 0 );
-            },
-            parseStackedLimits: function( data, lines ){
-                var i, c,
-                    j, co,
-                    d,
-                    v,
-                    min,
-                    max,
-                    name,
-                    last;
-
-                if ( lines && lines.length ){
-                    for( i = 0, c = data.length; i < c; i++ ){
-                        last = 0;
-                        v = undefined;
-                        d = data[i];
-
-                        name = lines[0].name;
-                        v = d[ name ] || 0;
-                        if ( min === undefined ){
-                            min = v;
-                            max = v;
-                        }else if ( min > v ){
-                            min = v;
-                        }
-
-                        d['$'+name] = v;
-                        last = v;
-
-                        for( j = 1, co = lines.length; j < co; j++ ){
-                            name = lines[j].name;
-                            v = d[ name ] || 0;
-
-                            last = last + v;
-
-                            d['$'+name] = last;
-                        }
-
-                        d.$total = last;
-
-                        if ( last > max ){
-                            max = last;
-                        }
-                    }
-                }
-
-                return {
-                    min : min,
-                    max : max
-                };
-            },
-            parseSegmentedLimits: function( data, names, parser, start ){
-                var i, c,
-                    d,
-                    v,
-                    min,
-                    max,
-                    next = {},
-                    stretch = [];
-
-                function normalize( d ){
-                    d[names+'$Max'] = max;
-                    d[names+'$Min'] = min;
-                }
-
-                if ( !start ){
-                    start = 0;
-                }
-
-                if ( angular.isString(names) ){
-                    if ( !parser ){
-                        parser = function( i, v ){
-                            return v;
-                        };
-                    }
-
-                    while( start < data.length && !isNumeric(parser(data[start],data[start][names])) ){
-                        start++;
-                    }
-
-                    for( i = start, c = data.length; i < c; i++ ){
-                        d = data[i];
-                        v = parser( d, d[names] );
-                        if ( isNumeric(v) ){
-                            if ( min === undefined ){
-                                min = v;
-                                max = v;
-                            }else if ( min > v ){
-                                min = v;
-                            }else if ( max < v ){
-                                max = v;
-                            }
-
-                            stretch.push(d);
-                        }else{
-                            stretch.forEach( normalize );
-                            next = this.parseSegmentedLimits( data, names, parser, i+1 );
-                            i = data.length;
-                        }
-                    }
-
-                    if ( isNumeric(next.min) && next.min < min ){
-                        min = next.min;
-                    }
-
-                    if ( isNumeric(next.max) && next.max > max ){
-                        max = next.max;
-                    }
-                }else{
-                    // go through an array of names
-                    for( i = 0, c = names.length; i < c; i++ ){
-                        v = this.parseSegmentedLimits( data, names[i], parser );
-                        if ( min === undefined ){
-                            min = v.min;
-                            max = v.max;
-                        }else{
-                            if ( v.min < min ){
-                                min = v.min;
-                            }
-
-                            if ( v.max > max ){
-                                max = v.max;
-                            }
-                        }
-                    }
-                }
-                
-                return {
-                    min : min,
-                    max : max
-                };
-            }
-        };
-    }]
-);
-
-angular.module( 'vgraph' ).factory( 'ComponentPage',
-    [ 'DataFeed', 'DataLoader', 'DataManager',
-    function ( DataFeed, DataLoader, DataManager ) {
-        'use strict';
-        
-        var uid = 1;
-
-        function ComponentPage(){
-            this.$$pageUid = uid++;
-            
-            this.feeds = {};
-            this.charts = {};
-            this.managers = {};
-            this.connections = {};
-        }
-
-        /* cfg structure
-            - src
-            - manager
-            - parseInterval
-            - explode
-            - readings
-        */
-
-        ComponentPage.defaultManager = 'default';
-
-        ComponentPage.prototype.configure = function( settings ){
-            var i, c;
-
-            if ( angular.isArray(settings) ){
-                for( i = 0, c = settings.length; i < c; i++ ){
-                    this.addFeed( settings[i] );
-                }
-            }else{
-                this.addFeed( settings );
-            }
-        };
-
-        ComponentPage.prototype.addFeed = function( cfg ){
-            var feed,
-                loader,
-                manager,
-                managerName,
-                source = cfg.src || [];
-
-            if ( !cfg.manager ){
-                cfg.manager = ComponentPage.defaultManager;
-            }
-            managerName = cfg.manager;
-
-            if ( source._$feedUid ){
-                feed = this.feeds[ source._$feedUid ];
-            }else{
-                feed = new DataFeed( source, cfg.explode );
-                this.feeds[ feed.$$feedUid ] = feed;
-                source._$feedUid = feed.$$feedUid;
-            }
-            
-            manager = this.getManager( managerName );
-
-            if ( !this.connections[feed.$$feedUid] ){
-                this.connections[feed.$$feedUid] = {};
-            }
-
-            console.log( managerName, source, feed.$$feedUid, manager.$$managerUid, manager );
-            loader = this.connections[feed.$$feedUid][manager.$$managerUid];
-            if ( !loader ){
-                loader = new DataLoader( feed, manager );
-                this.connections[feed.$$feedUid][manager.$$managerUid] = loader;
-            }
-
-            loader.addConfig(cfg);
-
-            return source;
-        };
-
-        ComponentPage.prototype.getManager = function( managerName ){
-            var name = managerName || ComponentPage.defaultManager,
-                manager = this.managers[name];
-
-            if ( !manager ){
-                manager = new DataManager();
-                this.managers[name] = manager;
-            }
-
-            console.log( managerName, manager.data );
-            
-            return manager;
-        };
-
-        ComponentPage.prototype.setChart = function( chartName, chart ){
-            this.charts[chartName] = chart;
-        };
-
-        ComponentPage.prototype.getChart = function( chartName ){
-            return this.charts[chartName];
-        };
-
-        return ComponentPage;
-    }]
-);
-angular.module( 'vgraph' ).factory( 'ComponentPane',
-    [
-    function () {
-        'use strict';
-
-        function ComponentPane( fitToPane, xObj, yObj ){
-            this.x = xObj;
-            this.y = yObj;
-            this.fitToPane = false;
-            
-            this._pane = {};
-            this._bounds = {};
-            
-            if ( !xObj ){
-                xObj = {};
-            }
-
-            if ( !yObj ){
-                yObj = {};
-            }
-
-            this.setBounds( {min:xObj.min,max:xObj.max}, {min:yObj.min,max:yObj.max} );
-        }
-
-        ComponentPane.prototype.setBounds = function( x, y ){
-            this._bounds.x = x;
-            this._bounds.y = y;
-
-            return this;
-        };
-
-        ComponentPane.prototype.setPane = function( x, y ){
-            this._pane.x = x;
-            this._pane.y = y;
-
-            return this;
-        };
-
-        // TODO : where is this used?
-        ComponentPane.prototype.isValid = function( d ) {
-            var index;
-            if ( this.filtered ){
-                index = d._$index;
-                return this.filtered.$minIndex <= index && index <= this.filtered.$maxIndex;
-            }else{
-                return false;
-            }
-        };
-        
-        ComponentPane.prototype.filter = function( dataManager, offset ){
-            var $min,
-                $max,
-                change,
-                filtered,
-                minInterval,
-                maxInterval,
-                x = this.x,
-                data = dataManager.data;
-
-            if ( data.length ){
-                dataManager.clean();
-                
-                $min = this._bounds.x.min || data.$minIndex;
-                $max = this._bounds.x.max || data.$maxIndex;
-
-                x.$min = $min;
-                x.$max = $max;
-
-                if ( this._pane.x && this._pane.x.stop ){
-                    change = this._pane.x;
-                   
-                    minInterval = $min + change.start * ($max - $min);
-                    maxInterval = $min + change.stop * ($max - $min);
-                }else{
-                    minInterval = $min;
-                    maxInterval = $max;
-                }
-
-                offset.$left = minInterval;
-                offset.left = (minInterval - $min) / ($max - $min);
-                offset.$right = maxInterval;
-                offset.right = (maxInterval - $min) / ($max - $min);
-
-                // calculate the filtered points
-                filtered = data.$filter( minInterval, maxInterval );
-
-                if ( this.fitToPane ){
-                    filtered.$addNode( minInterval, dataManager.$makePoint(minInterval), true );
-                    filtered.$addNode( dataManager.$makePoint(maxInterval) );
-                }
-
-                filtered.$sort();
-            }
-
-            return filtered;
-        };
-
-        return ComponentPane;
-    }]
-);
-angular.module( 'vgraph' ).factory( 'ComponentView',
-    [ 'ComponentPane',
-    function ( ComponentPane ) {
-        'use strict';
-        
-        var id = 1;
-
-        function ComponentView(){
-            this.$vgvid = id++;
-
-            this.models = {};
-            this.components = [];
-        }
-
-        ComponentView.prototype.addModel = function( name, dataModel ){
-            this.models[ name ] = dataModel;
-
-            return this;
-        };
-
-        ComponentView.prototype.configure = function( settings, chartSettings, box, offset ){
-            var x, y,
-                models,
-                addModel = this.addModel.bind( this );
-
-            if ( !settings ){
-                settings = {};
-            }
-
-            console.log( settings );
-            x = {
-                min: settings.x ? settings.x.min : undefined,
-                max: settings.x ? settings.x.max : undefined
-            };
-            y = {
-                min: settings.y ? settings.y.min : undefined,
-                max: settings.y ? settings.y.max : undefined
-            };
-
-            this.x = x;
-            this.y = y;
-            
-            this.box = box;
-            this.pane = new ComponentPane( this.x, this.y );
-            this.managerName = settings.manager;
-            this.datumFactory = settings.datumFactory;
-
-            this.makeInterval = chartSettings.makeInterval;
-            this.adjustSettings = chartSettings.adjustSettings;
-            this.pane.fitToPane = chartSettings.fitToPane;
-
-            x.tick = chartSettings.x.tick || {};
-            x.scale = chartSettings.x.scale ? chartSettings.x.scale() : d3.scale.linear();
-            x.padding = chartSettings.x.padding;
-            x.massage = chartSettings.x.massage;
-            x.format = chartSettings.x.format || function( v ){
-                return v;
-            };
-
-            y.tick = chartSettings.y.tick || {};
-            y.scale = chartSettings.y.scale ? chartSettings.y.scale() : d3.scale.linear();
-            y.padding = chartSettings.y.padding;
-            y.massage = chartSettings.y.massage;
-            y.format = chartSettings.y.format || function( v ){
-                return v;
-            };
-
-            if ( settings.models ){
-                if ( angular.isFunction(settings.models) ){
-                    models = settings.models();
-                }else{
-                    models = settings.models;
-                }
-
-                Object.keys( models ).forEach(function( modelName ){
-                    addModel( modelName, models[modelName] );
-                });
-            }
-        };
-
-        ComponentView.prototype.setPage = function( page ){
-            var x = this.x;
-
-            this.manager = page.getManager( this.managerName );
-
-            if ( x && (x.min || x.min === 0) && x.max && x.interval && this.datumFactory ){
-                this.manager.data.$fillPoints( 
-                    x.min,
-                    x.max,
-                    x.interval,
-                    this.datumFactory
-                );
-            }
-        };
-
-        ComponentView.prototype.register = function( component ){
-            this.components.push( component );
-        };
-
-        ComponentView.prototype.isReady = function(){
-            return this.manager && this.manager.ready;
-        };
-
-        ComponentView.prototype.hasData = function(){
-            return this.isReady() && this.manager.data.length;
-        };
-
-        ComponentView.prototype.sample = function(){
-            var dis = this,
-                keys,
-                offset,
-                filtered,
-                box = this.box,
-                pane = this.pane,
-                models = this.models;
-
-            this.offset = {};
-            this.filtered = pane.filter( this.manager, this.offset );
-
-            filtered = this.filtered;
-            offset = this.offset;
-
-            if ( filtered ){
-                this.x.scale
-                    .domain([
-                        offset.$left,
-                        offset.$right
-                    ])
-                    .range([
-                        box.innerLeft,
-                        box.innerRight
-                    ]);
-
-                filtered.forEach(function( datum ){
-                    datum._$interval = dis.x.scale(datum._$index);
-                });
-
-                keys = Object.keys(models);
-                keys.forEach(function(key){
-                    models[key].$follow( filtered, box );
-                });
-            }
-        };
-
-        ComponentView.prototype.setViewportValues = function( min, max ){
-            var step,
-                box = this.box;
-
-            if ( this.y.padding ){
-                if ( max === min ){
-                    step = min * this.y.padding;
-                }else{
-                    step = ( max - min ) * this.y.padding;
-                }
-
-                max = max + step;
-                min = min - step;
-            }
-
-            this.viewport.minValue = min;
-            this.viewport.maxValue = max;
-
-            this.y.scale
-                .domain([
-                    min,
-                    max
-                ])
-                .range([
-                    box.innerBottom,
-                    box.innerTop
-                ]);
-        };
-
-        ComponentView.prototype.setViewportIntervals = function( min, max ){
-            var box = this.box;
-
-            this.viewport.minInterval = min;
-            this.viewport.maxInterval = max;
-
-            this.x.scale
-                .domain([
-                    min,
-                    max
-                ])
-                .range([
-                    box.innerLeft,
-                    box.innerRight
-                ]);
-        };
-
-        ComponentView.prototype.parse = function(){
-            var min,
-                max,
-                models,
-                pane = this.pane,
-                raw = this.manager.data;
-
-            this.sample();
-            models = this.models;
-            
-            if ( this.filtered ){
-                // TODO : this could have the max/min bug
-                this.components.forEach(function( component ){
-                    var t;
-
-                    if ( component.parse ){
-                        t = component.parse( models );
-                        if ( t ){
-                            if ( t.min !== null && (!min && min !== 0 || min > t.min) ){
-                                min = t.min;
-                            }
-
-                            if ( t.max !== null && (!max && max !== 0 || max < t.max) ){
-                                max = t.max;
-                            }
-                        }
-                    }
-                });
-
-                // TODO : normalize config stuff
-                if ( !this.viewport ){
-                    this.viewport = {};
-                }
-
-                this.setViewportValues( min, max );
-                this.setViewportIntervals( this.offset.$left, this.offset.$right );
-
-                if ( this.adjustSettings ){
-                    this.adjustSettings(
-                        this.filtered.$maxIndex - this.filtered.$minIndex,
-                        max - min,
-                        raw.$maxIndex - raw.$minIndex
-                    );
-                }
-            }
-        };
-
-        ComponentView.prototype.build = function(){
-            var models = this.models;
-
-            this.components.forEach(function( component ){
-                if ( component.build ){
-                    component.build( models );
-                }
-            });
-        };
-
-        ComponentView.prototype.process = function(){
-            var models = this.models;
-
-            this.components.forEach(function( component ){
-                if ( component.process ){
-                    component.process( models );
-                }
-            });
-        };
-
-        ComponentView.prototype.finalize = function(){
-            var models = this.models;
-
-            this.components.forEach(function( component ){
-                if ( component.finalize ){
-                    component.finalize( models );
-                }
-            });
-        };
-
-        ComponentView.prototype.getPoint = function( pos ){
-            var sum = 0,
-                count = 0,
-                models = this.models,
-                point = {};
-
-            Object.keys(models).forEach(function( modelName ){
-                var p;
-
-                point[modelName] = models[modelName].$getClosest( pos, '_$interval' );
-                p = point[modelName]._$interval;
-
-                if ( p ){
-                    count++;
-                    sum += p;
-                }
-            });
-
-            point.$pos = sum / count;
-
-            return point;
-        };
-
-        /*
-        ComponentView.prototype.publishStats = function(){
-            var i,
-                s,
-                data = this.dataModel.data,
-                step = this.pane.x.$max || 9007199254740991, // max safe int
-                count = data.length;
-
-            for( i = 1; i < count; i++ ){
-                s = data[i].$x - data[i-1].$x;
-                if ( step > s ){
-                    step = s;
-                }
-            }
-
-            return {
-                step: step,
-                count: data.length,
-                bound: {
-                    min: this.pane.x.$min,
-                    max: this.pane.x.$max
-                },
-                data: {
-                    min: this.dataModel.x.$min,
-                    max: this.dataModel.x.$max
-                }
-            };
-        };
-
-        ComponentView.prototype.publishData = function( content, conf, calcPos ){
-            publish( this.rawContainer.data, conf.name, content, calcPos, conf.format );
-        };
-
-        function fill( content, start, stop, value ){
-            while ( start < stop ){
-                content[start].push( value );
-                start++;
-            }
-        }
-        
-        function publish( data, name, content, calcPos, format ){
-            var i, c,
-                value,
-                pos,
-                last = 0;
-
-            for( i = 0, c = data.length; i < c; i++ ){
-                value = data[i][name];
-
-                if ( value !== undefined && value !== null ){
-                    pos = calcPos( data[i] );
-                    if ( pos !== last ){
-                        fill( content, last, pos, null );
-                    }
-
-                    if ( format ){
-                        value = format( value );
-                    }
-                    content[pos].push( value );
-
-                    last = pos + 1;
-                }
-            }
-
-            fill( content, last, content.length, null );
-        }
-        */
-        return ComponentView;
-    }]
-);
-angular.module( 'vgraph' ).factory( 'StatCalculations',
-	[
-	function () {
-		'use strict';
-
-		function isNumeric( v ){
-			if ( v === null ){
-				return false;
-			}else if ( Number.isFinite ){
-				return Number.isFinite(v) && !Number.isNaN(v);
-			}else{
-				return isFinite(v) && !isNaN(v);
-			}
-		}
-
-		function createNames( config, prefix ){
-			var arr = [];
-
-			config.forEach(function(cfg){
-				arr.push( '$'+prefix+'$'+cfg.field );
-			}); 
-
-			return arr;
-		}
-
-		return {
-			$resetCalcs: function( config ){
-				var i, c;
-
-				for( i = 0, c = config.length; i < c; i++ ){
-					config[i].field = config[i].name;
-				}
-			},
-			$getFields: function( config ){
-				var i, c,
-					fields = [];
-
-				for( i = 0, c = config.length; i < c; i++ ){
-					fields.push( config[i].field );
-				}
-
-				return fields;
-			},
-			$setFields: function( config, calcedFields ){
-				var i, c;
-
-				for( i = 0, c = config.length; i < c; i++ ){
-					config[i].field = calcedFields[i];
-				}
-			},
-			sum: function( config, collection ){
-				var nameAs = createNames( config, 'sum' );
-
-				config.forEach(function( cfg, key ){
-					var field = cfg.field,
-						alias = nameAs[key],
-						sum = 0;
-
-					collection.forEach(function( datum ){
-						var v = datum[field];
-
-						if ( v ){
-							sum += v;
-						}
-					});
-
-					collection[ alias ] = sum;
-					cfg.field = alias;
-				});
-
-				return nameAs;
-			},
-			average: function( config, collection ){
-				var nameAs = createNames( config, 'average' );
-
-				config.forEach(function( cfg, key ){
-					var field = cfg.field,
-						alias = nameAs[key],
-						sum = 0,
-						count = 0;
-
-					collection.forEach(function( datum ){
-						var v = datum[field];
-
-						if ( v ){
-							sum += v;
-							count++;
-						}else if ( v === 0 ){
-							count++;
-						}
-					});
-
-					collection[ alias ] = sum / count;
-					cfg.field = alias;
-				});
-
-				return nameAs;
-			},
-			stack: function( config, collection ){
-				var nameAs = createNames( config, 'stack' ),
-					fields = this.$getFields( config );
-
-				collection.forEach(function( datum ){
-					var sum = 0;
-
-					fields.forEach(function( field, key ){
-						var v = datum[field] || 0;
-
-						sum += v;
-						
-						datum[ nameAs[key] ] = sum;
-					});
-				});
-
-				config.forEach(function( cfg, key ){
-					cfg.field = nameAs[key];
-				});
-
-				return nameAs;
-			},
-			limits: function( cfg, data ){
-				var i, c,
-					d,
-					v,
-					min,
-					max,
-					field;
-
-				if ( angular.isArray(cfg) ){
-					// go through an array of names
-					for( i = 0, c = cfg.length; i < c; i++ ){
-						v = this.limits( cfg[i], data );
-						if ( min === undefined ){
-							min = v.min;
-							max = v.max;
-						}else{
-							if ( v.min < min ){
-								min = v.min;
-							}
-
-							if ( v.max > max ){
-								max = v.max;
-							}
-						}
-					}
-				} else if ( cfg ){
-					field = cfg.field;
-				
-					// used to reduce the checks for parser
-					for( i = 0, c = data.length; i < c; i++ ){
-						d = data[i];
-						v = d[field];
-						if ( isNumeric(v) ){
-							if ( min === undefined ){
-								min = v;
-								max = v;
-							}else if ( min > v ){
-								min = v;
-							}else if ( max < v ){
-								max = v;
-							}
-						}
-					}
-				}
-
-				return {
-					min : min,
-					max : max
-				};
-			}
-		};
-	}]
-);
-angular.module( 'vgraph' ).factory( 'makeEventing',
-    [
-    function () {
-        'use strict';
-
-        return function( obj ){
-            obj.$on = function( event, cb ){
-                var dis = this;
-
-                if ( !this._$listeners ){
-                    this._$listeners = {};
-                }
-
-                if ( !this._$listeners[event] ){
-                    this._$listeners[event] = [];
-                }
-
-                this._$listeners[event].push( cb );
-
-                return function clear$on(){
-                    dis._$listeners[event].splice(
-                        dis._$listeners[event].indexOf( cb ),
-                        1
-                    );
-                };
-            };
-
-            obj.$subscribe = function( subscriptions ){
-                var dis = this,
-                    kills = [],
-                    events =  Object.keys(subscriptions);
-
-
-                events.forEach(function( event ){
-                    var action = subscriptions[event];
-
-                    kills.push( dis.$on(event,action) );
-                });
-
-                return function killAll(){
-                    kills.forEach(function( kill ){
-                        kill();
-                    });
-                };
-            };
-
-            obj.$trigger = function( event, arg ){
-                var listeners,
-                    i, c;
-
-                if ( this._$listeners ){
-                    listeners = this._$listeners[event];
-
-                    if ( listeners ){
-                        for( i = 0, c = listeners.length; i < c; i++ ){
-                            listeners[i]( arg );
-                        }
-                    }                   
-                }
-            };
-        };
-    }]
-);
-
 angular.module( 'vgraph' ).factory( 'LinearSamplerNode',
 	[
 	function(){
@@ -3773,6 +3718,75 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
         };
     } ]
 );
+angular.module( 'vgraph' ).directive( 'vgraphBox',
+    [ 'ComponentGenerator', 'StatCalculations', 
+    function( ComponentGenerator, StatCalculations ) {
+        'use strict';
+
+        return {
+            require : ['^vgraphChart'],
+            scope : {
+                config: '=vgraphBox'
+            },
+            link : function( scope, $el, attrs, requirements ){
+                var $root,
+                    drawer,
+                    className,
+                    elemental,
+                    el = $el[0],
+                    cfg = ComponentGenerator.normalizeConfig( scope.config ),
+                    /*
+                        if  cfg.getValue == null || false, it will cover the entire area
+                        cfg.isValid
+                    */
+                    graph = requirements[0];
+
+                $root = d3.select( el );
+                if ( el.tagName !== 'path' ){
+                    elemental = true;
+                }
+
+                className = 'box ';
+                if ( cfg.classExtend ){
+                    className += cfg.classExtend + ' ';
+                }
+
+                drawer = ComponentGenerator.makeBoxCalc( graph, cfg, elemental );
+                
+                className += attrs.className || cfg.className;
+
+                $root.attr( 'class', className );
+
+                graph.getView(cfg.view).register({
+                    parse: function( models ){
+                        return StatCalculations.limits( cfg, models[cfg.model] );
+                    },
+                    finalize: function( models ){
+                        var i, c,
+                            e,
+                            t = drawer( models[cfg.model] );
+
+                        if ( elemental ){
+                            el.innerHTML = '';
+
+                            for( i = 0, c = t.length; i < c; i++ ){
+                                e = t[i];
+
+                                el.appendChild( e );
+                            }
+                        }else{
+                            $root.attr( 'd', t );
+                        }
+                    },
+                    publish: function( data, headers, content, calcPos ){
+                        headers.push( name );
+                        ComponentGenerator.publish( data, name, content, calcPos );
+                    }
+                });
+            }
+        };
+    }]
+);
 angular.module( 'vgraph' ).directive( 'vgraphChart',
     [ 'ComponentChart',
     function( ComponentChart ){
@@ -4010,6 +4024,102 @@ angular.module( 'vgraph' ).directive( 'vgraphHighlight',
     } ]
 );
 
+angular.module( 'vgraph' ).directive( 'vgraphIcon',
+    ['ComponentGenerator', 'StatCalculations',
+    function( ComponentGenerator, StatCalculations ){
+        'use strict';
+
+        return {
+            require : ['^vgraphChart'],
+            scope : {
+                config: '=vgraphIcon'
+            },
+            link : function( scope, $el, attrs, requirements ){
+                var drawer,
+                    className,
+                    el = $el[0],
+                	$d3 = d3.select( el ),
+        			box = $d3.node().getBBox(),
+        			cfg = ComponentGenerator.normalizeConfig( scope.config ),
+                    graph = requirements[0],
+                    content = el.innerHTML;
+
+                className = 'icon ';
+                if ( cfg.classExtend ){
+                    className += cfg.classExtend + ' ';
+                }
+
+                el.innerHTML = '';
+                drawer = ComponentGenerator.makeIconCalc( graph, cfg, box, content );
+                
+                className += attrs.className || cfg.className;
+
+                $d3.attr( 'class', className );
+
+                graph.getView(cfg.view).register({
+                    parse: function( models ){
+                        var t = StatCalculations.limits( cfg, models[cfg.model] ),
+                        	h = box.height / 2;
+
+                        t.min -= h;
+                        t.max += h;
+
+                        return t;
+                    },
+                    finalize: function( models ){
+                    	var i, c,
+                            e,
+                            els = drawer( models[cfg.model] );
+
+                        el.innerHTML = '';
+
+                        for( i = 0, c = els.length; i < c; i++ ){
+                            e = els[i];
+
+                            el.appendChild( e );
+                        }
+                    },
+                    publish: function( data, headers, content, calcPos ){
+                        headers.push( name );
+                        ComponentGenerator.publish( data, name, content, calcPos );
+                    }
+                });
+            }
+        };
+    }]
+);
+
+/*
+	function append(){
+    	return this.appendChild( filling[i].cloneNode(true) ); // jshint ignore:line
+    }
+
+	el.html('');
+
+	angular.forEach(points, function( d ){
+		var ele;
+
+		// TODO : how do I tell the box I am going to overflow it?
+    	x = d.$sampled._$interval;
+    	y = chart.y.scale( scope.getValue(d.$sampled) );
+
+		ele = $el.append('g');
+			
+		for ( i = 0, c = filling.length; i < c; i++ ){
+			ele.select( append );
+		}
+		
+    	if ( attrs.showUnder ){
+    		ele.attr( 'transform', 'translate(' + 
+    			(x - box.width/2) + ',' + (y) + 
+    		')' );
+    	}else{
+    		ele.attr( 'transform', 'translate(' + 
+    			(x - box.width/2) + ',' + (y - box.height) + 
+    		')' );
+    	}
+	});
+*/
 angular.module( 'vgraph' ).directive( 'vgraphIndicator',
     [
     function(){
@@ -4131,7 +4241,7 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
                                 });
                             }
                         })
-                        .on( 'mouseout', function( d ){
+                        .on( 'mouseout', function(){
                             if ( !dragging ){
                                 active = setTimeout(function(){
                                     graph.$trigger('focus', null);
@@ -4233,6 +4343,109 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
 ]);
 
 
+
+angular.module( 'vgraph' ).directive( 'vgraphLeading',
+    [
+    function(){
+        'use strict';
+
+        return {
+            require : ['^vgraphChart'],
+            scope : {
+                config : '=vgraphLeading'
+            },
+            link : function( scope, el, attrs, requirements ){
+                var graph = requirements[0],
+                    $el = d3.select( el[0] ),
+                    names;
+
+                function parseConf( config ){
+                    var cfg,
+                        i, c;
+                    
+                    names = {};
+
+                    $el.selectAll( 'line' ).remove();
+
+                    if ( config ){
+                        for( i = 0, c = config.length; i < c; i++ ){
+                            cfg = config[ i ];
+
+                            names[ cfg.name ] = $el.append('line').attr( 'class', 'line '+cfg.className );
+                        }
+                    }
+                }
+
+                function clearComponent(){
+                    $el.attr( 'visibility', 'hidden' );
+                }
+
+                function drawComponent(){
+                    var last,
+                        isValid = true,
+                        points = [];
+
+                    angular.forEach( scope.config, function( cfg ){
+                        var model = graph.views[cfg.view].models[cfg.model],
+                            datum = model._$index[model.$stats[cfg.field]],
+                            value = datum[ cfg.field ];
+
+                        if ( datum._$index < model.$parent.$maxIndex ){
+                            isValid = false;
+                        }else{ 
+                            value = datum[ cfg.field ];
+
+                            points.push({
+                                el : names[cfg.name],
+                                x : datum._$interval,
+                                y : graph.views[cfg.view].y.scale( value )
+                            });
+                        }
+                    });
+
+                    // sort the points form top to bottom
+                    points.sort(function( a, b ){
+                        return a.y - b.y;
+                    });
+
+                    angular.forEach( points, function( p ){
+                        if ( last ){
+                            last.el
+                                .attr( 'x1', last.x )
+                                .attr( 'x2', p.x )
+                                .attr( 'y1', last.y )
+                                .attr( 'y2', p.y );
+                        }
+
+                        last = p;
+                    });
+
+                    if ( last && isValid ){
+                        $el.attr( 'visibility', 'visible' );
+
+                        last.el
+                            .attr( 'x1', last.x )
+                            .attr( 'x2', last.x )
+                            .attr( 'y1', last.y )
+                            .attr( 'y2', graph.box.innerBottom );
+                    }else{
+                        clearComponent();
+                    }
+                }
+
+                scope.$watchCollection('config', parseConf );
+
+                scope.$on('$destroy',
+                    graph.$subscribe({
+                        'error': clearComponent,
+                        'loading': clearComponent,
+                        'success': drawComponent
+                    })
+                );
+            }
+        };
+    } ]
+);
 
 angular.module( 'vgraph' ).directive( 'vgraphLine',
     ['ComponentGenerator', 'StatCalculations',
@@ -4530,11 +4743,9 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                     model = attrs.model || ComponentChart.defaultModel, 
                     graph = requirements[0],
                     view = graph.getView(viewName),
-                    el = $el[0],
+                    refs,
                     unwatch,
                     childScope,
-                    refs,
-                    lines,
                     fieldNames;
 
                 function pairElements( configs ){
@@ -4640,13 +4851,11 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
                         .attr( 'x1', 0 )
                         .attr( 'x2', 0 ),
                     $dots = $el.append( 'g' ),
-                    type = attrs.type || 'point',
-                    curX,
-                    watches;
+                    curX;
 
                 function highlight( point ){
                     if ( point ){
-                        curX = point.$pos;
+                        curX = point.pos.x;
 
                         $el.style( 'visibility', 'visible' )
                                 .attr( 'transform', 'translate(' + curX + ',0)' );
@@ -4655,7 +4864,6 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
                             angular.forEach( $scope.config, function( cfg ){
                                 var node,
                                     view = graph.getView(cfg.view),
-                                    name = cfg.name,
                                     field = cfg.field,
                                     datum = point[cfg.view][cfg.model],
                                     className = cfg.className,
@@ -4668,7 +4876,7 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
                                             .attr( 'class', 'point '+className+' '+cfg.classExtend );
                                     }
 
-                                    node.attr( 'cx', attrs.offset ? point._$interval - curX : 0 )
+                                    node.attr( 'cx', datum._$interval - curX )
                                         .attr( 'cy', view.y.scale(value) )
                                         .attr( 'r', $scope.$eval( attrs.pointRadius ) || 3 );
                                 }else{

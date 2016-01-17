@@ -15,11 +15,9 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                     model = attrs.model || ComponentChart.defaultModel, 
                     graph = requirements[0],
                     view = graph.getView(viewName),
-                    el = $el[0],
+                    refs,
                     unwatch,
                     childScope,
-                    refs,
-                    lines,
                     fieldNames;
 
                 function pairElements( configs ){

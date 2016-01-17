@@ -31,7 +31,7 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
                                 });
                             }
                         })
-                        .on( 'mouseout', function( d ){
+                        .on( 'mouseout', function(){
                             if ( !dragging ){
                                 active = setTimeout(function(){
                                     graph.$trigger('focus', null);

@@ -62,7 +62,6 @@ angular.module( 'vgraph' ).factory( 'ComponentPage',
                 this.connections[feed.$$feedUid] = {};
             }
 
-            console.log( managerName, source, feed.$$feedUid, manager.$$managerUid, manager );
             loader = this.connections[feed.$$feedUid][manager.$$managerUid];
             if ( !loader ){
                 loader = new DataLoader( feed, manager );
@@ -82,8 +81,6 @@ angular.module( 'vgraph' ).factory( 'ComponentPage',
                 manager = new DataManager();
                 this.managers[name] = manager;
             }
-
-            console.log( managerName, manager.data );
             
             return manager;
         };

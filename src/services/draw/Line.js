@@ -10,7 +10,7 @@ angular.module( 'vgraph' ).factory( 'DrawLine',
 		DrawLine.prototype.parseValue = null;
 		DrawLine.prototype.parseInterval = null;
 		
-		DrawLine.prototype.build = function( set ){
+		DrawLine.prototype.render = function( set ){
 			var i, c,
 				d;
 

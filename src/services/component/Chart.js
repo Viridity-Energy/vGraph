@@ -93,10 +93,8 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
         };
 
         ComponentChart.prototype.configure = function( page, settings ){
-            var i, c,
-                t,
+            var t,
                 views,
-                keys = Object.keys(this.views),
                 addView = this.addView.bind(this);
 
             if ( !settings ){

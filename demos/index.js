@@ -650,3 +650,354 @@ angular.module( 'vgraph' ).controller( 'MultiAxisCtrl',
 		}, 20000 );
 	}]
 );
+
+angular.module( 'vgraph' ).controller( 'MultiIntervalCtrl',
+	['$scope', 'LinearSamplerModel',
+	function( $scope, LinearSamplerModel ){
+		var data1 = [ {x1: 0, y1: 20} ],
+			data2 = [ {x2: 0, y2: 400} ],
+			interval,
+			boxModel;
+
+		function modelFactory(){
+			var t = {};
+
+			t[ 'someModel' ] = new LinearSamplerModel(function(datum){
+				return Math.round(datum._$interval);
+			});
+
+			return t;
+		}
+
+		$scope.page = [{
+			src: data1,
+			manager: 'first',
+			interval: 'x1',
+			readings:{
+				'y': 'y1'
+			}
+		},{
+			src: data2,
+			manager: 'second',
+			interval: 'x2',
+			readings:{
+				'y': 'y2'
+			}
+		}];
+
+		$scope.graph = {
+			fitToPane: true,
+			views: {
+				'firstView': {
+					x: {
+						min : 0, 
+						max : 2000
+					},
+					models: modelFactory,
+					manager: 'first'
+				},
+				'secondView': {
+					x: {
+						min : 0, 
+						max : 2000
+					},
+					models: modelFactory,
+					manager: 'second'
+				}
+			}
+		};
+
+		$scope.config = [
+			{ 
+				name: 'y',
+				view: 'firstView',
+				model: 'someModel',
+				className : 'red'
+			},
+			{ 
+				name: 'y',
+				view: 'secondView',
+				model: 'someModel',
+				className : 'blue'
+			}
+		];
+
+		var counter = 0;
+		interval = setInterval(function(){
+			var min = -1,
+				max = 1;
+
+			data1.push({
+				x1 : data1.length,
+				y1 : data1[data1.length-1].y1 + (Math.random() * (max - min) + min)
+			});
+
+			if ( data1.length % 50 === 0 ){
+				data2.push({
+					x2 : data2.length,
+					y2 : data2[data2.length-1].y2 + (Math.random() * (max - min) + min)
+				});
+			}
+
+			$scope.$apply();
+		}, 20);
+
+		setTimeout(function(){
+			clearInterval( interval );
+		}, 20000 );
+	}]
+);
+
+angular.module( 'vgraph' ).controller( 'LeadingCtrl',
+	['$scope', '$timeout',
+	function( $scope, $timeout ){
+		var ref1 = {
+				name: 'someLine1',
+				className: 'red'
+			},
+			ref2 = {
+				name: 'someLine2',
+				className: 'blue'
+			},
+			ref3 = {
+				name: 'someLine3',
+				className: 'green'
+			},
+			ref4 = {
+				name: 'someLine4',
+				className: 'orange'
+			},
+			data = [ {x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40}  ],
+			interval,
+			boxModel;
+
+		$scope.graph = {
+			x : {
+				min: -5,
+				max: 35,
+				scale: function(){
+					return d3.scale.linear();
+				}
+			},
+			y : {
+				padding : 0.05,
+				format: function( y ){
+					return ':' + y;
+				}
+			}
+		};
+
+		$scope.page = [{
+			src: data,
+			interval: 'x',
+			readings:{
+				'someLine1': 'y1'
+			}
+		},{
+			src: data,
+			interval: 'x',
+			readings:{
+				'someLine2': 'y2'
+			}
+		},{
+			src: data,
+			interval: 'x',
+			readings:{
+				'someLine3': 'y3'
+			}
+		},{
+			src: data,
+			interval: 'x',
+			readings:{
+				'someLine4': 'y4'
+			}
+		}];
+
+		$scope.config = [
+			ref1,
+			ref2,
+			ref3,
+			ref4
+		];
+
+		var y1 = 20, 
+			y2 = 25,
+			y3 = 30,
+			y4 = 35;
+
+		for( var i = 0, c = 27; i < c; i++ ){
+			var counter = 0
+				node = { x : data.length },
+				min = -1,
+				max = 1;
+
+			y1 += Math.random() * (max - min) + min;
+			node.y1 = data[data.length-1].y1 = y1;
+
+			if ( i > 22 ){
+				node.y2 = null;
+			}else if ( i % 2 === 0 ){
+				y2 += Math.random() * (max - min) + min;
+				node.y2 = y2;
+			}
+
+			if ( i > 24 ){
+				node.y3 = null;
+			}else if ( i % 4 === 0 ){
+				y3 += Math.random() * (max - min) + min;
+				node.y3 = y3;
+			}
+
+			if ( i > 21 ){
+				node.y4 = null;
+			}else if ( i % 7 === 0 ){
+				y4 += Math.random() * (max - min) + min;
+				node.y4 = y4;
+			}
+
+			data.push( node );
+		}
+	}]
+);
+
+angular.module( 'vgraph' ).controller( 'BoxCtrl',
+	['$scope', '$timeout',
+	function( $scope, $timeout ){
+		var ref1 = {
+				name: 'someLine1',
+				className: 'red'
+			},
+			ref2 = {
+				className: 'blue',
+				getValue: function( d ){
+					return d.someLine1;
+				},
+				isValid: function( d ){
+					return d.$x > 60 && d.$x < 75;
+				}
+			},
+			ref3 = {
+				className: 'green',
+				getValue: null,
+				isValid: function( d ){
+					return d.$x > 20 && d.$x < 40;
+				}
+			},
+			data = [ {x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40}  ],
+			interval,
+			boxModel;
+
+		$scope.graph = {
+			x : {
+				min: -5,
+				max: 105,
+				scale: function(){
+					return d3.scale.linear();
+				}
+			},
+			y : {
+				padding : 0.05,
+				format: function( y ){
+					return ':' + y;
+				}
+			}
+		};
+
+		$scope.page = [{
+			src: data,
+			interval: 'x',
+			readings:{
+				'someLine1': 'y1'
+			}
+		}];
+
+		$scope.config = [
+			ref1,
+			ref2,
+			ref3
+		];
+
+		for( var i = 0, c = 100; i < c; i++ ){
+			var counter = 0;
+			var min = -1,
+				max = 1,
+				t = Math.random() * (max - min) + min;
+
+			data.push({
+				x : data.length,
+				y1 : data[data.length-1].y1 + t
+			});
+		}
+	}]
+);
+
+angular.module( 'vgraph' ).controller( 'IconCtrl',
+	['$scope', '$timeout',
+	function( $scope, $timeout ){
+		var ref1 = {
+				name: 'someLine1',
+				className: 'red'
+			},
+			ref2 = {
+				className: 'blue',
+				getValue: function( d ){
+					return d.someLine1;
+				},
+				isValid: function( d ){
+					return d.$x === 60;
+				}
+			},
+			ref3 = {
+				className: 'green',
+				getValue: null,
+				isValid: function( d ){
+					return d.$x > 20 && d.$x < 40;
+				}
+			},
+			data = [ {x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40}  ],
+			interval,
+			boxModel;
+
+		$scope.graph = {
+			x : {
+				min: -5,
+				max: 105,
+				scale: function(){
+					return d3.scale.linear();
+				}
+			},
+			y : {
+				padding : 0.05,
+				format: function( y ){
+					return ':' + y;
+				}
+			}
+		};
+
+		$scope.page = [{
+			src: data,
+			interval: 'x',
+			readings:{
+				'someLine1': 'y1'
+			}
+		}];
+
+		$scope.config = [
+			ref1,
+			ref2,
+			ref3
+		];
+
+		for( var i = 0, c = 100; i < c; i++ ){
+			var counter = 0;
+			var min = -1,
+				max = 1,
+				t = Math.random() * (max - min) + min;
+
+			data.push({
+				x : data.length,
+				y1 : data[data.length-1].y1 + t
+			});
+		}
+	}]
+);

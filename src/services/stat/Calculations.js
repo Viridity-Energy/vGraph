@@ -123,8 +123,7 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 					d,
 					v,
 					min,
-					max,
-					field;
+					max;
 
 				if ( angular.isArray(cfg) ){
 					// go through an array of names
@@ -143,13 +142,11 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 							}
 						}
 					}
-				} else if ( cfg ){
-					field = cfg.field;
-				
+				} else if ( cfg && cfg.getValue ){
 					// used to reduce the checks for parser
 					for( i = 0, c = data.length; i < c; i++ ){
 						d = data[i];
-						v = d[field];
+						v = cfg.getValue(d);
 						if ( isNumeric(v) ){
 							if ( min === undefined ){
 								min = v;
