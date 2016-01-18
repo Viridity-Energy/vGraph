@@ -1,22 +1,24 @@
 angular.module( 'vgraph' ).directive( 'vgraphCompare',
-    [ '$compile', 'ComponentGenerator',
-    function( $compile, ComponentGenerator ) {
+    [ '$compile', 'ComponentGenerator', 'ComponentElement',
+    function( $compile, ComponentGenerator, ComponentElement ) {
         'use strict';
 
         return {
-            require : ['^vgraphChart'],
             scope : {
                 config1: '=config1',
                 config2: '=config2'
             },
+            require : ['^vgraphChart'],
             link : function( scope, $el, attrs, requirements ){
                 var unsubscribe,
                     graph = requirements[0],
-                    element = ComponentGenerator.svgCompile( 
-                        '<path vgraph-line="config1" pair="config2" class-name="'+attrs.className+'"></path>'
-                    );
+                    element = ComponentElement.svgCompile( 
+                        '<g><path vgraph-line="config1" pair="config2" class-name="'+
+                            (attrs.className||'')+
+                        '"></path></g>'
+                    )[0];
 
-                $el[0].appendChild( element[0] );
+                $el[0].appendChild( element );
                 $compile( element )( scope );
 
                 unsubscribe = graph.$on( 'focus-point', function( point ){

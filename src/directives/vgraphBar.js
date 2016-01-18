@@ -1,53 +1,39 @@
 angular.module( 'vgraph' ).directive( 'vgraphBar',
-    [ 'ComponentGenerator', 'StatCalculations',
-    function( ComponentGenerator, StatCalculations ) {
+    [ 'ComponentGenerator', 'StatCalculations', 'ComponentElement',
+    function( ComponentGenerator, StatCalculations, ComponentElement ) {
         'use strict';
 
         return {
-            require : ['^vgraphChart'],
             scope : {
                 config: '=vgraphBar',
                 pair: '=?pair'
             },
+            require : ['^vgraphChart','vgraphBar'],
+            controller: ComponentElement,
             link : function( scope, $el, attrs, requirements ){
-                var $path,
-                    drawer,
-                    className,
-                    references,
+                var el = $el[0],
                     cfg = ComponentGenerator.normalizeConfig( scope.config ),
                     pair = scope.pair,
-                    graph = requirements[0];
+                    graph = requirements[0],
+                    element = requirements[1],
+                    className = 'bar ';
 
-                if ( $el[0].tagName === 'path' ){
-                    $path = d3.select( $el[0] );
-                }else{
-                    $path = d3.select( $el[0] ).append('path');
-                }
+                element.setElement( el );
 
-                className = 'bar ';
+                element.setDrawer(
+                    ComponentGenerator.makeBarCalc( graph, cfg, pair, attrs.width )
+                );
+                element.setReferences([cfg,pair]);
+
                 if ( cfg.classExtend ){
                     className += cfg.classExtend + ' ';
                 }
 
-                drawer = ComponentGenerator.makeBarCalc( graph, cfg, pair, attrs.width );
-                references = [cfg,pair];
-                
                 className += attrs.className || cfg.className;
 
-                $path.attr( 'class', className );
+                el.setAttribute( 'class', className );
 
-                graph.getView(cfg.view).register({
-                    parse: function( models ){
-                        return StatCalculations.limits( references, models[cfg.model] );
-                    },
-                    finalize: function( models ){
-                        $path.attr( 'd', drawer(models[cfg.model]) );
-                    },
-                    publish: function( data, headers, content, calcPos ){
-                        headers.push( name );
-                        ComponentGenerator.publish( data, name, content, calcPos );
-                    }
-                });
+                graph.getView(cfg.view).register(element);
             }
         };
     } ]

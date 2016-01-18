@@ -254,7 +254,6 @@
 						<g vgraph-interact></g>
 					</svg>
 				</section>
-
 				<section vgraph-chart="graph">
 					<div vgraph-highlight="point">
 						{{point.default.linear.someLine1}}:{{point.default.linear._$index}}
@@ -503,7 +502,7 @@
 						<span vgraph-highlight="point">
 							{{ point.compare }} | {{ getX }} :: {{ getY }}
 						</span>
-						<svg xmlns="http://www.w3.org/2000/svg" version="1.1">
+						<svg>
 
 							<g vgraph-compare config1="config[0]" config2="config[1]" reference="compare"></g>
 							<g ng-repeat="cfg in config" vgraph-line="cfg"></g>

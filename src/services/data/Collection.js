@@ -155,6 +155,10 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 			return node;
 		};
 
+		DataCollection.prototype.$getIndexs = function(){
+			return Object.keys( this._$index );
+		};
+
 		DataCollection.prototype.$getNode = function( index ){
 			var dex = +index;
 			

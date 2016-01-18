@@ -3,7 +3,10 @@ angular.module( 'vgraph' ).factory( 'LinearSamplerModel',
 	function ( DataCollection, LinearSamplerNode ) {
 		'use strict';
 
+		var uid = 1;
+
 		function LinearSamplerModel( indexer, nodeFactory ){
+			this.$modelUid = uid++;
 			this.$stats = {};
 			this.$indexer = indexer;
 			this.$makeNode = nodeFactory || function( datum ){

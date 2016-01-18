@@ -1,63 +1,52 @@
 angular.module( 'vgraph' ).directive( 'vgraphIcon',
-    ['ComponentGenerator', 'StatCalculations',
-    function( ComponentGenerator, StatCalculations ){
+    ['ComponentGenerator', 'StatCalculations', 'ComponentElement',
+    function( ComponentGenerator, StatCalculations, ComponentElement ){
         'use strict';
 
         return {
-            require : ['^vgraphChart'],
             scope : {
                 config: '=vgraphIcon'
             },
+            require : ['^vgraphChart','vgraphIcon'],
+            controller: ComponentElement,
             link : function( scope, $el, attrs, requirements ){
-                var drawer,
-                    className,
-                    el = $el[0],
+                var el = $el[0],
                 	$d3 = d3.select( el ),
         			box = $d3.node().getBBox(),
         			cfg = ComponentGenerator.normalizeConfig( scope.config ),
                     graph = requirements[0],
-                    content = el.innerHTML;
+                    element = requirements[1],
+                    content = el.innerHTML,
+                    className = 'icon ',
+                    oldParse = element.parse;
 
-                className = 'icon ';
+                element.parse = function( models ){
+                    var t = oldParse.call( this, models ),
+                        h = box.height / 2;
+                    
+                    t.min -= h;
+                    t.max += h;
+
+                    return t;
+                };
+
+                el.innerHTML = '';
+                element.setElement( el );
+
+                element.setDrawer(
+                    ComponentGenerator.makeIconCalc( graph, cfg, box, content )
+                );
+                element.setReferences([cfg]);
+
                 if ( cfg.classExtend ){
                     className += cfg.classExtend + ' ';
                 }
 
-                el.innerHTML = '';
-                drawer = ComponentGenerator.makeIconCalc( graph, cfg, box, content );
-                
                 className += attrs.className || cfg.className;
 
-                $d3.attr( 'class', className );
+                el.setAttribute( 'class', className );
 
-                graph.getView(cfg.view).register({
-                    parse: function( models ){
-                        var t = StatCalculations.limits( cfg, models[cfg.model] ),
-                        	h = box.height / 2;
-
-                        t.min -= h;
-                        t.max += h;
-
-                        return t;
-                    },
-                    finalize: function( models ){
-                    	var i, c,
-                            e,
-                            els = drawer( models[cfg.model] );
-
-                        el.innerHTML = '';
-
-                        for( i = 0, c = els.length; i < c; i++ ){
-                            e = els[i];
-
-                            el.appendChild( e );
-                        }
-                    },
-                    publish: function( data, headers, content, calcPos ){
-                        headers.push( name );
-                        ComponentGenerator.publish( data, name, content, calcPos );
-                    }
-                });
+                graph.getView(cfg.view).register(element);
             }
         };
     }]

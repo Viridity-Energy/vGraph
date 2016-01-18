@@ -118,9 +118,8 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 
 				return nameAs;
 			},
-			limits: function( cfg, data ){
+			limits: function( keys, cfg ){
 				var i, c,
-					d,
 					v,
 					min,
 					max;
@@ -128,7 +127,7 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 				if ( angular.isArray(cfg) ){
 					// go through an array of names
 					for( i = 0, c = cfg.length; i < c; i++ ){
-						v = this.limits( cfg[i], data );
+						v = this.limits( keys, cfg[i] );
 						if ( min === undefined ){
 							min = v.min;
 							max = v.max;
@@ -144,9 +143,8 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 					}
 				} else if ( cfg && cfg.getValue ){
 					// used to reduce the checks for parser
-					for( i = 0, c = data.length; i < c; i++ ){
-						d = data[i];
-						v = cfg.getValue(d);
+					for( i = 0, c = keys.length; i < c; i++ ){
+						v = cfg.$getValue(keys[i]);
 						if ( isNumeric(v) ){
 							if ( min === undefined ){
 								min = v;

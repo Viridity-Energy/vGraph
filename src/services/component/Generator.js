@@ -1,9 +1,11 @@
 angular.module( 'vgraph' ).factory( 'ComponentGenerator',
-    [ '$timeout', 'DrawLine', 'DrawArea', 'DrawBox', 'DrawIcon', 'ComponentChart',
-    function ( $timeout, DrawLine, DrawArea, DrawBox, DrawIcon, ComponentChart ) {
+    [ '$timeout', 'DrawBuilder', 'DrawLine', 'DrawFill', 'DrawBox', 'DrawIcon', 'ComponentChart',
+    function ( $timeout, DrawBuilder, DrawLine, DrawFill, DrawBox, DrawIcon, ComponentChart ) {
         'use strict';
 
-        var cfgUid = 0;
+        var cfgUid = 0,
+            isNumeric = DrawBuilder.isNumeric;
+        
         function normalizeConfig( cfg ){
             var value,
                 interval;
@@ -42,275 +44,135 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
             return cfg;
         }
 
-        function isNumeric( v ){
-            if ( v === null ){
-                return false;
-            }else if ( Number.isFinite ){
-                return Number.isFinite(v) && !Number.isNaN(v);
-            }else{
-                return isFinite(v) && !isNaN(v);
-            }
-        }
-
         return {
             isNumeric: isNumeric,
             normalizeConfig: normalizeConfig,
-            // this accepts unified
-            makeDiffCalc: function( view1, top, view2, bottom ){
-                var areaDrawer = new DrawArea();
-
-                if ( !view2 ){
-                     view2 = view1;
-                }
-
-                areaDrawer.preParse = function( d ){
-                    var c1 = d[view1.name],
-                        c2 = d[view2.name],
-                        y1,
-                        y2;
-
-                    if ( c1 ){
-                        y1 = c1[top];
-                    }
-
-                    if ( c2 ){
-                        y2 = c2[bottom];
-                    }
-
-                    if ( isNumeric(y1) && isNumeric(y2) ){
-                        return {
-                            interval: ( c1._$interval + c2._$interval ) / 2, // average the differnce
-                            y1: view1.y.scale( y1 ),
-                            y2: view2.y.scale( y2 )
-                        };
-                    }
-                };
-
-                areaDrawer.parseInterval = function( d ){
-                    return d.interval;
-                };
-                areaDrawer.parseValue1 = function( d ){
-                    return d.y1;
-                };
-                areaDrawer.parseValue2 = function( d ){
-                    return d.y2;
-                };
-
-                return function( dataFeed ){
-                    return areaDrawer.build( dataFeed ).join('');
-                };
-            },
-            // undefined =>  no value, so use last value, null => line break
-            // this accepts sampled / filtered / raw
             makeLineCalc: function( graph, ref ){
-                var view,
-                    field,
-                    lineDrawer = new DrawLine();
+                var lineDrawer = new DrawLine();
 
-                lineDrawer.preParse = function( d, last ){
-                    var y = d[ field ];
-                            
-                    if ( isNumeric(y) ){
-                        return d;
-                    }else if ( last && y === undefined ){
-                        d[field] = last[field];
-                        return d;
-                    }else{
-                        return null;
-                    }
+                lineDrawer.preparse = function( index ){
+                    var node = ref.$getNode(index);
+
+                    return {
+                        x: node._$interval,
+                        y: ref.getValue(node)
+                    };
                 };
 
-                lineDrawer.parseValue = function( d ){
-                    return view.y.scale( d[field] );
-                };
+                return function configureDraw(){
+                    var view = graph.views[ref.view];
 
-                lineDrawer.parseInterval = function( d ){
-                    return d._$interval;
-                };
+                    lineDrawer.scale = function( v ){
+                        return view.y.scale( v );
+                    };
 
-                return function( dataFeed ){
-                    field = ref.field;
-                    view = graph.views[ref.view];
-
-                    return lineDrawer.build( dataFeed ).join('');
-                };
-            },
-            // top and bottom are config objects
-            makeFillCalc: function( graph, topRef, bottomRef ){
-                var topView,
-                    bottomView,
-                    topField,
-                    bottomField,
-                    areaDrawer = new DrawArea();
-
-                areaDrawer.preParse = function( d ){
-                    var y1,
-                        y2;
-
-                    y1 = d[topField];
-                    
-                    if ( bottomField ){
-                        y2 = d[bottomField];
-                    }else{
-                        y2 = bottomView.viewport.minValue;
-                    }
-
-                    if ( isNumeric(y1) && isNumeric(y2) ){
-                        return {
-                            interval: d._$interval,
-                            y1: topView.y.scale( y1 ),
-                            y2: bottomView.y.scale( y2 )
-                        };
-                    }
-                };
-
-                areaDrawer.parseInterval = function( d ){
-                    return d.interval;
-                };
-                areaDrawer.parseValue1 = function( d ){
-                    return d.y1;
-                };
-                areaDrawer.parseValue2 = function( d ){
-                    return d.y2;
-                };
-
-                return function( dataFeed ){
-                    topView = graph.views[topRef.view];
-                    topField = topRef.field;
-
-                    if ( bottomRef ){
-                        bottomView = graph.views[bottomRef.view] || topView;
-                        bottomField = bottomRef.field;
-                    }else{
-                        bottomView = topView;
-                    }
-
-                    return areaDrawer.build( dataFeed ).join('');
+                    return lineDrawer;
                 };
             },
             makeBoxCalc: function( graph, ref, elemental ){
                 var view,
+                    value,
                     isValid,
                     getValue,
                     boxDrawer = new DrawBox(elemental);
 
-                boxDrawer.preParse = function( d ){
-                    var y;
+                boxDrawer.preparse = function( index ){
+                    var node = ref.$getNode(index);
 
-                    if ( isValid(d) ){
+                    if ( isValid(node) ){
                         if ( getValue ){
-                            y = view.y.scale( getValue(d) );
+                            value = getValue(node);
                             return {
-                                interval: d._$interval,
-                                y1: y,
-                                y2: y
+                                x1: node._$interval,
+                                x2: node._$interval,
+                                y1: value,
+                                y2: value
                             };
                         }else{
                             return {
-                                interval: d._$interval,
-                                y1: view.y.scale( view.viewport.minValue ),
-                                y2: view.y.scale( view.viewport.maxValue )
+                                x1: node._$interval,
+                                x2: node._$interval,
+                                y1: view.viewport.minValue,
+                                y2: view.viewport.maxValue
                             };
                         }
                     }
                 };
 
-                boxDrawer.parseInterval1 = function( d ){
-                    return d.interval;
-                };
-                boxDrawer.parseInterval2 = function( d ){
-                    return d.interval;
-                };
-                boxDrawer.parseValue1 = function( d ){
-                    return d.y1;
-                };
-                boxDrawer.parseValue2 = function( d ){
-                    return d.y2;
-                };
-
-                return function( dataFeed ){
-                    var t;
-
+                return function configureDraw(){
                     view = graph.getView(ref.view);
                     isValid = ref.isValid;
                     getValue = ref.getValue;
 
-                    t = boxDrawer.build( dataFeed );
+                    boxDrawer.scale1 = boxDrawer.scale2 = function( v ){
+                        return view.y.scale( v );
+                    };
 
-                    if ( t.join ){
-                        return t.join('');
-                    }else{
-                        return t;
-                    }
+                    return boxDrawer;
                 };
             },
             makeIconCalc: function( graph, ref, box, content ){
                 var view,
+                    value,
                     isValid,
                     getValue,
                     iconDrawer = new DrawIcon( box, content );
 
-                iconDrawer.preParse = function( d ){
-                    var y;
+                iconDrawer.preparse = function( index ){
+                    var node = ref.$getNode(index);
 
-                    if ( isValid(d) ){
+                    if ( isValid(node) ){
                         if ( getValue ){
-                            y = view.y.scale( getValue(d) );
+                            value = getValue(node);
+                            
                             return {
-                                interval: d._$interval,
-                                y1: y,
-                                y2: y
+                                x1: node._$interval,
+                                x2: node._$interval,
+                                y1: value,
+                                y2: value
                             };
                         }else{
                             return {
-                                interval: d._$interval,
-                                y1: view.y.scale( view.viewport.maxValue ),
-                                y2: view.y.scale( view.viewport.maxValue )
+                                x1: node._$interval,
+                                x2: node._$interval,
+                                y1: view.viewport.minValue,
+                                y2: view.viewport.maxValue
                             };
                         }
                     }
                 };
 
-                iconDrawer.parseInterval1 = function( d ){
-                    return d.interval;
-                };
-                iconDrawer.parseInterval2 = function( d ){
-                    return d.interval;
-                };
-                iconDrawer.parseValue1 = function( d ){
-                    return d.y1;
-                };
-                iconDrawer.parseValue2 = function( d ){
-                    return d.y2;
-                };
-
-                return function( dataFeed ){
+                return function configureDraw(){
                     view = graph.getView(ref.view);
                     isValid = ref.isValid;
                     getValue = ref.getValue;
 
-                    return iconDrawer.build( dataFeed );
+                    iconDrawer.scale1 = iconDrawer.scale2 = function( v ){
+                        return view.y.scale( v );
+                    };
+
+                    return iconDrawer;
                 };
             },
             makeBarCalc: function( graph, topRef, bottomRef, barWidth ){
                 var topView,
                     bottomView,
-                    topField,
-                    bottomField,
-                    boxDrawer = new DrawBox();
+                    boxDrawer = new DrawBox(),
+                    oldMerge = boxDrawer.mergeSet;
 
-                boxDrawer.preParse = function( d ){
+                boxDrawer.preparse = function( index ){
                     var min,
                         max,
                         y1,
                         y2,
                         t,
-                        width;
+                        width,
+                        topNode = topRef.$getNode(index);
 
-                    y1 = d[topField];
+                    y1 = topRef.getValue(topNode);
                     
-                    if ( bottomField ){
-                        y2 = d[bottomField];
+                    if ( bottomRef ){
+                        y2 = bottomRef.$getValue(index);
                     }else{
                         y2 = bottomView.viewport.minValue;
                     }
@@ -322,62 +184,92 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                     }
 
                     if ( isNumeric(y1) && isNumeric(y2) && y1 !== y2 ){
-                        min = d._$interval - width;
-                        max = d._$interval + width;
+                        min = topNode._$interval - width;
+                        max = topNode._$interval + width;
 
                         t = {
-                            interval1: min > d._$minInterval ? min : d._$minInterval,
-                            interval2: max > d._$maxInterval ? d._$maxInterval : max,
-                            y1: topView.y.scale( y1 ),
-                            y2: bottomView.y.scale( y2 )
+                            x1: min > topNode._$minInterval ? min : topNode._$minInterval,
+                            x2: max > topNode._$maxInterval ? topNode._$maxInterval : max,
+                            y1: y1,
+                            y2: y2
                         };
                     }
 
                     return t;
                 };
 
-                boxDrawer.breakSet = function(){
+                boxDrawer.mergeSet = function( parsed, set ){
+                    oldMerge.call( this, parsed, set );
                     return true;
                 };
 
-                boxDrawer.parseInterval1 = function( d ){
-                    return d.interval1;
-                };
-                boxDrawer.parseInterval2 = function( d ){
-                    return d.interval2;
-                };
-                boxDrawer.parseValue1 = function( d ){
-                    return d.y1;
-                };
-                boxDrawer.parseValue2 = function( d ){
-                    return d.y2;
-                };
-
-                return function( dataFeed ){
+                return function configureDraw(){
                     topView = graph.views[topRef.view];
-                    topField = topRef.field;
 
                     if ( bottomRef ){
-                        bottomView = graph.views[bottomRef.view] || topView;
-                        bottomField = bottomRef.field;
+                        bottomView = graph.views[bottomRef.view];
                     }else{
                         bottomView = topView;
                     }
 
-                    return boxDrawer.build( dataFeed ).join('');
+                    boxDrawer.scale1 = function( v ){
+                        return topView.y.scale( v );
+                    };
+
+                    boxDrawer.scale2 = function( v ){
+                        return bottomView.y.scale( v );
+                    };
+
+                    return boxDrawer;
                 };
             },
-            svgCompile: function( svgHtml ){
-                var parsed = (new DOMParser().parseFromString(
-                        '<g xmlns="http://www.w3.org/2000/svg">' +
-                            svgHtml +
-                        '</g>','image/svg+xml'
-                    )),
-                    g = parsed.childNodes[0],
-                    result = g.childNodes;
+            // top and bottom are config objects
+            makeFillCalc: function( graph, topRef, bottomRef ){
+                var topView,
+                    bottomView,
+                    areaDrawer = new DrawFill();
 
-                return Array.prototype.slice.call( result, 0 );
-            }
+                areaDrawer.preparse = function( index ){
+                    var y1,
+                        y2,
+                        topNode = topRef.$getNode(index);
+
+                    y1 = topRef.getValue(topNode);
+                    
+                    if ( bottomView ){
+                        y2 = bottomRef.$getValue( index );
+                    }else{
+                        y2 = topView.viewport.minValue;
+                    }
+
+                    if ( isNumeric(y1) && isNumeric(y2) ){
+                        return {
+                            x: topNode._$interval,
+                            y1: y1,
+                            y2: y2
+                        };
+                    }
+                };
+
+                return function configureDraw(){
+                    topView = graph.views[topRef.view];
+
+                    areaDrawer.scale1 = function( v ){
+                        return topView.y.scale(v);
+                    };
+
+                    if ( bottomRef ){
+                        bottomView = graph.views[bottomRef.view];
+                        areaDrawer.scale2 = function( v ){
+                            return bottomView.y.scale(v);
+                        };
+                    }else{
+                        areaDrawer.scale2 = areaDrawer.scale1;
+                    }
+
+                    return areaDrawer;
+                };
+            },
         };
     }]
 );

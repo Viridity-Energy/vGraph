@@ -5,68 +5,83 @@ angular.module( 'vgraph' ).factory( 'DrawBuilder',
 
 		function DrawBuilder(){}
 
+		DrawBuilder.isNumeric = function( v ){
+            if ( v === null ){
+                return false;
+            }else if ( Number.isFinite ){
+                return Number.isFinite(v) && !Number.isNaN(v);
+            }else{
+                return isFinite(v) && !isNaN(v);
+            }
+        };
+
 		// allows for very complex checks of if the value is defined, allows checking previous and next value
-		DrawBuilder.prototype.preParse = function( d ){
+		DrawBuilder.prototype.preparse = function( d ){
 			return d;
 		};
 
-		DrawBuilder.prototype.breakSet = function(){
-			return false;
+		DrawBuilder.prototype.makeSet = function(){
+			return [];
 		};
 
-		DrawBuilder.prototype.parse = function( dataSet ){
+		DrawBuilder.prototype.mergeSet = function( d, set ){
+			if ( d ){
+				set.push( d );
+				return false;
+			}else{
+				return true;
+			}
+		};
+
+		DrawBuilder.prototype.isValidSet = function( set ){
+			return set.length !== 0;
+		};
+
+		DrawBuilder.prototype.convert = function( keys ){
+			return this.parse( keys );
+		};
+
+		DrawBuilder.prototype.parse = function( keys ){
 			var i, c,
-				d,
-				last,
-				set = [],
-				sets = [ set ],
-				preParse = this.preParse.bind(this),
-				breakSet = this.breakSet.bind(this);
+				t,
+				breakSet,
+				set = this.makeSet(),
+				sets = [],
+				mergeSet = this.mergeSet.bind(this);
 
 			// I need to start on the end, and find the last valid point.  Go until there
-			for( i = 0, c = dataSet.length; i < c; i++ ){
-				d = dataSet[i];
-				last = preParse( d, last ); // you can return something falsey and not have it defined
-											// or you can use breakSet to force a break, as bars do
+			for( i = 0, c = keys.length; i < c; i++ ){
+				t = this.preparse(keys[i]);
+				
+				if ( t ){
+					breakSet = mergeSet( 
+						t,
+						set
+					);
+				} else {
+					breakSet = true;
+				} 
 
-				if ( last ){
-					set.push( last );
+				if ( breakSet && this.isValidSet(set) ){
+					sets.push( set );
+					set = this.makeSet();
 				}
+			}
 
-				if ( !last || breakSet(d) ){
-					if ( set.length !== 0 ){
-						set = [];
-						sets.push( set );
-					}
-				}
+			if ( this.isValidSet(set) ){
+				sets.push( set );
 			}
 
 			return sets;
 		};
 
-		DrawBuilder.prototype.build = function( modelData ){
-			var i, c,
-				t,
-				set,
-				res = [],
-				dataSet = this.parse( modelData );
-
-			for( i = 0, c = dataSet.length; i < c; i++ ){
-				set = dataSet[i];
-				t = this.make( set );
-				if ( t ){
-					res.push( t );
-				}
-			}
-
-			return res;
+		DrawBuilder.prototype.makeElement = function( convertedSet ){
+			console.log( 'makeElement', convertedSet );
+			return '<text>Element not overriden</text>';
 		};
 
-		DrawBuilder.prototype.make = function( set ){
-			return this.render( set );
-		};
-
-		DrawBuilder.prototype.render = function(){
+		DrawBuilder.prototype.makePath = function( convertedSet ){
+			console.log( 'makePath', convertedSet );
 			return 'M0,0Z';
 		};
 

@@ -482,7 +482,7 @@ angular.module( 'vgraph' ).controller( 'BucketsCtrl',
 angular.module( 'vgraph' ).controller( 'CompareCtrl',
 	['$scope',
 	function( $scope ){
-		var data = [ { x: 0, y1 : 15, y2 : 5, y3 : 25, y4 : 35} ];
+		var data = [ { x: 0, input1 : 15, input2 : 5, input3 : 25, input4 : 35} ];
 
 		$scope.graph = {
 			x: {
@@ -495,10 +495,10 @@ angular.module( 'vgraph' ).controller( 'CompareCtrl',
 			src: data,
 			interval: 'x',
 			readings:{
-				'y1': 'y1',
-				'y2': 'y2',
-				'y3': 'y3',
-				'y4': 'y4'
+				'y1': 'input1',
+				'y2': 'input2',
+				'y3': 'input3',
+				'y4': 'input4'
 			}
 		};
 
@@ -528,10 +528,10 @@ angular.module( 'vgraph' ).controller( 'CompareCtrl',
 				max = 1,
 				p = {
 					x : data.length,
-					y1 : data[data.length-1].y1 + Math.random() * (max - min) + min,
-					y2 : data[data.length-1].y2 + Math.random() * (max - min) + min,
-					y3 : data[data.length-1].y3 + Math.random() * (max - min) + min,
-					y4 : data[data.length-1].y4 + Math.random() * (max - min) + min
+					input1 : data[data.length-1].input1 + Math.random() * (max - min) + min,
+					input2 : data[data.length-1].input2 + Math.random() * (max - min) + min,
+					input3 : data[data.length-1].input3 + Math.random() * (max - min) + min,
+					input4 : data[data.length-1].input4 + Math.random() * (max - min) + min
 				};
 
 			data.push( p );
