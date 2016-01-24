@@ -24,9 +24,7 @@ angular.module( 'vgraph' ).controller( 'FloodCtrl',
 				name: 'someLine4',
 				className: 'orange'
 			},
-			data = [ {x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40}  ],
-			interval,
-			boxModel;
+			data = [ {x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40}  ];
 
 		$scope.graph = {
 			x : {
@@ -83,7 +81,6 @@ angular.module( 'vgraph' ).controller( 'NullCtrl', [
 	'$scope', '$timeout',
 	function( $scope, $timeout ){
 		var data = [ { x : 0, y1 : null, y2 : null} ],
-			interval,
 			wide = true;
 
 		$scope.graph = {
@@ -319,9 +316,7 @@ angular.module( 'vgraph' ).controller( 'LoadingCtrl',
 angular.module( 'vgraph' ).controller( 'StackedCtrl',
 	['$scope', 
 	function( $scope ){
-		var data = [ { x: 0, y1 : 10, y2 : 5, y3 : 15, y4 : 8} ],
-			interval,
-			boxModel;
+		var data = [ { x: 0, y1 : 10, y2 : 5, y3 : 15, y4 : 8} ];
 
 		$scope.graph = {};
 
@@ -365,7 +360,7 @@ angular.module( 'vgraph' ).controller( 'GrowingCtrl',
 	['$scope', '$attrs',
 	function( $scope, $attrs ){
 		var data = [ {x : 0, y : 20}  ],
-			interval;
+			interval; 
 
 		if( $attrs.$attr.noBounds ){
 			$scope.graph = {};
@@ -408,11 +403,10 @@ angular.module( 'vgraph' ).controller( 'GrowingCtrl',
 );
 
 angular.module( 'vgraph' ).controller( 'BucketsCtrl',
-	['$scope', 'LinearSamplerModel',
-	function( $scope, LinearSamplerModel ){
+	['$scope', 'LinearSampler',
+	function( $scope, LinearSampler ){
 		var data = [ {x : 0, y : 20}  ],
-			interval,
-			boxModel;
+			interval; 
 
 		$scope.graph = {
 			fitToPane: true,
@@ -424,10 +418,10 @@ angular.module( 'vgraph' ).controller( 'BucketsCtrl',
 						max : 1000
 					},
 					models: {
-						'averaged': new LinearSamplerModel(function(datum){
+						'averaged': new LinearSampler(function(datum){
 							return Math.round(datum._$interval / 10); // combine every 10 pixels
 						}),
-						'normal': new LinearSamplerModel(function(datum){
+						'normal': new LinearSampler(function(datum){
 							return Math.round(datum._$interval); // combine to every pixel
 						})
 					}
@@ -540,11 +534,10 @@ angular.module( 'vgraph' ).controller( 'CompareCtrl',
 );
 
 angular.module( 'vgraph' ).controller( 'MultiAxisCtrl',
-	['$scope', 'LinearSamplerModel',
-	function( $scope, LinearSamplerModel ){
+	['$scope', 'LinearSampler',
+	function( $scope, LinearSampler ){
 		var data = [ {x : 0, x2: 150, y1 : 20, y2 : 400}  ],
-			interval,
-			boxModel;
+			interval;
 
 		$scope.config = [
 			{ 
@@ -564,7 +557,7 @@ angular.module( 'vgraph' ).controller( 'MultiAxisCtrl',
 		function modelFactory(){
 			var t = {};
 
-			t[ 'someModel' ] = new LinearSamplerModel(function(datum){
+			t[ 'someModel' ] = new LinearSampler(function(datum){
 				return Math.round(datum._$interval);
 			});
 
@@ -652,17 +645,16 @@ angular.module( 'vgraph' ).controller( 'MultiAxisCtrl',
 );
 
 angular.module( 'vgraph' ).controller( 'MultiIntervalCtrl',
-	['$scope', 'LinearSamplerModel',
-	function( $scope, LinearSamplerModel ){
+	['$scope', 'LinearSampler',
+	function( $scope, LinearSampler ){
 		var data1 = [ {x1: 0, y1: 20} ],
 			data2 = [ {x2: 0, y2: 400} ],
-			interval,
-			boxModel;
+			interval; 
 
 		function modelFactory(){
 			var t = {};
 
-			t[ 'someModel' ] = new LinearSamplerModel(function(datum){
+			t[ 'someModel' ] = new LinearSampler(function(datum){
 				return Math.round(datum._$interval);
 			});
 
@@ -767,9 +759,7 @@ angular.module( 'vgraph' ).controller( 'LeadingCtrl',
 				name: 'someLine4',
 				className: 'orange'
 			},
-			data = [ {x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40}  ],
-			interval,
-			boxModel;
+			data = [ {x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40}  ];
 
 		$scope.graph = {
 			x : {
@@ -883,9 +873,7 @@ angular.module( 'vgraph' ).controller( 'BoxCtrl',
 					return d.$x > 20 && d.$x < 40;
 				}
 			},
-			data = [ {x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40}  ],
-			interval,
-			boxModel;
+			data = [ {x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40}  ];
 
 		$scope.graph = {
 			x : {
@@ -954,9 +942,7 @@ angular.module( 'vgraph' ).controller( 'IconCtrl',
 					return d.$x > 20 && d.$x < 40;
 				}
 			},
-			data = [ {x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40}  ],
-			interval,
-			boxModel;
+			data = [ {x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40}  ];
 
 		$scope.graph = {
 			x : {

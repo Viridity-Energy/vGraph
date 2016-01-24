@@ -33,11 +33,11 @@
 **/
 angular.module( 'vgraph' ).factory( 'ComponentChart',
     [ '$timeout', 
-        'ComponentView', 'ComponentBox', 'DataCollection', 'LinearSamplerModel', 
-        'makeEventing', 'Scheduler', 'Hitbox',
+        'ComponentView', 'ComponentBox', 'DataCollection', 'LinearSampler', 
+        'makeEventing', 'Scheduler', 'Hitbox', 'DomHelper',
     function ( $timeout, 
-        ComponentView, ComponentBox, DataCollection, LinearSamplerModel,
-        makeEventing, Scheduler, Hitbox ) {
+        ComponentView, ComponentBox, DataCollection, LinearSampler,
+        makeEventing, Scheduler, Hitbox, domHelper ) {
         'use strict';
 
         var schedule = new Scheduler(),
@@ -99,9 +99,12 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
             views = settings.views;
             if ( !views ){
                 t = {};
-                t[ ComponentChart.defaultModel ] = new LinearSamplerModel(function(datum){
-                    return Math.round(datum._$interval);
-                });
+                t[ ComponentChart.defaultModel ] = new LinearSampler(
+                    function(datum){
+                        return Math.round(datum._$interval);
+                    },
+                    settings.nodeFactory
+                );
 
                 views = {};
                 views[ ComponentChart.defaultView ] = {
@@ -378,51 +381,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 
             this.hitbox.add( info );
         };
-
-        var regex = {};
-
-        function getReg( className ){
-            var reg = regex[className];
-
-            if ( !reg ){
-                reg = new RegExp('(?:^|\\s)'+className+'(?!\\S)');
-                regex[className] = reg;
-            }
-
-            return reg;
-        }
-
-        function addClass( elements, className ){
-            var i, c,
-                el,
-                baseClass,
-                reg = getReg( className );
-
-
-            for( i = 0, c = elements.length; i < c; i++ ){
-                el = elements[i].$element;
-                baseClass = el.getAttribute('class') || '';
-
-                if ( !baseClass.match(reg) ){
-                    el.setAttribute( 'class', baseClass+' '+className );
-                }
-            }
-        }
-
-        function removeClass( elements, className ){
-            var i, c,
-                el,
-                reg = getReg( className );
-
-            for( i = 0, c = elements.length; i < c; i++ ){
-                el = elements[i].$element;
-                el.setAttribute(
-                    'class',
-                    (el.getAttribute('class')||'').replace( reg, '' )
-                );
-            }
-        }
-
+        
         ComponentChart.prototype.highlightElements = function( x, y ){
             var vertical = this.hitbox.checkX( x ),
                 horizontal = this.hitbox.checkY( y ),
@@ -430,9 +389,9 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 
             this.unlightElements();
 
-            addClass( vertical, 'highlight-vertical' );
-            addClass( horizontal, 'highlight-horizontal' );
-            addClass( intersections, 'highlight' );
+            domHelper.addClass( vertical, 'highlight-vertical' );
+            domHelper.addClass( horizontal, 'highlight-horizontal' );
+            domHelper.addClass( intersections, 'highlight' );
 
             this._activeElements = {
                 vertical: vertical,
@@ -445,9 +404,9 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
             var highlights = this._activeElements;
 
             if ( highlights ){
-                removeClass( highlights.vertical, 'highlight-vertical' );
-                removeClass( highlights.horizontal, 'highlight-horizontal' );
-                removeClass( highlights.intersections, 'highlight' );
+                domHelper.removeClass( highlights.vertical, 'highlight-vertical' );
+                domHelper.removeClass( highlights.horizontal, 'highlight-horizontal' );
+                domHelper.removeClass( highlights.intersections, 'highlight' );
             }
         };
 

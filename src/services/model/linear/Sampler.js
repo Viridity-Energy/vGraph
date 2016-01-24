@@ -1,23 +1,23 @@
-angular.module( 'vgraph' ).factory( 'LinearSamplerModel',
-	['DataCollection', 'LinearSamplerNode',
-	function ( DataCollection, LinearSamplerNode ) {
+angular.module( 'vgraph' ).factory( 'LinearSampler',
+	['DataCollection', 'LinearNode',
+	function ( DataCollection, LinearNode ) {
 		'use strict';
 
 		var uid = 1;
 
-		function LinearSamplerModel( indexer, nodeFactory ){
+		function LinearSampler( indexer, nodeFactory ){
 			this.$modelUid = uid++;
 			this.$stats = {};
 			this.$indexer = indexer;
 			this.$makeNode = nodeFactory || function( datum ){
-				return new LinearSamplerNode(datum);
+				return new LinearNode(datum);
 			};
 			DataCollection.call( this );
 		}
 
-		LinearSamplerModel.prototype = new DataCollection();
+		LinearSampler.prototype = new DataCollection();
 
-		LinearSamplerModel.prototype.$follow = function( collection ){
+		LinearSampler.prototype.$follow = function( collection ){
 			var i, c,
 				index,
 				datum,
@@ -41,6 +41,6 @@ angular.module( 'vgraph' ).factory( 'LinearSamplerModel',
 			}
 		};
 		
-		return LinearSamplerModel;
+		return LinearSampler;
 	}]
 );

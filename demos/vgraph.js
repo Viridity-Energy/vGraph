@@ -1,4 +1,55 @@
 angular.module( 'vgraph', [] );
+angular.module( 'vgraph' ).factory( 'DomHelper',
+    [
+    function () {
+        'use strict';
+
+        var regex = {};
+
+        function getReg( className ){
+            var reg = regex[className];
+
+            if ( !reg ){
+                reg = new RegExp('(?:^|\\s)'+className+'(?!\\S)');
+                regex[className] = reg;
+            }
+
+            return reg;
+        }
+        
+        return {
+            addClass: function( elements, className ){
+                var i, c,
+                    el,
+                    baseClass,
+                    reg = getReg( className );
+
+
+                for( i = 0, c = elements.length; i < c; i++ ){
+                    el = elements[i].$element;
+                    baseClass = el.getAttribute('class') || '';
+
+                    if ( !baseClass.match(reg) ){
+                        el.setAttribute( 'class', baseClass+' '+className );
+                    }
+                }
+            },
+            removeClass: function( elements, className ){
+                var i, c,
+                    el,
+                    reg = getReg( className );
+
+                for( i = 0, c = elements.length; i < c; i++ ){
+                    el = elements[i].$element;
+                    el.setAttribute(
+                        'class',
+                        (el.getAttribute('class')||'').replace( reg, '' )
+                    );
+                }
+            }
+        };
+    }]
+);
 angular.module( 'vgraph' ).factory( 'Hitbox',
     [
     function () {
@@ -445,11 +496,11 @@ angular.module( 'vgraph' ).factory( 'ComponentBox',
 **/
 angular.module( 'vgraph' ).factory( 'ComponentChart',
     [ '$timeout', 
-        'ComponentView', 'ComponentBox', 'DataCollection', 'LinearSamplerModel', 
-        'makeEventing', 'Scheduler', 'Hitbox',
+        'ComponentView', 'ComponentBox', 'DataCollection', 'LinearSampler', 
+        'makeEventing', 'Scheduler', 'Hitbox', 'DomHelper',
     function ( $timeout, 
-        ComponentView, ComponentBox, DataCollection, LinearSamplerModel,
-        makeEventing, Scheduler, Hitbox ) {
+        ComponentView, ComponentBox, DataCollection, LinearSampler,
+        makeEventing, Scheduler, Hitbox, domHelper ) {
         'use strict';
 
         var schedule = new Scheduler(),
@@ -511,9 +562,12 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
             views = settings.views;
             if ( !views ){
                 t = {};
-                t[ ComponentChart.defaultModel ] = new LinearSamplerModel(function(datum){
-                    return Math.round(datum._$interval);
-                });
+                t[ ComponentChart.defaultModel ] = new LinearSampler(
+                    function(datum){
+                        return Math.round(datum._$interval);
+                    },
+                    settings.nodeFactory
+                );
 
                 views = {};
                 views[ ComponentChart.defaultView ] = {
@@ -790,51 +844,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 
             this.hitbox.add( info );
         };
-
-        var regex = {};
-
-        function getReg( className ){
-            var reg = regex[className];
-
-            if ( !reg ){
-                reg = new RegExp('(?:^|\\s)'+className+'(?!\\S)');
-                regex[className] = reg;
-            }
-
-            return reg;
-        }
-
-        function addClass( elements, className ){
-            var i, c,
-                el,
-                baseClass,
-                reg = getReg( className );
-
-
-            for( i = 0, c = elements.length; i < c; i++ ){
-                el = elements[i].$element;
-                baseClass = el.getAttribute('class') || '';
-
-                if ( !baseClass.match(reg) ){
-                    el.setAttribute( 'class', baseClass+' '+className );
-                }
-            }
-        }
-
-        function removeClass( elements, className ){
-            var i, c,
-                el,
-                reg = getReg( className );
-
-            for( i = 0, c = elements.length; i < c; i++ ){
-                el = elements[i].$element;
-                el.setAttribute(
-                    'class',
-                    (el.getAttribute('class')||'').replace( reg, '' )
-                );
-            }
-        }
-
+        
         ComponentChart.prototype.highlightElements = function( x, y ){
             var vertical = this.hitbox.checkX( x ),
                 horizontal = this.hitbox.checkY( y ),
@@ -842,9 +852,9 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 
             this.unlightElements();
 
-            addClass( vertical, 'highlight-vertical' );
-            addClass( horizontal, 'highlight-horizontal' );
-            addClass( intersections, 'highlight' );
+            domHelper.addClass( vertical, 'highlight-vertical' );
+            domHelper.addClass( horizontal, 'highlight-horizontal' );
+            domHelper.addClass( intersections, 'highlight' );
 
             this._activeElements = {
                 vertical: vertical,
@@ -857,9 +867,9 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
             var highlights = this._activeElements;
 
             if ( highlights ){
-                removeClass( highlights.vertical, 'highlight-vertical' );
-                removeClass( highlights.horizontal, 'highlight-horizontal' );
-                removeClass( highlights.intersections, 'highlight' );
+                domHelper.removeClass( highlights.vertical, 'highlight-vertical' );
+                domHelper.removeClass( highlights.horizontal, 'highlight-horizontal' );
+                domHelper.removeClass( highlights.intersections, 'highlight' );
             }
         };
 
@@ -1965,354 +1975,6 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
         return ComponentView;
     }]
 );
-angular.module( 'vgraph' ).factory( 'DrawBox', 
-	['DrawBuilder',
-	function( DrawBuilder ){
-		'use strict';
-
-		function DrawBox( elemental ){
-			this.elemental = elemental;
-		}
-
-		DrawBox.prototype = new DrawBuilder();
-
-		// default is to have one box per datum, all points valid
-		
-		function calcBox( x1, x2, y1, y2, box ){
-			var t;
-
-			if ( x1 > x2 ){
-				t = x1;
-				x1 = x2;
-				x2 = t;
-			}
-
-			if ( y1 > y2 ){
-				t = y1;
-				y1 = y2;
-				y2 = t;
-			}
-
-			if ( box.x1 === undefined ){
-				box.x1 = x1;
-				box.x2 = x2;
-				box.y1 = y1;
-				box.y2 = y2;
-			}else{
-				if ( box.x1 > x1 ){
-					box.x1 = x1;
-				}
-
-				if ( x2 > box.x2 ){
-					box.x2 = x2;
-				}
-
-				if ( box.y1 > y1 ){
-					box.y1 = y1;
-				}
-
-				if ( y2 > box.y2 ){
-					box.y2 = y2;
-				}
-			}
-
-			return box;
-		}
-
-		DrawBox.prototype.makeSet = function(){
-			return {};
-		};
-
-		DrawBox.prototype.isValidSet = function( box ){
-			return box.x1 !== undefined;
-		};
-
-		DrawBox.prototype.mergeSet = function( parsed, set ){
-			var x1 = parsed.x1,
-				x2 = parsed.x2,
-				y1 = parsed.y1,
-				y2 = parsed.y2;
-
-			if ( y1 !== null && y2 !== null ){
-				if ( y1 === undefined ){
-					y1 = set.y1;
-				}else{
-					y1 = this.scale1(y1);
-				}
-
-				if ( y2 === undefined ){
-					y2 = set.y2;
-				}else{
-					y2 = this.scale2(y2);
-				}
-
-				calcBox( x1, x2, y1, y2, set );
-			}else{
-				return true;	
-			}
-		};
-
-		DrawBox.prototype.makePath = function( boxInfo ){
-			if ( boxInfo ){
-				return 'M' + 
-					(boxInfo.x1+','+boxInfo.y1) + 'L' +
-					(boxInfo.x2+','+boxInfo.y1) + 'L' +
-					(boxInfo.x2+','+boxInfo.y2) + 'L' +
-					(boxInfo.x1+','+boxInfo.y2) + 'Z';
-			}
-		};
-
-		DrawBox.prototype.makeElement = function( boxInfo ){
-			if ( boxInfo ){
-				return '<rect x="'+boxInfo.x1+
-					'" y="'+boxInfo.y1+
-					'" width="'+(boxInfo.x2 - boxInfo.x1)+
-					'" height="'+(boxInfo.y2 - boxInfo.y1)+'"/>';
-			}
-		};
-		
-		return DrawBox;
-	}]
-);
-angular.module( 'vgraph' ).factory( 'DrawBuilder', 
-	[
-	function(){
-		'use strict';
-
-		function DrawBuilder(){}
-
-		DrawBuilder.isNumeric = function( v ){
-            if ( v === null ){
-                return false;
-            }else if ( Number.isFinite ){
-                return Number.isFinite(v) && !Number.isNaN(v);
-            }else{
-                return isFinite(v) && !isNaN(v);
-            }
-        };
-
-		// allows for very complex checks of if the value is defined, allows checking previous and next value
-		DrawBuilder.prototype.preparse = function( d ){
-			return d;
-		};
-
-		DrawBuilder.prototype.makeSet = function(){
-			return [];
-		};
-
-		DrawBuilder.prototype.mergeSet = function( d, set ){
-			if ( d ){
-				set.push( d );
-				return false;
-			}else{
-				return true;
-			}
-		};
-
-		DrawBuilder.prototype.isValidSet = function( set ){
-			return set.length !== 0;
-		};
-
-		DrawBuilder.prototype.convert = function( keys ){
-			return this.parse( keys );
-		};
-
-		DrawBuilder.prototype.parse = function( keys ){
-			var i, c,
-				t,
-				breakSet,
-				set = this.makeSet(),
-				sets = [],
-				mergeSet = this.mergeSet.bind(this);
-
-			// I need to start on the end, and find the last valid point.  Go until there
-			for( i = 0, c = keys.length; i < c; i++ ){
-				t = this.preparse(keys[i]);
-				
-				if ( t ){
-					breakSet = mergeSet( 
-						t,
-						set
-					);
-				} else {
-					breakSet = true;
-				} 
-
-				if ( breakSet && this.isValidSet(set) ){
-					sets.push( set );
-					set = this.makeSet();
-				}
-			}
-
-			if ( this.isValidSet(set) ){
-				sets.push( set );
-			}
-
-			return sets;
-		};
-
-		DrawBuilder.prototype.makeElement = function( convertedSet ){
-			console.log( 'makeElement', convertedSet );
-			return '<text>Element not overriden</text>';
-		};
-
-		DrawBuilder.prototype.makePath = function( convertedSet ){
-			console.log( 'makePath', convertedSet );
-			return 'M0,0Z';
-		};
-
-		return DrawBuilder;
-	}]
-);
-angular.module( 'vgraph' ).factory( 'DrawFill', 
-	['DrawBuilder',
-	function( DrawBuilder ){
-		'use strict';
-		
-		function DrawFill(){}
-
-		DrawFill.prototype = new DrawBuilder();
-
-		DrawFill.prototype.mergeSet = function( parsed, set ){
-			var x = parsed.x,
-				y1 = parsed.y1,
-				y2 = parsed.y2,
-				last = set[set.length-1];
-
-			if ( DrawBuilder.isNumeric(y1) && DrawBuilder.isNumeric(y2) ){
-                set.push({
-                	x: x,
-                	y1: this.scale1(y1),
-                	y2: this.scale2(y2)
-                });
-            } else if ( !last || y1 === null || y2 === null ){
-            	return true;
-            } else {
-            	if ( y1 === undefined ){
-					y1 = last.y1;
-				}else{
-					y1 = this.scale1(y1);
-				}
-
-				if ( y2 === undefined && last ){
-					y2 = last.y2;
-				}else{
-					y2 = this.scale2(y2);
-				}
-
-                set.push({
-                	x: x,
-                	y1: y1,
-                	y2: y2
-                });
-            }
-		};
-
-		DrawFill.prototype.makePath = function( set ){
-			var i, c,
-				point,
-				line1 = [],
-				line2 = [];
-
-			if ( set.length ){
-				for( i = 0, c = set.length; i < c; i++ ){
-					point = set[i];
-					
-					line1.push( point.x+','+point.y1 );
-					line2.unshift( point.x+','+point.y2 );
-				}
-
-				return 'M' + line1.join('L') + 'L' + line2.join('L') + 'Z';
-			}
-		};
-
-		DrawFill.prototype.makeElement = function( set ){
-			return '<path d="'+this.makePath(set)+'"></path>';
-		};
-
-		return DrawFill;
-	}]
-);
-angular.module( 'vgraph' ).factory( 'DrawIcon', 
-	[ 'DrawBox',
-	function( DrawBox ){
-		'use strict';
-		
-		function DrawIcon( box, template ){
-			this.box = box;
-			this.template = template;
-			this.elemental = true;
-		}
-
-		DrawIcon.prototype = new DrawBox();
-
-		DrawIcon.prototype.makeElement = function( boxInfo ){
-			var x, y;
-			
-			if ( boxInfo ){
-				x = (boxInfo.x1 + boxInfo.x2 - this.box.width ) / 2; // v / 2 - width / 2 
-				y = (boxInfo.y1 + boxInfo.y2 - this.box.height ) / 2;
-
-				return '<g transform="translate('+x+','+y+')">' + this.template + '</g>';
-			}
-		};
-
-		return DrawIcon;
-	}]
-);
-angular.module( 'vgraph' ).factory( 'DrawLine', 
-	['DrawBuilder',
-	function( DrawBuilder ){
-		'use strict';
-		
-		function DrawLine(){}
-
-		DrawLine.prototype = new DrawBuilder();
-
-		DrawLine.prototype.mergeSet = function( parsed, set ){
-			var x = parsed.x,
-				y = parsed.y,
-				last = set[set.length-1];
-
-			if ( DrawBuilder.isNumeric(y) ){
-                set.push({
-                	x: x,
-                	y: this.scale(y)
-                });
-            }else if ( last && y === undefined ){
-                set.push({
-                	x: x,
-                	y: last.y
-                });
-            }else{
-                return true;
-            }
-		};
-
-		DrawLine.prototype.makePath = function( set ){
-			var i, c,
-				point,
-				res = [];
-
-			if ( set.length ){
-				for( i = 0, c = set.length; i < c; i++ ){
-					point = set[i];
-					res.push( point.x + ',' + point.y );
-				}
-
-				return 'M' + res.join('L');
-			}
-		};
-
-		DrawLine.prototype.makeElement = function( set ){
-			if ( set.length ){
-				return '<path d="'+this.makePath(set)+'"></path>';
-			}
-		};
-
-		return DrawLine;
-	}]
-);
 angular.module( 'vgraph' ).factory( 'DataCollection',
 	[
 	function () {
@@ -3090,6 +2752,354 @@ angular.module( 'vgraph' ).factory( 'DataManager',
     } ]
 );
 
+angular.module( 'vgraph' ).factory( 'DrawBox', 
+	['DrawBuilder',
+	function( DrawBuilder ){
+		'use strict';
+
+		function DrawBox( elemental ){
+			this.elemental = elemental;
+		}
+
+		DrawBox.prototype = new DrawBuilder();
+
+		// default is to have one box per datum, all points valid
+		
+		function calcBox( x1, x2, y1, y2, box ){
+			var t;
+
+			if ( x1 > x2 ){
+				t = x1;
+				x1 = x2;
+				x2 = t;
+			}
+
+			if ( y1 > y2 ){
+				t = y1;
+				y1 = y2;
+				y2 = t;
+			}
+
+			if ( box.x1 === undefined ){
+				box.x1 = x1;
+				box.x2 = x2;
+				box.y1 = y1;
+				box.y2 = y2;
+			}else{
+				if ( box.x1 > x1 ){
+					box.x1 = x1;
+				}
+
+				if ( x2 > box.x2 ){
+					box.x2 = x2;
+				}
+
+				if ( box.y1 > y1 ){
+					box.y1 = y1;
+				}
+
+				if ( y2 > box.y2 ){
+					box.y2 = y2;
+				}
+			}
+
+			return box;
+		}
+
+		DrawBox.prototype.makeSet = function(){
+			return {};
+		};
+
+		DrawBox.prototype.isValidSet = function( box ){
+			return box.x1 !== undefined;
+		};
+
+		DrawBox.prototype.mergeSet = function( parsed, set ){
+			var x1 = parsed.x1,
+				x2 = parsed.x2,
+				y1 = parsed.y1,
+				y2 = parsed.y2;
+
+			if ( y1 !== null && y2 !== null ){
+				if ( y1 === undefined ){
+					y1 = set.y1;
+				}else{
+					y1 = this.scale1(y1);
+				}
+
+				if ( y2 === undefined ){
+					y2 = set.y2;
+				}else{
+					y2 = this.scale2(y2);
+				}
+
+				calcBox( x1, x2, y1, y2, set );
+			}else{
+				return true;	
+			}
+		};
+
+		DrawBox.prototype.makePath = function( boxInfo ){
+			if ( boxInfo ){
+				return 'M' + 
+					(boxInfo.x1+','+boxInfo.y1) + 'L' +
+					(boxInfo.x2+','+boxInfo.y1) + 'L' +
+					(boxInfo.x2+','+boxInfo.y2) + 'L' +
+					(boxInfo.x1+','+boxInfo.y2) + 'Z';
+			}
+		};
+
+		DrawBox.prototype.makeElement = function( boxInfo ){
+			if ( boxInfo ){
+				return '<rect x="'+boxInfo.x1+
+					'" y="'+boxInfo.y1+
+					'" width="'+(boxInfo.x2 - boxInfo.x1)+
+					'" height="'+(boxInfo.y2 - boxInfo.y1)+'"/>';
+			}
+		};
+		
+		return DrawBox;
+	}]
+);
+angular.module( 'vgraph' ).factory( 'DrawBuilder', 
+	[
+	function(){
+		'use strict';
+
+		function DrawBuilder(){}
+
+		DrawBuilder.isNumeric = function( v ){
+            if ( v === null ){
+                return false;
+            }else if ( Number.isFinite ){
+                return Number.isFinite(v) && !Number.isNaN(v);
+            }else{
+                return isFinite(v) && !isNaN(v);
+            }
+        };
+
+		// allows for very complex checks of if the value is defined, allows checking previous and next value
+		DrawBuilder.prototype.preparse = function( d ){
+			return d;
+		};
+
+		DrawBuilder.prototype.makeSet = function(){
+			return [];
+		};
+
+		DrawBuilder.prototype.mergeSet = function( d, set ){
+			if ( d ){
+				set.push( d );
+				return false;
+			}else{
+				return true;
+			}
+		};
+
+		DrawBuilder.prototype.isValidSet = function( set ){
+			return set.length !== 0;
+		};
+
+		DrawBuilder.prototype.convert = function( keys ){
+			return this.parse( keys );
+		};
+
+		DrawBuilder.prototype.parse = function( keys ){
+			var i, c,
+				t,
+				breakSet,
+				set = this.makeSet(),
+				sets = [],
+				mergeSet = this.mergeSet.bind(this);
+
+			// I need to start on the end, and find the last valid point.  Go until there
+			for( i = 0, c = keys.length; i < c; i++ ){
+				t = this.preparse(keys[i]);
+				
+				if ( t ){
+					breakSet = mergeSet( 
+						t,
+						set
+					);
+				} else {
+					breakSet = true;
+				} 
+
+				if ( breakSet && this.isValidSet(set) ){
+					sets.push( set );
+					set = this.makeSet();
+				}
+			}
+
+			if ( this.isValidSet(set) ){
+				sets.push( set );
+			}
+
+			return sets;
+		};
+
+		DrawBuilder.prototype.makeElement = function( convertedSet ){
+			console.log( 'makeElement', convertedSet );
+			return '<text>Element not overriden</text>';
+		};
+
+		DrawBuilder.prototype.makePath = function( convertedSet ){
+			console.log( 'makePath', convertedSet );
+			return 'M0,0Z';
+		};
+
+		return DrawBuilder;
+	}]
+);
+angular.module( 'vgraph' ).factory( 'DrawFill', 
+	['DrawBuilder',
+	function( DrawBuilder ){
+		'use strict';
+		
+		function DrawFill(){}
+
+		DrawFill.prototype = new DrawBuilder();
+
+		DrawFill.prototype.mergeSet = function( parsed, set ){
+			var x = parsed.x,
+				y1 = parsed.y1,
+				y2 = parsed.y2,
+				last = set[set.length-1];
+
+			if ( DrawBuilder.isNumeric(y1) && DrawBuilder.isNumeric(y2) ){
+                set.push({
+                	x: x,
+                	y1: this.scale1(y1),
+                	y2: this.scale2(y2)
+                });
+            } else if ( !last || y1 === null || y2 === null ){
+            	return true;
+            } else {
+            	if ( y1 === undefined ){
+					y1 = last.y1;
+				}else{
+					y1 = this.scale1(y1);
+				}
+
+				if ( y2 === undefined && last ){
+					y2 = last.y2;
+				}else{
+					y2 = this.scale2(y2);
+				}
+
+                set.push({
+                	x: x,
+                	y1: y1,
+                	y2: y2
+                });
+            }
+		};
+
+		DrawFill.prototype.makePath = function( set ){
+			var i, c,
+				point,
+				line1 = [],
+				line2 = [];
+
+			if ( set.length ){
+				for( i = 0, c = set.length; i < c; i++ ){
+					point = set[i];
+					
+					line1.push( point.x+','+point.y1 );
+					line2.unshift( point.x+','+point.y2 );
+				}
+
+				return 'M' + line1.join('L') + 'L' + line2.join('L') + 'Z';
+			}
+		};
+
+		DrawFill.prototype.makeElement = function( set ){
+			return '<path d="'+this.makePath(set)+'"></path>';
+		};
+
+		return DrawFill;
+	}]
+);
+angular.module( 'vgraph' ).factory( 'DrawIcon', 
+	[ 'DrawBox',
+	function( DrawBox ){
+		'use strict';
+		
+		function DrawIcon( box, template ){
+			this.box = box;
+			this.template = template;
+			this.elemental = true;
+		}
+
+		DrawIcon.prototype = new DrawBox();
+
+		DrawIcon.prototype.makeElement = function( boxInfo ){
+			var x, y;
+			
+			if ( boxInfo ){
+				x = (boxInfo.x1 + boxInfo.x2 - this.box.width ) / 2; // v / 2 - width / 2 
+				y = (boxInfo.y1 + boxInfo.y2 - this.box.height ) / 2;
+
+				return '<g transform="translate('+x+','+y+')">' + this.template + '</g>';
+			}
+		};
+
+		return DrawIcon;
+	}]
+);
+angular.module( 'vgraph' ).factory( 'DrawLine', 
+	['DrawBuilder',
+	function( DrawBuilder ){
+		'use strict';
+		
+		function DrawLine(){}
+
+		DrawLine.prototype = new DrawBuilder();
+
+		DrawLine.prototype.mergeSet = function( parsed, set ){
+			var x = parsed.x,
+				y = parsed.y,
+				last = set[set.length-1];
+
+			if ( DrawBuilder.isNumeric(y) ){
+                set.push({
+                	x: x,
+                	y: this.scale(y)
+                });
+            }else if ( last && y === undefined ){
+                set.push({
+                	x: x,
+                	y: last.y
+                });
+            }else{
+                return true;
+            }
+		};
+
+		DrawLine.prototype.makePath = function( set ){
+			var i, c,
+				point,
+				res = [];
+
+			if ( set.length ){
+				for( i = 0, c = set.length; i < c; i++ ){
+					point = set[i];
+					res.push( point.x + ',' + point.y );
+				}
+
+				return 'M' + res.join('L');
+			}
+		};
+
+		DrawLine.prototype.makeElement = function( set ){
+			if ( set.length ){
+				return '<path d="'+this.makePath(set)+'"></path>';
+			}
+		};
+
+		return DrawLine;
+	}]
+);
 angular.module( 'vgraph' ).factory( 'makeEventing',
     [
     function () {
@@ -3322,12 +3332,12 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 		};
 	}]
 );
-angular.module( 'vgraph' ).factory( 'LinearSamplerNode',
+angular.module( 'vgraph' ).factory( 'LinearNode',
 	[
 	function(){
 		'use strict';
 		
-		function LinearSamplerNode( datum ){
+		function LinearNode( datum ){
 			var keys = [];
 
 			this._$minInterval = datum._$interval;
@@ -3346,7 +3356,7 @@ angular.module( 'vgraph' ).factory( 'LinearSamplerNode',
 			this.$merge( datum );
 		}
 
-		LinearSamplerNode.prototype.$merge = function( datum ){
+		LinearNode.prototype.$merge = function( datum ){
 			var dis = this;
 
 			this._$maxInterval = datum._$interval;
@@ -3362,7 +3372,7 @@ angular.module( 'vgraph' ).factory( 'LinearSamplerNode',
 			});
 		};
 
-		LinearSamplerNode.prototype.$finalize = function( stats ){
+		LinearNode.prototype.$finalize = function( stats ){
 			var dis = this,
 				count = this._$count,
 				index = this._$index;
@@ -3381,29 +3391,29 @@ angular.module( 'vgraph' ).factory( 'LinearSamplerNode',
 			});
 		};
 
-		return LinearSamplerNode;
+		return LinearNode;
 	}]
 );
-angular.module( 'vgraph' ).factory( 'LinearSamplerModel',
-	['DataCollection', 'LinearSamplerNode',
-	function ( DataCollection, LinearSamplerNode ) {
+angular.module( 'vgraph' ).factory( 'LinearSampler',
+	['DataCollection', 'LinearNode',
+	function ( DataCollection, LinearNode ) {
 		'use strict';
 
 		var uid = 1;
 
-		function LinearSamplerModel( indexer, nodeFactory ){
+		function LinearSampler( indexer, nodeFactory ){
 			this.$modelUid = uid++;
 			this.$stats = {};
 			this.$indexer = indexer;
 			this.$makeNode = nodeFactory || function( datum ){
-				return new LinearSamplerNode(datum);
+				return new LinearNode(datum);
 			};
 			DataCollection.call( this );
 		}
 
-		LinearSamplerModel.prototype = new DataCollection();
+		LinearSampler.prototype = new DataCollection();
 
-		LinearSamplerModel.prototype.$follow = function( collection ){
+		LinearSampler.prototype.$follow = function( collection ){
 			var i, c,
 				index,
 				datum,
@@ -3427,7 +3437,7 @@ angular.module( 'vgraph' ).factory( 'LinearSamplerModel',
 			}
 		};
 		
-		return LinearSamplerModel;
+		return LinearSampler;
 	}]
 );
 
