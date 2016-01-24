@@ -25,6 +25,10 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
                 );
                 element.setReferences([cfg,pair]);
 
+                element.register = function( data, element ){
+                    graph.registerElement( data, element );
+                };
+
                 if ( cfg.classExtend ){
                     className += cfg.classExtend + ' ';
                 }

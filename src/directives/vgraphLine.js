@@ -20,7 +20,6 @@ angular.module( 'vgraph' ).directive( 'vgraphLine',
 
                 element.setElement( el );
 
-                console.log( '--', el );
                 if ( attrs.pair ){ // pair is already a reference
                     pair = ComponentGenerator.normalizeConfig( scope.pair );
                     className = 'fill ';

@@ -11,13 +11,15 @@ angular.module( 'vgraph' ).factory( 'ComponentElement',
             )).childNodes[0].childNodes;
         }
 
-        function appendChildren( element, children ){
-        	var i;
+        function appendChildren( element, dataSets, children ){
+        	var i,
+                root = element.element;
 
-        	element.innerHTML = '';
+        	root.innerHTML = '';
         	
             for( i = children.length - 1; i !== -1; i-- ){
-                element.appendChild( children[i] );
+                element.register( dataSets[i], children[i] );
+                root.appendChild( children[i] );
             }
         }
 
@@ -100,7 +102,8 @@ angular.module( 'vgraph' ).factory( 'ComponentElement',
         	// dataSets will be the content, preParsed, used to make the data
         	if ( this.element.tagName === 'g' ){
         		appendChildren(
-        			this.element,
+        			this,
+                    dataSets,
         			svgCompile(
         				this.make( 
         					dataSets, 
@@ -118,6 +121,8 @@ angular.module( 'vgraph' ).factory( 'ComponentElement',
 	        	);
         	}
         };
+
+        ComponentElement.prototype.register = function(){}; // hook for registering data -> elements
 
         ComponentElement.prototype.make = function( dataSets, maker ){
 			var i, c,

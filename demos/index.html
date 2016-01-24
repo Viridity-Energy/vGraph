@@ -98,6 +98,12 @@
 			fill: orange;
 		}
 
+		.bar .highlight-vertical {
+			fill: pink;
+			stroke-width: 5;
+			stroke: pink;
+		}
+
 		rect.bar.active {
 			opacity: .5;
 		}
@@ -350,6 +356,7 @@
 			<div vgraph-page="page">
 				<div vgraph-chart="graph">
 					<pre vgraph-highlight="point">
+					Stacked - Lines
 	{{ config[0].field }} : {{ point.default.linear.y1 }} : {{ point.default.linear.$stack$y1 }} : {{ config[0].className }}
 	{{ config[1].field }} : {{ point.default.linear.y2 }} : {{ point.default.linear.$stack$y2 }} : {{ config[1].className }}
 	{{ config[2].field }} : {{ point.default.linear.y3 }} : {{ point.default.linear.$stack$y3 }} : {{ config[2].className }}
@@ -373,6 +380,7 @@
 
 				<div vgraph-chart="graph">
 					<pre vgraph-highlight="point">
+					Stacked - Area
 	{{ config[0].field }} : {{ point.default.linear.y1 }} : {{ point.default.linear.$stack$y1 }} : {{ config[0].className }}
 	{{ config[1].field }} : {{ point.default.linear.y2 }} : {{ point.default.linear.$stack$y2 }} : {{ config[1].className }}
 	{{ config[2].field }} : {{ point.default.linear.y3 }} : {{ point.default.linear.$stack$y3 }} : {{ config[2].className }}
@@ -395,6 +403,7 @@
 				</div>
 
 				<div vgraph-chart="graph">
+					Stacked - Bars - Paths
 					<pre vgraph-highlight="point">
 						{{ point.default.linear.$stack$y1 }} : {{ point.default.linear.y1 }}
 						{{ point.default.linear.$stack$y2 }} : {{ point.default.linear.y2 }}
@@ -409,6 +418,30 @@
 
 						<g vgraph-stack="config">
 							<path ng-repeat="cfg in config" vgraph-bar="cfg" pair="config[$index-1]"></path>
+						</g>
+
+						<g vgraph-target="config" point-radius="3"></g>
+
+						<g vgraph-interact></g>
+					</svg>
+				</div>
+
+				<div vgraph-chart="graph">
+					Stacked - Bars - Rects
+					<pre vgraph-highlight="point">
+						{{ point.default.linear.$stack$y1 }} : {{ point.default.linear.y1 }}
+						{{ point.default.linear.$stack$y2 }} : {{ point.default.linear.y2 }}
+						{{ point.default.linear.$stack$y3 }} : {{ point.default.linear.y3 }}
+						{{ point.default.linear.$stack$y4 }} : {{ point.default.linear.y4 }}
+					</pre>
+					<svg>
+						<g vgraph-axis="'left'"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'bottom'"
+							tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+
+						<g vgraph-stack="config">
+							<g ng-repeat="cfg in config" vgraph-bar="cfg" pair="config[$index-1]"></g>
 						</g>
 
 						<g vgraph-target="config" point-radius="3"></g>

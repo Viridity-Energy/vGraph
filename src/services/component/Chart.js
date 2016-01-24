@@ -33,21 +33,22 @@
 **/
 angular.module( 'vgraph' ).factory( 'ComponentChart',
     [ '$timeout', 
-        'ComponentView', 'ComponentBox', 'DataCollection', 'LinearSamplerModel', 'makeEventing', 'Scheduler',
+        'ComponentView', 'ComponentBox', 'DataCollection', 'LinearSamplerModel', 
+        'makeEventing', 'Scheduler', 'Hitbox',
     function ( $timeout, 
-        ComponentView, ComponentBox, DataCollection, LinearSamplerModel, makeEventing, Scheduler ) {
+        ComponentView, ComponentBox, DataCollection, LinearSamplerModel,
+        makeEventing, Scheduler, Hitbox ) {
         'use strict';
 
         var schedule = new Scheduler(),
             ids = 1;
         
         function ComponentChart(){
-            var trigger = this.$trigger.bind( this ),
-                views = {};
+            var dis = this;
 
             this.$vguid = ++ids;
             this.box = new ComponentBox();
-            this.views = views;
+            this.views = {};
             this.models = [];
             this.waiting = {};
             this.references = {};
@@ -55,30 +56,10 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
             this.message = null;
             
             this.$on('focus',function( pos ){
-                var sum = 0,
-                    count = 0,
-                    points = {};
-
                 if ( pos ){
-                    angular.forEach( views, function( view, viewName ){
-                        var p;
-
-                        points[viewName] = view.getPoint( pos.x );
-                        p = points[viewName].$pos;
-
-                        if ( p !== undefined ){
-                            count++;
-                            sum += p;
-                        }
-                    });
-
-                    points.$pos = sum / count;
-                    points.pos = pos;
-
-                    trigger('focus-point',points);
-                    trigger('highlight',points);
+                    dis.highlightOn( pos );
                 }else{
-                    trigger('highlight',null);
+                    dis.highlightOff();
                 }
             });
         }
@@ -218,6 +199,8 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 
             schedule.startScript( this.$vguid );
 
+            this.configureHitbox();
+            
             if ( this.loading ){
                 dis.$trigger('loading');
 
@@ -376,6 +359,127 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
                     stop: rightPercent
                 });
             });
+        };
+
+        ComponentChart.prototype.configureHitbox = function(){
+            var box = this.box;
+
+            this.hitbox = new Hitbox(
+                box.left,
+                box.right,
+                box.top,
+                box.bottom,
+                10
+            );
+        };
+
+        ComponentChart.prototype.registerElement = function( info, element ){
+            info.$element = element;
+
+            this.hitbox.add( info );
+        };
+
+        var regex = {};
+
+        function getReg( className ){
+            var reg = regex[className];
+
+            if ( !reg ){
+                reg = new RegExp('(?:^|\\s)'+className+'(?!\\S)');
+                regex[className] = reg;
+            }
+
+            return reg;
+        }
+
+        function addClass( elements, className ){
+            var i, c,
+                el,
+                baseClass,
+                reg = getReg( className );
+
+
+            for( i = 0, c = elements.length; i < c; i++ ){
+                el = elements[i].$element;
+                baseClass = el.getAttribute('class') || '';
+
+                if ( !baseClass.match(reg) ){
+                    el.setAttribute( 'class', baseClass+' '+className );
+                }
+            }
+        }
+
+        function removeClass( elements, className ){
+            var i, c,
+                el,
+                reg = getReg( className );
+
+            for( i = 0, c = elements.length; i < c; i++ ){
+                el = elements[i].$element;
+                el.setAttribute(
+                    'class',
+                    (el.getAttribute('class')||'').replace( reg, '' )
+                );
+            }
+        }
+
+        ComponentChart.prototype.highlightElements = function( x, y ){
+            var vertical = this.hitbox.checkX( x ),
+                horizontal = this.hitbox.checkY( y ),
+                intersections = this.hitbox.checkHit( x, y );
+
+            this.unlightElements();
+
+            addClass( vertical, 'highlight-vertical' );
+            addClass( horizontal, 'highlight-horizontal' );
+            addClass( intersections, 'highlight' );
+
+            this._activeElements = {
+                vertical: vertical,
+                horizontal: horizontal,
+                intersections: intersections
+            };
+        };
+
+        ComponentChart.prototype.unlightElements = function(){
+            var highlights = this._activeElements;
+
+            if ( highlights ){
+                removeClass( highlights.vertical, 'highlight-vertical' );
+                removeClass( highlights.horizontal, 'highlight-horizontal' );
+                removeClass( highlights.intersections, 'highlight' );
+            }
+        };
+
+        ComponentChart.prototype.highlightOn = function( pos ){
+            var sum = 0,
+                count = 0,
+                points = {};
+
+            angular.forEach( this.views, function( view, viewName ){
+                var p;
+
+                points[viewName] = view.getPoint( pos.x );
+                p = points[viewName].$pos;
+
+                if ( p !== undefined ){
+                    count++;
+                    sum += p;
+                }
+            });
+
+            points.$pos = sum / count;
+            points.pos = pos;
+
+            this.$trigger( 'focus-point', points );
+            this.$trigger( 'highlight', points );
+
+            this.highlightElements( pos.x, pos.y );
+        };
+
+        ComponentChart.prototype.highlightOff = function(){
+            this.$trigger('highlight',null);
+            this.unlightElements();    
         };
 
         /*

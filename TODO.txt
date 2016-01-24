@@ -1,11 +1,5 @@
-- area conversion
-- icon conversion
-- leading conversion
-
 - create dot visual
 - convert messaging for focus
-
-- allow bars / areas to be own blocks or parts of line
 
 - linear 
 	- move all applicable directives under linear directory
