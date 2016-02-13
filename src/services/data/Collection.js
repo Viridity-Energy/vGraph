@@ -77,18 +77,6 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 
 		DataCollection.isNumeric = isNumeric;
 
-		DataCollection.prototype.$fillPoints = function( start, stop, interval, factory ){
-			var i, c,
-				t;
-
-			for( i = start, c = stop + interval; i < c; i += interval ){
-				t = factory();
-				t._$index = i;
-				this._$index[ i ] = t;
-				this.push( t );
-			}
-		};
-
 		DataCollection.prototype._register = function( index, node, shift ){
 			var hasValue,
 				dex = +index;
@@ -96,7 +84,6 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 			if ( !this._$index[dex] ){
 				this._$index[dex] = node;
 				
-
 				if ( shift ){
 					if ( this.length && dex > this[0]._$index ){
 						this.$dirty = true;
@@ -283,6 +270,8 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 
 				this.$dirty = false;
 			}
+
+			return this;
 		};
 
 		DataCollection.prototype.$filter = function( startIndex, stopIndex ){

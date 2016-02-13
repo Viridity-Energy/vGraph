@@ -52,14 +52,6 @@ angular.module( 'vgraph' ).factory( 'DataLoader',
         DataLoader.prototype.addConfig = function( cfg ){
             var keys = Object.keys(cfg.readings),
                 proc = this._process.bind( this );
-
-            /*
-            -- it is assumed a feed will have the same exploder
-            conf.explode: run against the data nodes to generate child data nodes.  Expect result appends [name]$Ref
-            conf.isValid : check to see if the point should even be considered for parsing
-            conf.parseInterval *
-            conf.readings
-            */
             
             keys.forEach(function( key ){
                 var fn = cfg.readings[ key ];

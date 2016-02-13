@@ -12,21 +12,20 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
             controller: ComponentElement,
             link : function( scope, $el, attrs, requirements ){
                 var el = $el[0],
-                    cfg = ComponentGenerator.normalizeConfig( scope.config ),
-                    pair = scope.pair,
-                    graph = requirements[0],
+                    chart = requirements[0],
+                    cfg = chart.compileReference( scope.config ),
+                    pair = chart.compileReference( scope.pair ),
                     element = requirements[1],
                     className = 'bar ';
 
                 element.setElement( el );
-
                 element.setDrawer(
-                    ComponentGenerator.makeBarCalc( graph, cfg, pair, attrs.width )
+                    ComponentGenerator.makeBarCalc( cfg, pair, attrs.width )
                 );
                 element.setReferences([cfg,pair]);
 
                 element.register = function( data, element ){
-                    graph.registerElement( data, element );
+                    chart.registerElement( data, element );
                 };
 
                 if ( cfg.classExtend ){
@@ -37,7 +36,7 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
 
                 el.setAttribute( 'class', className );
 
-                graph.getView(cfg.view).register(element);
+                cfg.$view.register(element);
             }
         };
     } ]

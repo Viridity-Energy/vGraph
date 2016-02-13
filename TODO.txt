@@ -1,3 +1,7 @@
+- chart does the reference compile
+- elements should register to the chart, not the view
+- break renderers out to being their own objects
+
 - create dot visual
 - convert messaging for focus
 

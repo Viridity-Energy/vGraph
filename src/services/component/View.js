@@ -12,83 +12,118 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
             this.components = [];
         }
 
-        ComponentView.prototype.addModel = function( name, dataModel ){
-            this.models[ name ] = dataModel;
-
-            return this;
-        };
-
-        ComponentView.prototype.configure = function( settings, chartSettings, box ){
-            var x, y,
-                models,
-                addModel = this.addModel.bind( this );
-
-            if ( !settings ){
-                settings = {};
+        ComponentView.parseSettingsX = function( settings, old ){
+            if ( !old ){
+                old = {};
             }
 
-            x = {
-                min: settings.x ? settings.x.min : undefined,
-                max: settings.x ? settings.x.max : undefined
-            };
-            y = {
-                min: settings.y ? settings.y.min : undefined,
-                max: settings.y ? settings.y.max : undefined
-            };
+            if ( settings.min !== undefined ){
+                old.min = settings.min;
+            }
 
-            this.x = x;
-            this.y = y;
+            if ( settings.minPane !== undefined ){
+                old.minPane = settings.minPane;
+            }
+
+            if ( settings.max !== undefined ){
+                old.max = settings.max;
+            }
+
+            if ( settings.maxPane !== undefined ){
+                old.maxPane = settings.maxPane;
+            }
+
+            if ( settings.interval !== undefined ){
+                old.interval = settings.interval;
+            }
+
+            if ( settings.scale ){
+                old.scale = settings.scale;
+            }else if ( !old.scale ){
+                old.scale = d3.scale.linear()();
+            }
+
+            if ( settings.format ){
+                old.format = settings.format;
+            }else if ( !old.format ){
+                old.format = function( v ){ return v; };
+            }
+
+            if ( settings.padding ){
+                old.padding = settings.padding;
+            }
+
+            return old;
+        };
+
+        ComponentView.parseSettingsY = function( settings, old ){
+            if ( !old ){
+                old = {};
+            }
+
+            if ( settings.min !== undefined ){
+                old.min = settings.min;
+            }
+
+            if ( settings.max !== undefined ){
+                old.max = settings.max;
+            }
+
+            if ( settings.scale ){
+                old.scale = settings.scale;
+            }else if ( !old.scale ){
+                old.scale = d3.scale.linear();
+            }
+
+            if ( settings.format ){
+                old.format = settings.format;
+            }else if ( !old.scale ){
+                old.format = function( v ){ return v; };
+            }
+
+            if ( settings.padding ){
+                old.padding = settings.padding;
+            }
+
+            return old;
+        };
+
+        ComponentView.prototype.configure = function( settings, chartSettings, box, page ){
+            this.x = ComponentView.parseSettingsX( settings.x || chartSettings.x, this.x );
+            this.y = ComponentView.parseSettingsY( settings.y || chartSettings.y, this.y );
             
             this.box = box;
-            this.pane = new ComponentPane( this.x, this.y );
-            this.managerName = settings.manager;
-            this.datumFactory = settings.datumFactory;
+            this.manager = page.getManager( settings.manager );
+            this.normalizer = settings.normalizer;
 
-            this.makeInterval = chartSettings.makeInterval;
+            // TODO : I want the normalizer to directly follow the manager, cut out the filtered
+            // this.normalizer.$follow( this.manager );
+
             this.adjustSettings = chartSettings.adjustSettings;
+            
+            this.pane = new ComponentPane( this.x, this.y );
             this.pane.fitToPane = chartSettings.fitToPane;
 
-            x.tick = chartSettings.x.tick || {};
-            x.scale = chartSettings.x.scale ? chartSettings.x.scale() : d3.scale.linear();
-            x.padding = chartSettings.x.padding;
-            x.massage = chartSettings.x.massage;
-            x.format = chartSettings.x.format || function( v ){
-                return v;
-            };
-
-            y.tick = chartSettings.y.tick || {};
-            y.scale = chartSettings.y.scale ? chartSettings.y.scale() : d3.scale.linear();
-            y.padding = chartSettings.y.padding;
-            y.massage = chartSettings.y.massage;
-            y.format = chartSettings.y.format || function( v ){
-                return v;
-            };
-
-            if ( settings.models ){
-                if ( angular.isFunction(settings.models) ){
-                    models = settings.models();
-                }else{
-                    models = settings.models;
-                }
-
-                Object.keys( models ).forEach(function( modelName ){
-                    addModel( modelName, models[modelName] );
+            if ( this.x.max ){
+                this.pane.setBounds({
+                    min: this.x.min, 
+                    max: this.x.max 
                 });
+
+                if ( this.x.interval ){
+                    this.manager.data.$fillPoints( 
+                        this.x.min,
+                        this.x.max,
+                        this.x.interval
+                    );
+                }
             }
-        };
 
-        ComponentView.prototype.setPage = function( page ){
-            var x = this.x;
-
-            this.manager = page.getManager( this.managerName );
-
-            if ( x && (x.min || x.min === 0) && x.max && x.interval && this.datumFactory ){
-                this.manager.data.$fillPoints( 
-                    x.min,
-                    x.max,
-                    x.interval,
-                    this.datumFactory
-                );
+            if ( this.x.maxPane ){
+                this.pane.setPane({
+                    min: this.x.minPane, 
+                    max: this.x.maxPane
+                });
             }
         };
 
@@ -106,19 +141,16 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 
         ComponentView.prototype.sample = function(){
             var dis = this,
-                keys,
                 offset,
                 filtered,
                 box = this.box,
-                pane = this.pane,
-                models = this.models;
+                pane = this.pane;
 
             this.offset = {};
             this.filtered = pane.filter( this.manager, this.offset );
 
             filtered = this.filtered;
             offset = this.offset;
-
             if ( filtered ){
                 this.x.scale
                     .domain([
@@ -134,10 +166,7 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
                     datum._$interval = dis.x.scale(datum._$index);
                 });
 
-                keys = Object.keys(models);
-                keys.forEach(function(key){
-                    models[key].$follow( filtered, box );
-                });
+                this.normalizer.$follow( filtered );
             }
         };
 

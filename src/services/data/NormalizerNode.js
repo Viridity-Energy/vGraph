@@ -1,9 +1,9 @@
-angular.module( 'vgraph' ).factory( 'LinearNode',
+angular.module( 'vgraph' ).factory( 'DataNormalizerNode',
 	[
 	function(){
 		'use strict';
 		
-		function LinearNode( datum ){
+		function DataNormalizerNode( datum ){
 			var keys = [];
 
 			this._$minInterval = datum._$interval;
@@ -22,7 +22,7 @@ angular.module( 'vgraph' ).factory( 'LinearNode',
 			this.$merge( datum );
 		}
 
-		LinearNode.prototype.$merge = function( datum ){
+		DataNormalizerNode.prototype.$merge = function( datum ){
 			var dis = this;
 
 			this._$maxInterval = datum._$interval;
@@ -38,7 +38,7 @@ angular.module( 'vgraph' ).factory( 'LinearNode',
 			});
 		};
 
-		LinearNode.prototype.$finalize = function( stats ){
+		DataNormalizerNode.prototype.$finalize = function( stats ){
 			var dis = this,
 				count = this._$count,
 				index = this._$index;
@@ -57,6 +57,6 @@ angular.module( 'vgraph' ).factory( 'LinearNode',
 			});
 		};
 
-		return LinearNode;
+		return DataNormalizerNode;
 	}]
 );

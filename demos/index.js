@@ -30,9 +30,7 @@ angular.module( 'vgraph' ).controller( 'FloodCtrl',
 			x : {
 				min: -5,
 				max: 25,
-				scale: function(){
-					return d3.scale.linear();
-				}
+				scale: d3.scale.linear()
 			},
 			y : {
 				padding : 0.05,
@@ -765,9 +763,7 @@ angular.module( 'vgraph' ).controller( 'LeadingCtrl',
 			x : {
 				min: -5,
 				max: 35,
-				scale: function(){
-					return d3.scale.linear();
-				}
+				scale: d3.scale.linear()
 			},
 			y : {
 				padding : 0.05,
@@ -879,9 +875,7 @@ angular.module( 'vgraph' ).controller( 'BoxCtrl',
 			x : {
 				min: -5,
 				max: 105,
-				scale: function(){
-					return d3.scale.linear();
-				}
+				scale: d3.scale.linear()
 			},
 			y : {
 				padding : 0.05,
@@ -948,9 +942,7 @@ angular.module( 'vgraph' ).controller( 'IconCtrl',
 			x : {
 				min: -5,
 				max: 105,
-				scale: function(){
-					return d3.scale.linear();
-				}
+				scale: d3.scale.linear()
 			},
 			y : {
 				padding : 0.05,

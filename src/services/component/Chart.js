@@ -1,4 +1,4 @@
-/* cfg for inputs
+/** cfg for inputs
     - name
     - view
     - model
@@ -6,26 +6,25 @@
     - getInterval
     - massage
     - isValid
-*/
+**/
 
 /** cfg for graph
     x: {
         scale : some scaling function
         padding: amount to add padding // TODO
         format: value formatting function
-    }
+    },
+    normalizeX: boolean if make all the x values align between views
     y: {
         scale : some scaling function
         padding: amount to add padding
         format: value formatting function
     },
+    normalizeY: boolean if make all the y values align between views,
     fitToPane: boolean if data should fit to pane or cut off
-    makeInterval: function for creating interval value, runs off _$index ( $interval: converted, _interval: coord )
     views: {
         viewName: ViewModel
-    },
-    normalizeX: boolean if make all the x values align between views,
-    normalizeY: boolean if make all the y values align between views
+    }
 **/
 
 /** cfg for view 
@@ -33,10 +32,10 @@
 **/
 angular.module( 'vgraph' ).factory( 'ComponentChart',
     [ '$timeout', 
-        'ComponentView', 'ComponentBox', 'DataCollection', 'LinearSampler', 
+        'ComponentView', 'ComponentPage', 'ComponentBox', 'DataCollection', 'DataNormalizer', 
         'makeEventing', 'Scheduler', 'Hitbox', 'DomHelper',
     function ( $timeout, 
-        ComponentView, ComponentBox, DataCollection, LinearSampler,
+        ComponentView, ComponentPage, ComponentBox, DataCollection, DataNormalizer,
         makeEventing, Scheduler, Hitbox, domHelper ) {
         'use strict';
 
@@ -67,28 +66,21 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
         makeEventing(ComponentChart.prototype);
 
         ComponentChart.defaultView = 'default';
-        ComponentChart.defaultModel = 'linear';
-
-        ComponentChart.prototype.setPage = function( page ){
-            this.page = page;
-        };
 
         ComponentChart.prototype.configure = function( page, settings ){
-            var t,
-                views,
+            var views,
                 addView = this.addView.bind(this);
 
             if ( !settings ){
                 settings = {};
             }
 
-            if ( !settings.x ){
-                settings.x = {};
+            if ( !this.settings ){
+                this.settings = {};
             }
 
-            if ( !settings.y ){
-                settings.y = {};
-            }
+            settings.x = ComponentView.parseSettingsX( settings.x, this.settings.x );
+            settings.y = ComponentView.parseSettingsY( settings.y, this.settings.y );
 
             this.page = page;
             this.settings = settings;
@@ -98,17 +90,14 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 
             views = settings.views;
             if ( !views ){
-                t = {};
-                t[ ComponentChart.defaultModel ] = new LinearSampler(
-                    function(datum){
-                        return Math.round(datum._$interval);
-                    },
-                    settings.nodeFactory
-                );
-
                 views = {};
                 views[ ComponentChart.defaultView ] = {
-                    models: t
+                    manager: ComponentPage.defaultManager,
+                    normalizer: new DataNormalizer(
+                        function(datum){
+                            return Math.round(datum._$interval);
+                        }
+                    )
                 };
             }else if ( angular.isFunction(views) ){
                 views = views();
@@ -157,26 +146,81 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
             });
         }
 
-        ComponentChart.prototype.setInputReference = function( reference, ref ){
-            this.references[ reference ] = ref;
+        var cfgUid = 0;
+
+        ComponentChart.prototype.compileReference = function( reference ){
+            if ( typeof(reference) !== 'object' ){
+                return null;
+            }
+
+            if ( reference.$uid === undefined ){
+                reference.$uid = cfgUid++;
+            }
+
+            if ( !reference.model ){
+                reference.model = ComponentChart.defaultModel;
+            }
+
+            if ( reference.name ){
+                reference.field = reference.name;
+
+                if ( !reference.className ){
+                    reference.className = 'node-'+reference.name;
+                }
+
+                if ( reference.getValue === undefined ){
+                    reference.getValue = function( d ){
+                        return d[ reference.field ];
+                    };
+                }
+            } else if ( !reference.getValue ){
+                throw new Error('drawer reference requires name or getValue');
+            }
+
+            // undefined allow lax definining, and simplicity for one view sake.
+            // null will mean no view editing
+            if ( reference.view === undefined ){
+                reference.view = ComponentChart.defaultView;
+            }
+
+            if ( reference.view ){
+                reference.$view = this.getView( reference.view );
+                reference.$getNode = function( index ){
+                    return this.$view.normalizer.$getNode(index);
+                };
+                reference.$getValue = function( index ){
+                    var t = this.$view.normalizer.$getNode(index);
+
+                    if ( t ){
+                        return this.getValue(t);
+                    }
+                };
+                reference.$eachNode = function( fn ){
+                    this.$view.normalizer.$sort().forEach( fn );
+                };
+                
+            } else if ( !reference.$getValue ){
+                throw new Error('drawer reference requires view or $getValue');
+            }
+
+            return reference;
         };
 
+        // Fired to render the chart and all of its child elements
         ComponentChart.prototype.render = function(){
-            var currentView,
-                dis = this,
+            var dis = this,
                 activeViews = [],
                 isReady = false,
                 hasViews = 0;
 
             try{
-                angular.forEach( this.views, function( view, name ){
-                    currentView = name;
+                // generate data limits for all views
+                angular.forEach( this.views, function( view ){
                     view.parse();
                 });
-                currentView = null;
 
+                // do any of our views have data?
                 angular.forEach( this.views, function( view, name ){
-                    currentView = name;
                     if ( view.hasData() ){
                         activeViews.push( view );
                         isReady = true;
@@ -184,8 +228,8 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
                         isReady = true;
                     }
                 });
-                currentView = null;
 
+                // sync up views if required
                 if ( this.normalizeY ){
                     normalizeY( activeViews );
                 }
@@ -216,6 +260,13 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
                     dis.message = null;
                 });
 
+                /**
+                Step through the build cycle for all views.  Due to DOM parsing rules, it is faster to:
+                 
+                build : alter DOM
+                process : check DOM positioning calculations
+                finalize : do final DOM adjustments
+                **/
                 schedule.loop( activeViews, function( view ){
                     view.build();
                 });
@@ -304,30 +355,9 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
             viewModel.configure(
                 viewSettings,
                 settings,
-                this.box
+                this.box,
+                this.page
             );
-
-            viewModel.setPage( this.page );
-
-            if ( settings.x.min !== undefined ){
-                viewModel.pane.setBounds({
-                    min: settings.x.min, 
-                    max: settings.x.max 
-                });
-
-                if ( settings.x.interval && settings.x.max && settings.datumFactory ){
-                    viewModel.manager.data.$fillPoints( 
-                        settings.x.min,
-                        settings.x.max,
-                        settings.x.interval,
-                        settings.datumFactory
-                    );
-                }
-            }
-
-            if ( this.settings.x.minPane !== undefined ){
-                viewModel.pane.setPane( this.settings.x.minPane, this.settings.x.maxPane );
-            }
 
             viewModel.manager.register(function(){
                 dis.needsRender(viewModel);

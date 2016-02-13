@@ -13,8 +13,8 @@ angular.module( 'vgraph' ).directive( 'vgraphIcon',
                 var el = $el[0],
                 	$d3 = d3.select( el ),
         			box = $d3.node().getBBox(),
-        			cfg = ComponentGenerator.normalizeConfig( scope.config ),
-                    graph = requirements[0],
+        			chart = requirements[0],
+                    cfg = chart.compileReference( scope.config ),
                     element = requirements[1],
                     content = el.innerHTML,
                     className = 'icon ',
@@ -31,10 +31,10 @@ angular.module( 'vgraph' ).directive( 'vgraphIcon',
                 };
 
                 el.innerHTML = '';
-                element.setElement( el );
 
+                element.setElement( el );
                 element.setDrawer(
-                    ComponentGenerator.makeIconCalc( graph, cfg, box, content )
+                    ComponentGenerator.makeIconCalc( cfg, box, content )
                 );
                 element.setReferences([cfg]);
 
@@ -46,7 +46,7 @@ angular.module( 'vgraph' ).directive( 'vgraphIcon',
 
                 el.setAttribute( 'class', className );
 
-                graph.getView(cfg.view).register(element);
+                cfg.$view.register(element);
             }
         };
     }]

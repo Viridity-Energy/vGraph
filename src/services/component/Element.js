@@ -38,66 +38,42 @@ angular.module( 'vgraph' ).factory( 'ComponentElement',
         };
 
         ComponentElement.prototype.setReferences = function( references ){
-        	if ( !angular.isArray(references) ){
+        	var keys = [],
+                seen;
+
+            if ( !angular.isArray(references) ){
         		references = [ references ];
         	}
 
         	this.references = references;
+
+            references.forEach(function( ref ){
+                if ( !ref ){
+                    return;
+                }
+
+                
+                if ( ref.requirements ){
+                    keys = keys.concat( ref.requirements );
+                }else{
+                    keys.push( ref.field );
+                }
+            });
+
+            // TODO : requirements need to be registered with view's normalizer
         };
 
-        ComponentElement.prototype.parse = function( models ){
-        	var co = 0,
-				seen = {},
-				keys = [];
+        ComponentElement.prototype.factory = function(){
+            throw new Error('Need to extend and define a factory');
+        };
 
-        	this.references.forEach(function( ref ){
-        		var model;
-
-        		if ( !ref ){
-        			return;
-        		}
-
-        		model = models[ref.model];
-
-        		if ( !seen[model.$modelUid] ){
-					co++;
-					seen[model.$modelUid] = true;
-
-					keys = keys.concat( model.$getIndexs() );
-				}
-
-        		ref.$model = model;
-        		ref.$getNode = function( index ){
-        			return this.$model.$getNode(index);
-        		};
-        		ref.$getValue = function( index ){
-        			var t = this.$getNode(index);
-
-        			if ( t ){
-        				return this.getValue(t);
-        			}
-        		};
-        	});
-
-			if ( co > 1 ){
-				seen = {};
-				keys = keys.filter(function(x) {
-					if ( seen[x] ){
-						return;
-					}
-					seen[x] = true;
-					return x;
-				});
-			}
-
-			this.keys = keys;
-
-        	return StatCalculations.limits( keys, this.references );
+        ComponentElement.prototype.parse = function(){
+        	return StatCalculations.limits( this.references );
         };
 
         ComponentElement.prototype.build = function(){
-        	var drawer = this.factory(),
-        		dataSets = drawer.convert( this.keys ); 
+        	var drawer = this.factory( this.references ),
+        		dataSets = drawer.convert(); 
 
         	// dataSets will be the content, preParsed, used to make the data
         	if ( this.element.tagName === 'g' ){

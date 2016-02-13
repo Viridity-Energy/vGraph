@@ -14,25 +14,25 @@ angular.module( 'vgraph' ).directive( 'vgraphLine',
                 var pair,
                     className,
                     el = $el[0],
-                    cfg = ComponentGenerator.normalizeConfig( scope.config ),
-                    graph = requirements[0],
-                    element = requirements[1] ;
+                    chart = requirements[0],
+                    cfg = chart.compileReference( scope.config ),
+                    element = requirements[1];
 
                 element.setElement( el );
 
                 if ( attrs.pair ){ // pair is already a reference
-                    pair = ComponentGenerator.normalizeConfig( scope.pair );
+                    pair = chart.compileReference( scope.pair );
                     className = 'fill ';
                     element.setDrawer(
-                        ComponentGenerator.makeFillCalc( graph, cfg, pair )
+                        ComponentGenerator.makeFillCalc( cfg, pair )
                     );
-                    element.setReferences([cfg,pair]);
+                    element.setReferences( [cfg,pair] );
                 }else{
                     className = 'line ';
                     element.setDrawer(
-                        ComponentGenerator.makeLineCalc( graph, cfg )
+                        ComponentGenerator.makeLineCalc( cfg )
                     );
-                    element.setReferences(cfg);
+                    element.setReferences( cfg );
                 }
 
                 if ( cfg.classExtend ){
@@ -43,7 +43,7 @@ angular.module( 'vgraph' ).directive( 'vgraphLine',
 
                 el.setAttribute( 'class', className );
 
-                graph.getView(cfg.view).register(element);
+                cfg.$view.register(element);
             }
         };
     }]

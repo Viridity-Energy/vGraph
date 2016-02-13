@@ -461,7 +461,7 @@ angular.module( 'vgraph' ).factory( 'ComponentBox',
     }]
 );
 
-/* cfg for inputs
+/** cfg for inputs
     - name
     - view
     - model
@@ -469,26 +469,25 @@ angular.module( 'vgraph' ).factory( 'ComponentBox',
     - getInterval
     - massage
     - isValid
-*/
+**/
 
 /** cfg for graph
     x: {
         scale : some scaling function
         padding: amount to add padding // TODO
         format: value formatting function
-    }
+    },
+    normalizeX: boolean if make all the x values align between views
     y: {
         scale : some scaling function
         padding: amount to add padding
         format: value formatting function
     },
+    normalizeY: boolean if make all the y values align between views,
     fitToPane: boolean if data should fit to pane or cut off
-    makeInterval: function for creating interval value, runs off _$index ( $interval: converted, _interval: coord )
     views: {
         viewName: ViewModel
-    },
-    normalizeX: boolean if make all the x values align between views,
-    normalizeY: boolean if make all the y values align between views
+    }
 **/
 
 /** cfg for view 
@@ -496,10 +495,10 @@ angular.module( 'vgraph' ).factory( 'ComponentBox',
 **/
 angular.module( 'vgraph' ).factory( 'ComponentChart',
     [ '$timeout', 
-        'ComponentView', 'ComponentBox', 'DataCollection', 'LinearSampler', 
+        'ComponentView', 'ComponentPage', 'ComponentBox', 'DataCollection', 'DataNormalizer', 
         'makeEventing', 'Scheduler', 'Hitbox', 'DomHelper',
     function ( $timeout, 
-        ComponentView, ComponentBox, DataCollection, LinearSampler,
+        ComponentView, ComponentPage, ComponentBox, DataCollection, DataNormalizer,
         makeEventing, Scheduler, Hitbox, domHelper ) {
         'use strict';
 
@@ -530,28 +529,21 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
         makeEventing(ComponentChart.prototype);
 
         ComponentChart.defaultView = 'default';
-        ComponentChart.defaultModel = 'linear';
-
-        ComponentChart.prototype.setPage = function( page ){
-            this.page = page;
-        };
 
         ComponentChart.prototype.configure = function( page, settings ){
-            var t,
-                views,
+            var views,
                 addView = this.addView.bind(this);
 
             if ( !settings ){
                 settings = {};
             }
 
-            if ( !settings.x ){
-                settings.x = {};
+            if ( !this.settings ){
+                this.settings = {};
             }
 
-            if ( !settings.y ){
-                settings.y = {};
-            }
+            settings.x = ComponentView.parseSettingsX( settings.x, this.settings.x );
+            settings.y = ComponentView.parseSettingsY( settings.y, this.settings.y );
 
             this.page = page;
             this.settings = settings;
@@ -561,17 +553,14 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 
             views = settings.views;
             if ( !views ){
-                t = {};
-                t[ ComponentChart.defaultModel ] = new LinearSampler(
-                    function(datum){
-                        return Math.round(datum._$interval);
-                    },
-                    settings.nodeFactory
-                );
-
                 views = {};
                 views[ ComponentChart.defaultView ] = {
-                    models: t
+                    manager: ComponentPage.defaultManager,
+                    normalizer: new DataNormalizer(
+                        function(datum){
+                            return Math.round(datum._$interval);
+                        }
+                    )
                 };
             }else if ( angular.isFunction(views) ){
                 views = views();
@@ -620,26 +609,80 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
             });
         }
 
-        ComponentChart.prototype.setInputReference = function( reference, ref ){
-            this.references[ reference ] = ref;
+        var cfgUid = 0;
+
+        ComponentChart.prototype.compileReference = function( reference ){
+            if ( typeof(reference) !== 'object' ){
+                return null;
+            }
+
+            if ( reference.$uid === undefined ){
+                reference.$uid = cfgUid++;
+            }
+
+            if ( !reference.model ){
+                reference.model = ComponentChart.defaultModel;
+            }
+
+            if ( reference.name ){
+                reference.field = reference.name;
+
+                if ( !reference.className ){
+                    reference.className = 'node-'+reference.name;
+                }
+
+                if ( reference.getValue === undefined ){
+                    reference.getValue = function( d ){
+                        return d[ reference.field ];
+                    };
+                }
+            } else if ( !reference.getValue ){
+                throw new Error('drawer reference requires name or getValue');
+            }
+
+            // undefined allow lax definining, and simplicity for one view sake.
+            // null will mean no view editing
+            if ( reference.view === undefined ){
+                reference.view = ComponentChart.defaultView;
+            }
+
+            if ( reference.view ){
+                reference.$view = this.getView( reference.view );
+                reference.$getNode = function( index ){
+                    return this.$view.normalizer.$getNode(index);
+                };
+                reference.$getValue = function( index ){
+                    var t = this.$view.normalizer.$getNode(index);
+
+                    if ( t ){
+                        return this.getValue(t);
+                    }
+                };
+                reference.$eachNode = function( fn ){
+                    this.$view.normalizer.$sort().forEach( fn );
+                };
+            } else if ( !reference.$getValue ){
+                throw new Error('drawer reference requires view or $getValue');
+            }
+
+            return reference;
         };
 
+        // Fired to render the chart and all of its child elements
         ComponentChart.prototype.render = function(){
-            var currentView,
-                dis = this,
+            var dis = this,
                 activeViews = [],
                 isReady = false,
                 hasViews = 0;
 
             try{
-                angular.forEach( this.views, function( view, name ){
-                    currentView = name;
+                // generate data limits for all views
+                angular.forEach( this.views, function( view ){
                     view.parse();
                 });
-                currentView = null;
 
+                // do any of our views have data?
                 angular.forEach( this.views, function( view, name ){
-                    currentView = name;
                     if ( view.hasData() ){
                         activeViews.push( view );
                         isReady = true;
@@ -647,8 +690,8 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
                         isReady = true;
                     }
                 });
-                currentView = null;
 
+                // sync up views if required
                 if ( this.normalizeY ){
                     normalizeY( activeViews );
                 }
@@ -679,6 +722,13 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
                     dis.message = null;
                 });
 
+                /**
+                Step through the build cycle for all views.  Due to DOM parsing rules, it is faster to:
+                 
+                build : alter DOM
+                process : check DOM positioning calculations
+                finalize : do final DOM adjustments
+                **/
                 schedule.loop( activeViews, function( view ){
                     view.build();
                 });
@@ -767,30 +817,9 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
             viewModel.configure(
                 viewSettings,
                 settings,
-                this.box
+                this.box,
+                this.page
             );
-
-            viewModel.setPage( this.page );
-
-            if ( settings.x.min !== undefined ){
-                viewModel.pane.setBounds({
-                    min: settings.x.min, 
-                    max: settings.x.max 
-                });
-
-                if ( settings.x.interval && settings.x.max && settings.datumFactory ){
-                    viewModel.manager.data.$fillPoints( 
-                        settings.x.min,
-                        settings.x.max,
-                        settings.x.interval,
-                        settings.datumFactory
-                    );
-                }
-            }
-
-            if ( this.settings.x.minPane !== undefined ){
-                viewModel.pane.setPane( this.settings.x.minPane, this.settings.x.maxPane );
-            }
 
             viewModel.manager.register(function(){
                 dis.needsRender(viewModel);
@@ -1039,66 +1068,42 @@ angular.module( 'vgraph' ).factory( 'ComponentElement',
         };
 
         ComponentElement.prototype.setReferences = function( references ){
-        	if ( !angular.isArray(references) ){
+        	var keys = [],
+                seen;
+
+            if ( !angular.isArray(references) ){
         		references = [ references ];
         	}
 
         	this.references = references;
+
+            references.forEach(function( ref ){
+                if ( !ref ){
+                    return;
+                }
+
+                
+                if ( ref.requirements ){
+                    keys = keys.concat( ref.requirements );
+                }else{
+                    keys.push( ref.field );
+                }
+            });
+
+            // TODO : requirements need to be registered with view's normalizer
         };
 
-        ComponentElement.prototype.parse = function( models ){
-        	var co = 0,
-				seen = {},
-				keys = [];
+        ComponentElement.prototype.factory = function(){
+            throw new Error('Need to extend and define a factory');
+        };
 
-        	this.references.forEach(function( ref ){
-        		var model;
-
-        		if ( !ref ){
-        			return;
-        		}
-
-        		model = models[ref.model];
-
-        		if ( !seen[model.$modelUid] ){
-					co++;
-					seen[model.$modelUid] = true;
-
-					keys = keys.concat( model.$getIndexs() );
-				}
-
-        		ref.$model = model;
-        		ref.$getNode = function( index ){
-        			return this.$model.$getNode(index);
-        		};
-        		ref.$getValue = function( index ){
-        			var t = this.$getNode(index);
-
-        			if ( t ){
-        				return this.getValue(t);
-        			}
-        		};
-        	});
-
-			if ( co > 1 ){
-				seen = {};
-				keys = keys.filter(function(x) {
-					if ( seen[x] ){
-						return;
-					}
-					seen[x] = true;
-					return x;
-				});
-			}
-
-			this.keys = keys;
-
-        	return StatCalculations.limits( keys, this.references );
+        ComponentElement.prototype.parse = function(){
+        	return StatCalculations.limits( this.references );
         };
 
         ComponentElement.prototype.build = function(){
-        	var drawer = this.factory(),
-        		dataSets = drawer.convert( this.keys ); 
+        	var drawer = this.factory( this.references ),
+        		dataSets = drawer.convert(); 
 
         	// dataSets will be the content, preParsed, used to make the data
         	if ( this.element.tagName === 'g' ){
@@ -1144,58 +1149,19 @@ angular.module( 'vgraph' ).factory( 'ComponentElement',
     }]
 );
 angular.module( 'vgraph' ).factory( 'ComponentGenerator',
-    [ '$timeout', 'DrawBuilder', 'DrawLine', 'DrawFill', 'DrawBox', 'DrawIcon', 'ComponentChart',
-    function ( $timeout, DrawBuilder, DrawLine, DrawFill, DrawBox, DrawIcon, ComponentChart ) {
+    [ 'DrawBuilder', 'DrawLine', 'DrawFill', 'DrawBox', 'DrawIcon',
+    function ( DrawBuilder, DrawLine, DrawFill, DrawBox, DrawIcon ) {
         'use strict';
 
-        var cfgUid = 0,
-            isNumeric = DrawBuilder.isNumeric;
+        var isNumeric = DrawBuilder.isNumeric;
         
-        function normalizeConfig( cfg ){
-            var value,
-                interval;
-
-            if ( typeof(cfg) !== 'object' ){
-                return null;
-            }
-
-            value = cfg.value;
-            interval = cfg.interval;
-
-            if ( cfg.$uid === undefined ){
-                cfg.$uid = cfgUid++;
-            }
-
-            cfg.field = cfg.name;
-
-            if ( !cfg.view ){
-                cfg.view = ComponentChart.defaultView;
-            }
-
-            if ( !cfg.model ){
-                cfg.model = ComponentChart.defaultModel;
-            }
-
-            if ( !cfg.className ){
-                cfg.className = 'node-'+cfg.name;
-            }
-
-            if ( cfg.getValue === undefined ){
-                cfg.getValue = function( d ){
-                    return d[ cfg.field ];
-                };
-            }
-
-            return cfg;
-        }
-
         return {
             isNumeric: isNumeric,
-            normalizeConfig: normalizeConfig,
-            makeLineCalc: function( graph, ref ){
+            makeLineCalc: function( ref ){
                 var lineDrawer = new DrawLine();
 
                 lineDrawer.preparse = function( index ){
+                    console.log( index, ref );
                     var node = ref.$getNode(index);
 
                     return {
@@ -1205,7 +1171,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 };
 
                 return function configureDraw(){
-                    var view = graph.views[ref.view];
+                    var view = ref.$view;
 
                     lineDrawer.scale = function( v ){
                         return view.y.scale( v );
@@ -1214,7 +1180,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                     return lineDrawer;
                 };
             },
-            makeBoxCalc: function( graph, ref, elemental ){
+            makeBoxCalc: function( ref, elemental ){
                 var view,
                     value,
                     isValid,
@@ -1245,7 +1211,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 };
 
                 return function configureDraw(){
-                    view = graph.getView(ref.view);
+                    view = ref.$view;
                     isValid = ref.isValid;
                     getValue = ref.getValue;
 
@@ -1256,7 +1222,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                     return boxDrawer;
                 };
             },
-            makeIconCalc: function( graph, ref, box, content ){
+            makeIconCalc: function( ref, box, content ){
                 var view,
                     value,
                     isValid,
@@ -1288,7 +1254,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 };
 
                 return function configureDraw(){
-                    view = graph.getView(ref.view);
+                    view = ref.$view;
                     isValid = ref.isValid;
                     getValue = ref.getValue;
 
@@ -1299,7 +1265,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                     return iconDrawer;
                 };
             },
-            makeBarCalc: function( graph, topRef, bottomRef, barWidth ){
+            makeBarCalc: function( topRef, bottomRef, barWidth ){
                 var topView,
                     bottomView,
                     boxDrawer = new DrawBox(),
@@ -1349,10 +1315,10 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 };
 
                 return function configureDraw(){
-                    topView = graph.views[topRef.view];
+                    topView = topRef.$view;
 
                     if ( bottomRef ){
-                        bottomView = graph.views[bottomRef.view];
+                        bottomView = bottomRef.$view;
                     }else{
                         bottomView = topView;
                     }
@@ -1369,7 +1335,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 };
             },
             // top and bottom are config objects
-            makeFillCalc: function( graph, topRef, bottomRef ){
+            makeFillCalc: function( topRef, bottomRef ){
                 var topView,
                     bottomView,
                     areaDrawer = new DrawFill();
@@ -1397,14 +1363,14 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 };
 
                 return function configureDraw(){
-                    topView = graph.views[topRef.view];
+                    topView = topRef.$view;
 
                     areaDrawer.scale1 = function( v ){
                         return topView.y.scale(v);
                     };
 
                     if ( bottomRef ){
-                        bottomView = graph.views[bottomRef.view];
+                        bottomView = bottomRef.$view;
                         areaDrawer.scale2 = function( v ){
                             return bottomView.y.scale(v);
                         };
@@ -1631,83 +1597,118 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
             this.components = [];
         }
 
-        ComponentView.prototype.addModel = function( name, dataModel ){
-            this.models[ name ] = dataModel;
-
-            return this;
-        };
-
-        ComponentView.prototype.configure = function( settings, chartSettings, box ){
-            var x, y,
-                models,
-                addModel = this.addModel.bind( this );
-
-            if ( !settings ){
-                settings = {};
+        ComponentView.parseSettingsX = function( settings, old ){
+            if ( !old ){
+                old = {};
             }
 
-            x = {
-                min: settings.x ? settings.x.min : undefined,
-                max: settings.x ? settings.x.max : undefined
-            };
-            y = {
-                min: settings.y ? settings.y.min : undefined,
-                max: settings.y ? settings.y.max : undefined
-            };
+            if ( settings.min !== undefined ){
+                old.min = settings.min;
+            }
 
-            this.x = x;
-            this.y = y;
+            if ( settings.minPane !== undefined ){
+                old.minPane = settings.minPane;
+            }
+
+            if ( settings.max !== undefined ){
+                old.max = settings.max;
+            }
+
+            if ( settings.maxPane !== undefined ){
+                old.maxPane = settings.maxPane;
+            }
+
+            if ( settings.interval !== undefined ){
+                old.interval = settings.interval;
+            }
+
+            if ( settings.scale ){
+                old.scale = settings.scale;
+            }else if ( !old.scale ){
+                old.scale = d3.scale.linear()();
+            }
+
+            if ( settings.format ){
+                old.format = settings.format;
+            }else if ( !old.format ){
+                old.format = function( v ){ return v; };
+            }
+
+            if ( settings.padding ){
+                old.padding = settings.padding;
+            }
+
+            return old;
+        };
+
+        ComponentView.parseSettingsY = function( settings, old ){
+            if ( !old ){
+                old = {};
+            }
+
+            if ( settings.min !== undefined ){
+                old.min = settings.min;
+            }
+
+            if ( settings.max !== undefined ){
+                old.max = settings.max;
+            }
+
+            if ( settings.scale ){
+                old.scale = settings.scale;
+            }else if ( !old.scale ){
+                old.scale = d3.scale.linear();
+            }
+
+            if ( settings.format ){
+                old.format = settings.format;
+            }else if ( !old.scale ){
+                old.format = function( v ){ return v; };
+            }
+
+            if ( settings.padding ){
+                old.padding = settings.padding;
+            }
+
+            return old;
+        };
+
+        ComponentView.prototype.configure = function( settings, chartSettings, box, page ){
+            this.x = ComponentView.parseSettingsX( settings.x || chartSettings.x, this.x );
+            this.y = ComponentView.parseSettingsY( settings.y || chartSettings.y, this.y );
             
             this.box = box;
-            this.pane = new ComponentPane( this.x, this.y );
-            this.managerName = settings.manager;
-            this.datumFactory = settings.datumFactory;
+            this.manager = page.getManager( settings.manager );
+            this.normalizer = settings.normalizer;
 
-            this.makeInterval = chartSettings.makeInterval;
+            // TODO : I want the normalizer to directly follow the manager, cut out the filtered
+            // this.normalizer.$follow( this.manager );
+
             this.adjustSettings = chartSettings.adjustSettings;
+            
+            this.pane = new ComponentPane( this.x, this.y );
             this.pane.fitToPane = chartSettings.fitToPane;
 
-            x.tick = chartSettings.x.tick || {};
-            x.scale = chartSettings.x.scale ? chartSettings.x.scale() : d3.scale.linear();
-            x.padding = chartSettings.x.padding;
-            x.massage = chartSettings.x.massage;
-            x.format = chartSettings.x.format || function( v ){
-                return v;
-            };
-
-            y.tick = chartSettings.y.tick || {};
-            y.scale = chartSettings.y.scale ? chartSettings.y.scale() : d3.scale.linear();
-            y.padding = chartSettings.y.padding;
-            y.massage = chartSettings.y.massage;
-            y.format = chartSettings.y.format || function( v ){
-                return v;
-            };
-
-            if ( settings.models ){
-                if ( angular.isFunction(settings.models) ){
-                    models = settings.models();
-                }else{
-                    models = settings.models;
-                }
-
-                Object.keys( models ).forEach(function( modelName ){
-                    addModel( modelName, models[modelName] );
+            if ( this.x.max ){
+                this.pane.setBounds({
+                    min: this.x.min, 
+                    max: this.x.max 
                 });
+
+                if ( this.x.interval ){
+                    this.manager.data.$fillPoints( 
+                        this.x.min,
+                        this.x.max,
+                        this.x.interval
+                    );
+                }
             }
-        };
 
-        ComponentView.prototype.setPage = function( page ){
-            var x = this.x;
-
-            this.manager = page.getManager( this.managerName );
-
-            if ( x && (x.min || x.min === 0) && x.max && x.interval && this.datumFactory ){
-                this.manager.data.$fillPoints( 
-                    x.min,
-                    x.max,
-                    x.interval,
-                    this.datumFactory
-                );
+            if ( this.x.maxPane ){
+                this.pane.setPane({
+                    min: this.x.minPane, 
+                    max: this.x.maxPane
+                });
             }
         };
 
@@ -1725,19 +1726,16 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 
         ComponentView.prototype.sample = function(){
             var dis = this,
-                keys,
                 offset,
                 filtered,
                 box = this.box,
-                pane = this.pane,
-                models = this.models;
+                pane = this.pane;
 
             this.offset = {};
             this.filtered = pane.filter( this.manager, this.offset );
 
             filtered = this.filtered;
             offset = this.offset;
-
             if ( filtered ){
                 this.x.scale
                     .domain([
@@ -1753,10 +1751,7 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
                     datum._$interval = dis.x.scale(datum._$index);
                 });
 
-                keys = Object.keys(models);
-                keys.forEach(function(key){
-                    models[key].$follow( filtered, box );
-                });
+                this.normalizer.$follow( filtered );
             }
         };
 
@@ -2054,18 +2049,6 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 
 		DataCollection.isNumeric = isNumeric;
 
-		DataCollection.prototype.$fillPoints = function( start, stop, interval, factory ){
-			var i, c,
-				t;
-
-			for( i = start, c = stop + interval; i < c; i += interval ){
-				t = factory();
-				t._$index = i;
-				this._$index[ i ] = t;
-				this.push( t );
-			}
-		};
-
 		DataCollection.prototype._register = function( index, node, shift ){
 			var hasValue,
 				dex = +index;
@@ -2073,7 +2056,6 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 			if ( !this._$index[dex] ){
 				this._$index[dex] = node;
 				
-
 				if ( shift ){
 					if ( this.length && dex > this[0]._$index ){
 						this.$dirty = true;
@@ -2260,6 +2242,8 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 
 				this.$dirty = false;
 			}
+
+			return this;
 		};
 
 		DataCollection.prototype.$filter = function( startIndex, stopIndex ){
@@ -2513,14 +2497,6 @@ angular.module( 'vgraph' ).factory( 'DataLoader',
         DataLoader.prototype.addConfig = function( cfg ){
             var keys = Object.keys(cfg.readings),
                 proc = this._process.bind( this );
-
-            /*
-            -- it is assumed a feed will have the same exploder
-            conf.explode: run against the data nodes to generate child data nodes.  Expect result appends [name]$Ref
-            conf.isValid : check to see if the point should even be considered for parsing
-            conf.parseInterval *
-            conf.readings
-            */
             
             keys.forEach(function( key ){
                 var fn = cfg.readings[ key ];
@@ -2752,6 +2728,190 @@ angular.module( 'vgraph' ).factory( 'DataManager',
     } ]
 );
 
+angular.module( 'vgraph' ).factory( 'DataNormalizer',
+	['DataCollection', 'DataNormalizerNode',
+	function ( DataCollection, DataNormalizerNode ) {
+		'use strict';
+
+		var uid = 1;
+
+		function DataNormalizer( indexer, nodeFactory ){
+			this.$modelUid = uid++;
+			this.$stats = {};
+			this.$indexer = indexer;
+			this.$makeNode = nodeFactory || function( datum ){
+				return new DataNormalizerNode(datum);
+			};
+			DataCollection.call( this );
+		}
+
+		DataNormalizer.prototype = new DataCollection();
+
+		DataNormalizer.prototype.$fillPoints = function( start, stop, interval ){
+			var i, c;
+
+			for( i = start, c = stop + interval; i < c; i += interval ){
+				this._makeNode( i );
+			}
+		};
+
+		DataNormalizer.prototype.$follow = function( collection ){
+			var i, c,
+				index,
+				datum,
+				indexer = this.$indexer;
+
+			this.length = 0;
+			this._$index = {};
+
+			collection.$sort();
+			this.$parent = collection;
+
+			for( i = 0, c = collection.length; i < c; i++ ){
+				datum = collection[i];
+				index = indexer( datum );
+
+				this.$addNode( index, datum ).$x = datum._$index;
+			}
+
+			/*
+			TODO : I need to undo this.  I can do the same thing by keeping a _variable$count, 
+				_variable$sum and having variable be calculated on the fly
+			*/
+			for( i = 0, c = this.length; i < c; i++ ){
+				this[i].$finalize( this.$stats );
+			}
+		};
+		
+		return DataNormalizer;
+	}]
+);
+angular.module( 'vgraph' ).factory( 'DataNormalizerNode',
+	[
+	function(){
+		'use strict';
+		
+		function DataNormalizerNode( datum ){
+			var keys = [];
+
+			this._$minInterval = datum._$interval;
+			this._$count = 0;
+			this._$interval = 0;
+
+			Object.keys( datum ).forEach(function( key ){
+				var ch = key.charAt(0);
+
+				if ( ch !== '_' ){
+					keys.push( key );
+				}
+			});
+
+			this._$keys = keys;
+			this.$merge( datum );
+		}
+
+		DataNormalizerNode.prototype.$merge = function( datum ){
+			var dis = this;
+
+			this._$maxInterval = datum._$interval;
+			this._$interval += datum._$interval;
+			this._$count++;
+
+			this._$keys.forEach(function( key ){
+				if ( !dis[key] && dis[key] !== 0 ){
+					dis[key] = datum[key];
+				}else{
+					dis[key] += datum[key];
+				}
+			});
+		};
+
+		DataNormalizerNode.prototype.$finalize = function( stats ){
+			var dis = this,
+				count = this._$count,
+				index = this._$index;
+
+			this._$interval = this._$interval / count;
+
+			this._$keys.forEach(function( key ){
+				var value = dis[key];
+
+				if ( value || value === 0 ){
+					if ( stats[key] === undefined || stats[key] < index ){
+						stats[key] = index;
+					}
+					dis[key] = value / count;
+				}
+			});
+		};
+
+		return DataNormalizerNode;
+	}]
+);
+angular.module( 'vgraph' ).factory( 'makeEventing',
+    [
+    function () {
+        'use strict';
+
+        return function( obj ){
+            obj.$on = function( event, cb ){
+                var dis = this;
+
+                if ( !this._$listeners ){
+                    this._$listeners = {};
+                }
+
+                if ( !this._$listeners[event] ){
+                    this._$listeners[event] = [];
+                }
+
+                this._$listeners[event].push( cb );
+
+                return function clear$on(){
+                    dis._$listeners[event].splice(
+                        dis._$listeners[event].indexOf( cb ),
+                        1
+                    );
+                };
+            };
+
+            obj.$subscribe = function( subscriptions ){
+                var dis = this,
+                    kills = [],
+                    events =  Object.keys(subscriptions);
+
+
+                events.forEach(function( event ){
+                    var action = subscriptions[event];
+
+                    kills.push( dis.$on(event,action) );
+                });
+
+                return function killAll(){
+                    kills.forEach(function( kill ){
+                        kill();
+                    });
+                };
+            };
+
+            obj.$trigger = function( event, arg ){
+                var listeners,
+                    i, c;
+
+                if ( this._$listeners ){
+                    listeners = this._$listeners[event];
+
+                    if ( listeners ){
+                        for( i = 0, c = listeners.length; i < c; i++ ){
+                            listeners[i]( arg );
+                        }
+                    }                   
+                }
+            };
+        };
+    }]
+);
+
 angular.module( 'vgraph' ).factory( 'DrawBox', 
 	['DrawBuilder',
 	function( DrawBuilder ){
@@ -2866,7 +3026,9 @@ angular.module( 'vgraph' ).factory( 'DrawBuilder',
 	function(){
 		'use strict';
 
-		function DrawBuilder(){}
+		function DrawBuilder( references ){
+			this.references = references;
+		}
 
 		DrawBuilder.isNumeric = function( v ){
             if ( v === null ){
@@ -3100,70 +3262,6 @@ angular.module( 'vgraph' ).factory( 'DrawLine',
 		return DrawLine;
 	}]
 );
-angular.module( 'vgraph' ).factory( 'makeEventing',
-    [
-    function () {
-        'use strict';
-
-        return function( obj ){
-            obj.$on = function( event, cb ){
-                var dis = this;
-
-                if ( !this._$listeners ){
-                    this._$listeners = {};
-                }
-
-                if ( !this._$listeners[event] ){
-                    this._$listeners[event] = [];
-                }
-
-                this._$listeners[event].push( cb );
-
-                return function clear$on(){
-                    dis._$listeners[event].splice(
-                        dis._$listeners[event].indexOf( cb ),
-                        1
-                    );
-                };
-            };
-
-            obj.$subscribe = function( subscriptions ){
-                var dis = this,
-                    kills = [],
-                    events =  Object.keys(subscriptions);
-
-
-                events.forEach(function( event ){
-                    var action = subscriptions[event];
-
-                    kills.push( dis.$on(event,action) );
-                });
-
-                return function killAll(){
-                    kills.forEach(function( kill ){
-                        kill();
-                    });
-                };
-            };
-
-            obj.$trigger = function( event, arg ){
-                var listeners,
-                    i, c;
-
-                if ( this._$listeners ){
-                    listeners = this._$listeners[event];
-
-                    if ( listeners ){
-                        for( i = 0, c = listeners.length; i < c; i++ ){
-                            listeners[i]( arg );
-                        }
-                    }                   
-                }
-            };
-        };
-    }]
-);
-
 angular.module( 'vgraph' ).factory( 'StatCalculations',
 	[
 	function () {
@@ -3284,7 +3382,7 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 
 				return nameAs;
 			},
-			limits: function( keys, cfg ){
+			limits: function( cfg ){
 				var i, c,
 					v,
 					min,
@@ -3309,8 +3407,8 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 					}
 				} else if ( cfg && cfg.getValue ){
 					// used to reduce the checks for parser
-					for( i = 0, c = keys.length; i < c; i++ ){
-						v = cfg.$getValue(keys[i]);
+					cfg.$eachNode(function(node){
+						v = cfg.getValue(node);
 						if ( isNumeric(v) ){
 							if ( min === undefined ){
 								min = v;
@@ -3321,7 +3419,7 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 								max = v;
 							}
 						}
-					}
+					});
 				}
 
 				return {
@@ -3330,114 +3428,6 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 				};
 			}
 		};
-	}]
-);
-angular.module( 'vgraph' ).factory( 'LinearNode',
-	[
-	function(){
-		'use strict';
-		
-		function LinearNode( datum ){
-			var keys = [];
-
-			this._$minInterval = datum._$interval;
-			this._$count = 0;
-			this._$interval = 0;
-
-			Object.keys( datum ).forEach(function( key ){
-				var ch = key.charAt(0);
-
-				if ( ch !== '_' ){
-					keys.push( key );
-				}
-			});
-
-			this._$keys = keys;
-			this.$merge( datum );
-		}
-
-		LinearNode.prototype.$merge = function( datum ){
-			var dis = this;
-
-			this._$maxInterval = datum._$interval;
-			this._$interval += datum._$interval;
-			this._$count++;
-
-			this._$keys.forEach(function( key ){
-				if ( !dis[key] && dis[key] !== 0 ){
-					dis[key] = datum[key];
-				}else{
-					dis[key] += datum[key];
-				}
-			});
-		};
-
-		LinearNode.prototype.$finalize = function( stats ){
-			var dis = this,
-				count = this._$count,
-				index = this._$index;
-
-			this._$interval = this._$interval / count;
-
-			this._$keys.forEach(function( key ){
-				var value = dis[key];
-
-				if ( value || value === 0 ){
-					if ( stats[key] === undefined || stats[key] < index ){
-						stats[key] = index;
-					}
-					dis[key] = value / count;
-				}
-			});
-		};
-
-		return LinearNode;
-	}]
-);
-angular.module( 'vgraph' ).factory( 'LinearSampler',
-	['DataCollection', 'LinearNode',
-	function ( DataCollection, LinearNode ) {
-		'use strict';
-
-		var uid = 1;
-
-		function LinearSampler( indexer, nodeFactory ){
-			this.$modelUid = uid++;
-			this.$stats = {};
-			this.$indexer = indexer;
-			this.$makeNode = nodeFactory || function( datum ){
-				return new LinearNode(datum);
-			};
-			DataCollection.call( this );
-		}
-
-		LinearSampler.prototype = new DataCollection();
-
-		LinearSampler.prototype.$follow = function( collection ){
-			var i, c,
-				index,
-				datum,
-				indexer = this.$indexer;
-
-			this.length = 0;
-			this._$index = {};
-
-			collection.$sort();
-			this.$parent = collection;
-
-			for( i = 0, c = collection.length; i < c; i++ ){
-				datum = collection[i];
-				index = indexer( datum );
-
-				this.$addNode( index, datum ).$x = datum._$index;
-			}
-
-			for( i = 0, c = this.length; i < c; i++ ){
-				this[i].$finalize( this.$stats );
-			}
-		};
-		
-		return LinearSampler;
 	}]
 );
 
@@ -3580,7 +3570,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                                     .tickPadding( tickPadding + tickLength + tickMargin )
                                     .scale( view.x.scale );
 
-                                if ( view.x.tick.interval ){
+                                if ( view.x.tick ){
                                     axis.ticks(
                                         view.x.tick.interval,
                                         view.x.tick.step
@@ -3667,7 +3657,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                                     .tickPadding( tickPadding + tickLength + tickMargin )
                                     .scale( view.x.scale );
 
-                                if ( view.x.tick.interval ){
+                                if ( view.x.tick ){
                                     axis.ticks(
                                         view.x.tick.interval,
                                         view.x.tick.step
@@ -3764,7 +3754,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                                     .tickPadding( tickPadding + tickLength + tickMargin )
                                     .scale( view.y.scale );
 
-                                if ( view.y.tick.interval ){
+                                if ( view.y.tick ){
                                     axis.ticks(
                                         view.y.tick.interval,
                                         view.y.tick.step
@@ -3841,7 +3831,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                                     .tickPadding( tickPadding + tickLength + tickMargin )
                                     .scale( view.y.scale );
 
-                                if ( view.y.tick.interval ){
+                                if ( view.y.tick ){
                                     axis.ticks(
                                         view.y.tick.interval,
                                         view.y.tick.step
@@ -4029,21 +4019,20 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
             controller: ComponentElement,
             link : function( scope, $el, attrs, requirements ){
                 var el = $el[0],
-                    cfg = ComponentGenerator.normalizeConfig( scope.config ),
-                    pair = scope.pair,
-                    graph = requirements[0],
+                    chart = requirements[0],
+                    cfg = chart.compileReference( scope.config ),
+                    pair = chart.compileReference( scope.pair ),
                     element = requirements[1],
                     className = 'bar ';
 
                 element.setElement( el );
-
                 element.setDrawer(
-                    ComponentGenerator.makeBarCalc( graph, cfg, pair, attrs.width )
+                    ComponentGenerator.makeBarCalc( cfg, pair, attrs.width )
                 );
                 element.setReferences([cfg,pair]);
 
                 element.register = function( data, element ){
-                    graph.registerElement( data, element );
+                    chart.registerElement( data, element );
                 };
 
                 if ( cfg.classExtend ){
@@ -4054,7 +4043,7 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
 
                 el.setAttribute( 'class', className );
 
-                graph.getView(cfg.view).register(element);
+                cfg.$view.register(element);
             }
         };
     } ]
@@ -4072,24 +4061,23 @@ angular.module( 'vgraph' ).directive( 'vgraphBox',
             controller: ComponentElement,
             link : function( scope, $el, attrs, requirements ){
                 var el = $el[0],
-                    cfg = ComponentGenerator.normalizeConfig( scope.config ),
+                    cfg = chart.compileReference( scope.config ),
                     /*
                         if  cfg.getValue == null || false, it will cover the entire area
                         cfg.isValid
                     */
-                    graph = requirements[0],
+                    chart = requirements[0],
                     element = requirements[1],
                     className = 'box ';
 
                 element.setElement( el );
-
                 element.setDrawer(
-                    ComponentGenerator.makeBoxCalc( graph, cfg )
+                    ComponentGenerator.makeBoxCalc( cfg )
                 );
                 element.setReferences(cfg);
 
                 element.register = function( data, element ){
-                    graph.registerElement( data, element );
+                    chart.registerElement( data, element );
                 };
 
                 if ( cfg.classExtend ){
@@ -4100,7 +4088,7 @@ angular.module( 'vgraph' ).directive( 'vgraphBox',
 
                 el.setAttribute( 'class', className );
 
-                graph.getView(cfg.view).register(element);
+                cfg.$view.register(element);
             }
         };
     }]
@@ -4186,8 +4174,8 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
 );
 
 angular.module( 'vgraph' ).directive( 'vgraphCompare',
-    [ '$compile', 'ComponentGenerator', 'ComponentElement',
-    function( $compile, ComponentGenerator, ComponentElement ) {
+    [ '$compile', 'ComponentElement',
+    function( $compile, ComponentElement ) {
         'use strict';
 
         return {
@@ -4359,8 +4347,8 @@ angular.module( 'vgraph' ).directive( 'vgraphIcon',
                 var el = $el[0],
                 	$d3 = d3.select( el ),
         			box = $d3.node().getBBox(),
-        			cfg = ComponentGenerator.normalizeConfig( scope.config ),
-                    graph = requirements[0],
+        			chart = requirements[0],
+                    cfg = chart.compileReference( scope.config ),
                     element = requirements[1],
                     content = el.innerHTML,
                     className = 'icon ',
@@ -4377,10 +4365,10 @@ angular.module( 'vgraph' ).directive( 'vgraphIcon',
                 };
 
                 el.innerHTML = '';
-                element.setElement( el );
 
+                element.setElement( el );
                 element.setDrawer(
-                    ComponentGenerator.makeIconCalc( graph, cfg, box, content )
+                    ComponentGenerator.makeIconCalc( cfg, box, content )
                 );
                 element.setReferences([cfg]);
 
@@ -4392,7 +4380,7 @@ angular.module( 'vgraph' ).directive( 'vgraphIcon',
 
                 el.setAttribute( 'class', className );
 
-                graph.getView(cfg.view).register(element);
+                cfg.$view.register(element);
             }
         };
     }]
@@ -4772,25 +4760,25 @@ angular.module( 'vgraph' ).directive( 'vgraphLine',
                 var pair,
                     className,
                     el = $el[0],
-                    cfg = ComponentGenerator.normalizeConfig( scope.config ),
-                    graph = requirements[0],
-                    element = requirements[1] ;
+                    chart = requirements[0],
+                    cfg = chart.compileReference( scope.config ),
+                    element = requirements[1];
 
                 element.setElement( el );
 
                 if ( attrs.pair ){ // pair is already a reference
-                    pair = ComponentGenerator.normalizeConfig( scope.pair );
+                    pair = chart.compileReference( scope.pair );
                     className = 'fill ';
                     element.setDrawer(
-                        ComponentGenerator.makeFillCalc( graph, cfg, pair )
+                        ComponentGenerator.makeFillCalc( cfg, pair )
                     );
-                    element.setReferences([cfg,pair]);
+                    element.setReferences( [cfg,pair] );
                 }else{
                     className = 'line ';
                     element.setDrawer(
-                        ComponentGenerator.makeLineCalc( graph, cfg )
+                        ComponentGenerator.makeLineCalc( cfg )
                     );
-                    element.setReferences(cfg);
+                    element.setReferences( cfg );
                 }
 
                 if ( cfg.classExtend ){
@@ -4801,7 +4789,7 @@ angular.module( 'vgraph' ).directive( 'vgraphLine',
 
                 el.setAttribute( 'class', className );
 
-                graph.getView(cfg.view).register(element);
+                cfg.$view.register(element);
             }
         };
     }]

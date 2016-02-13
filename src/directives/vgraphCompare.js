@@ -1,6 +1,6 @@
 angular.module( 'vgraph' ).directive( 'vgraphCompare',
-    [ '$compile', 'ComponentGenerator', 'ComponentElement',
-    function( $compile, ComponentGenerator, ComponentElement ) {
+    [ '$compile', 'ComponentElement',
+    function( $compile, ComponentElement ) {
         'use strict';
 
         return {

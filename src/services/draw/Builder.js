@@ -3,7 +3,9 @@ angular.module( 'vgraph' ).factory( 'DrawBuilder',
 	function(){
 		'use strict';
 
-		function DrawBuilder(){}
+		function DrawBuilder( references ){
+			this.references = references;
+		}
 
 		DrawBuilder.isNumeric = function( v ){
             if ( v === null ){

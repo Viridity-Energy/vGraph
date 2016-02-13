@@ -1,56 +1,17 @@
 angular.module( 'vgraph' ).factory( 'ComponentGenerator',
-    [ '$timeout', 'DrawBuilder', 'DrawLine', 'DrawFill', 'DrawBox', 'DrawIcon', 'ComponentChart',
-    function ( $timeout, DrawBuilder, DrawLine, DrawFill, DrawBox, DrawIcon, ComponentChart ) {
+    [ 'DrawBuilder', 'DrawLine', 'DrawFill', 'DrawBox', 'DrawIcon',
+    function ( DrawBuilder, DrawLine, DrawFill, DrawBox, DrawIcon ) {
         'use strict';
 
-        var cfgUid = 0,
-            isNumeric = DrawBuilder.isNumeric;
+        var isNumeric = DrawBuilder.isNumeric;
         
-        function normalizeConfig( cfg ){
-            var value,
-                interval;
-
-            if ( typeof(cfg) !== 'object' ){
-                return null;
-            }
-
-            value = cfg.value;
-            interval = cfg.interval;
-
-            if ( cfg.$uid === undefined ){
-                cfg.$uid = cfgUid++;
-            }
-
-            cfg.field = cfg.name;
-
-            if ( !cfg.view ){
-                cfg.view = ComponentChart.defaultView;
-            }
-
-            if ( !cfg.model ){
-                cfg.model = ComponentChart.defaultModel;
-            }
-
-            if ( !cfg.className ){
-                cfg.className = 'node-'+cfg.name;
-            }
-
-            if ( cfg.getValue === undefined ){
-                cfg.getValue = function( d ){
-                    return d[ cfg.field ];
-                };
-            }
-
-            return cfg;
-        }
-
         return {
             isNumeric: isNumeric,
-            normalizeConfig: normalizeConfig,
-            makeLineCalc: function( graph, ref ){
+            makeLineCalc: function( ref ){
                 var lineDrawer = new DrawLine();
 
                 lineDrawer.preparse = function( index ){
+                    console.log( index, ref );
                     var node = ref.$getNode(index);
 
                     return {
@@ -60,7 +21,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 };
 
                 return function configureDraw(){
-                    var view = graph.views[ref.view];
+                    var view = ref.$view;
 
                     lineDrawer.scale = function( v ){
                         return view.y.scale( v );
@@ -69,7 +30,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                     return lineDrawer;
                 };
             },
-            makeBoxCalc: function( graph, ref, elemental ){
+            makeBoxCalc: function( ref, elemental ){
                 var view,
                     value,
                     isValid,
@@ -100,7 +61,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 };
 
                 return function configureDraw(){
-                    view = graph.getView(ref.view);
+                    view = ref.$view;
                     isValid = ref.isValid;
                     getValue = ref.getValue;
 
@@ -111,7 +72,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                     return boxDrawer;
                 };
             },
-            makeIconCalc: function( graph, ref, box, content ){
+            makeIconCalc: function( ref, box, content ){
                 var view,
                     value,
                     isValid,
@@ -143,7 +104,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 };
 
                 return function configureDraw(){
-                    view = graph.getView(ref.view);
+                    view = ref.$view;
                     isValid = ref.isValid;
                     getValue = ref.getValue;
 
@@ -154,7 +115,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                     return iconDrawer;
                 };
             },
-            makeBarCalc: function( graph, topRef, bottomRef, barWidth ){
+            makeBarCalc: function( topRef, bottomRef, barWidth ){
                 var topView,
                     bottomView,
                     boxDrawer = new DrawBox(),
@@ -204,10 +165,10 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 };
 
                 return function configureDraw(){
-                    topView = graph.views[topRef.view];
+                    topView = topRef.$view;
 
                     if ( bottomRef ){
-                        bottomView = graph.views[bottomRef.view];
+                        bottomView = bottomRef.$view;
                     }else{
                         bottomView = topView;
                     }
@@ -224,7 +185,7 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 };
             },
             // top and bottom are config objects
-            makeFillCalc: function( graph, topRef, bottomRef ){
+            makeFillCalc: function( topRef, bottomRef ){
                 var topView,
                     bottomView,
                     areaDrawer = new DrawFill();
@@ -252,14 +213,14 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 };
 
                 return function configureDraw(){
-                    topView = graph.views[topRef.view];
+                    topView = topRef.$view;
 
                     areaDrawer.scale1 = function( v ){
                         return topView.y.scale(v);
                     };
 
                     if ( bottomRef ){
-                        bottomView = graph.views[bottomRef.view];
+                        bottomView = bottomRef.$view;
                         areaDrawer.scale2 = function( v ){
                             return bottomView.y.scale(v);
                         };

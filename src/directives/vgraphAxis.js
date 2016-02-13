@@ -138,7 +138,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                                     .tickPadding( tickPadding + tickLength + tickMargin )
                                     .scale( view.x.scale );
 
-                                if ( view.x.tick.interval ){
+                                if ( view.x.tick ){
                                     axis.ticks(
                                         view.x.tick.interval,
                                         view.x.tick.step
@@ -225,7 +225,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                                     .tickPadding( tickPadding + tickLength + tickMargin )
                                     .scale( view.x.scale );
 
-                                if ( view.x.tick.interval ){
+                                if ( view.x.tick ){
                                     axis.ticks(
                                         view.x.tick.interval,
                                         view.x.tick.step
@@ -322,7 +322,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                                     .tickPadding( tickPadding + tickLength + tickMargin )
                                     .scale( view.y.scale );
 
-                                if ( view.y.tick.interval ){
+                                if ( view.y.tick ){
                                     axis.ticks(
                                         view.y.tick.interval,
                                         view.y.tick.step
@@ -399,7 +399,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                                     .tickPadding( tickPadding + tickLength + tickMargin )
                                     .scale( view.y.scale );
 
-                                if ( view.y.tick.interval ){
+                                if ( view.y.tick ){
                                     axis.ticks(
                                         view.y.tick.interval,
                                         view.y.tick.step
