@@ -1,7 +1,7 @@
 # vGraph
 
 ## Description
-A component based graphing framework that currently is leveraged to Angular
+A component based graphing framework that currently is leveraged to Angular.  This is still in the development phase, feel free to leave any input.
 
 ## Installation
 ```shell
