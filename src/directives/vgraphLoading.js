@@ -87,7 +87,7 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
                             .ease( 'sine' );
                 }
 
-                box.register(function(){
+                box.$on('resize',function(){
                     left = box.innerLeft + box.innerWidth / 5;
                     width = box.innerWidth * 3 / 5;
                     right = left + width;

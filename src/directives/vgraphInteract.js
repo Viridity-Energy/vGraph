@@ -103,17 +103,15 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
                     graph.rerender();
                 });
 
-                angular.forEach( graph.views, function( chart ){
-                    chart.register({
-                        finalize : function(){
-                            $rect.attr({
-                                'x' : box.innerLeft,
-                                'y' : box.innerTop,
-                                'width' : box.innerWidth,
-                                'height' : box.innerHeight
-                            });
-                        }
-                    });
+                graph.registerComponent({
+                    finalize : function(){
+                        $rect.attr({
+                            'x' : box.innerLeft,
+                            'y' : box.innerTop,
+                            'width' : box.innerWidth,
+                            'height' : box.innerHeight
+                        });
+                    }
                 });
 
                 if ( !scope.dragStart ){

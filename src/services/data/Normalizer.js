@@ -17,14 +17,6 @@ angular.module( 'vgraph' ).factory( 'DataNormalizer',
 
 		DataNormalizer.prototype = new DataCollection();
 
-		DataNormalizer.prototype.$fillPoints = function( start, stop, interval ){
-			var i, c;
-
-			for( i = start, c = stop + interval; i < c; i += interval ){
-				this._makeNode( i );
-			}
-		};
-
 		DataNormalizer.prototype.$follow = function( collection ){
 			var i, c,
 				index,

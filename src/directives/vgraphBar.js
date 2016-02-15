@@ -36,7 +36,7 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
 
                 el.setAttribute( 'class', className );
 
-                cfg.$view.register(element);
+                cfg.$view.registerComponent(element);
             }
         };
     } ]

@@ -51,6 +51,49 @@ angular.module( 'vgraph' ).factory( 'DataManager',
         };
         // expect a seed function to be defined
 
+         DataManager.prototype.$fillPoints = function( ctrls ){
+            var i, c,
+                prototype = ctrls.prototype;
+
+            this.filling = ctrls;
+
+            if ( !prototype ){
+                prototype = {};
+            }
+
+            for( i = ctrls.start, c = ctrls.stop + ctrls.interval; i < c; i += ctrls.interval ){
+                this.data._register( i, Object.create(prototype) );
+            }
+        };
+
+        DataManager.prototype.setValue = function( interval, name, value ){
+            if ( this.filling && 
+                ( interval < this.filling.min || interval > this.filling.max || 
+                    (interval - this.filling.min) % this.filling.interval !== 0 ) ){
+                return;  
+            }
+
+            this.dataReady();
+            
+            if ( !this.ready && (value||value === 0) ){
+                this.ready = true;
+            }
+            
+            return this.data.$setValue( interval, name, value );
+        };
+
+        DataManager.prototype.dataReady = function( force ){
+            var registrations = this.registrations;
+
+            if ( force ){
+                registrations.forEach(function( registration ){
+                    registration();
+                });
+            }else{
+                this.$dataProc( this );
+            }
+        };
+
         DataManager.prototype.onError = function( cb ){
             this.errorRegistrations.push( cb );
         };
@@ -67,16 +110,6 @@ angular.module( 'vgraph' ).factory( 'DataManager',
             this.dataReady();
 
             return this.data.$getNode( interval );
-        };
-
-        DataManager.prototype.setValue = function( interval, name, value ){
-            this.dataReady();
-            
-            if ( !this.ready && (value||value === 0) ){
-                this.ready = true;
-            }
-            
-            return this.data.$setValue( interval, name, value );
         };
 
         DataManager.prototype.removePlot = function(){
@@ -112,18 +145,6 @@ angular.module( 'vgraph' ).factory( 'DataManager',
             };
         }
 
-        DataManager.prototype.dataReady = function( force ){
-            var registrations = this.registrations;
-
-            if ( force ){
-                registrations.forEach(function( registration ){
-                    registration();
-                });
-            }else{
-                this.$dataProc( this );
-            }
-        };
-
         DataManager.prototype.register = function( cb ){
             this.registrations.push( cb );
         };
@@ -132,6 +153,7 @@ angular.module( 'vgraph' ).factory( 'DataManager',
             this.data.$sort();
         };
 
+        // allows me to generate fake points between real points, used by view
         DataManager.prototype.$makePoint = function( pos ){
             var r, l,
                 d,

@@ -30,7 +30,7 @@ angular.module( 'vgraph' ).controller( 'FloodCtrl',
 			x : {
 				min: -5,
 				max: 25,
-				scale: d3.scale.linear()
+				scale: function(){ return d3.scale.linear(); }
 			},
 			y : {
 				padding : 0.05,
@@ -84,25 +84,31 @@ angular.module( 'vgraph' ).controller( 'NullCtrl', [
 		$scope.graph = {
 			x: {
 				min: -20,
-				max: 600,
-				interval: 1
-			},
-			datumFactory: function(){
-				return {
-					y1: null,
-					y2: null
-				};
+				max: 600
 			}
 		};
 
-		$scope.page = [{
-			src: data,
-			interval: 'x',
-			readings:{
-				'y1': 'y1',
-				'y2': 'y2'
-			}
-		}];
+		$scope.page = {
+			managers: {
+				'default': {
+					min: 0,
+					max: 500,
+					interval: 1,
+					prototype: {
+						y1: null,
+						y2: null
+					}
+				}
+			},
+			feeds: [{
+				src: data,
+				interval: 'x',
+				readings:{
+					'y1': 'y1',
+					'y2': 'y2'
+				}
+			}]
+		};
 
 		$scope.config = [
 			{ name : 'y1', className : 'red' },
@@ -401,28 +407,29 @@ angular.module( 'vgraph' ).controller( 'GrowingCtrl',
 );
 
 angular.module( 'vgraph' ).controller( 'BucketsCtrl',
-	['$scope', 'LinearSampler',
-	function( $scope, LinearSampler ){
+	['$scope', 'DataNormalizer',
+	function( $scope, DataNormalizer ){
 		var data = [ {x : 0, y : 20}  ],
 			interval; 
 
 		$scope.graph = {
 			fitToPane: true,
+			x: {
+				min : 0, 
+				max : 1000
+			},
 			views: {
 				'primary': {
 					manager: 'data',
-					x: {
-						min : 0, 
-						max : 1000
-					},
-					models: {
-						'averaged': new LinearSampler(function(datum){
-							return Math.round(datum._$interval / 10); // combine every 10 pixels
-						}),
-						'normal': new LinearSampler(function(datum){
-							return Math.round(datum._$interval); // combine to every pixel
-						})
-					}
+					normalizer: new DataNormalizer(function(datum){
+						return Math.round(datum._$interval / 10); // combine every 10 pixels
+					})
+				},
+				'secondary': {
+					manager: 'data',
+					normalizer: new DataNormalizer(function(datum){
+						return Math.round(datum._$interval); // combine to every pixel
+					})
 				}
 			}
 		};
@@ -441,13 +448,11 @@ angular.module( 'vgraph' ).controller( 'BucketsCtrl',
 			{ 
 				name : 'y1', 
 				view: 'primary', 
-				model: 'averaged', 
 				className : 'red'
 			},
 			{ 
 				name : 'y2', 
-				view: 'primary', 
-				model: 'normal', 
+				view: 'secondary', 
 				className : 'blue'
 			}
 		];
@@ -483,7 +488,7 @@ angular.module( 'vgraph' ).controller( 'CompareCtrl',
 			}
 		};
 
-		$scope.page = {
+		$scope.page = [{
 			src: data,
 			interval: 'x',
 			readings:{
@@ -492,18 +497,24 @@ angular.module( 'vgraph' ).controller( 'CompareCtrl',
 				'y3': 'input3',
 				'y4': 'input4'
 			}
-		};
+		}];
 
 		$scope.formatter = function( point ){
-			return point.compare.diff;
+			if ( point ){
+				return point.compare.diff;
+			}
 		};
 
 		$scope.getX = function( point ){
-			return point.compare._$interval;
+			if ( point ){
+				return point.compare.x;
+			}
 		};
 
 		$scope.getY = function( point ){
-			return point.compare.y;
+			if ( point ){
+				return point.compare.y;
+			}
 		};
 
 		// x is the interval, y is the function pulling the value
@@ -532,93 +543,63 @@ angular.module( 'vgraph' ).controller( 'CompareCtrl',
 );
 
 angular.module( 'vgraph' ).controller( 'MultiAxisCtrl',
-	['$scope', 'LinearSampler',
-	function( $scope, LinearSampler ){
+	['$scope', 
+	function( $scope ){
 		var data = [ {x : 0, x2: 150, y1 : 20, y2 : 400}  ],
+			viewInfo = {
+				'firstView': {
+					x: {
+						min : 0, 
+						max : 1000
+					},
+					manager: 'first'
+				},
+				'secondView': {
+					x: {
+						min : 150, 
+						max : 1150
+					},
+					manager: 'second'
+				}
+			},
 			interval;
 
 		$scope.config = [
 			{ 
-				name: 'y',
+				name: 'y-1',
 				view: 'firstView',
-				model: 'someModel',
 				className : 'red'
 			},
 			{ 
-				name: 'y',
+				name: 'y-2',
 				view: 'secondView',
-				model: 'someModel',
 				className : 'blue'
 			}
 		];
-
-		function modelFactory(){
-			var t = {};
-
-			t[ 'someModel' ] = new LinearSampler(function(datum){
-				return Math.round(datum._$interval);
-			});
-
-			return t;
-		}
 
 		$scope.page = [{
 			src: data,
 			manager: 'first',
 			interval: 'x',
 			readings:{
-				'y': 'y1'
+				'y-1': 'y1'
 			}
 		},{
 			src: data,
 			manager: 'second',
 			interval: 'x2',
 			readings:{
-				'y': 'y2'
+				'y-2': 'y2'
 			}
 		}];
 
 		$scope.graph = {
 			fitToPane: true,
-			views: {
-				'firstView': {
-					x: {
-						min : 0, 
-						max : 2000
-					},
-					models: modelFactory,
-					manager: 'first'
-				},
-				'secondView': {
-					x: {
-						min : 150, 
-						max : 2150
-					},
-					models: modelFactory,
-					manager: 'second'
-				}
-			}
+			views: viewInfo
 		};
 
 		$scope.zoom = {
-			views: {
-				'firstView': {
-					x: {
-						min : 0, 
-						max : 2000
-					},
-					models: modelFactory,
-					manager: 'first'
-				},
-				'secondView': {
-					x: {
-						min : 150, 
-						max : 2150
-					},
-					models: modelFactory,
-					manager: 'second'
-				}
-			}
+			views: viewInfo
 		};
 
 		var counter = 0;
@@ -643,55 +624,53 @@ angular.module( 'vgraph' ).controller( 'MultiAxisCtrl',
 );
 
 angular.module( 'vgraph' ).controller( 'MultiIntervalCtrl',
-	['$scope', 'LinearSampler',
-	function( $scope, LinearSampler ){
+	['$scope', 
+	function( $scope ){
 		var data1 = [ {x1: 0, y1: 20} ],
 			data2 = [ {x2: 0, y2: 400} ],
 			interval; 
 
-		function modelFactory(){
-			var t = {};
-
-			t[ 'someModel' ] = new LinearSampler(function(datum){
-				return Math.round(datum._$interval);
-			});
-
-			return t;
-		}
-
-		$scope.page = [{
-			src: data1,
-			manager: 'first',
-			interval: 'x1',
-			readings:{
-				'y': 'y1'
-			}
-		},{
-			src: data2,
-			manager: 'second',
-			interval: 'x2',
-			readings:{
-				'y': 'y2'
-			}
-		}];
+		$scope.page = {
+			managers: {
+				first: {
+					min: 0,
+					max: 1000,
+					interval: 1
+				},
+				second: {
+					min: 0,
+					max: 20,
+					interval: 1
+				}
+			},
+			feeds: [{
+				src: data1,
+				manager: 'first',
+				interval: 'x1',
+				readings:{
+					'y-1': 'y1'
+				}
+			},{
+				src: data2,
+				manager: 'second',
+				interval: 'x2',
+				readings:{
+					'y-2': 'y2'
+				}
+			}]
+		};
 
 		$scope.graph = {
 			fitToPane: true,
 			views: {
 				'firstView': {
-					x: {
-						min : 0, 
-						max : 2000
-					},
-					models: modelFactory,
 					manager: 'first'
 				},
 				'secondView': {
 					x: {
-						min : 0, 
-						max : 2000
+						min : -5, 
+						max : 25
 					},
-					models: modelFactory,
 					manager: 'second'
 				}
 			}
@@ -699,15 +678,13 @@ angular.module( 'vgraph' ).controller( 'MultiIntervalCtrl',
 
 		$scope.config = [
 			{ 
-				name: 'y',
+				name: 'y-1',
 				view: 'firstView',
-				model: 'someModel',
 				className : 'red'
 			},
 			{ 
-				name: 'y',
+				name: 'y-2',
 				view: 'secondView',
-				model: 'someModel',
 				className : 'blue'
 			}
 		];
@@ -741,29 +718,12 @@ angular.module( 'vgraph' ).controller( 'MultiIntervalCtrl',
 angular.module( 'vgraph' ).controller( 'LeadingCtrl',
 	['$scope', '$timeout',
 	function( $scope, $timeout ){
-		var ref1 = {
-				name: 'someLine1',
-				className: 'red'
-			},
-			ref2 = {
-				name: 'someLine2',
-				className: 'blue'
-			},
-			ref3 = {
-				name: 'someLine3',
-				className: 'green'
-			},
-			ref4 = {
-				name: 'someLine4',
-				className: 'orange'
-			},
-			data = [ {x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40}  ];
+		var data = [ {x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40}  ];
 
-		$scope.graph = {
+		$scope.graphUnified = {
 			x : {
 				min: -5,
-				max: 35,
-				scale: d3.scale.linear()
+				max: 105
 			},
 			y : {
 				padding : 0.05,
@@ -773,37 +733,148 @@ angular.module( 'vgraph' ).controller( 'LeadingCtrl',
 			}
 		};
 
-		$scope.page = [{
-			src: data,
-			interval: 'x',
-			readings:{
-				'someLine1': 'y1'
+		$scope.graphIntervals = {
+			x : {
+				min: -5,
+				max: 105
+			},
+			y : {
+				padding : 0.05,
+				format: function( y ){
+					return ':' + y;
+				}
+			},
+			views:{
+				eins: {
+					manager: 'eins'
+				},
+				zwei: {
+					manager: 'zwei'
+				},
+				fier: {
+					manager: 'fier'
+				},
+				sieben: {
+					manager: 'sieben'
+				}
 			}
-		},{
-			src: data,
-			interval: 'x',
-			readings:{
-				'someLine2': 'y2'
-			}
-		},{
-			src: data,
-			interval: 'x',
-			readings:{
-				'someLine3': 'y3'
-			}
-		},{
-			src: data,
-			interval: 'x',
-			readings:{
-				'someLine4': 'y4'
-			}
-		}];
+		};
 
-		$scope.config = [
-			ref1,
-			ref2,
-			ref3,
-			ref4
+		$scope.page = {
+			managers: {
+				eins: {
+					min: 0,
+					max: 100,
+					interval: 1,
+					prototype: {
+						someLine1: null
+					}
+				},
+				zwei: {
+					min: 0,
+					max: 100,
+					interval: 2,
+					prototype: {
+						someLine2: null
+					}
+				},
+				fier: {
+					min: 0,
+					max: 100,
+					interval: 4,
+					prototype: {
+						someLine3: null
+					}
+				},
+				sieben: {
+					min: 0,
+					max: 100,
+					interval: 7,
+					prototype: {
+						someLine4: null
+					}
+				}
+			},
+			feeds: [{
+				src: data,
+				interval: 'x',
+				readings:{
+					'someLine1': 'y1',
+					'someLine2': 'y2',
+					'someLine3': 'y3',
+					'someLine4': 'y4'
+				}
+			},{
+				src: data,
+				manager: 'eins',
+				interval: 'x',
+				readings:{
+					'someLine1': 'y1'
+				}
+			},{
+				src: data,
+				manager: 'zwei',
+				interval: 'x',
+				readings:{
+					'someLine2': 'y2'
+				}
+			},{
+				src: data,
+				manager: 'fier',
+				interval: 'x',
+				readings:{
+					'someLine3': 'y3'
+				}
+			},{
+				src: data,
+				manager: 'sieben',
+				interval: 'x',
+				readings:{
+					'someLine4': 'y4'
+				}
+			}]
+		};
+
+		$scope.configUnified = [
+			{
+				name: 'someLine1',
+				className: 'red'
+			},
+			{
+				name: 'someLine2',
+				className: 'blue'
+			},
+			{
+				name: 'someLine3',
+				className: 'green'
+			},
+			{
+				name: 'someLine4',
+				className: 'orange'
+			}
+		];
+
+		$scope.configInterval = [
+			{
+				view: 'eins',
+				name: 'someLine1',
+				className: 'red'
+			},
+			{
+				view: 'zwei',
+				name: 'someLine2',
+				className: 'blue'
+			},
+			{
+				view: 'fier',
+				name: 'someLine3',
+				className: 'green'
+			},
+			{
+				view: 'sieben',
+				name: 'someLine4',
+				className: 'orange'
+			}
 		];
 
 		var y1 = 20, 
@@ -811,32 +882,26 @@ angular.module( 'vgraph' ).controller( 'LeadingCtrl',
 			y3 = 30,
 			y4 = 35;
 
-		for( var i = 0, c = 27; i < c; i++ ){
+		for( var i = 0, c = 100; i < c; i++ ){
 			var counter = 0
-				node = { x : data.length },
+				node = { x : i },
 				min = -1,
 				max = 1;
 
 			y1 += Math.random() * (max - min) + min;
-			node.y1 = data[data.length-1].y1 = y1;
+			node.y1 = y1;
 
-			if ( i > 22 ){
-				node.y2 = null;
-			}else if ( i % 2 === 0 ){
+			if ( i % 2 === 0 ){
 				y2 += Math.random() * (max - min) + min;
 				node.y2 = y2;
 			}
 
-			if ( i > 24 ){
-				node.y3 = null;
-			}else if ( i % 4 === 0 ){
+			if ( i % 4 === 0 ){
 				y3 += Math.random() * (max - min) + min;
 				node.y3 = y3;
 			}
 
-			if ( i > 21 ){
-				node.y4 = null;
-			}else if ( i % 7 === 0 ){
+			if ( i % 7 === 0 ){
 				y4 += Math.random() * (max - min) + min;
 				node.y4 = y4;
 			}
@@ -854,6 +919,7 @@ angular.module( 'vgraph' ).controller( 'BoxCtrl',
 				className: 'red'
 			},
 			ref2 = {
+				name: 'blueBox',
 				className: 'blue',
 				getValue: function( d ){
 					return d.someLine1;
@@ -863,6 +929,7 @@ angular.module( 'vgraph' ).controller( 'BoxCtrl',
 				}
 			},
 			ref3 = {
+				name: 'greenBox',
 				className: 'green',
 				getValue: null,
 				isValid: function( d ){
@@ -875,7 +942,7 @@ angular.module( 'vgraph' ).controller( 'BoxCtrl',
 			x : {
 				min: -5,
 				max: 105,
-				scale: d3.scale.linear()
+				scale: function(){ return d3.scale.linear(); }
 			},
 			y : {
 				padding : 0.05,
@@ -942,7 +1009,7 @@ angular.module( 'vgraph' ).controller( 'IconCtrl',
 			x : {
 				min: -5,
 				max: 105,
-				scale: d3.scale.linear()
+				scale: function(){ return d3.scale.linear(); }
 			},
 			y : {
 				padding : 0.05,

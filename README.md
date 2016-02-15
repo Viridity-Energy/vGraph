@@ -1,7 +1,23 @@
-vGraph
-======
+# vGraph
 
-Configurations
+## Description
+A component based graphing framework that currently is leveraged to Angular
+
+## Installation
+```shell
+bower install v-graph
+```
+
+## Running the demos
+```shell
+cd bower_components/v-graph
+npm install
+gulp serve
+
+access localhost:9000 in browser
+```
+
+## Configurations
 
 feed : {
  	src : 
@@ -14,12 +30,23 @@ feed : {
 	}
 }
 
-page : [ *feed* ]
+manager: {
+	min: the minimum number to inject
+	max: the max number to inject
+	interval: the interval to enter data
+	prototype: the base object to inject	
+}
+
+page : {
+	managers: {
+		managerName : *manager*
+	}
+	feeds: [ *feed* ]
+}
 
 viewX : {
 	min : the absolute minimum value of the x boundries
 	max : the absolute maximum value of the x boundries
-	interval : established interval between datum
 	scale : 
 	format :
 	padding : percentage of padding to use on edges
@@ -65,7 +92,8 @@ drawer : {
 	sets
 }
 
--- Data Flow --  
+## Data Flow
+
 Data Source ( js array, or an array provided by an service )
 Data Feed ( watches the js array for changes, forwards to the data manager )
 Data Manager ( aggregated raw data )

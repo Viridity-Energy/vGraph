@@ -10,50 +10,38 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                 feed: '=?feed'
             },
             link : function( scope, $el, attrs, requirements ){
-                var viewName = attrs.view || ComponentChart.defaultView,
+                var configs,
+                    viewName = attrs.view || ComponentChart.defaultView,
                     childTag = attrs.childTag,
-                    model = attrs.model || ComponentChart.defaultModel, 
                     graph = requirements[0],
                     view = graph.getView(viewName),
-                    refs,
                     unwatch,
-                    childScope,
-                    fieldNames;
+                    childScope;
 
-                function pairElements( configs ){
+                function pairElements( cfgs ){
                     var i, c,
                         cfg,
                         last = {};
 
-                    for( i = 0, c = configs.length; i < c; i++ ){
-                        cfg = configs[i];
-                        cfg.$pos = i;
+                    configs = [];
 
-                        if ( !cfg.feed ){
-                            cfg.feed = scope.feed;
-                        }
-                        if ( !cfg.ref ){
-                            cfg.ref = {
-                                name: cfg.name,
-                                view: viewName
-                            };
-                        }
-
+                    for( i = 0, c = cfgs.length; i < c; i++ ){
+                        cfg = graph.getReference( cfgs[i] );
                         cfg.pair = last;
-                        last = cfg.ref;
+
+                        last = cfg;
+
+                        configs.push( cfg );
                     }
                 }
 
-                function parseConf( configs ){
+                function parseConf( cfgs ){
                     var i, c,
                         lines,
                         elements;
 
-                    refs = [];
-                    fieldNames = [];
-
-                    if ( configs ){
-                        pairElements( configs );
+                    if ( cfgs ){
+                        pairElements( cfgs );
 
                         if ( childTag ){
                             d3.select( $el[0] ).selectAll( 'g' ).remove();
@@ -89,12 +77,12 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
                     unwatch();
                 });
 
-                view.register({
-                    parse : function( models ){
-                        var config = scope.config;
-
-                        StatCalculations.$resetCalcs( config );
-                        StatCalculations.stack( config, models[model] );
+                view.registerComponent({
+                    parse : function(){
+                        if ( configs ){
+                            StatCalculations.$resetCalcs( configs );
+                            StatCalculations.stack( configs );
+                        }
                     }
                 });
             }

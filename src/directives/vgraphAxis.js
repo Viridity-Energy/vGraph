@@ -449,7 +449,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
                     })
                 );
 
-                view.register({
+                graph.registerComponent({
                     build : function(){
                         if ( ticks === undefined ){
                             makeTicks();

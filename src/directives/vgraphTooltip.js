@@ -26,16 +26,17 @@ angular.module( 'vgraph' ).directive( 'vgraphTooltip',
         }
 
         function makeByConfig( graph, cfg ){
+            var ref = graph.getReference(cfg);
+
             return {
                 formatter: function( point ){
-                    return cfg.getValue( point[cfg.view][cfg.model] );
+                    return ref.getValue( point[ref.view] );
                 },
                 xParse: function( point ){
-                    return point[cfg.view][cfg.model]._$interval;
+                    return point[ref.view]._$interval;
                 },
                 yParse: function( point ){
-                    return graph.views[cfg.view].y
-                        .scale( cfg.getValue(point[cfg.view][cfg.model]) );
+                    return ref.$view.y.scale( ref.getValue(point[ref.view]) );
                 }
             };
         }

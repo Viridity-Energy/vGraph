@@ -46,7 +46,7 @@ angular.module( 'vgraph' ).directive( 'vgraphIcon',
 
                 el.setAttribute( 'class', className );
 
-                cfg.$view.register(element);
+                cfg.$view.registerComponent(element);
             }
         };
     }]

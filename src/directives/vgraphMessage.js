@@ -17,7 +17,7 @@ angular.module( 'vgraph' ).directive( 'vgraphMessage',
 
                 $el.attr( 'visibility', 'hidden' );
 
-                box.register(function(){
+                box.$on('resize',function(){
                     if ( box.innerHeight ){
                         $outline.attr( 'transform', 'translate('+box.innerLeft+','+box.innerTop+')' )
                             .attr( 'width', box.innerWidth )

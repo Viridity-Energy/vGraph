@@ -43,7 +43,7 @@ angular.module( 'vgraph' ).directive( 'vgraphLine',
 
                 el.setAttribute( 'class', className );
 
-                cfg.$view.register(element);
+                cfg.$view.registerComponent(element);
             }
         };
     }]

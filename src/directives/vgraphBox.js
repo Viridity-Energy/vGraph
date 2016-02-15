@@ -11,12 +11,12 @@ angular.module( 'vgraph' ).directive( 'vgraphBox',
             controller: ComponentElement,
             link : function( scope, $el, attrs, requirements ){
                 var el = $el[0],
+                    chart = requirements[0],
                     cfg = chart.compileReference( scope.config ),
                     /*
                         if  cfg.getValue == null || false, it will cover the entire area
                         cfg.isValid
                     */
-                    chart = requirements[0],
                     element = requirements[1],
                     className = 'box ';
 
@@ -38,7 +38,7 @@ angular.module( 'vgraph' ).directive( 'vgraphBox',
 
                 el.setAttribute( 'class', className );
 
-                cfg.$view.register(element);
+                cfg.$view.registerComponent(element);
             }
         };
     }]

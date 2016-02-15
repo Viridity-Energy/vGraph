@@ -32,10 +32,10 @@
 **/
 angular.module( 'vgraph' ).factory( 'ComponentChart',
     [ '$timeout', 
-        'ComponentView', 'ComponentPage', 'ComponentBox', 'DataCollection', 'DataNormalizer', 
+        'ComponentView', 'ComponentPage', 'ComponentBox', 'DataCollection', 
         'makeEventing', 'Scheduler', 'Hitbox', 'DomHelper',
     function ( $timeout, 
-        ComponentView, ComponentPage, ComponentBox, DataCollection, DataNormalizer,
+        ComponentView, ComponentPage, ComponentBox, DataCollection, 
         makeEventing, Scheduler, Hitbox, domHelper ) {
         'use strict';
 
@@ -51,9 +51,12 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
             this.models = [];
             this.waiting = {};
             this.references = {};
+            this.components = [];
+
+            this.pristine = false;
             this.loading = true;
             this.message = null;
-            
+
             this.$on('focus',function( pos ){
                 if ( pos ){
                     dis.highlightOn( pos );
@@ -63,7 +66,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
             });
         }
 
-        makeEventing(ComponentChart.prototype);
+        makeEventing( ComponentChart.prototype );
 
         ComponentChart.defaultView = 'default';
 
@@ -79,26 +82,32 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
                 this.settings = {};
             }
 
-            settings.x = ComponentView.parseSettingsX( settings.x, this.settings.x );
-            settings.y = ComponentView.parseSettingsY( settings.y, this.settings.y );
+            this.settings.fitToPane = settings.fitToPane;
 
             this.page = page;
-            this.settings = settings;
-
             this.normalizeY = settings.normalizeY;
             this.normalizeX = settings.normalizeX;
 
+            this.settings.x = ComponentView.parseSettingsX( settings.x, this.settings.x );
+            this.settings.y = ComponentView.parseSettingsY( settings.y, this.settings.y );
+
+            // I want to compile everything but scale.
+            if ( settings.x ){
+                this.settings.x.scale = settings.x.scale;
+            }else{
+                this.settings.x.scale = null;
+            }
+
+            if ( settings.y ){
+                this.settings.y.scale = settings.y.scale;
+            }else{
+                this.settings.y.scale = null;
+            }
+            
             views = settings.views;
             if ( !views ){
                 views = {};
-                views[ ComponentChart.defaultView ] = {
-                    manager: ComponentPage.defaultManager,
-                    normalizer: new DataNormalizer(
-                        function(datum){
-                            return Math.round(datum._$interval);
-                        }
-                    )
-                };
+                views[ ComponentChart.defaultView ] = {};
             }else if ( angular.isFunction(views) ){
                 views = views();
             }
@@ -148,79 +157,100 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 
         var cfgUid = 0;
 
-        ComponentChart.prototype.compileReference = function( reference ){
-            if ( typeof(reference) !== 'object' ){
+        ComponentChart.prototype.getReference = function( refDef ){
+            var ref = this.references[refDef.name];
+
+            if ( !ref ){
+                ref = {
+                    $uid: cfgUid++,
+                    name: refDef.name,
+                    className: refDef.className ? refDef.className : 'node-'+refDef.name
+                };
+                this.references[refDef.name] = ref;
+            }
+
+            return ref;
+        };
+
+        ComponentChart.prototype.compileReference = function( refDef ){
+            var ref;
+
+            if ( typeof(refDef) !== 'object' ){
                 return null;
             }
 
-            if ( reference.$uid === undefined ){
-                reference.$uid = cfgUid++;
-            }
+            ref = this.getReference( refDef );
 
-            if ( !reference.model ){
-                reference.model = ComponentChart.defaultModel;
-            }
+            ref.field = ref.name;
 
-            if ( reference.name ){
-                reference.field = reference.name;
-
-                if ( !reference.className ){
-                    reference.className = 'node-'+reference.name;
-                }
-
-                if ( reference.getValue === undefined ){
-                    reference.getValue = function( d ){
-                        return d[ reference.field ];
-                    };
-                }
-            } else if ( !reference.getValue ){
-                throw new Error('drawer reference requires name or getValue');
+            if ( refDef.getValue === undefined ){
+                ref.getValue = function( d ){
+                    if ( d ){
+                        return d[ ref.field ];
+                    }
+                };
+            }else{
+                ref.getValue = refDef.getValue;
             }
 
             // undefined allow lax definining, and simplicity for one view sake.
             // null will mean no view editing
-            if ( reference.view === undefined ){
-                reference.view = ComponentChart.defaultView;
+            if ( refDef.view === undefined ){
+                refDef.view = ComponentChart.defaultView;
+            }else if ( refDef.view ){
+                refDef.view = refDef.view;
             }
 
-            if ( reference.view ){
-                reference.$view = this.getView( reference.view );
-                reference.$getNode = function( index ){
+            if ( refDef.view ){
+                ref.view = refDef.view;
+                ref.$view = this.getView( refDef.view );
+                ref.$getNode = function( index ){
                     return this.$view.normalizer.$getNode(index);
                 };
-                reference.$getValue = function( index ){
+                ref.$getValue = function( index ){
                     var t = this.$view.normalizer.$getNode(index);
 
                     if ( t ){
                         return this.getValue(t);
                     }
                 };
-                reference.$eachNode = function( fn ){
+                ref.$eachNode = function( fn ){
                     this.$view.normalizer.$sort().forEach( fn );
                 };
-                
-            } else if ( !reference.$getValue ){
+                ref.$getIndexs = function(){
+                    return this.$view.normalizer.$getIndexs();
+                };
+            } else if ( refDef.$getValue ){
+                ref.$getValue = refDef.$getValue;
+            } else if ( !ref.$getValue ) {
                 throw new Error('drawer reference requires view or $getValue');
             }
 
-            return reference;
+            if ( refDef.isValid ){
+                ref.isValid = refDef.isValid;
+            }
+
+            return ref;
         };
 
         // Fired to render the chart and all of its child elements
         ComponentChart.prototype.render = function(){
             var dis = this,
+                currentView, // used for debugging
                 activeViews = [],
                 isReady = false,
                 hasViews = 0;
 
             try{
                 // generate data limits for all views
-                angular.forEach( this.views, function( view ){
+                angular.forEach( this.views, function( view, name ){
+                    currentView = name;
                     view.parse();
                 });
 
                 // do any of our views have data?
                 angular.forEach( this.views, function( view, name ){
+                    currentView = name;
                     if ( view.hasData() ){
                         activeViews.push( view );
                         isReady = true;
@@ -238,7 +268,9 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
                     normalizeX( activeViews );
                 }
             }catch( ex ){
-                console.log( 'parsing error', currentView, ex.stack );
+                console.log( '---parsing error---', 'view:'+currentView );
+                console.log( ex );
+                console.log( ex.stack );
             }
 
             hasViews = activeViews.length;
@@ -267,12 +299,30 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
                 process : check DOM positioning calculations
                 finalize : do final DOM adjustments
                 **/
+                schedule.loop( this.components, function( component ){
+                    if ( component.build ){
+                        component.build();
+                    }
+                });
+
                 schedule.loop( activeViews, function( view ){
                     view.build();
                 });
 
+                schedule.loop( this.components, function( component ){
+                    if ( component.process ){
+                        component.process();
+                    }
+                });
+
                 schedule.loop( activeViews, function( view ){
                     view.process();
+                });
+
+                schedule.loop( this.components, function( component ){
+                    if ( component.finalize ){
+                        component.finalize();
+                    }
                 });
 
                 schedule.loop( activeViews, function( view ){
@@ -394,6 +444,10 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
             });
         };
 
+        ComponentChart.prototype.registerComponent = function( component ){
+            this.components.push(component);
+        };
+
         ComponentChart.prototype.configureHitbox = function(){
             var box = this.box;
 
@@ -449,7 +503,8 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
                 var p;
 
                 points[viewName] = view.getPoint( pos.x );
-                p = points[viewName].$pos;
+
+                p = points[viewName]._$interval;
 
                 if ( p !== undefined ){
                     count++;

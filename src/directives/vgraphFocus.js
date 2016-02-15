@@ -13,7 +13,7 @@ angular.module( 'vgraph' ).directive( 'vgraphFocus',
                         .attr('class', 'focus')
                         .attr('visibility', 'hidden');
 
-                box.register(function(){
+                box.$on('resize',function(){
                     $focus.attr( 'height', box.innerHeight )
                         .attr( 'y', box.innerTop );
                 });

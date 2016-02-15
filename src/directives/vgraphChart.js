@@ -45,7 +45,7 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
 
                 graph.$root = $el[0]; 
 
-                box.register(function(){
+                box.$on('resize',function(){
                     resize( box );
                     graph.rerender(function(){
                         $scope.$apply();

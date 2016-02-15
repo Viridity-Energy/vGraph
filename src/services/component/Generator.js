@@ -11,7 +11,6 @@ angular.module( 'vgraph' ).factory( 'ComponentGenerator',
                 var lineDrawer = new DrawLine();
 
                 lineDrawer.preparse = function( index ){
-                    console.log( index, ref );
                     var node = ref.$getNode(index);
 
                     return {

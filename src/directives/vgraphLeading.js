@@ -9,23 +9,26 @@ angular.module( 'vgraph' ).directive( 'vgraphLeading',
                 config : '=vgraphLeading'
             },
             link : function( scope, el, attrs, requirements ){
-                var graph = requirements[0],
+                var configs,
+                    chart = requirements[0],
                     $el = d3.select( el[0] ),
-                    names;
+                    elements;
 
                 function parseConf( config ){
                     var cfg,
                         i, c;
                     
-                    names = {};
+                    elements = {};
 
                     $el.selectAll( 'line' ).remove();
 
+                    configs = [];
                     if ( config ){
                         for( i = 0, c = config.length; i < c; i++ ){
-                            cfg = config[ i ];
+                            cfg = chart.getReference(config[i]);
+                            configs.push( cfg );
 
-                            names[ cfg.name ] = $el.append('line').attr( 'class', 'line '+cfg.className );
+                            elements[ cfg.name ] = $el.append('line').attr( 'class', 'line '+cfg.className );
                         }
                     }
                 }
@@ -39,21 +42,20 @@ angular.module( 'vgraph' ).directive( 'vgraphLeading',
                         isValid = true,
                         points = [];
 
-                    angular.forEach( scope.config, function( cfg ){
-                        var model = graph.views[cfg.view].models[cfg.model],
-                            datum = model._$index[model.$stats[cfg.field]],
-                            value = datum[ cfg.field ];
+                    angular.forEach( configs, function( cfg ){
+                        var model = cfg.$view.normalizer,
+                            datum = model.$getNode( model.$stats[cfg.field] ),
+                            value = cfg.getValue(datum);
 
-                        if ( datum._$index < model.$parent.$maxIndex ){
-                            isValid = false;
-                        }else{ 
-                            value = datum[ cfg.field ];
-
+                        if ( datum && cfg.$view.isLeading() ){
                             points.push({
-                                el : names[cfg.name],
+                                el : elements[cfg.name],
                                 x : datum._$interval,
-                                y : graph.views[cfg.view].y.scale( value )
+                                y : cfg.$view.y.scale( value )
                             });
+                        }else{
+                            elements[cfg.name].attr( 'visibility','hidden' );
+                            isValid = false;
                         }
                     });
 
@@ -65,6 +67,7 @@ angular.module( 'vgraph' ).directive( 'vgraphLeading',
                     angular.forEach( points, function( p ){
                         if ( last ){
                             last.el
+                                .attr( 'visibility','visible' )
                                 .attr( 'x1', last.x )
                                 .attr( 'x2', p.x )
                                 .attr( 'y1', last.y )
@@ -78,10 +81,11 @@ angular.module( 'vgraph' ).directive( 'vgraphLeading',
                         $el.attr( 'visibility', 'visible' );
 
                         last.el
+                            .attr( 'visibility','visible' )
                             .attr( 'x1', last.x )
                             .attr( 'x2', last.x )
                             .attr( 'y1', last.y )
-                            .attr( 'y2', graph.box.innerBottom );
+                            .attr( 'y2', chart.box.innerBottom );
                     }else{
                         clearComponent();
                     }
@@ -90,7 +94,7 @@ angular.module( 'vgraph' ).directive( 'vgraphLeading',
                 scope.$watchCollection('config', parseConf );
 
                 scope.$on('$destroy',
-                    graph.$subscribe({
+                    chart.$subscribe({
                         'error': clearComponent,
                         'loading': clearComponent,
                         'success': drawComponent

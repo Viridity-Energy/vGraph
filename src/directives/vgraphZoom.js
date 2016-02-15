@@ -175,7 +175,7 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
                     redraw();
                 });
 
-                box.register(function(){
+                box.$on('resize',function(){
                     $el.attr( 'width', box.innerWidth )
                         .attr( 'height', box.innerHeight )
                         .attr( 'transform', 'translate(' +

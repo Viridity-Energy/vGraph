@@ -1,6 +1,6 @@
 angular.module( 'vgraph' ).factory( 'ComponentBox',
-    [
-    function () {
+    [ 'makeEventing',
+    function ( makeEventing ) {
         'use strict';
 
         function extend( model, settings ){
@@ -72,17 +72,14 @@ angular.module( 'vgraph' ).factory( 'ComponentBox',
         }
 
         function ComponentBox( settings ){
-            this.registrations = [];
             extend( this, settings || {} );
         }
+
+        makeEventing( ComponentBox.prototype );
 
         function merge( nVal, oVal ){
             return nVal !== undefined ? parseInt( nVal ) : oVal;
         }
-
-        ComponentBox.prototype.register = function( cb ){
-            this.registrations.push( cb );
-        };
 
         ComponentBox.prototype.targetSvg = function( el ){
             this.$element = jQuery(el); // I'd like not to need this
@@ -91,8 +88,7 @@ angular.module( 'vgraph' ).factory( 'ComponentBox',
         };
 
         ComponentBox.prototype.resize = function(){
-            var i, c,
-                el = this.$element;
+            var el = this.$element;
 
             el.attr( 'width', null )
                 .attr( 'height', null );
@@ -126,9 +122,7 @@ angular.module( 'vgraph' ).factory( 'ComponentBox',
                 });
 
             if ( this.innerWidth && this.innerHeight ){
-                for( i = 0, c = this.registrations.length; i < c; i++ ){
-                    this.registrations[ i ]();
-                }
+                this.$trigger('resize');
             }
         };
 

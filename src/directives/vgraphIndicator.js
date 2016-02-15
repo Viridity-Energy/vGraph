@@ -11,8 +11,8 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
             link : function( scope, el, attrs, requirements ){
                 var view,
                     pulse,
-                    cfg = scope.cfg,
                     graph = requirements[0],
+                    cfg = graph.getReference(scope.cfg),
                     radius = scope.$eval( attrs.pointRadius ) || 3,
                     outer = scope.$eval( attrs.outerRadius ),
                     $el = d3.select( el[0] )
@@ -57,19 +57,15 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
                 );
 
                 view = graph.getView(cfg.view);
-                view.register({
-                    finalize : function( models ){
-                        var x,
-                            y,
-                            d,
-                            name = cfg.field,
-                            model = models[cfg.model];
+                view.registerComponent({
+                    finalize : function(){
+                        var x, y,
+                            d = view.getLeading(),
+                            v = cfg.getValue(d);
 
-                        d = model[model.length-1];
-
-                        if ( d && d[name] && model.$parent.$maxIndex === model.$parent.$parent.$maxIndex ){
+                        if ( v && view.isLeading() ){
                             x = d._$interval;
-                            y = view.y.scale( d[name] );
+                            y = view.y.scale( v );
 
                             if ( x && y ){
                                 $el.attr( 'transform', 'translate(' + x + ',' + y + ')' );

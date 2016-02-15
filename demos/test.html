@@ -1,95 +1,40 @@
-<body>
-<script>
-var keys = ['eins','zwei','drei'];
+<html>
+  <head>
+    <meta charset="utf-8">
+    <script src="bower_components/d3/d3.js"></script>
+    <script src="bower_components/jquery/dist/jquery.js"></script>
+    <script src="bower_components/angular/angular.js"></script>
+    <script src="vgraph.js"></script>
+  </head>
+  <body>
+    <div ng-app="test">
+        <some-directive>
+            <ol>
+                <li>{{ctrl.name}}</li>
+                <li>{{name}}</li>
+                <li>{{shit}}</li>
+            </ol>
+        </some-directive>
+    </div>
+    <script>
+    var app = angular.module( 'test', [] );
 
-function copy_keys( from, to ){
-    var i, c, 
-        key;
-
-    for( i = 0, c = keys.length; i < c; i++ ){
-        k = keys[i];
-        to[k] = from[k];
-    }
-
-    return to;
-}
-
-function maker( key, f ){
-    if ( f ){
-        return function( from, to ){
-            f( from, to );
-            to[key] = from[key];
+    app.directive('someDirective', function () {
+      return {
+        scope: {},
+        controller: ['$scope', function ( $scope ) {
+          $scope.shit = 'on you';
+          this.name = 'Pascal'
+        }],
+        controllerAs: 'ctrl',
+        transclude: true,
+        link: function(scope, element, attrs, ctrl, transclude) {
+          transclude(scope, function(clone, scope) {
+            element.append(clone);
+          });
         }
-    }else{
-        return function( from, to ){
-            to[key] = from[key];
-        }
-    }
-}
-
-var copies = [
-    maker( 'eins' ),
-    maker( 'zwei' ),
-    maker( 'drei' )
-];
-
-function copy_makers( from, to ){
-    var i, c;
-
-    for( i = 0, c = copies.length; i < c; i++ ){
-        copies[i]( from, to )
-    }
-}
-
-var copy_recursive = maker( 'eins', maker('zwei', maker('drei')) );
-
-var data = [];
-
-for( i = 0, c = 1000000; i < c; i++ ){
-    data.push({
-        eins: 1,
-        zwei: 2,
-        drei: 3
+      };
     });
-}
-
-var start;
-
-start = +( new Date() );
-for( i = 0, c = data.length; i < c; i++ ){
-    copy_keys( data[i], {} );
-}
-console.log( 'run keys 1', (new Date()) - start );
-
-start = +( new Date() );
-for( i = 0, c = data.length; i < c; i++ ){
-    copy_recursive( data[i], {} );
-}
-console.log( 'run recursive 2', (new Date()) - start );
-
-start = +( new Date() );
-for( i = 0, c = data.length; i < c; i++ ){
-    copy_makers( data[i], {} );
-}
-console.log( 'run makers 3', (new Date()) - start );
-
-start = +( new Date() );
-for( i = 0, c = data.length; i < c; i++ ){
-    copy_keys( data[i], {} );
-}
-console.log( 'run keys 4', (new Date()) - start );
-
-start = +( new Date() );
-for( i = 0, c = data.length; i < c; i++ ){
-    copy_recursive( data[i], {} );
-}
-console.log( 'run recursive 5', (new Date()) - start );
-
-start = +( new Date() );
-for( i = 0, c = data.length; i < c; i++ ){
-    copy_makers( data[i], {} );
-}
-console.log( 'run makers 6', (new Date()) - start );
-
-</script>
-</body>
+    </script>
+  </body>
+</html>

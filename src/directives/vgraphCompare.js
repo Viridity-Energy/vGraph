@@ -12,6 +12,8 @@ angular.module( 'vgraph' ).directive( 'vgraphCompare',
             link : function( scope, $el, attrs, requirements ){
                 var unsubscribe,
                     graph = requirements[0],
+                    ref1 = graph.getReference( scope.config1 ),
+                    ref2 = graph.getReference( scope.config2 ),
                     element = ComponentElement.svgCompile( 
                         '<g><path vgraph-line="config1" pair="config2" class-name="'+
                             (attrs.className||'')+
@@ -22,16 +24,16 @@ angular.module( 'vgraph' ).directive( 'vgraphCompare',
                 $compile( element )( scope );
 
                 unsubscribe = graph.$on( 'focus-point', function( point ){
-                    var ref1 = scope.config1,
-                        ref2 = scope.config2,
-                        p1 = point[ref1.view][ref1.model],
-                        p2 = point[ref2.view][ref2.model],
-                        view1 = graph.getView(ref1.view),
-                        view2 = graph.getView(ref2.view);
+                    var p1 = point[ref1.view],
+                        p2 = point[ref2.view],
+                        view1 = ref1.$view,
+                        view2 = ref2.$view,
+                        v1 = ref1.getValue(p1),
+                        v2 = ref2.getValue(p2);
 
                     point[ attrs.reference || 'compare' ] = {
-                        value: Math.abs( p1[ref1.field] - p2[ref2.field] ),
-                        y: ( view1.y.scale(p1[ref1.field]) + view2.y.scale(p2[ref2.field]) ) / 2,
+                        value: Math.abs( v1 - v2 ),
+                        y: ( view1.y.scale(v1) + view2.y.scale(v2) ) / 2,
                         x: ( p1._$interval + p2._$interval ) / 2
                     };
                 });

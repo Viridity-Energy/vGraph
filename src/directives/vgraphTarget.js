@@ -10,7 +10,8 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
                 config: '=vgraphTarget'
             },
             link : function( $scope, el, attrs, requirements ){
-                var graph = requirements[0],
+                var configs,
+                    graph = requirements[0],
                     box = graph.box,
                     $el = d3.select( el[0] )
                         .attr( 'class', 'target' ),
@@ -29,13 +30,12 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
                                 .attr( 'transform', 'translate(' + curX + ',0)' );
 
                         if ( attrs.noDots === undefined ){
-                            angular.forEach( $scope.config, function( cfg ){
+                            angular.forEach( configs, function( cfg ){
                                 var node,
-                                    view = graph.getView(cfg.view),
-                                    field = cfg.field,
-                                    datum = point[cfg.view][cfg.model],
+                                    view = cfg.$view,
+                                    datum = point[cfg.view],
                                     className = cfg.className,
-                                    value = datum[field];
+                                    value = cfg.getValue(datum);
                                 
                                 if ( value !== undefined && value !== null ){
                                     node = $dots.selectAll( 'circle.point.'+className );
@@ -60,11 +60,21 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
                 $el.style( 'visibility', 'hidden' );
                 graph.$on( 'highlight', highlight );
 
-                box.register(function(){
+                box.$on('resize',function(){
                     $highlight.attr( 'y1', box.innerTop )
                         .attr( 'y2', box.innerBottom );
                 });
+
+                $scope.$watchCollection('config', function( cfgs ){
+                    var i, c;
+
+                    configs = [];
+
+                    for( i = 0, c = cfgs.length; i < c; i++ ){
+                        configs.push( graph.getReference(cfgs[i]) );
+                    }
+                });
             }
         };
-    } ]
+    }]
 );

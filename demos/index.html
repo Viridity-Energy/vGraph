@@ -164,9 +164,10 @@
 		<div ng-if="simple" ng-controller="FloodCtrl">
 			<h5>Simple</h5>
 			<div vgraph-page="page">
+				<b>vgraph-line</b>
 				<section vgraph-chart="graph">
 					<div vgraph-highlight="point">
-						{{point.default.linear.someLine1}} : {{point.default.linear._$index}}
+						{{point.default.someLine1}} : {{point.default._$index}}
 					</div>
 					<svg>
 						<g vgraph-axis="'left'"
@@ -197,9 +198,10 @@
 					</svg>
 				</section>
 				
+				<b>vgraph-fill</b>
 				<section vgraph-chart="graph">
 					<div vgraph-highlight="other">
-						{{other.default.linear.someLine1}}:{{other.default.linear._$index}}
+						{{other.default.someLine1}}:{{other.default._$index}}
 					</div>
 					<svg>
 						<g vgraph-axis="'left'"
@@ -233,9 +235,10 @@
 					</svg>
 				</section>
 
+				<b>ng-repeat</b>
 				<section vgraph-chart="graph">
 					<div vgraph-highlight="point">
-						{{point.default.linear.someLine1}}:{{point.default.linear._$index}}
+						{{point.default.someLine1}}:{{point.default._$index}}
 					</div>
 					<svg>
 						<g vgraph-axis="'left'"
@@ -260,9 +263,11 @@
 						<g vgraph-interact></g>
 					</svg>
 				</section>
+
+				<b>vgraph-bar</b>
 				<section vgraph-chart="graph">
 					<div vgraph-highlight="point">
-						{{point.default.linear.someLine1}}:{{point.default.linear._$index}}
+						{{point.default.someLine1}}:{{point.default._$index}}
 					</div>
 					<svg>
 						<g vgraph-axis="'left'"
@@ -292,18 +297,25 @@
 			<h5>Loading</h5>
 			<div ng-controller="LoadingCtrl">
 				<div vgraph-page="page">
-					<svg vgraph-chart="graph" interface="interface">
-						<g vgraph-axis="'left'"
-							tick-length="4" tick-padding="-2"></g>
-						<g vgraph-axis="'bottom'"
-							tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
-						
-						<path ng-repeat="cfg in config" vgraph-line="cfg"></path>
-						<g ng-repeat="cfg in config" vgraph-indicator="cfg"></g>
+					<section vgraph-chart="graph" interface="interface">
+						<span vgraph-status="chart">
+							{{chart.loading ? 'loading' : 'not loading'}} : 
+							{{chart.pristine ? 'pristine' : 'dirty'}} : 
+							{{chart.message}} 
+						</span>
+						<svg>
+							<g vgraph-axis="'left'"
+								tick-length="4" tick-padding="-2"></g>
+							<g vgraph-axis="'bottom'"
+								tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+							
+							<path ng-repeat="cfg in config" vgraph-line="cfg"></path>
+							<g ng-repeat="cfg in config" vgraph-indicator="cfg"></g>
 
-						<g vgraph-loading></g>
-						<g vgraph-message></g>
-					</svg>
+							<g vgraph-loading></g>
+							<g vgraph-message></g>
+						</svg>
+					</section>
 				</div>
 			</div>
 		</section>
@@ -313,7 +325,11 @@
 			<div ng-controller="NullCtrl">
 				<div vgraph-page="page">
 					<div vgraph-chart="graph">
-						{{graph.loading}} : {{graph.message}}
+						<span vgraph-status="chart">
+						{{chart.loading ? 'loading' : 'not loading'}} : 
+						{{chart.pristine ? 'pristine' : 'dirty'}} : 
+						{{chart.message}} 
+						</span>
 						<svg xmlns="http://www.w3.org/2000/svg"  version="1.1">
 							<g vgraph-axis="'left'"
 								tick-length="4" tick-padding="-2"></g>
@@ -357,10 +373,10 @@
 				<div vgraph-chart="graph">
 					<pre vgraph-highlight="point">
 					Stacked - Lines
-	{{ config[0].field }} : {{ point.default.linear.y1 }} : {{ point.default.linear.$stack$y1 }} : {{ config[0].className }}
-	{{ config[1].field }} : {{ point.default.linear.y2 }} : {{ point.default.linear.$stack$y2 }} : {{ config[1].className }}
-	{{ config[2].field }} : {{ point.default.linear.y3 }} : {{ point.default.linear.$stack$y3 }} : {{ config[2].className }}
-	{{ config[3].field }} : {{ point.default.linear.y4 }} : {{ point.default.linear.$stack$y4 }} : {{ config[3].className }}
+	{{ config[0].name }} : {{ point.default.y1 }} : {{ point.default.$stack$y1 }} : {{ config[0].className }}
+	{{ config[1].name }} : {{ point.default.y2 }} : {{ point.default.$stack$y2 }} : {{ config[1].className }}
+	{{ config[2].name }} : {{ point.default.y3 }} : {{ point.default.$stack$y3 }} : {{ config[2].className }}
+	{{ config[3].name }} : {{ point.default.y4 }} : {{ point.default.$stack$y4 }} : {{ config[3].className }}
 					</pre>
 					<svg>
 						<g vgraph-axis="'left'"
@@ -381,10 +397,10 @@
 				<div vgraph-chart="graph">
 					<pre vgraph-highlight="point">
 					Stacked - Area
-	{{ config[0].field }} : {{ point.default.linear.y1 }} : {{ point.default.linear.$stack$y1 }} : {{ config[0].className }}
-	{{ config[1].field }} : {{ point.default.linear.y2 }} : {{ point.default.linear.$stack$y2 }} : {{ config[1].className }}
-	{{ config[2].field }} : {{ point.default.linear.y3 }} : {{ point.default.linear.$stack$y3 }} : {{ config[2].className }}
-	{{ config[3].field }} : {{ point.default.linear.y4 }} : {{ point.default.linear.$stack$y4 }} : {{ config[3].className }}
+	{{ config[0].field }} : {{ point.default.y1 }} : {{ point.default.$stack$y1 }} : {{ config[0].className }}
+	{{ config[1].field }} : {{ point.default.y2 }} : {{ point.default.$stack$y2 }} : {{ config[1].className }}
+	{{ config[2].field }} : {{ point.default.y3 }} : {{ point.default.$stack$y3 }} : {{ config[2].className }}
+	{{ config[3].field }} : {{ point.default.y4 }} : {{ point.default.$stack$y4 }} : {{ config[3].className }}
 					</pre>
 					<svg>
 						<g vgraph-axis="'left'"
@@ -405,10 +421,10 @@
 				<div vgraph-chart="graph">
 					Stacked - Bars - Paths
 					<pre vgraph-highlight="point">
-						{{ point.default.linear.$stack$y1 }} : {{ point.default.linear.y1 }}
-						{{ point.default.linear.$stack$y2 }} : {{ point.default.linear.y2 }}
-						{{ point.default.linear.$stack$y3 }} : {{ point.default.linear.y3 }}
-						{{ point.default.linear.$stack$y4 }} : {{ point.default.linear.y4 }}
+						{{ point.default.$stack$y1 }} : {{ point.default.y1 }}
+						{{ point.default.$stack$y2 }} : {{ point.default.y2 }}
+						{{ point.default.$stack$y3 }} : {{ point.default.y3 }}
+						{{ point.default.$stack$y4 }} : {{ point.default.y4 }}
 					</pre>
 					<svg>
 						<g vgraph-axis="'left'"
@@ -429,10 +445,10 @@
 				<div vgraph-chart="graph">
 					Stacked - Bars - Rects
 					<pre vgraph-highlight="point">
-						{{ point.default.linear.$stack$y1 }} : {{ point.default.linear.y1 }}
-						{{ point.default.linear.$stack$y2 }} : {{ point.default.linear.y2 }}
-						{{ point.default.linear.$stack$y3 }} : {{ point.default.linear.y3 }}
-						{{ point.default.linear.$stack$y4 }} : {{ point.default.linear.y4 }}
+						{{ point.default.$stack$y1 }} : {{ point.default.y1 }}
+						{{ point.default.$stack$y2 }} : {{ point.default.y2 }}
+						{{ point.default.$stack$y3 }} : {{ point.default.y3 }}
+						{{ point.default.$stack$y4 }} : {{ point.default.y4 }}
 					</pre>
 					<svg>
 						<g vgraph-axis="'left'"
@@ -528,12 +544,12 @@
 		</section>
 
 		<section ng-if="compare">
-			<h5>Other Stuff</h5>
+			<h5>Comparison</h5>
 			<div ng-controller="CompareCtrl">
 				<div vgraph-page="page">
 					<div vgraph-chart="graph">
 						<span vgraph-highlight="point">
-							{{ point.compare }} | {{ getX }} :: {{ getY }}
+							{{ point.compare }} | {{ getX(point) }} :: {{ getY(point) }}
 						</span>
 						<svg>
 
@@ -558,8 +574,8 @@
 				<div vgraph-page="page">
 					<div vgraph-chart="graph" name="primary">
 						<span vgraph-highlight="point">
-							({{point.firstView.someModel.$x}},{{point.firstView.someModel.y}}) : 
-							({{point.secondView.someModel.$x}},{{point.secondView.someModel.y}})
+							({{point.firstView.$x}},{{point.firstView['y-1']}}) : 
+							({{point.secondView.$x}},{{point.secondView['y-2']}})
 						</span>
 						<svg>
 							<g vgraph-axis="'left'" view="firstView"
@@ -603,8 +619,8 @@
 				<div vgraph-page="page">
 					<div vgraph-chart="graph" name="primary">
 						<span vgraph-highlight="point">
-							({{point.firstView.someModel.$x}},{{point.firstView.someModel.y}}) : 
-							({{point.secondView.someModel.$x}},{{point.secondView.someModel.y}})
+							({{point.firstView.$x}},{{point.firstView['y-1']}}) : 
+							({{point.secondView.$x}},{{point.secondView['y-2']}})
 						</span>
 						<svg>
 							<g vgraph-axis="'left'" view="firstView"
@@ -618,10 +634,9 @@
 
 							<path ng-repeat="cfg in config" vgraph-line="cfg"></path>
 
-							
+							<g vgraph-target="config" point-radius="5"></g>
 
-							<g vgraph-focus="dragPos" lose-focus="dragStop"></g>
-							<g vgraph-interact d-begin="dragStart" d-change="dragPos" d-end="dragStop"></g>
+							<g vgraph-interact></g>
 						</svg>
 					</div>
 				</div>
@@ -631,9 +646,10 @@
 		<div ng-if="leading" ng-controller="LeadingCtrl">
 			<h5>Leading</h5>
 			<div vgraph-page="page">
-				<section vgraph-chart="graph">
+				<b>Single Interval</b>
+				<section vgraph-chart="graphUnified">
 					<div vgraph-highlight="point">
-						{{point.default.linear}}
+						{{point.default}}
 					</div>
 					<svg>
 						<g vgraph-axis="'left'"
@@ -648,13 +664,41 @@
 							axis-label="woot"
 							tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
 
-						<path ng-repeat="cfg in config" vgraph-line="cfg"></path>
+						<path ng-repeat="cfg in configUnified" vgraph-line="cfg"></path>
 
-						<g vgraph-leading="config"></g>
-						
-						<g vgraph-target="config" point-radius="5"></g>
+						<g vgraph-leading="configUnified"></g>
+						<g vgraph-target="configUnified" point-radius="5"></g>
 						
 
+						<g vgraph-interact></g>
+					</svg>
+				</section>
+				<b>Multi Interval</b>
+				<section vgraph-chart="graphIntervals">
+					<div vgraph-highlight="point">
+						{{point.eins}}:{{point.zwei}}:{{point.fier}}:{{point.sieben}}
+					</div>
+					<svg>
+						<g vgraph-axis="'left'"
+							axis-label="'foo'"
+							label-offset="50"
+							tick-length="4" tick-padding="-2"
+							view="eins"></g>
+						<g vgraph-axis="'right'"
+							axis-label="'bar'"
+							label-offset="40"
+							tick-length="4" tick-padding="-2"
+							view="zwei"></g>
+						<g vgraph-axis="'bottom'"
+							axis-label="woot"
+							tick-length="4" tick-padding="-2" tick-rotation="-45"
+							view="eins"></g>
+
+						<path ng-repeat="cfg in configInterval" vgraph-line="cfg"></path>
+
+						<g vgraph-leading="configInterval"></g>
+						<g vgraph-target="configInterval" point-radius="5"></g>
+						
 						<g vgraph-interact></g>
 					</svg>
 				</section>

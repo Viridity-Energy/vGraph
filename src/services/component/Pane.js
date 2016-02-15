@@ -6,7 +6,7 @@ angular.module( 'vgraph' ).factory( 'ComponentPane',
         function ComponentPane( fitToPane, xObj, yObj ){
             this.x = xObj;
             this.y = yObj;
-            this.fitToPane = false;
+            this.fitToPane = fitToPane || false;
             
             this._pane = {};
             this._bounds = {};
@@ -36,17 +36,6 @@ angular.module( 'vgraph' ).factory( 'ComponentPane',
             return this;
         };
 
-        // TODO : where is this used?
-        ComponentPane.prototype.isValid = function( d ) {
-            var index;
-            if ( this.filtered ){
-                index = d._$index;
-                return this.filtered.$minIndex <= index && index <= this.filtered.$maxIndex;
-            }else{
-                return false;
-            }
-        };
-        
         ComponentPane.prototype.filter = function( dataManager, offset ){
             var $min,
                 $max,
@@ -84,9 +73,14 @@ angular.module( 'vgraph' ).factory( 'ComponentPane',
                 // calculate the filtered points
                 filtered = data.$filter( minInterval, maxInterval );
 
-                if ( this.fitToPane ){
-                    filtered.$addNode( minInterval, dataManager.$makePoint(minInterval), true );
-                    filtered.$addNode( dataManager.$makePoint(maxInterval) );
+                if ( this.fitToPane && data.length > 1 ){
+                    if ( minInterval > data.$minIndex ){
+                        filtered.$addNode( minInterval, dataManager.$makePoint(minInterval), true );
+                    }
+
+                    if ( maxInterval < data.$maxIndex ){
+                        filtered.$addNode( dataManager.$makePoint(maxInterval) );
+                    }
                 }
 
                 filtered.$sort();

@@ -14,25 +14,29 @@ angular.module( 'vgraph' ).factory( 'ComponentPage',
             this.connections = {};
         }
 
-        /* cfg structure
-            - src
-            - manager
-            - parseInterval
-            - explode
-            - readings
-        */
-
         ComponentPage.defaultManager = 'default';
 
         ComponentPage.prototype.configure = function( settings ){
-            var i, c;
+            var i, c,
+                key,
+                keys;
 
             if ( angular.isArray(settings) ){
                 for( i = 0, c = settings.length; i < c; i++ ){
                     this.addFeed( settings[i] );
                 }
             }else{
-                this.addFeed( settings );
+                keys = Object.keys(settings.managers);
+                for( i = 0, c = keys.length; i < c; i++ ){
+                    key = keys[i];
+                    this.getManager(key).$fillPoints( 
+                        settings.managers[key]
+                    );
+                }
+
+                for( i = 0, c = settings.feeds.length; i < c; i++ ){
+                    this.addFeed( settings.feeds[i] );
+                }
             }
         };
 

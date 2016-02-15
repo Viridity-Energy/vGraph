@@ -38,21 +38,19 @@ angular.module( 'vgraph' ).factory( 'ComponentElement',
         };
 
         ComponentElement.prototype.setReferences = function( references ){
-        	var keys = [],
-                seen;
+        	var refs = [],
+                keys = [];
 
             if ( !angular.isArray(references) ){
         		references = [ references ];
         	}
 
-        	this.references = references;
-
-            references.forEach(function( ref ){
+        	references.forEach(function( ref ){
                 if ( !ref ){
                     return;
                 }
 
-                
+                refs.push( ref );
                 if ( ref.requirements ){
                     keys = keys.concat( ref.requirements );
                 }else{
@@ -61,6 +59,8 @@ angular.module( 'vgraph' ).factory( 'ComponentElement',
             });
 
             // TODO : requirements need to be registered with view's normalizer
+            this.references = refs;
+            this.keys = keys;
         };
 
         ComponentElement.prototype.factory = function(){
@@ -68,14 +68,15 @@ angular.module( 'vgraph' ).factory( 'ComponentElement',
         };
 
         ComponentElement.prototype.parse = function(){
-        	return StatCalculations.limits( this.references );
+            return StatCalculations.limits( this.references );
         };
 
         ComponentElement.prototype.build = function(){
         	var drawer = this.factory( this.references ),
-        		dataSets = drawer.convert(); 
+                indexs = StatCalculations.indexs( this.references ),
+                dataSets = drawer.convert( indexs );
 
-        	// dataSets will be the content, preParsed, used to make the data
+            // dataSets will be the content, preParsed, used to make the data
         	if ( this.element.tagName === 'g' ){
         		appendChildren(
         			this,
