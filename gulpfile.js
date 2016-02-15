@@ -26,8 +26,10 @@ var demoDir = './demos/',
     jsSrc = [
         './src/init.js',
         './src/lib/*.js',
-    	'./src/services/*.js',
-        './src/services/**/*.js',
+        './src/stat/*.js',
+    	'./src/component/*.js',
+        './src/data/*.js',
+        './src/draw/*.js',
     	'./src/directives/*.js',
         './src/polyfill/*.js'
     ],

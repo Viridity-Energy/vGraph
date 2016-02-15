@@ -1,133 +1,110 @@
 angular.module( 'vgraph' ).directive( 'vgraphInteract',
-    [
-    function(){
-        'use strict';
+	[
+	function(){
+		'use strict';
 
-        return {
-            require : ['^vgraphChart'],
-            scope : {
-                dragPos : '=?dChange',
-                dragStop : '=?dEnd',
-                dragStart : '=?dBegin'
-            },
-            link : function( scope, el, attrs, requirements ){
-                var graph = requirements[0],
-                    dragging = false,
-                    dragStart,
-                    active,
-                    box = graph.box,
-                    $el = d3.select( el[0] ),
-                    $rect = $el.append( 'rect' )
-                        .style( 'opacity', '0' )
-                        .attr( 'class', 'focal' )
-                        .on( 'mousemove', function(){
-                            var pos = d3.mouse(this);
+		return {
+			require : ['^vgraphChart'],
+			link : function( scope, el, attrs, requirements ){
+				var graph = requirements[0],
+					dragging = false,
+					dragStart,
+					active,
+					box = graph.box,
+					$el = d3.select( el[0] ),
+					$rect = $el.append( 'rect' )
+						.style( 'opacity', '0' )
+						.attr( 'class', 'focal' )
+						.on( 'mousemove', function(){
+							var pos = d3.mouse(this);
 
-                            if ( !dragging ){
-                                clearTimeout( active );
-                                graph.$trigger('focus',{
-                                    x: pos[0],
-                                    y: pos[1]
-                                });
-                            }
-                        })
-                        .on( 'mouseout', function(){
-                            if ( !dragging ){
-                                active = setTimeout(function(){
-                                    graph.$trigger('focus', null);
-                                }, 100);
-                            }
-                        });
+							if ( !dragging ){
+								clearTimeout( active );
+								graph.$trigger('focus',{
+									x: pos[0],
+									y: pos[1]
+								});
+							}
+						})
+						.on( 'mouseout', function(){
+							if ( !dragging ){
+								active = setTimeout(function(){
+									graph.$trigger('focus', null);
+								}, 100);
+							}
+						});
 
-                $el.attr( 'class', 'interactive' );
+				$el.attr( 'class', 'interactive' );
 
-                $el.call(
-                    d3.behavior.drag()
-                    .on('dragstart', function(){
-                        dragStart = d3.mouse( el[0] );
-                        dragging = true;
+				$el.call(
+					d3.behavior.drag()
+					.on('dragstart', function(){
+						dragStart = d3.mouse( el[0] );
+						dragging = true;
 
-                        graph.$trigger('focus', null);
+						graph.$trigger('focus', null);
 
-                        scope.dragStart = {
-                            x : dragStart[ 0 ],
-                            y : dragStart[ 1 ]
-                        };
+						graph.$trigger('drag-start',{
+							x : dragStart[ 0 ],
+							y : dragStart[ 1 ]
+						});
+					})
+					.on('dragend', function(){
+						var res = d3.mouse( el[0] );
 
-                        scope.$apply();
-                    })
-                    .on('dragend', function(){
-                        var res = d3.mouse( el[0] );
+						dragging = false;
 
-                        dragging = false;
+						graph.$trigger('drag-stop',{
+							x0 : dragStart[ 0 ],
+							y0 : dragStart[ 1 ],
+							x1 : res[ 0 ],
+							x2 : res[ 1 ],
+							xDiff : res[ 0 ] - dragStart[ 0 ],
+							yDiff : res[ 1 ] - dragStart[ 1 ]
+						});
+					})
+					.on('drag', function(){
+						var res = d3.mouse( el[0] );
 
-                        scope.dragStop = {
-                            x0 : dragStart[ 0 ],
-                            y0 : dragStart[ 1 ],
-                            x1 : res[ 0 ],
-                            x2 : res[ 1 ],
-                            xDiff : res[ 0 ] - dragStart[ 0 ],
-                            yDiff : res[ 1 ] - dragStart[ 1 ]
-                        };
+						graph.$trigger('drag',{
+							x0 : dragStart[ 0 ],
+							y0 : dragStart[ 1 ],
+							x1 : res[ 0 ],
+							x2 : res[ 1 ],
+							xDiff : res[ 0 ] - dragStart[ 0 ],
+							yDiff : res[ 1 ] - dragStart[ 1 ]
+						});
+					})
+				);
 
-                        scope.$apply();
-                    })
-                    .on('drag', function(){
-                        var res = d3.mouse( el[0] );
+				$el.on('dblclick', function(){
+					graph.setPane(
+						{
+							'start' : null,
+							'stop' : null
+						},
+						{
+							'start' : null,
+							'stop' : null
+						}
+					);
+					
+					graph.rerender();
+				});
 
-                        scope.dragPos = {
-                            x0 : dragStart[ 0 ],
-                            y0 : dragStart[ 1 ],
-                            x1 : res[ 0 ],
-                            x2 : res[ 1 ],
-                            xDiff : res[ 0 ] - dragStart[ 0 ],
-                            yDiff : res[ 1 ] - dragStart[ 1 ]
-                        };
-
-                        scope.$apply();
-                    })
-                );
-
-                $el.on('dblclick', function(){
-                    graph.setPane(
-                        {
-                            'start' : null,
-                            'stop' : null
-                        },
-                        {
-                            'start' : null,
-                            'stop' : null
-                        }
-                    );
-                    
-                    graph.rerender();
-                });
-
-                graph.registerComponent({
-                    finalize : function(){
-                        $rect.attr({
-                            'x' : box.innerLeft,
-                            'y' : box.innerTop,
-                            'width' : box.innerWidth,
-                            'height' : box.innerHeight
-                        });
-                    }
-                });
-
-                if ( !scope.dragStart ){
-                    scope.dragStart = {};
-                }
-
-                if ( !scope.dragPos ){
-                    scope.dragPos = {};
-                }
-
-                if ( !scope.dragStop ){
-                    scope.dragStop = {};
-                }
-            }
-        };
-    }
+				graph.registerComponent({
+					finalize : function(){
+						$rect.attr({
+							'x' : box.innerLeft,
+							'y' : box.innerTop,
+							'width' : box.innerWidth,
+							'height' : box.innerHeight
+						});
+					}
+				});
+			}
+		};
+	}
 ]);
 
 

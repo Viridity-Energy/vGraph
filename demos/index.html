@@ -290,6 +290,33 @@
 						<g vgraph-interact></g>
 					</svg>
 				</section>
+
+				<b>vgraph-dots</b>
+				<section vgraph-chart="graph">
+					<div vgraph-highlight="point">
+						{{point.default.someLine1}}:{{point.default._$index}}
+					</div>
+					<svg>
+						<g vgraph-axis="'left'"
+							axis-label="'foo'"
+							label-offset="50"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'right'"
+							axis-label="'bar'"
+							label-offset="40"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'bottom'"
+							axis-label="woot"
+							tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+
+						<path vgraph-dots="config[0]"></path>
+						<g vgraph-dots="config[1]"></g>
+
+						<g vgraph-tooltip="config[0]"></g>
+
+						<g vgraph-interact></g>
+					</svg>
+				</section>
 			</div>
 		</div>
 
@@ -591,8 +618,8 @@
 
 							<g vgraph-target="config" point-radius="5"></g>
 
-							<g vgraph-focus="dragPos" lose-focus="dragStop"></g>
-							<g vgraph-interact d-begin="dragStart" d-change="dragPos" d-end="dragStop"></g>
+							<g vgraph-focus></g>
+							<g vgraph-interact></g>
 						</svg>
 					</div>
 

@@ -3,10 +3,13 @@ angular.module( 'vgraph' ).factory( 'DrawIcon',
 	function( DrawBox ){
 		'use strict';
 		
-		function DrawIcon( box, template ){
+		function DrawIcon( ref, box, template ){
+			this.top = ref;
+			this.bottom = ref;
+			this.references = [ ref ];
+			
 			this.box = box;
 			this.template = template;
-			this.elemental = true;
 		}
 
 		DrawIcon.prototype = new DrawBox();
