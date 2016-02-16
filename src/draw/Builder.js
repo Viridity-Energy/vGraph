@@ -3,22 +3,26 @@ angular.module( 'vgraph' ).factory( 'DrawBuilder',
 	function(){
 		'use strict';
 
-		function DrawBuilder( references ){
-			this.references = references;
+		function DrawBuilder(){
+			this.references = [];
 		}
 
 		DrawBuilder.isNumeric = function( v ){
-            if ( v === null ){
-                return false;
-            }else if ( Number.isFinite ){
-                return Number.isFinite(v) && !Number.isNaN(v);
-            }else{
-                return isFinite(v) && !isNaN(v);
-            }
-        };
+			if ( v === null ){
+				return false;
+			}else if ( Number.isFinite ){
+				return Number.isFinite(v) && !Number.isNaN(v);
+			}else{
+				return isFinite(v) && !isNaN(v);
+			}
+		};
+
+		DrawBuilder.prototype.getReferences = function(){
+			return this.references;
+		};
 
 		// allows for very complex checks of if the value is defined, allows checking previous and next value
-		DrawBuilder.prototype.preparse = function( d ){
+		DrawBuilder.prototype.parse = function( d ){
 			return d;
 		};
 
@@ -26,9 +30,10 @@ angular.module( 'vgraph' ).factory( 'DrawBuilder',
 			return [];
 		};
 
-		DrawBuilder.prototype.mergeSet = function( d, set ){
-			if ( d ){
-				set.push( d );
+		// merging set, returning true means to end the set, returning false means to continue it
+		DrawBuilder.prototype.mergeParsed = function( parsed, set ){
+			if ( parsed ){
+				set.push( set );
 				return false;
 			}else{
 				return true;
@@ -39,25 +44,24 @@ angular.module( 'vgraph' ).factory( 'DrawBuilder',
 			return set.length !== 0;
 		};
 
-		DrawBuilder.prototype.convert = function( keys ){
-			return this.parse( keys );
+		DrawBuilder.prototype.finalizeSet = function( set ){
+			return set;
 		};
 
-		DrawBuilder.prototype.parse = function( keys ){
+		DrawBuilder.prototype.makeSets = function( keys ){
 			var i, c,
-				t,
+				parsed,
 				breakSet,
 				set = this.makeSet(),
-				sets = [],
-				mergeSet = this.mergeSet.bind(this);
+				sets = [];
 
 			// I need to start on the end, and find the last valid point.  Go until there
 			for( i = 0, c = keys.length; i < c; i++ ){
-				t = this.preparse(keys[i]);
+				parsed = this.parse(keys[i]);
 				
-				if ( t ){
-					breakSet = mergeSet( 
-						t,
+				if ( parsed ){
+					breakSet = this.mergeParsed( 
+						parsed,
 						set
 					);
 				} else {
@@ -65,13 +69,13 @@ angular.module( 'vgraph' ).factory( 'DrawBuilder',
 				} 
 
 				if ( breakSet && this.isValidSet(set) ){
-					sets.push( set );
+					sets.push( this.finalizeSet(set) );
 					set = this.makeSet();
 				}
 			}
 
 			if ( this.isValidSet(set) ){
-				sets.push( set );
+				sets.push( this.finalizeSet(set) );
 			}
 
 			return sets;

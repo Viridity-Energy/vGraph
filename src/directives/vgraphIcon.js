@@ -1,61 +1,60 @@
 angular.module( 'vgraph' ).directive( 'vgraphIcon',
-    ['ComponentGenerator', 'StatCalculations', 'ComponentElement',
-    function( ComponentGenerator, StatCalculations, ComponentElement ){
-        'use strict';
+	['DrawIcon', 'ComponentElement',
+	function( DrawIcon, ComponentElement ){
+		'use strict';
 
-        return {
-            scope : {
-                config: '=vgraphIcon'
-            },
-            require : ['^vgraphChart','vgraphIcon'],
-            controller: ComponentElement,
-            link : function( scope, $el, attrs, requirements ){
-                var el = $el[0],
-                	$d3 = d3.select( el ),
-        			box = $d3.node().getBBox(),
-        			chart = requirements[0],
-                    cfg = chart.compileReference( scope.config ),
-                    element = requirements[1],
-                    content = el.innerHTML,
-                    className = 'icon ',
-                    oldParse = element.parse;
+		return {
+			scope : {
+				config: '=vgraphIcon'
+			},
+			require : ['^vgraphChart','vgraphIcon'],
+			controller: ComponentElement,
+			link : function( scope, $el, attrs, requirements ){
+				var el = $el[0],
+					$d3 = d3.select( el ),
+					box = $d3.node().getBBox(),
+					chart = requirements[0],
+					cfg = chart.compileReference( scope.config ),
+					element = requirements[1],
+					content = el.innerHTML,
+					className = 'icon ',
+					oldParse = element.parse;
 
-                element.parse = function( models ){
-                    var t = oldParse.call( this, models ),
-                        h = box.height / 2;
-                    
-                    t.min -= h;
-                    t.max += h;
+				element.parse = function( models ){
+					var t = oldParse.call( this, models ),
+						h = box.height / 2;
+					
+					t.min -= h;
+					t.max += h;
 
-                    return t;
-                };
+					return t;
+				};
 
-                el.innerHTML = '';
+				el.innerHTML = '';
 
-                element.setElement( el );
-                element.setDrawer(
-                    ComponentGenerator.makeIconCalc( cfg, box, content )
-                );
-                element.setReferences([cfg]);
+				element.setElement( el );
+				element.setDrawer(
+					new DrawIcon( cfg, box, content )
+				);
 
-                if ( cfg.classExtend ){
-                    className += cfg.classExtend + ' ';
-                }
+				if ( cfg.classExtend ){
+					className += cfg.classExtend + ' ';
+				}
 
-                className += attrs.className || cfg.className;
+				className += attrs.className || cfg.className;
 
-                el.setAttribute( 'class', className );
+				el.setAttribute( 'class', className );
 
-                cfg.$view.registerComponent(element);
-            }
-        };
-    }]
+				cfg.$view.registerComponent(element);
+			}
+		};
+	}]
 );
 
 /*
 	function append(){
-    	return this.appendChild( filling[i].cloneNode(true) ); // jshint ignore:line
-    }
+		return this.appendChild( filling[i].cloneNode(true) ); // jshint ignore:line
+	}
 
 	el.html('');
 
@@ -63,8 +62,8 @@ angular.module( 'vgraph' ).directive( 'vgraphIcon',
 		var ele;
 
 		// TODO : how do I tell the box I am going to overflow it?
-    	x = d.$sampled._$interval;
-    	y = chart.y.scale( scope.getValue(d.$sampled) );
+		x = d.$sampled._$interval;
+		y = chart.y.scale( scope.getValue(d.$sampled) );
 
 		ele = $el.append('g');
 			
@@ -72,14 +71,14 @@ angular.module( 'vgraph' ).directive( 'vgraphIcon',
 			ele.select( append );
 		}
 		
-    	if ( attrs.showUnder ){
-    		ele.attr( 'transform', 'translate(' + 
-    			(x - box.width/2) + ',' + (y) + 
-    		')' );
-    	}else{
-    		ele.attr( 'transform', 'translate(' + 
-    			(x - box.width/2) + ',' + (y - box.height) + 
-    		')' );
-    	}
+		if ( attrs.showUnder ){
+			ele.attr( 'transform', 'translate(' + 
+				(x - box.width/2) + ',' + (y) + 
+			')' );
+		}else{
+			ele.attr( 'transform', 'translate(' + 
+				(x - box.width/2) + ',' + (y - box.height) + 
+			')' );
+		}
 	});
 */

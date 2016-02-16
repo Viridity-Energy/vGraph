@@ -983,27 +983,7 @@ angular.module( 'vgraph' ).controller( 'BoxCtrl',
 angular.module( 'vgraph' ).controller( 'IconCtrl',
 	['$scope', '$timeout',
 	function( $scope, $timeout ){
-		var ref1 = {
-				name: 'someLine1',
-				className: 'red'
-			},
-			ref2 = {
-				className: 'blue',
-				getValue: function( d ){
-					return d.someLine1;
-				},
-				isValid: function( d ){
-					return d.$x === 60;
-				}
-			},
-			ref3 = {
-				className: 'green',
-				getValue: null,
-				isValid: function( d ){
-					return d.$x > 20 && d.$x < 40;
-				}
-			},
-			data = [ {x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40}  ];
+		var data = [ {x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40}  ];
 
 		$scope.graph = {
 			x : {
@@ -1028,9 +1008,28 @@ angular.module( 'vgraph' ).controller( 'IconCtrl',
 		}];
 
 		$scope.config = [
-			ref1,
-			ref2,
-			ref3
+			{
+				name: 'someLine1',
+				className: 'red'
+			},
+			{
+				name: 'blueIcon',
+				className: 'blue',
+				getValue: function( d ){
+					return d.someLine1;
+				},
+				isValid: function( d ){
+					return d.$x === 60;
+				}
+			},
+			{
+				name: 'greenIcon',
+				className: 'green',
+				getValue: null,
+				isValid: function( d ){
+					return d.$x > 20 && d.$x < 40;
+				}
+			}
 		];
 
 		for( var i = 0, c = 100; i < c; i++ ){
