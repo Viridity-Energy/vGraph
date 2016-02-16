@@ -13,7 +13,7 @@
 
 * export functionality
 	* export from models or from raw DataManager
-        * support the export of the svg image
+	* support the export of the svg image
 
 * configer
 	* manages an array of inputs
