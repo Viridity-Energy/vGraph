@@ -1,17 +1,17 @@
 'use strict';
 
 var gulp = require( 'gulp' );
-var map = require('map-stream');
-var watch = require('gulp-watch');
+var map = require( 'map-stream' );
+var watch = require( 'gulp-watch' );
 
 // testing and linting
-var jshint = require('gulp-jshint');
-var stylish = require('jshint-stylish');
-var yuidoc = require('gulp-yuidoc');
+var jshint = require( 'gulp-jshint' );
+var stylish = require( 'jshint-stylish' );
+var yuidoc = require( 'gulp-yuidoc' );
 
 // demo ability
 var express = require( 'express' );
-var open = require('gulp-open');
+var open = require( 'gulp-open' );
 var server = express();
 
 // less processing
@@ -19,7 +19,7 @@ var less = require( 'gulp-less' );
 var concat = require( 'gulp-concat' );
 
 // minify javascript
-var uglify = require('gulp-uglifyjs');
+var uglify = require( 'gulp-uglifyjs' );
 
 // other settings
 var demoDir = './demos/',
@@ -38,15 +38,15 @@ var demoDir = './demos/',
     lessSrc = './style/*.less';
 
 gulp.task( 'launch-server', function() {
-    externals.forEach(function( src ){
-        gulp.src( src ).pipe( gulp.dest(demoDir) );
+    externals.forEach(function( src ) {
+        gulp.src( src ).pipe( gulp.dest( demoDir) );
     });
 
-    server.use(express.static(demoDir));
+    server.use( express.static( demoDir ) );
     server.listen( 9000 );
 });
 
-gulp.task( 'watch', function(){
+gulp.task( 'watch', function() {
     gulp.watch( lessSrc, ['build-less'] );
     gulp.watch( jsSrc, ['build-js'] );
 });
@@ -56,48 +56,48 @@ gulp.task( 'serve', ['build-js', 'build-less', 'watch', 'launch-server'] );
 gulp.task('doc', function() {
     gulp.src( jsSrc )
         .pipe( yuidoc() )
-        .pipe( gulp.dest('./doc') );
+        .pipe( gulp.dest( './doc' ) );
 });
 
-gulp.task( 'build-less', function (){
+gulp.task( 'build-less', function () {
     gulp.src( lessSrc )
-        .pipe( concat('vgraph.less') )
+        .pipe( concat( 'vgraph.less' ) )
     	.pipe( less() )
-    	.pipe( gulp.dest('./build/') )
-        .pipe( gulp.dest('./demos/') );
+    	.pipe( gulp.dest( './build/' ) )
+        .pipe( gulp.dest( './demos/' ) );
 });
 
-gulp.task('build-js', function(){
+gulp.task('build-js', function() {
     gulp.src( jsSrc )
-        .pipe( concat('vgraph.js') )
-        .pipe( gulp.dest('./demos/') )
-        .pipe( uglify('vgraph.min.js', {
+        .pipe( concat( 'vgraph.js' ) )
+        .pipe( gulp.dest( './demos/' ) )
+        .pipe( uglify( 'vgraph.min.js', {
             outSourceMap: true
-        }) )
-        .pipe( gulp.dest('./build/') )
+        } ) )
+        .pipe( gulp.dest( './build/' ) )
         
 });
 
 var failOnError = function() {
-    return map(function(file, cb) {
-        if (!file.jshint.success) {
+    return map( function( file, cb ) {
+        if ( !file.jshint.success ) {
             process.exit(1);
         }
-        cb(null, file);
+        cb( null, file );
     });
 };
 
-gulp.task('build-lint', function() {
+gulp.task( 'build-lint', function() {
     gulp.src( jsSrc )
         .pipe( jshint() )
-        .pipe( jshint.reporter(stylish) )
+        .pipe( jshint.reporter( stylish ) )
         .pipe( failOnError() );
 });
 
-gulp.task('lint', function() {
+gulp.task( 'lint', function() {
     gulp.src( jsSrc )
         .pipe( jshint() )
-        .pipe( jshint.reporter(stylish) );
+        .pipe( jshint.reporter( stylish ) );
 });
 
 gulp.task( 'build', ['build-lint','build-js','build-less'] );
