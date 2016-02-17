@@ -234,6 +234,10 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 				ref.classExtend = refDef.classExtend;
 			}
 
+			if ( refDef.classify ){
+				ref.classify = refDef.classify;
+			}
+
 			return ref;
 		};
 

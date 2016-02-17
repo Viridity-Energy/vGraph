@@ -159,6 +159,8 @@
 				ng-click="boxes = !boxes"/></label>
 			<label>Icons<input type='checkbox' ng-checked="icons" 
 				ng-click="icons = !icons"/></label>
+			<label>Classify<input type='checkbox' ng-checked="classify" 
+				ng-click="classify = !classify"/></label>
 		</section>
 
 		<div ng-if="simple" ng-controller="FloodCtrl">
@@ -282,7 +284,7 @@
 							axis-label="woot"
 							tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
 
-						<path vgraph-bar="config[0]" reference="bar"></path>
+						<path vgraph-bar="config[0]"></path>
 
 						<g vgraph-target="[config[0]]" point-radius="10"></g>
 						<g vgraph-tooltip="config[0]"></g>
@@ -738,7 +740,7 @@
 			<div vgraph-page="page">
 				<section vgraph-chart="graph">
 					<div vgraph-highlight="point">
-						{{point.default.linear.someLine1}} : {{point.default.linear._$index}}
+						{{point.default.someLine1}} : {{point.default._$index}}
 					</div>
 					<svg>
 						<g vgraph-axis="'left'"
@@ -766,7 +768,7 @@
 
 				<section vgraph-chart="graph">
 					<div vgraph-highlight="point">
-						{{point.default.linear.someLine1}} : {{point.default.linear._$index}}
+						{{point.default.someLine1}} : {{point.default._$index}}
 					</div>
 					<svg>
 						<g vgraph-axis="'left'"
@@ -799,7 +801,7 @@
 			<div vgraph-page="page">
 				<section vgraph-chart="graph">
 					<div vgraph-highlight="point">
-						{{point.default.linear.someLine1}} : {{point.default.linear._$index}}
+						{{point.default.someLine1}} : {{point.default._$index}}
 					</div>
 					<svg>
 						<g vgraph-axis="'left'"
@@ -823,7 +825,42 @@
 							<text fill="red">Hi There</text>
 						</g>
 							
-						<g vgraph-target="[config[0]]" point-radius="4"></g>
+						<g vgraph-target="config" point-radius="4"></g>
+
+						<g vgraph-interact></g>
+					</svg>
+				</section>
+			</div>
+		</div>
+
+		<div ng-if="classify" ng-controller="ClassifyCtrl">
+			<h5>Classify</h5>
+			<div vgraph-page="page">
+				<section vgraph-chart="graph">
+					<div vgraph-highlight="point">
+						{{point.default.linear.someLine1}} : {{point.default.linear._$index}}
+					</div>
+					<svg>
+						<g vgraph-axis="'left'"
+							axis-label="'foo'"
+							label-offset="50"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'right'"
+							axis-label="'bar'"
+							label-offset="40"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'bottom'"
+							axis-label="woot"
+							tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+
+						<g vgraph-line="config[0]"></g>
+						<g vgraph-icon="config[1]">
+							<circle cx="10" cy="10" r="5" stroke="black" stroke-width="3" fill="red" />
+						</g>
+						<g vgraph-bar="config[2]"></g>
+						<g vgraph-dots="config[3]"></g>
+							
+						<g vgraph-target="config" point-radius="4"></g>
 
 						<g vgraph-interact></g>
 					</svg>

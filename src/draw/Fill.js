@@ -95,7 +95,17 @@ angular.module( 'vgraph' ).factory( 'DrawFill',
 		};
 
 		DrawFill.prototype.makeElement = function( set ){
-			return '<path d="'+this.makePath(set)+'"></path>';
+			var className = '';
+
+			if ( set.length ){
+				if ( this.top.classify ){
+					className = this.top.classify( set );
+				}
+
+				return '<path class="' + className +
+					'" d="'+this.makePath(set)+
+					'"></path>';
+			}
 		};
 
 		return DrawFill;

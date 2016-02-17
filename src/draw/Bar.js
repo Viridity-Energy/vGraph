@@ -89,7 +89,7 @@ angular.module( 'vgraph' ).factory( 'DrawBar',
 			if ( this.width ){
 				width = parseInt( this.width, 10 ) / 2;
 			}else{
-				width = 3;
+				width = 1;
 			}
 
 			if ( isNumeric(y1) && isNumeric(y2) && y1 !== y2 ){
@@ -97,8 +97,8 @@ angular.module( 'vgraph' ).factory( 'DrawBar',
 				max = topNode._$interval + width;
 
 				t = {
-					x1: min > topNode._$minInterval ? min : topNode._$minInterval,
-					x2: max > topNode._$maxInterval ? topNode._$maxInterval : max,
+					x1: min < topNode._$minInterval ? min : topNode._$minInterval,
+					x2: max > topNode._$maxInterval ? max : topNode._$maxInterval,
 					y1: y1,
 					y2: y2
 				};
@@ -143,11 +143,19 @@ angular.module( 'vgraph' ).factory( 'DrawBar',
 		};
 
 		DrawBar.prototype.makeElement = function( boxInfo ){
+			var className = '';
+
 			if ( boxInfo ){
-				return '<rect x="'+boxInfo.x1+
+				if ( this.top.classify ){
+					className = this.top.classify( boxInfo );
+				}
+
+				return '<rect class="'+className+
+					'" x="'+boxInfo.x1+
 					'" y="'+boxInfo.y1+
 					'" width="'+(boxInfo.x2 - boxInfo.x1)+
-					'" height="'+(boxInfo.y2 - boxInfo.y1)+'"/>';
+					'" height="'+(boxInfo.y2 - boxInfo.y1)+
+					'"/>';
 			}
 		};
 		

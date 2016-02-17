@@ -50,14 +50,21 @@ angular.module( 'vgraph' ).factory( 'DrawBuilder',
 
 		DrawBuilder.prototype.makeSets = function( keys ){
 			var i, c,
+				key,
+				start,
 				parsed,
 				breakSet,
 				set = this.makeSet(),
 				sets = [];
 
 			// I need to start on the end, and find the last valid point.  Go until there
+			if ( keys.length ){
+				start = keys[0];
+			}
+
 			for( i = 0, c = keys.length; i < c; i++ ){
-				parsed = this.parse(keys[i]);
+				key = keys[i];
+				parsed = this.parse(key);
 				
 				if ( parsed ){
 					breakSet = this.mergeParsed( 
@@ -66,15 +73,26 @@ angular.module( 'vgraph' ).factory( 'DrawBuilder',
 					);
 				} else {
 					breakSet = true;
-				} 
+				}
+
+				if ( !start && this.isValidSet(set) ){
+					start = key
+				}
 
 				if ( breakSet && this.isValidSet(set) ){
+					set.$start = start;
+					set.$stop = key;
 					sets.push( this.finalizeSet(set) );
+
+					start = null;
 					set = this.makeSet();
 				}
 			}
 
 			if ( this.isValidSet(set) ){
+				set.$start = start;
+				set.$stop = keys[keys.length-1];
+
 				sets.push( this.finalizeSet(set) );
 			}
 

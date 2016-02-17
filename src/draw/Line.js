@@ -99,8 +99,16 @@ angular.module( 'vgraph' ).factory( 'DrawLine',
 		};
 
 		DrawLine.prototype.makeElement = function( set ){
+			var className = '';
+
 			if ( set.length ){
-				return '<path d="'+this.makePath(set)+'"></path>';
+				if ( this.ref.classify ){
+					className = this.ref.classify( set );
+				}
+
+				return '<path class="'+className+
+					'" d="'+this.makePath(set)+
+					'"></path>';
 			}
 		};
 

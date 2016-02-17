@@ -47,8 +47,18 @@ angular.module( 'vgraph' ).factory( 'DrawDots',
 		};
 
 		DrawDots.prototype.makeElement = function( set ){
+			var className = '';
+
 			if ( set.x !== undefined ){
-				return '<circle cx="'+set.x+'" cy="'+set.y+'" r="'+this.radius+'"/>';
+				if ( this.ref.classify ){
+					className = this.ref.classify( set );
+				}
+
+				return '<circle class="'+className+
+					'" cx="'+set.x+
+					'" cy="'+set.y+
+					'" r="'+this.radius+
+					'"/>';
 			}
 		};
 

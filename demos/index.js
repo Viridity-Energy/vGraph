@@ -1045,3 +1045,84 @@ angular.module( 'vgraph' ).controller( 'IconCtrl',
 		}
 	}]
 );
+
+angular.module( 'vgraph' ).controller( 'ClassifyCtrl',
+	['$scope', '$timeout',
+	function( $scope, $timeout ){
+		var data = [ {x : 0, y1 : 20, y2 : 50, y3 : 80, y4 : 110}  ];
+
+		$scope.graph = {
+			x : {
+				min: -1,
+				max: 11,
+				scale: function(){ return d3.scale.linear(); }
+			},
+			y : {
+				padding : 0.05,
+				format: function( y ){
+					return ':' + y;
+				}
+			}
+		};
+
+		$scope.page = [{
+			src: data,
+			interval: 'x',
+			readings:{
+				'someLine1': 'y1',
+				'someLine2': 'y2',
+				'someLine3': 'y3',
+				'someLine4': 'y4'
+			}
+		}];
+
+		$scope.config = [
+			{
+				name: 'someLine1',
+				className: 'red',
+				classify: function( set ){
+					console.log( 'red', set );
+				}
+			},
+			{
+				name: 'someLine2',
+				className: 'blue',
+				isValid: function(){
+					return true;
+				},
+				classify: function( set ){
+					console.log( 'blue', set );
+				}
+			},
+			{
+				name: 'someLine3',
+				className: 'green',
+				classify: function( set ){
+					console.log( 'green', set );
+				}
+			},
+			{
+				name: 'someLine4',
+				className: 'orange',
+				classify: function( set ){
+					console.log( 'orange', set );
+				}
+			}
+		];
+
+		for( var i = 0, c = 10; i < c; i++ ){
+			var counter = 0;
+			var min = -1,
+				max = 1,
+				t = Math.random() * (max - min) + min;
+
+			data.push({
+				x : data.length,
+				y1 : data[data.length-1].y1 + t,
+				y2 : data[data.length-1].y2 + t,
+				y3 : data[data.length-1].y3 + t,
+				y4 : data[data.length-1].y4 + t
+			});
+		}
+	}]
+);

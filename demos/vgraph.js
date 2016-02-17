@@ -962,6 +962,10 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 				ref.classExtend = refDef.classExtend;
 			}
 
+			if ( refDef.classify ){
+				ref.classify = refDef.classify;
+			}
+
 			return ref;
 		};
 
@@ -2976,7 +2980,7 @@ angular.module( 'vgraph' ).factory( 'DrawBar',
 			if ( this.width ){
 				width = parseInt( this.width, 10 ) / 2;
 			}else{
-				width = 3;
+				width = 1;
 			}
 
 			if ( isNumeric(y1) && isNumeric(y2) && y1 !== y2 ){
@@ -2984,8 +2988,8 @@ angular.module( 'vgraph' ).factory( 'DrawBar',
 				max = topNode._$interval + width;
 
 				t = {
-					x1: min > topNode._$minInterval ? min : topNode._$minInterval,
-					x2: max > topNode._$maxInterval ? topNode._$maxInterval : max,
+					x1: min < topNode._$minInterval ? min : topNode._$minInterval,
+					x2: max > topNode._$maxInterval ? max : topNode._$maxInterval,
 					y1: y1,
 					y2: y2
 				};
@@ -3030,11 +3034,19 @@ angular.module( 'vgraph' ).factory( 'DrawBar',
 		};
 
 		DrawBar.prototype.makeElement = function( boxInfo ){
+			var className = '';
+
 			if ( boxInfo ){
-				return '<rect x="'+boxInfo.x1+
+				if ( this.top.classify ){
+					className = this.top.classify( boxInfo );
+				}
+
+				return '<rect class="'+className+
+					'" x="'+boxInfo.x1+
 					'" y="'+boxInfo.y1+
 					'" width="'+(boxInfo.x2 - boxInfo.x1)+
-					'" height="'+(boxInfo.y2 - boxInfo.y1)+'"/>';
+					'" height="'+(boxInfo.y2 - boxInfo.y1)+
+					'"/>';
 			}
 		};
 		
@@ -3141,14 +3153,21 @@ angular.module( 'vgraph' ).factory( 'DrawBuilder',
 
 		DrawBuilder.prototype.makeSets = function( keys ){
 			var i, c,
+				key,
+				start,
 				parsed,
 				breakSet,
 				set = this.makeSet(),
 				sets = [];
 
 			// I need to start on the end, and find the last valid point.  Go until there
+			if ( keys.length ){
+				start = keys[0];
+			}
+
 			for( i = 0, c = keys.length; i < c; i++ ){
-				parsed = this.parse(keys[i]);
+				key = keys[i];
+				parsed = this.parse(key);
 				
 				if ( parsed ){
 					breakSet = this.mergeParsed( 
@@ -3157,15 +3176,26 @@ angular.module( 'vgraph' ).factory( 'DrawBuilder',
 					);
 				} else {
 					breakSet = true;
-				} 
+				}
+
+				if ( !start && this.isValidSet(set) ){
+					start = key
+				}
 
 				if ( breakSet && this.isValidSet(set) ){
+					set.$start = start;
+					set.$stop = key;
 					sets.push( this.finalizeSet(set) );
+
+					start = null;
 					set = this.makeSet();
 				}
 			}
 
 			if ( this.isValidSet(set) ){
+				set.$start = start;
+				set.$stop = keys[keys.length-1];
+
 				sets.push( this.finalizeSet(set) );
 			}
 
@@ -3234,8 +3264,18 @@ angular.module( 'vgraph' ).factory( 'DrawDots',
 		};
 
 		DrawDots.prototype.makeElement = function( set ){
+			var className = '';
+
 			if ( set.x !== undefined ){
-				return '<circle cx="'+set.x+'" cy="'+set.y+'" r="'+this.radius+'"/>';
+				if ( this.ref.classify ){
+					className = this.ref.classify( set );
+				}
+
+				return '<circle class="'+className+
+					'" cx="'+set.x+
+					'" cy="'+set.y+
+					'" r="'+this.radius+
+					'"/>';
 			}
 		};
 
@@ -3339,7 +3379,17 @@ angular.module( 'vgraph' ).factory( 'DrawFill',
 		};
 
 		DrawFill.prototype.makeElement = function( set ){
-			return '<path d="'+this.makePath(set)+'"></path>';
+			var className = '';
+
+			if ( set.length ){
+				if ( this.top.classify ){
+					className = this.top.classify( set );
+				}
+
+				return '<path class="' + className +
+					'" d="'+this.makePath(set)+
+					'"></path>';
+			}
 		};
 
 		return DrawFill;
@@ -3362,13 +3412,21 @@ angular.module( 'vgraph' ).factory( 'DrawIcon',
 		DrawIcon.prototype = new DrawBox();
 
 		DrawIcon.prototype.makeElement = function( boxInfo ){
-			var x, y;
+			var x, y,
+				className = '';
 			
 			if ( boxInfo ){
+				if ( this.top.classify ){
+					className = this.top.classify( boxInfo );
+				}
+				
 				x = (boxInfo.x1 + boxInfo.x2 - this.box.width ) / 2; // v / 2 - width / 2 
 				y = (boxInfo.y1 + boxInfo.y2 - this.box.height ) / 2;
 
-				return '<g transform="translate('+x+','+y+')">' + this.template + '</g>';
+				return '<g class="'+className+
+					'" transform="translate('+x+','+y+')">' +
+					this.template + 
+					'</g>';
 			}
 		};
 
@@ -3476,8 +3534,16 @@ angular.module( 'vgraph' ).factory( 'DrawLine',
 		};
 
 		DrawLine.prototype.makeElement = function( set ){
+			var className = '';
+
 			if ( set.length ){
-				return '<path d="'+this.makePath(set)+'"></path>';
+				if ( this.ref.classify ){
+					className = this.ref.classify( set );
+				}
+
+				return '<path class="'+className+
+					'" d="'+this.makePath(set)+
+					'"></path>';
 			}
 		};
 
