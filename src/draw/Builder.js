@@ -50,49 +50,58 @@ angular.module( 'vgraph' ).factory( 'DrawBuilder',
 
 		DrawBuilder.prototype.makeSets = function( keys ){
 			var i, c,
-				key,
-				start,
+				raw,
 				parsed,
-				breakSet,
+				state,
+				dis = this,
 				set = this.makeSet(),
 				sets = [];
 
-			// I need to start on the end, and find the last valid point.  Go until there
-			if ( keys.length ){
-				start = keys[0];
+			function mergeParsed(){
+				state = dis.mergeParsed( 
+					parsed,
+					set
+				);
+
+				if ( state !== 1 && parsed.$classify ){
+					if ( !set.$classify ){
+						set.$classify = {};
+					}
+
+					Object.keys(parsed.$classify).forEach(function( c ){
+						set.$classify[c] = true;
+					});
+				}
 			}
 
+			// I need to start on the end, and find the last valid point.  Go until there
 			for( i = 0, c = keys.length; i < c; i++ ){
-				key = keys[i];
-				parsed = this.parse(key);
+				raw = keys[i];
+				parsed = this.parse(raw);
 				
 				if ( parsed ){
-					breakSet = this.mergeParsed( 
-						parsed,
-						set
-					);
+					// -1 : added to old set, continue set
+					// 0 : create new set
+					// 1 : create new set, add parsed to that
+					mergeParsed();
 				} else {
-					breakSet = true;
-				}
+					state = 0;
+				} 
 
-				if ( !start && this.isValidSet(set) ){
-					start = key
-				}
+				if ( state > -1 ){
+					if ( this.isValidSet(set) ){
+						sets.push( this.finalizeSet(set) );
+					}
 
-				if ( breakSet && this.isValidSet(set) ){
-					set.$start = start;
-					set.$stop = key;
-					sets.push( this.finalizeSet(set) );
-
-					start = null;
 					set = this.makeSet();
+
+					if ( state ){ // state === 1
+						mergeParsed();
+					}
 				}
 			}
 
 			if ( this.isValidSet(set) ){
-				set.$start = start;
-				set.$stop = keys[keys.length-1];
-
 				sets.push( this.finalizeSet(set) );
 			}
 

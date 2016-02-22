@@ -44,7 +44,7 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
 											.attr( 'class', 'point '+className+' '+cfg.classExtend );
 									}
 
-									node.attr( 'cx', datum._$interval - curX )
+									node.attr( 'cx', datum.$x - curX )
 										.attr( 'cy', view.y.scale(value) )
 										.attr( 'r', $scope.$eval( attrs.pointRadius ) || 3 );
 								}else{

@@ -8,8 +8,21 @@ angular.module( 'vgraph' ).factory( 'DrawLine',
 		var isNumeric = DrawBuilder.isNumeric;
 		
 		function DrawLine( ref ){
+			var oldMerge = this.mergeParsed;
+
 			this.ref = ref;
 			this.references = [ ref ];
+
+			if ( ref.mergeParsed ){
+				this.mergeParsed = function( parsed, set ){
+					return ref.mergeParsed.call( 
+						this,
+						parsed,
+						set,
+						oldMerge
+					);
+				};
+			}
 		}
 
 		DrawLine.prototype = new DrawBuilder();
@@ -18,7 +31,8 @@ angular.module( 'vgraph' ).factory( 'DrawLine',
 			var node = this.ref.$getNode(index);
 
 			return {
-				x: node._$interval,
+				$classify: this.ref.classify ? this.ref.classify(node) : null,
+				x: node.$x,
 				y: this.ref.getValue(node)
 			};
 		};
@@ -33,6 +47,8 @@ angular.module( 'vgraph' ).factory( 'DrawLine',
 					x: x,
 					y: this.ref.$view.y.scale(y)
 				});
+
+				return -1;
 			}else if ( last && y === undefined ){ 
 				// undefined and null are treated differently.  null means no value, undefined smooth the line
 				// last has to be defined, so faux points can never be leaders
@@ -41,8 +57,10 @@ angular.module( 'vgraph' ).factory( 'DrawLine',
 					x: x,
 					y: last.y
 				});
+
+				return -1;
 			}else{
-				return true; // break the set because the value is invalid
+				return 0; // break the set because the value is invalid
 			}
 		};
 
@@ -102,11 +120,11 @@ angular.module( 'vgraph' ).factory( 'DrawLine',
 			var className = '';
 
 			if ( set.length ){
-				if ( this.ref.classify ){
-					className = this.ref.classify( set );
+				if ( set.$classify ){
+					className = Object.keys(set.$classify).join(' ');
 				}
 
-				return '<path class="'+className+
+				return '<path class="'+ className +
 					'" d="'+this.makePath(set)+
 					'"></path>';
 			}

@@ -77,9 +77,58 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 
 		DataCollection.isNumeric = isNumeric;
 
+		// addPropertyCopy( name ) -> updates _merge and _finalize
+		// addPropertyMap ( fn ) -> function( old, new )
+		function _validate( v ){
+			return v || v === 0;
+		}
+		DataCollection.isValid = _validate;
+
+		DataCollection.prototype.addPropertyCopy = function( name ){
+			var cfn,
+				vfn;
+
+			if ( !this._copyProperties ){
+				this._copyProperties = function( n, o ){
+					o[name] = n[name];
+				};
+				this._hasValue = function( d ){
+					return _validate( d[name] );
+				};
+			}else{
+				cfn = this._copyProperties;
+				this._copyProperties = function( n, o ){
+					o[name] = n[name];
+					cfn( n, o );
+				};
+
+				vfn = this._hasValue;
+				this._hasValue = function( d ){
+					if ( _validate(d[name]) ){
+						return true;
+					}else{
+						return vfn(d);
+					}
+				};
+			}
+		};
+
+		DataCollection.prototype.addPropertyMap = function( fn ){
+			var mfn;
+
+			if ( !this._mapProperties ){
+				this._mapProperties = fn;
+			}else{
+				mfn = this._mapProperties;
+				this._mapProperties = function( n, o ){
+					mfn( n, o );
+					fn( n, o );
+				};
+			}
+		};
+
 		DataCollection.prototype._register = function( index, node, shift ){
-			var hasValue,
-				dex = +index;
+			var dex = +index;
 
 			if ( !this._$index[dex] ){
 				this._$index[dex] = node;
@@ -98,15 +147,7 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 					this.push(node);
 				}
 
-				Object.keys(node).forEach(function( key ){
-					var value = node[key];
-
-					if ( value || value === 0 ){ // truthy
-						hasValue = true;
-					}
-				});
-
-				if ( hasValue ){
+				if ( !this._hasValue || this._hasValue(node) ){
 					if ( this.$minIndex === undefined ){
 						this.$minIndex = dex;
 						this.$maxIndex = dex;
@@ -147,9 +188,7 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 		};
 
 		DataCollection.prototype.$getNode = function( index ){
-			var dex = +index;
-			
-			return this._$index[dex];
+			return this._$index[+index];
 		};
 
 		DataCollection.prototype._setValue = function ( node, field, value ){
@@ -160,8 +199,8 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 			}else{
 				node[field] = value;	
 			}
-
-			if ( value || value === 0 ){
+			
+			if ( _validate(value) ){
 				if ( this.$minIndex === undefined ){
 					this.$minIndex = dex;
 					this.$maxIndex = dex;
@@ -182,43 +221,38 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 		};
 
 		DataCollection.prototype.$addNode = function( index, newNode, shift ){
-			var f,
-				dex,
-				node;
-
-			if ( !newNode ){
-				newNode = index;
-				dex = newNode._$index;
-			}else{
+			var node,
 				dex = +index;
-			}
 
 			node = this.$getNode( dex );
 
 			if ( node ){
 				if ( node.$merge ){
 					node.$merge( newNode );
-				}else{
-					// copy values over
-					f = this._setValue.bind( this );
-					Object.keys( newNode ).forEach(function( key ){
-						if ( key !== '_$index' ){
-							f( node, key, newNode[key] );
-						}
-					});
+				}
+
+				if ( this._mapProperties ){
+					this._mapProperties( newNode, node, dex );
+				}
+
+				if ( this._copyProperties ){
+					this._copyProperties( newNode, node, dex );
 				}
 			}else{
-				// just use the existing node
 				if ( this.$makeNode ){
 					node = this.$makeNode( newNode );
 				}else{
-					if ( newNode._$index && newNode._$index !== dex ){
-						throw new Error( 'something wrong with index -> ', newNode._$index, dex );
-					}
-					
-					node = newNode;
+					node = {};
 				}
 				
+				if ( this._mapProperties ){
+					this._mapProperties( newNode, node, dex );
+				}
+
+				if ( this._copyProperties ){
+					this._copyProperties( newNode, node, dex );
+				}
+
 				this._register( dex, node, shift );
 			}
 
@@ -274,7 +308,7 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 			return this;
 		};
 
-		DataCollection.prototype.$filter = function( startIndex, stopIndex ){
+		DataCollection.prototype.$slice = function( startIndex, stopIndex ){
 			var node,
 				i = -1,
 				filtered = new DataCollection();
@@ -287,75 +321,22 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 			}while( node && node._$index < startIndex);
 
 			while( node && node._$index <= stopIndex){
-				filtered.$addNode( node );
+				filtered.push( node );
+				filtered._$index[ node._$index ] = node;
+
 				i++;
 				node = this[i];
 			}
 
-			filtered.$parent = this;
+			filtered.$minIndex = filtered[0]._$index;
+			filtered.$maxIndex = filtered[filtered.length-1]._$index;
+			filtered.$dirty = false;
 			
+			filtered.$parent = this;
+
 			return filtered;
 		};
 
-		/*
-		function functionalBucketize( collection, inBucket, inCurrentBucket ){
-			var i, c,
-				datum,
-				currentBucket,
-				buckets = [];
-
-			for( i = 0, c = collection.length; i < c; i++ ){
-				datum = collection[i];
-				if ( inBucket(datum) ){
-					if ( !inCurrentBucket(datum) ){
-						currentBucket = new DataCollection();
-						buckets.push( currentBucket );
-					}
-				}
-
-				currentBucket.$addNode( datum );
-			}
-		}
-
-		function numericBucketize( collection, perBucket ){
-			var i, c,
-				datum,
-				currentBucket,
-				buckets = [],
-				nextLimit = 0;
-
-			for( i = 0, c = collection.length; i < c; i++ ){
-				datum = collection[i];
-				
-				if ( i >= nextLimit ){
-					nextLimit += perBucket;
-					currentBucket = new DataCollection();
-					buckets.push( currentBucket );
-				}
-
-				currentBucket.$addNode( datum );
-			}
-		}
-
-		DataCollection.prototype.$bucketize = function( inBucket, inCurrentBucket, fullStat ){
-			if ( typeof(inBucket) === 'function' ){
-				if ( arguments.length === 2 ){
-					fullStat = this._fullStat;
-				}
-
-				return functionalBucketize( this, inBucket, inCurrentBucket, fullStat );
-			}else{
-				// assume inBucket is an int, number of buckets to seperate into
-				if ( arguments.length === 1 ){
-					fullStat = this._fullStat;
-				}else{
-					fullStat = inCurrentBucket;
-				}
-
-				return numericBucketize( this, this.length / inBucket, fullStat );
-			}
-		};
-		*/
 		return DataCollection;
 	}]
 );

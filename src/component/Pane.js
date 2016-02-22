@@ -71,7 +71,7 @@ angular.module( 'vgraph' ).factory( 'ComponentPane',
 				offset.right = (maxInterval - $min) / ($max - $min);
 
 				// calculate the filtered points
-				filtered = data.$filter( minInterval, maxInterval );
+				filtered = data.$slice( minInterval, maxInterval );
 
 				if ( this.fitToPane && data.length > 1 ){
 					if ( minInterval > data.$minIndex ){

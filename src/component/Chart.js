@@ -226,16 +226,36 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 				throw new Error('drawer reference requires view or $getValue');
 			}
 
+			// use to tell if a point is still valid
+			// TODO : carry over to Line, Dots
 			if ( refDef.isValid ){
 				ref.isValid = refDef.isValid;
 			}
 
+			// used in elements to allow external classes be defined
 			if ( refDef.classExtend ){
 				ref.classExtend = refDef.classExtend;
 			}
 
+			// these are used to load in data from DataManager
+			if ( refDef.normalizerMap ){
+				ref.normalizerMap = refDef.normalizerMap;
+			}
+
+			if ( refDef.requirements ){
+				ref.requirements = refDef.requirements;
+			}
+
+			if ( refDef.normalizerFinalize ){
+				ref.normalizerFinalize = refDef.normalizerFinalize;
+			}
+
 			if ( refDef.classify ){
 				ref.classify = refDef.classify;
+			}
+
+			if ( refDef.mergeParsed ){
+				ref.mergeParsed = refDef.mergeParsed;
 			}
 
 			return ref;
@@ -512,7 +532,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 
 				points[viewName] = view.getPoint( pos.x );
 
-				p = points[viewName]._$interval;
+				p = points[viewName].$x;
 
 				if ( p !== undefined ){
 					count++;

@@ -37,69 +37,70 @@ angular.module( 'vgraph' ).directive( 'vgraphLeading',
 					$el.attr( 'visibility', 'hidden' );
 				}
 
-				function drawComponent(){
-					var last,
-						isValid = true,
-						points = [];
-
-					angular.forEach( configs, function( cfg ){
-						var model = cfg.$view.normalizer,
-							datum = model.$getNode( model.$stats[cfg.field] ),
-							value = cfg.getValue(datum);
-
-						if ( datum && cfg.$view.isLeading() ){
-							points.push({
-								el : elements[cfg.name],
-								x : datum._$interval,
-								y : cfg.$view.y.scale( value )
-							});
-						}else{
-							elements[cfg.name].attr( 'visibility','hidden' );
-							isValid = false;
-						}
-					});
-
-					// sort the points form top to bottom
-					points.sort(function( a, b ){
-						return a.y - b.y;
-					});
-
-					angular.forEach( points, function( p ){
-						if ( last ){
-							last.el
-								.attr( 'visibility','visible' )
-								.attr( 'x1', last.x )
-								.attr( 'x2', p.x )
-								.attr( 'y1', last.y )
-								.attr( 'y2', p.y );
-						}
-
-						last = p;
-					});
-
-					if ( last && isValid ){
-						$el.attr( 'visibility', 'visible' );
-
-						last.el
-							.attr( 'visibility','visible' )
-							.attr( 'x1', last.x )
-							.attr( 'x2', last.x )
-							.attr( 'y1', last.y )
-							.attr( 'y2', chart.box.innerBottom );
-					}else{
-						clearComponent();
-					}
-				}
-
 				scope.$watchCollection('config', parseConf );
 
 				scope.$on('$destroy',
 					chart.$subscribe({
 						'error': clearComponent,
-						'loading': clearComponent,
-						'success': drawComponent
+						'loading': clearComponent
 					})
 				);
+
+				chart.registerComponent({
+					finalize : function(){
+						var last,
+							isValid = true,
+							points = [];
+
+						angular.forEach( configs, function( cfg ){
+							var model = cfg.$view.normalizer,
+								datum = model.$latestNode( cfg.field ),
+								value = cfg.getValue(datum);
+
+							if ( datum && cfg.$view.isLeading() ){
+								points.push({
+									el : elements[cfg.name],
+									x : datum.$x,
+									y : cfg.$view.y.scale( value )
+								});
+							}else{
+								elements[cfg.name].attr( 'visibility','hidden' );
+								isValid = false;
+							}
+						});
+
+						// sort the points form top to bottom
+						points.sort(function( a, b ){
+							return a.y - b.y;
+						});
+
+						angular.forEach( points, function( p ){
+							if ( last ){
+								last.el
+									.attr( 'visibility','visible' )
+									.attr( 'x1', last.x )
+									.attr( 'x2', p.x )
+									.attr( 'y1', last.y )
+									.attr( 'y2', p.y );
+							}
+
+							last = p;
+						});
+
+						if ( last && isValid ){
+							$el.attr( 'visibility', 'visible' );
+
+							last.el
+								.attr( 'visibility','visible' )
+								.attr( 'x1', last.x )
+								.attr( 'x2', last.x )
+								.attr( 'y1', last.y )
+								.attr( 'y2', chart.box.innerBottom );
+						}else{
+							clearComponent();
+						}
+					}
+				});
 			}
 		};
 	} ]

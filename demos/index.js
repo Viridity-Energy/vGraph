@@ -75,6 +75,129 @@ angular.module( 'vgraph' ).controller( 'FloodCtrl',
 	}]
 );
 
+angular.module( 'vgraph' ).controller( 'ClassifyCtrl', [
+	'$scope', '$timeout',
+	function( $scope, $timeout ){
+		var data = [ { x : 0, y1 : null, y2 : null} ],
+			wide = true;
+
+		var ref1 = {
+				name: 'someLine1',
+				className: 'red',
+				//requirements: ['someLine1','someLine3'],
+				classify: function( node ){
+					if ( node.someLine1 > node.someLine3 ){
+						return {
+							'high-value': true
+						};
+					}else if ( node.someLine1 < node.someLine3 ){
+						return {
+							'low-value': true
+						};
+					}
+				},
+				mergeParsed: function( parsed, set, old ){
+					if ( set.$classify && parsed.$classify ){
+						if( set.$classify['high-value'] &&
+							parsed.$classify['low-value'] ){
+							return 1;
+						}else if( set.$classify['low-value'] &&
+							parsed.$classify['high-value'] ){
+							return 1;
+						}
+					}
+
+					return old.call( this, parsed, set );
+				}
+			},
+			ref2 = {
+				name: 'someLine2',
+				className: 'blue',
+				classify: function( node ){
+					if ( node.someLine2 > node.someLine3 ){
+						return {
+							'high-value': true
+						};
+					}else if ( node.someLine2 < node.someLine3 ){
+						return {
+							'low-value': true
+						};
+					}
+				}
+			},
+			ref3 = {
+				name: 'someLine3',
+				className: 'green'
+			},
+			ref4 = {
+				name: 'someLine4',
+				className: 'orange',
+				classify: function( node ){
+					if ( node.someLine4 > node.someLine3 ){
+						return {
+							'high-value': true
+						};
+					}else if ( node.someLine4 < node.someLine3 ){
+						return {
+							'low-value': true
+						};
+					}
+				}
+			},
+			data = [ {x : 0, y1 : 20, y2 : 25, y3 : 23, y4 : 19}  ];
+
+		$scope.graph = {
+			x : {
+				min: -5,
+				max: 105,
+				scale: function(){ return d3.scale.linear(); }
+			},
+			y : {
+				padding : 0.05,
+				format: function( y ){
+					return ':' + y;
+				}
+			}
+		};
+
+		$scope.page = [{
+			src: data,
+			interval: 'x',
+			readings:{
+				'someLine1': 'y1',
+				'someLine2': 'y2',
+				'someLine3': 'y3',
+				'someLine4': 'y4'
+			}
+		}];
+
+		$scope.config = [
+			ref1,
+			ref2,
+			ref3,
+			ref4
+		];
+
+		for( var i = 0, c = 100; i < c; i++ ){
+			var counter = 0;
+			var min = -0.5,
+				max = 0.5,
+				t1 = Math.random() * (max - min) + min,
+				t2 = Math.random() * (max - min) + min,
+				t3 = Math.random() * (4) - 2, // max: 2, min: 2
+				t4 = Math.random() * (max - min) + min;
+
+			data.push({
+				x : data.length,
+				y1 : data[data.length-1].y1 + t1,
+				y2 : data[data.length-1].y2 + t2,
+				y3 : data[data.length-1].y3 + t3,
+				y4 : data[data.length-1].y4 + t4
+			});
+		}
+	}]
+);
+
 angular.module( 'vgraph' ).controller( 'NullCtrl', [
 	'$scope', '$timeout',
 	function( $scope, $timeout ){
@@ -372,7 +495,7 @@ angular.module( 'vgraph' ).controller( 'GrowingCtrl',
 			$scope.graph = {
 				x: {
 					min: 0,
-					max: 2000
+					max: 100000
 				}
 			};
 		}
@@ -388,14 +511,18 @@ angular.module( 'vgraph' ).controller( 'GrowingCtrl',
 		$scope.ctrl = { name : 'y', className : 'red' };
 
 		interval = setInterval(function(){
-			var min = -1,
-				max = 1,
+			var t,
+				min = -1,
+				max = 1;
+
+			for( var i = 0, c = 100; i < c; i++ ){
 				t = Math.random() * (max - min) + min;
 
-			data.push({
-				x : data.length,
-				y : data[data.length-1].y + t
-			});
+				data.push({
+					x : data.length,
+					y : data[data.length-1].y + t
+				});
+			}
 
 			$scope.$apply();
 		}, 20);
@@ -421,14 +548,14 @@ angular.module( 'vgraph' ).controller( 'BucketsCtrl',
 			views: {
 				'primary': {
 					manager: 'data',
-					normalizer: new DataNormalizer(function(datum){
-						return Math.round(datum._$interval / 10); // combine every 10 pixels
+					normalizer: new DataNormalizer(function(index){
+						return Math.round(index / 10); // combine every 10 pixels
 					})
 				},
 				'secondary': {
 					manager: 'data',
-					normalizer: new DataNormalizer(function(datum){
-						return Math.round(datum._$interval); // combine to every pixel
+					normalizer: new DataNormalizer(function(index){
+						return Math.round(index); // combine to every pixel
 					})
 				}
 			}
@@ -925,7 +1052,7 @@ angular.module( 'vgraph' ).controller( 'BoxCtrl',
 					return d.someLine1;
 				},
 				isValid: function( d ){
-					return d.$x > 60 && d.$x < 75;
+					return d.$minIndex > 60 && d.$minIndex < 75;
 				}
 			},
 			ref3 = {
@@ -933,7 +1060,7 @@ angular.module( 'vgraph' ).controller( 'BoxCtrl',
 				className: 'green',
 				getValue: null,
 				isValid: function( d ){
-					return d.$x > 20 && d.$x < 40;
+					return d.$minIndex > 20 && d.$minIndex < 40;
 				}
 			},
 			data = [ {x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40}  ];
@@ -1019,7 +1146,7 @@ angular.module( 'vgraph' ).controller( 'IconCtrl',
 					return d.someLine1;
 				},
 				isValid: function( d ){
-					return d.$x === 60;
+					return d.$minIndex === 60;
 				}
 			},
 			{
@@ -1027,7 +1154,7 @@ angular.module( 'vgraph' ).controller( 'IconCtrl',
 				className: 'green',
 				getValue: null,
 				isValid: function( d ){
-					return d.$x > 20 && d.$x < 40;
+					return d.$minIndex > 20 && d.$minIndex < 40;
 				}
 			}
 		];
@@ -1041,87 +1168,6 @@ angular.module( 'vgraph' ).controller( 'IconCtrl',
 			data.push({
 				x : data.length,
 				y1 : data[data.length-1].y1 + t
-			});
-		}
-	}]
-);
-
-angular.module( 'vgraph' ).controller( 'ClassifyCtrl',
-	['$scope', '$timeout',
-	function( $scope, $timeout ){
-		var data = [ {x : 0, y1 : 20, y2 : 50, y3 : 80, y4 : 110}  ];
-
-		$scope.graph = {
-			x : {
-				min: -1,
-				max: 11,
-				scale: function(){ return d3.scale.linear(); }
-			},
-			y : {
-				padding : 0.05,
-				format: function( y ){
-					return ':' + y;
-				}
-			}
-		};
-
-		$scope.page = [{
-			src: data,
-			interval: 'x',
-			readings:{
-				'someLine1': 'y1',
-				'someLine2': 'y2',
-				'someLine3': 'y3',
-				'someLine4': 'y4'
-			}
-		}];
-
-		$scope.config = [
-			{
-				name: 'someLine1',
-				className: 'red',
-				classify: function( set ){
-					console.log( 'red', set );
-				}
-			},
-			{
-				name: 'someLine2',
-				className: 'blue',
-				isValid: function(){
-					return true;
-				},
-				classify: function( set ){
-					console.log( 'blue', set );
-				}
-			},
-			{
-				name: 'someLine3',
-				className: 'green',
-				classify: function( set ){
-					console.log( 'green', set );
-				}
-			},
-			{
-				name: 'someLine4',
-				className: 'orange',
-				classify: function( set ){
-					console.log( 'orange', set );
-				}
-			}
-		];
-
-		for( var i = 0, c = 10; i < c; i++ ){
-			var counter = 0;
-			var min = -1,
-				max = 1,
-				t = Math.random() * (max - min) + min;
-
-			data.push({
-				x : data.length,
-				y1 : data[data.length-1].y1 + t,
-				y2 : data[data.length-1].y2 + t,
-				y3 : data[data.length-1].y3 + t,
-				y4 : data[data.length-1].y4 + t
 			});
 		}
 	}]

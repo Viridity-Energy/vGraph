@@ -21,7 +21,8 @@ angular.module( 'vgraph' ).factory( 'DrawDots',
 
 			if ( value || value === 0 ){
 				return {
-					x: node._$interval,
+					$classify: this.ref.classify ? this.ref.classify(node) : null,
+					x: node.$x,
 					y: value 
 				};
 			}
@@ -31,12 +32,13 @@ angular.module( 'vgraph' ).factory( 'DrawDots',
 			set.x = parsed.x;
 			set.y = this.ref.$view.y.scale(parsed.y);
 
-			return true;
+			return 0;
 		};
 
 		DrawDots.prototype.makePath = function( set ){
 			var radius = this.radius,
 				r2 = radius*2;
+
 			if ( set.x !== undefined ){
 				return 'M' + 
 					set.x+' '+set.y+
@@ -50,15 +52,14 @@ angular.module( 'vgraph' ).factory( 'DrawDots',
 			var className = '';
 
 			if ( set.x !== undefined ){
-				if ( this.ref.classify ){
-					className = this.ref.classify( set );
+				if ( set.$classify ){
+					className = Object.keys(set.$classify).join(' ');
 				}
 
 				return '<circle class="'+className+
 					'" cx="'+set.x+
 					'" cy="'+set.y+
-					'" r="'+this.radius+
-					'"/>';
+					'" r="'+this.radius+'"/>';
 			}
 		};
 

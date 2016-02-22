@@ -9,6 +9,7 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 			this.$vgvid = id++;
 
 			this.components = [];
+			this.references = [];
 		}
 
 		function parseSettings( settings, old ){
@@ -73,7 +74,29 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 			return parseSettings( settings, old );
 		};
 
+		function loadRefence( ref, normalizer ){
+			if ( ref.normalizerMap ){
+				normalizer.addPropertyMap( ref.normalizerMap );
+			}
+
+			if ( ref.requirements ){
+				ref.requirements.forEach(function( name ){
+					normalizer.addPropertyCopy( name );
+				});
+			}else if ( ref.requirements !== null ){
+				normalizer.addPropertyCopy( ref.name );
+			}
+
+			if ( ref.normalizerFinalize ){
+				normalizer.addPropertyFinalize( ref.normalizerFinalize );
+			}
+		}
+
 		ComponentView.prototype.configure = function( settings, chartSettings, box, page ){
+			var normalizer,
+				refs = this.references,
+				refNames = Object.keys(this.references);
+
 			this.x = ComponentView.parseSettingsX( chartSettings.x, this.x );
 			ComponentView.parseSettingsX( settings.x, this.x );
 			
@@ -82,12 +105,14 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 			
 			this.box = box;
 			this.manager = page.getManager( settings.manager || ComponentPage.defaultManager );
-			this.normalizer = settings.normalizer || 
-				new DataNormalizer(
-					function(datum){
-						return Math.round(datum._$interval);
-					}
-				);
+			this.normalizer  = normalizer = settings.normalizer || 
+				new DataNormalizer(function(index){
+					return Math.round(index);
+				});
+
+			refNames.forEach(function( name ){
+				loadRefence( refs[name], normalizer );
+			});
 
 			this.adjustSettings = chartSettings.adjustSettings;
 			this.pane = new ComponentPane( chartSettings.fitToPane, this.x, this.y );
@@ -108,7 +133,22 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 		};
 
 		ComponentView.prototype.registerComponent = function( component ){
+			var normalizer = this.normalizer,
+				refs = this.references;
+			
 			this.components.push( component );
+
+			if ( component.references ){
+				component.references.forEach(function( ref ){
+					if ( !refs[ref.name] ){
+						refs[ref.name] = ref;
+
+						if ( normalizer ){
+							loadRefence( ref, normalizer );
+						}
+					}
+				});
+			}
 		};
 
 		ComponentView.prototype.isReady = function(){
@@ -130,7 +170,7 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 		};
 
 		ComponentView.prototype.getLeading = function(){
-			return this.filtered[this.filtered.length-1]; 
+			return this.normalizer[this.normalizer.length-1]; 
 		};
 
 		ComponentView.prototype.setViewportValues = function( min, max ){
@@ -178,18 +218,13 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 					box.innerLeft,
 					box.innerRight
 				]);
-
-			if ( this.filtered ){
-				this.filtered.forEach(function( datum ){
-					datum._$interval = scale(datum._$index);
-				});
-			}
 		};
 
 		ComponentView.prototype.parse = function(){
 			var min,
 				max,
-				raw = this.manager.data;
+				raw = this.manager.data,
+				scale = this.x.scale;
 
 			this._sample();
 			
@@ -199,7 +234,7 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 				}
 
 				this.setViewportIntervals( this.offset.$left, this.offset.$right );
-				this.normalizer.$follow( this.filtered );
+				this.normalizer.$reindex( this.filtered, scale );
 
 				this.components.forEach(function( component ){
 					var t;
@@ -257,7 +292,7 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 		};
 
 		ComponentView.prototype.getPoint = function( pos ){
-			return this.normalizer.$getClosest( pos, '_$interval' );
+			return this.normalizer.$getClosest( pos, '$x' );
 		};
 
 		/*

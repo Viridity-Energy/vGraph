@@ -73,7 +73,10 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
 				unwatch = scope.$watchCollection( 'config', parseConf );
 
 				scope.$on('$destroy', function(){
-					childScope.$destroy();
+					if ( childScope ){
+						childScope.$destroy();
+					}
+					
 					unwatch();
 				});
 
