@@ -34,8 +34,7 @@ angular.module( 'vgraph' ).factory( 'ComponentElement',
 		};
 
 		ComponentElement.prototype.setDrawer = function( drawer ){
-			var keys = [],
-				refs = [],
+			var refs = [],
 				references = drawer.getReferences();
 
 			this.drawer = drawer;
@@ -46,16 +45,9 @@ angular.module( 'vgraph' ).factory( 'ComponentElement',
 				}
 
 				refs.push( ref );
-				if ( ref.requirements ){
-					keys = keys.concat( ref.requirements );
-				}else{
-					keys.push( ref.field );
-				}
 			});
 
-			// TODO : requirements need to be registered with view's normalizer
 			this.references = refs;
-			this.keys = keys;
 		};
 
 		ComponentElement.prototype.parse = function(){

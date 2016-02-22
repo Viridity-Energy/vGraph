@@ -22,9 +22,9 @@ angular.module( 'vgraph' ).factory( 'DrawFill',
 		DrawFill.prototype.parse = function( index ){
 			var y1,
 				y2,
-				topNode = this.top.$getNode(index);
+				node = this.top.$getNode(index);
 
-			y1 = this.top.getValue(topNode);
+			y1 = this.top.getValue(node);
 			
 			if ( this.references.length === 2 ){
 				y2 = this.bottom.$getValue( index );
@@ -34,7 +34,10 @@ angular.module( 'vgraph' ).factory( 'DrawFill',
 
 			if ( isNumeric(y1) && isNumeric(y2) ){
 				return {
-					x: topNode._$interval,
+					$classify: this.top.classify ? 
+						this.top.classify(node,this.bottom.$getNode(index)) : 
+						null,
+					x: node.$x,
 					y1: y1,
 					y2: y2
 				};
@@ -53,8 +56,10 @@ angular.module( 'vgraph' ).factory( 'DrawFill',
 					y1: this.top.$view.y.scale(y1),
 					y2: this.bottom.$view.y.scale(y2)
 				});
+
+				return -1;
 			} else if ( !last || y1 === null || y2 === null ){
-				return true;
+				return 0;
 			} else {
 				if ( y1 === undefined ){
 					y1 = last.y1;
@@ -73,6 +78,8 @@ angular.module( 'vgraph' ).factory( 'DrawFill',
 					y1: y1,
 					y2: y2
 				});
+
+				return -1;
 			}
 		};
 
@@ -95,7 +102,17 @@ angular.module( 'vgraph' ).factory( 'DrawFill',
 		};
 
 		DrawFill.prototype.makeElement = function( set ){
-			return '<path d="'+this.makePath(set)+'"></path>';
+			var className = '';
+
+			if ( set.length ){
+				if ( set.$classify ){
+					className = Object.keys(set.$classify).join(' ');
+				}
+
+				return '<path class="'+ className +
+					'" d="'+this.makePath(set)+
+					'"></path>';
+			}
 		};
 
 		return DrawFill;

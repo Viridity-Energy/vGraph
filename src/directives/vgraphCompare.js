@@ -34,7 +34,7 @@ angular.module( 'vgraph' ).directive( 'vgraphCompare',
 					point[ attrs.reference || 'compare' ] = {
 						value: Math.abs( v1 - v2 ),
 						y: ( view1.y.scale(v1) + view2.y.scale(v2) ) / 2,
-						x: ( p1._$interval + p2._$interval ) / 2
+						x: ( p1.$x + p2.$x ) / 2
 					};
 				});
 

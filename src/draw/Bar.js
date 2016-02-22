@@ -76,9 +76,9 @@ angular.module( 'vgraph' ).factory( 'DrawBar',
 				y2,
 				t,
 				width,
-				topNode = this.top.$getNode(index);
+				node = this.top.$getNode(index);
 
-			y1 = this.top.getValue(topNode);
+			y1 = this.top.getValue(node);
 			
 			if ( this.bottom !== this.top ){
 				y2 = this.bottom.$getValue(index);
@@ -93,12 +93,15 @@ angular.module( 'vgraph' ).factory( 'DrawBar',
 			}
 
 			if ( isNumeric(y1) && isNumeric(y2) && y1 !== y2 ){
-				min = topNode._$interval - width;
-				max = topNode._$interval + width;
+				min = node.$x - width;
+				max = node.$x + width;
 
 				t = {
-					x1: min > topNode._$minInterval ? min : topNode._$minInterval,
-					x2: max > topNode._$maxInterval ? topNode._$maxInterval : max,
+					$classify: this.top.classify ? 
+						this.top.classify(node,this.bottom.$getNode(index)) : 
+						null,
+					x1: min < node.$xMin ? min : node.$xMin,
+					x2: max > node.$xMax ? node.$xMax : max,
 					y1: y1,
 					y2: y2
 				};
@@ -129,7 +132,7 @@ angular.module( 'vgraph' ).factory( 'DrawBar',
 				calcBar( x1, x2, y1, y2, set );
 			}
 				
-			return true;
+			return 0;
 		};
 
 		DrawBar.prototype.makePath = function( boxInfo ){
@@ -143,8 +146,15 @@ angular.module( 'vgraph' ).factory( 'DrawBar',
 		};
 
 		DrawBar.prototype.makeElement = function( boxInfo ){
+			var className = '';
+
 			if ( boxInfo ){
-				return '<rect x="'+boxInfo.x1+
+				if ( boxInfo.$classify ){
+					className = Object.keys(boxInfo.$classify).join(' ');
+				}
+
+				return '<rect class="'+className+
+					'" x="'+boxInfo.x1+
 					'" y="'+boxInfo.y1+
 					'" width="'+(boxInfo.x2 - boxInfo.x1)+
 					'" height="'+(boxInfo.y2 - boxInfo.y1)+'"/>';

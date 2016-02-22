@@ -33,7 +33,7 @@ angular.module( 'vgraph' ).directive( 'vgraphTooltip',
 					return ref.getValue( point[ref.view] );
 				},
 				xParse: function( point ){
-					return point[ref.view]._$interval;
+					return point[ref.view].$x;
 				},
 				yParse: function( point ){
 					return ref.$view.y.scale( ref.getValue(point[ref.view]) );

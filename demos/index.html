@@ -22,7 +22,7 @@
 		}
 
 		svg[vgraph-chart], [vgraph-chart] svg{
-			margin: 10px 30px;
+			margin: 10px 30px 30px;
 			padding: 20px 40px;
 			width: 740;
 			height: 220;
@@ -129,12 +129,24 @@
 			stroke: grey;
 			fill: grey;
 		}
+
+		.line .high-value {
+			stroke-dasharray: 1,1;
+			opacity: .5;
+		}
+
+		.bar .high-value,
+		.point .high-value {
+			opacity: .5;
+		}
 	</style>
 
 	<article ng-controller="AppCtrl">
 		<section class="controls">
 			<label>Simple<input type='checkbox' ng-checked="simple" 
 				ng-click="simple = !simple"/></label>
+			<label>Classify<input type='checkbox' ng-checked="classify" 
+				ng-click="classify = !classify"/></label>
 			<label>Nulled<input type='checkbox' ng-checked="nulled" 
 				ng-click="nulled = !nulled"/></label>
 			<label>Resize<input type='checkbox' ng-checked="resize" 
@@ -343,6 +355,34 @@
 							<g vgraph-message></g>
 						</svg>
 					</section>
+				</div>
+			</div>
+		</section>
+
+		<section ng-if="classify">
+			<h5>Classify</h5>
+			<div ng-controller="ClassifyCtrl">
+				<div vgraph-page="page">
+					<div vgraph-chart="graph">
+						<svg xmlns="http://www.w3.org/2000/svg"  version="1.1">
+							<g vgraph-axis="'left'"
+								tick-length="4" tick-padding="-2"
+								></g>
+							<g vgraph-axis="'bottom'"
+								tick-length="4" tick-padding="-2" tick-rotation="-45"
+								></g>
+
+							<g vgraph-line="config[2]"></g>
+
+							<g vgraph-line="config[0]"></g>
+
+							<g vgraph-dots="config[1]"></g>
+
+							<g vgraph-bar="config[3]"></g>
+
+							<g vgraph-loading="Loading Data"></g>
+						</svg>
+					</div>
 				</div>
 			</div>
 		</section>
@@ -738,7 +778,7 @@
 			<div vgraph-page="page">
 				<section vgraph-chart="graph">
 					<div vgraph-highlight="point">
-						{{point.default.linear.someLine1}} : {{point.default.linear._$index}}
+						{{point.default.someLine1}} : {{point.default._$index}}
 					</div>
 					<svg>
 						<g vgraph-axis="'left'"
@@ -753,12 +793,16 @@
 							axis-label="woot"
 							tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
 
-						<path vgraph-box="config[1]"></path>
-						<path vgraph-box="config[2]"></path>
+						<path vgraph-box="config[1]"
+							></path>
+						<path vgraph-box="config[2]"
+							></path>
 
-						<path vgraph-line="config[0]"></path>
+						<path vgraph-line="config[0]"
+							></path>
 							
-						<g vgraph-target="[config[0]]" point-radius="4"></g>
+						<g vgraph-target="[config[0]]" 
+							point-radius="4"></g>
 
 						<g vgraph-interact></g>
 					</svg>
@@ -766,7 +810,7 @@
 
 				<section vgraph-chart="graph">
 					<div vgraph-highlight="point">
-						{{point.default.linear.someLine1}} : {{point.default.linear._$index}}
+						{{point.default.someLine1}} : {{point.default._$index}}
 					</div>
 					<svg>
 						<g vgraph-axis="'left'"
@@ -781,12 +825,16 @@
 							axis-label="woot"
 							tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
 
-						<g vgraph-box="config[1]"></g>
-						<g vgraph-box="config[2]"></g>
+						<g vgraph-box="config[1]"
+							></g>
+						<g vgraph-box="config[2]"
+							></g>
 
-						<path vgraph-line="config[0]"></path>
+						<path vgraph-line="config[0]"
+							></path>
 							
-						<g vgraph-target="[config[0]]" point-radius="4"></g>
+						<g vgraph-target="[config[0]]"
+							point-radius="4"></g>
 
 						<g vgraph-interact></g>
 					</svg>
@@ -799,7 +847,7 @@
 			<div vgraph-page="page">
 				<section vgraph-chart="graph">
 					<div vgraph-highlight="point">
-						{{point.default.linear.someLine1}} : {{point.default.linear._$index}}
+						{{point.default.someLine1}} : {{point.default._$index}}
 					</div>
 					<svg>
 						<g vgraph-axis="'left'"

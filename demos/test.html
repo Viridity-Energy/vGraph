@@ -17,24 +17,54 @@
         </some-directive>
     </div>
     <script>
-    var app = angular.module( 'test', [] );
+    var fn;
 
-    app.directive('someDirective', function () {
-      return {
-        scope: {},
-        controller: ['$scope', function ( $scope ) {
-          $scope.shit = 'on you';
-          this.name = 'Pascal'
-        }],
-        controllerAs: 'ctrl',
-        transclude: true,
-        link: function(scope, element, attrs, ctrl, transclude) {
-          transclude(scope, function(clone, scope) {
-            element.append(clone);
-          });
+    function maker( name ){
+      var ofn;
+
+      if ( fn ){
+        ofn = fn;
+        fn = function( n, o ){
+          o[name] = n[name];
+          ofn( n, o );
+        };
+      }else{
+        fn = function( n, o ){
+          o[name] = n[name];
         }
-      };
-    });
+      }
+    }
+
+    maker( 'one' );
+    maker( 'two' );
+    maker( 'three' );
+
+    var i, time;
+
+    time = +(new Date());
+    for( i = 0; i < 1000000; i++ ){
+      maker( {}, {} );
+    }
+    console.log( 'run 1', +(new Date()) - time );
+
+    time = +(new Date());
+    for( i = 0; i < 1000000; i++ ){
+      Object.create({})
+    }
+    console.log( 'run 2', +(new Date()) - time );
+
+    time = +(new Date());
+    for( i = 0; i < 1000000; i++ ){
+      maker( {}, {} );
+    }
+    console.log( 'run 3', +(new Date()) - time );
+
+    time = +(new Date());
+    for( i = 0; i < 1000000; i++ ){
+      Object.create({})
+    }
+    console.log( 'run 4', +(new Date()) - time );
+
     </script>
   </body>
 </html>

@@ -9,8 +9,7 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
 				cfg: '=?vgraphIndicator'
 			},
 			link : function( scope, el, attrs, requirements ){
-				var view,
-					pulse,
+				var pulse,
 					graph = requirements[0],
 					cfg = graph.getReference(scope.cfg),
 					radius = scope.$eval( attrs.pointRadius ) || 3,
@@ -56,15 +55,15 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
 					})
 				);
 
-				view = graph.getView(cfg.view);
-				view.registerComponent({
+				graph.registerComponent({
 					finalize : function(){
 						var x, y,
+							view = cfg.$view,
 							d = view.getLeading(),
 							v = cfg.getValue(d);
 
 						if ( v && view.isLeading() ){
-							x = d._$interval;
+							x = d.$x;
 							y = view.y.scale( v );
 
 							if ( x && y ){
