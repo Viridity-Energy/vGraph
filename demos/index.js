@@ -1258,7 +1258,10 @@ angular.module( 'vgraph' ).controller( 'IconCtrl',
 angular.module( 'vgraph' ).controller( 'ExportCtrl',
 	['$scope',
 	function( $scope ){
-		var ref1 = {
+		var start = +(new Date()).setHours(0,0,0,0),
+			stop = +(new Date()).setHours(23,59,59,999),
+			minute = 60000,
+			ref1 = {
 				name: 'someLine1',
 				view: 'firstView',
 				className: 'red'
@@ -1278,11 +1281,12 @@ angular.module( 'vgraph' ).controller( 'ExportCtrl',
 				view: 'fourthView',
 				className: 'orange'
 			},
-			data1 = [ {x : 0, y : 20}  ],
-			data2 = [ {x : 0, y : 20}  ],
-			data3 = [ {x : 0, y : 20}  ],
-			data4 = [ {x : 100, y : 20}  ];
+			data1 = [ {x : start, y : 20}  ],
+			data2 = [ {x : start, y : 20}  ],
+			data3 = [ {x : start, y : 20}  ],
+			data4 = [ {x : start+86400000, y : 20}  ];
 
+		console.log( start, stop );
 		$scope.exports = {
 			default: function( graph ){
 				var data = graph.export([
@@ -1301,10 +1305,37 @@ angular.module( 'vgraph' ).controller( 'ExportCtrl',
 			}
 		};
 		$scope.graph = {
+			adjustSettings: function( x ){
+				x.tick = {
+					interval: d3.time.minutes,
+                    step: 30
+				};
+			},
 			x : {
 				min: -5,
 				max: 25,
-				scale: function(){ return d3.scale.linear(); }
+				scale : function(){
+                    return d3.time.scale.utc();
+                },
+				format: function( x ){
+					var date = new Date(x),
+						h = date.getHours(),
+						m = date.getMinutes();
+
+					if ( h < 10 ){
+						h = '0'+h;
+					}
+
+					if ( m < 10 ){
+						m = '0'+m;
+					}
+
+					return h+':'+m;
+				},
+				tick: {
+					interval: d3.time.hours,
+                    step: 1
+                }
 			},
 			y : {
 				padding : 0.05,
@@ -1315,29 +1346,29 @@ angular.module( 'vgraph' ).controller( 'ExportCtrl',
 			views: { 
 				'firstView': {
 					x: {
-						min : 0, 
-						max : 100
+						min : start, 
+						max : stop
 					},
 					manager: 'first'
 				},
 				'secondView': {
 					x: {
-						min : 0, 
-						max : 100
+						min : start, 
+						max : stop
 					},
 					manager: 'second'
 				},
 				'thirdView': {
 					x: {
-						min : 0, 
-						max : 100
+						min : start, 
+						max : stop
 					},
 					manager: 'third'
 				},
 				'fourthView': {
 					x: {
-						min : 100, 
-						max : 200
+						min : start+86400000, 
+						max : stop+86400000
 					},
 					manager: 'fourth'
 				}
@@ -1381,7 +1412,7 @@ angular.module( 'vgraph' ).controller( 'ExportCtrl',
 			ref4
 		];
 
-		for( var i = 0, c = 100; i < c; i += 1 ){
+		for( var i = start, c = stop; i < c; i += minute ){
 			var counter = 0;
 			var min = -1,
 				max = 1,
@@ -1393,7 +1424,7 @@ angular.module( 'vgraph' ).controller( 'ExportCtrl',
 			});
 		}
 
-		for( var i = 0, c = 100; i < c; i += 2 ){
+		for( var i = start, c = stop; i <= c; i += 5 * minute ){
 			var counter = 0;
 			var min = -1,
 				max = 1,
@@ -1405,7 +1436,7 @@ angular.module( 'vgraph' ).controller( 'ExportCtrl',
 			});
 		}
 
-		for( var i = 0, c = 100; i < c; i += 3 ){
+		for( var i = start, c = stop; i <= c; i += 10 * minute ){
 			var counter = 0;
 			var min = -1,
 				max = 1,
@@ -1417,7 +1448,7 @@ angular.module( 'vgraph' ).controller( 'ExportCtrl',
 			});
 		}
 
-		for( var i = 100, c = 200; i < c; i += 4 ){
+		for( var i = start+86400000, c = stop+86400000; i <= c; i += 15 * minute ){
 			var counter = 0;
 			var min = -1,
 				max = 1,

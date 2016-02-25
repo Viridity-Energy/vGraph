@@ -811,6 +811,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 			}
 
 			this.settings.fitToPane = settings.fitToPane;
+			this.settings.adjustSettings = settings.adjustSettings;
 
 			this.page = page;
 			this.normalizeY = settings.normalizeY;
@@ -1736,6 +1737,10 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 				old.padding = settings.padding;
 			}
 
+			if ( settings.tick ){
+				old.tick = settings.tick;
+			}
+
 			return old;
 		}
 
@@ -1813,7 +1818,6 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 					normalizer.addPropertyCopy( name );
 				});
 			}else if ( ref.requirements !== null ){
-				console.log('->',ref.field);
 				normalizer.addPropertyCopy( ref.field );
 			}
 
@@ -1988,6 +1992,7 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 
 					if ( this.adjustSettings ){
 						this.adjustSettings(
+							this.x,
 							this.filtered.$maxIndex - this.filtered.$minIndex,
 							max - min,
 							raw.$maxIndex - raw.$minIndex

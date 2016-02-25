@@ -83,6 +83,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 			}
 
 			this.settings.fitToPane = settings.fitToPane;
+			this.settings.adjustSettings = settings.adjustSettings;
 
 			this.page = page;
 			this.normalizeY = settings.normalizeY;
