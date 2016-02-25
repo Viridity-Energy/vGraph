@@ -669,6 +669,88 @@ angular.module( 'vgraph' ).controller( 'CompareCtrl',
 	}]
 );
 
+angular.module( 'vgraph' ).controller( 'Compare2Ctrl',
+	['$scope',
+	function( $scope ){
+		var data1 = [ {x: 0, y: 20} ],
+			data2 = [ {x: 2000, y: 30} ];
+
+		$scope.graph = {
+			views: {
+				first: {
+					manager: 'first',
+					x: {
+						min: -100,
+						max: 2100
+					}
+				},
+				second: {
+					manager: 'second',
+					x: {
+						min: 1900,
+						max: 4100
+					}
+				}
+			}
+		};
+
+		$scope.page = [{
+			src: data1,
+			manager: 'first',
+			interval: 'x',
+			readings:{
+				'y': 'y'
+			}
+		},{
+			src: data2,
+			manager: 'second',
+			interval: 'x',
+			readings:{
+				'y': 'y'
+			}
+		}];
+
+		$scope.formatter = function( point ){
+			if ( point ){
+				return point.compare.diff;
+			}
+		};
+
+		$scope.getX = function( point ){
+			if ( point ){
+				return point.compare.x;
+			}
+		};
+
+		$scope.getY = function( point ){
+			if ( point ){
+				return point.compare.y;
+			}
+		};
+
+		// x is the interval, y is the function pulling the value
+		$scope.config = [
+			{ name : 'y1', field:'y', view:'first', className : 'red' },
+			{ name : 'y2', field:'y', view:'second', className : 'blue' }
+		];
+
+		var min = -1,
+			max = 1
+
+		for( var i = 0, c = 2000; i < c; i++ ){
+			data1.push({
+				x : i,
+				y : data1[data1.length-1].y + Math.random() * (max - min) + min
+			});
+
+			data2.push({
+				x : i + 2000,
+				y : data2[data2.length-1].y + Math.random() * (max - min) + min
+			});
+		}
+	}]
+);
+
 angular.module( 'vgraph' ).controller( 'MultiAxisCtrl',
 	['$scope', 
 	function( $scope ){
@@ -1168,6 +1250,182 @@ angular.module( 'vgraph' ).controller( 'IconCtrl',
 			data.push({
 				x : data.length,
 				y1 : data[data.length-1].y1 + t
+			});
+		}
+	}]
+);
+
+angular.module( 'vgraph' ).controller( 'ExportCtrl',
+	['$scope',
+	function( $scope ){
+		var ref1 = {
+				name: 'someLine1',
+				view: 'firstView',
+				className: 'red'
+			},
+			ref2 = {
+				name: 'someLine2',
+				view: 'secondView',
+				className: 'blue'
+			},
+			ref3 = {
+				name: 'someLine3',
+				view: 'thirdView',
+				className: 'green'
+			},
+			ref4 = {
+				name: 'someLine4',
+				view: 'fourthView',
+				className: 'orange'
+			},
+			data1 = [ {x : 0, y : 20}  ],
+			data2 = [ {x : 0, y : 20}  ],
+			data3 = [ {x : 0, y : 20}  ],
+			data4 = [ {x : 100, y : 20}  ];
+
+		$scope.exports = {
+			default: function( graph ){
+				var data = graph.export([
+					{ title: 'time 1', reference: 'someLine1', field: '_$index' },
+					{ title: 'field 1', reference: 'someLine1' },
+					{ title: 'field 2', reference: 'someLine2', format: function(v){ return (+v).toFixed(2) } },
+					{ title: 'field 3', reference: 'someLine3' },
+					{ title: 'time 4', reference: 'someLine4', field: '_$index' },
+					{ title: 'field 4', reference: 'someLine4' }
+				]);
+
+				return {
+					data: data,
+					name: 'someFile.csv'
+				};
+			}
+		};
+		$scope.graph = {
+			x : {
+				min: -5,
+				max: 25,
+				scale: function(){ return d3.scale.linear(); }
+			},
+			y : {
+				padding : 0.05,
+				format: function( y ){
+					return ':' + y;
+				}
+			},
+			views: { 
+				'firstView': {
+					x: {
+						min : 0, 
+						max : 100
+					},
+					manager: 'first'
+				},
+				'secondView': {
+					x: {
+						min : 0, 
+						max : 100
+					},
+					manager: 'second'
+				},
+				'thirdView': {
+					x: {
+						min : 0, 
+						max : 100
+					},
+					manager: 'third'
+				},
+				'fourthView': {
+					x: {
+						min : 100, 
+						max : 200
+					},
+					manager: 'fourth'
+				}
+			}
+		};
+
+		$scope.page = [{
+			src: data1,
+			interval: 'x',
+			manager: 'first',
+			readings:{
+				'someLine1': 'y'
+			}
+		},{
+			src: data2,
+			interval: 'x',
+			manager: 'second',
+			readings:{
+				'someLine2': 'y'
+			}
+		},{
+			src: data3,
+			interval: 'x',
+			manager: 'third',
+			readings:{
+				'someLine3': 'y'
+			}
+		},{
+			src: data4,
+			interval: 'x',
+			manager: 'fourth',
+			readings:{
+				'someLine4': 'y'
+			}
+		}];
+
+		$scope.config = [
+			ref1,
+			ref2,
+			ref3,
+			ref4
+		];
+
+		for( var i = 0, c = 100; i < c; i += 1 ){
+			var counter = 0;
+			var min = -1,
+				max = 1,
+				t = Math.random() * (max - min) + min;
+
+			data1.push({
+				x : i,
+				y : data1[data1.length-1].y + t
+			});
+		}
+
+		for( var i = 0, c = 100; i < c; i += 2 ){
+			var counter = 0;
+			var min = -1,
+				max = 1,
+				t = Math.random() * (max - min) + min;
+
+			data2.push({
+				x : i,
+				y : data2[data2.length-1].y + t
+			});
+		}
+
+		for( var i = 0, c = 100; i < c; i += 3 ){
+			var counter = 0;
+			var min = -1,
+				max = 1,
+				t = Math.random() * (max - min) + min;
+
+			data3.push({
+				x : i,
+				y : data3[data3.length-1].y + t
+			});
+		}
+
+		for( var i = 100, c = 200; i < c; i += 4 ){
+			var counter = 0;
+			var min = -1,
+				max = 1,
+				t = Math.random() * (max - min) + min;
+
+			data4.push({
+				x : i,
+				y : data4[data4.length-1].y + t
 			});
 		}
 	}]

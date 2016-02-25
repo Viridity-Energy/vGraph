@@ -74,6 +74,40 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 			return parseSettings( settings, old );
 		};
 
+		ComponentView.prototype.getBounds = function(){
+			var i, c,
+				t,
+				diff,
+				last,
+				interval,
+				data = this.manager.data;
+
+			data.$sort();
+
+			if ( this.x.interval ){
+				interval = this.x.interval;
+			}else{
+				last = data[1]._$index;
+				interval = last - data[0]._$index;
+				for( i = 2, c = data.length; i < c; i++ ){
+					t = data[i]._$index;
+					diff = t - last;
+					
+					if ( diff < interval ){
+						interval = diff;
+					}
+
+					last = t;
+				}
+			}
+
+			return {
+				min: this.x.min !== undefined ? this.x.min : data[0]._$index,
+				max: this.x.max !== undefined ? this.x.max : data[data.length-1]._$index,
+				interval: interval
+			};
+		};
+
 		function loadRefence( ref, normalizer ){
 			if ( ref.normalizerMap ){
 				normalizer.addPropertyMap( ref.normalizerMap );
@@ -84,7 +118,8 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 					normalizer.addPropertyCopy( name );
 				});
 			}else if ( ref.requirements !== null ){
-				normalizer.addPropertyCopy( ref.name );
+				console.log('->',ref.field);
+				normalizer.addPropertyCopy( ref.field );
 			}
 
 			if ( ref.normalizerFinalize ){
@@ -295,73 +330,6 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 			return this.normalizer.$getClosest( pos, '$x' );
 		};
 
-		/*
-		ComponentView.prototype.publishStats = function(){
-			var i,
-				s,
-				data = this.dataModel.data,
-				step = this.pane.x.$max || 9007199254740991, // max safe int
-				count = data.length;
-
-			for( i = 1; i < count; i++ ){
-				s = data[i].$x - data[i-1].$x;
-				if ( step > s ){
-					step = s;
-				}
-			}
-
-			return {
-				step: step,
-				count: data.length,
-				bound: {
-					min: this.pane.x.$min,
-					max: this.pane.x.$max
-				},
-				data: {
-					min: this.dataModel.x.$min,
-					max: this.dataModel.x.$max
-				}
-			};
-		};
-
-		ComponentView.prototype.publishData = function( content, conf, calcPos ){
-			publish( this.rawContainer.data, conf.name, content, calcPos, conf.format );
-		};
-
-		function fill( content, start, stop, value ){
-			while ( start < stop ){
-				content[start].push( value );
-				start++;
-			}
-		}
-		
-		function publish( data, name, content, calcPos, format ){
-			var i, c,
-				value,
-				pos,
-				last = 0;
-
-			for( i = 0, c = data.length; i < c; i++ ){
-				value = data[i][name];
-
-				if ( value !== undefined && value !== null ){
-					pos = calcPos( data[i] );
-					if ( pos !== last ){
-						fill( content, last, pos, null );
-					}
-
-					if ( format ){
-						value = format( value );
-					}
-					content[pos].push( value );
-
-					last = pos + 1;
-				}
-			}
-
-			fill( content, last, content.length, null );
-		}
-		*/
 		return ComponentView;
 	}]
 );

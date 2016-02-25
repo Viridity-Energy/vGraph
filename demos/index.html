@@ -171,6 +171,8 @@
 				ng-click="boxes = !boxes"/></label>
 			<label>Icons<input type='checkbox' ng-checked="icons" 
 				ng-click="icons = !icons"/></label>
+			<label>Export<input type='checkbox' ng-checked="export" 
+				ng-click="export = !export"/></label>
 		</section>
 
 		<div ng-if="simple" ng-controller="FloodCtrl">
@@ -613,6 +615,7 @@
 		<section ng-if="compare">
 			<h5>Comparison</h5>
 			<div ng-controller="CompareCtrl">
+				<b>Same Intervals</b>
 				<div vgraph-page="page">
 					<div vgraph-chart="graph">
 						<span vgraph-highlight="point">
@@ -626,6 +629,24 @@
 							<g vgraph-target="config" point-radius="5"></g>
 							<g vgraph-tooltip="config"
 								reference="compare"></g>
+
+							<g vgraph-interact="highlight"></g>
+						</svg>
+					<div>
+				</div>
+			</div>
+
+			<div ng-controller="Compare2Ctrl">
+				<b>Different Intervals</b>
+				<div vgraph-page="page">
+					<div vgraph-chart="graph">
+						<pre vgraph-highlight="point">{{ point }}</pre>
+						<svg>
+							<g vgraph-compare config1="config[0]" config2="config[1]" reference="compare"></g>
+							<g ng-repeat="cfg in config" vgraph-line="cfg"></g>
+							
+							<g vgraph-target="config" point-radius="5"></g>
+							<g vgraph-tooltip="config" reference="compare"></g>
 
 							<g vgraph-interact="highlight"></g>
 						</svg>
@@ -875,6 +896,43 @@
 
 						<g vgraph-interact></g>
 					</svg>
+				</section>
+			</div>
+		</div>
+
+		<div ng-if="export" ng-controller="ExportCtrl">
+			<h5>export</h5>
+			<div vgraph-page="page">
+				<section vgraph-chart="graph">
+					<div vgraph-highlight="point">
+						{{point.default.someLine1}} : {{point.default._$index}}
+					</div>
+					<svg>
+						<g vgraph-axis="'left'"
+							view="firstView"
+							axis-label="'foo'"
+							label-offset="50"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'top'"
+							view="fourthView"
+							axis-label="'bar'"
+							label-offset="40"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'bottom'"
+							view="firstView"
+							axis-label="woot"
+							tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+
+						<path vgraph-line="config[0]"></path>
+						<path vgraph-line="config[1]"></path>
+						<path vgraph-line="config[2]"></path>
+						<path vgraph-line="config[3]"></path>
+
+						<g vgraph-target="config" point-radius="4"></g>
+
+						<g vgraph-interact></g>
+					</svg>
+					<span vgraph-export="exports"></span>
 				</section>
 			</div>
 		</div>

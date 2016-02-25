@@ -28,7 +28,7 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 				var i, c;
 
 				for( i = 0, c = config.length; i < c; i++ ){
-					config[i].field = config[i].name;
+					config[i].$reset();
 				}
 			},
 			$getFields: function( config ){
