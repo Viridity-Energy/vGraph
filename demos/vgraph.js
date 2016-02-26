@@ -487,6 +487,48 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 				return nameAs;
 			},
 			*/
+			maximums : function( count, getValue, attr ){
+				var i,
+					maxs;
+
+				return {
+					prep: function(){
+						maxs = [];
+					},
+					calc: function( node ){
+						var v = getValue(node);
+
+						if ( maxs.length < count ){
+							maxs.push( {value: v, node: node} );
+
+							if ( maxs.length === count ){
+								maxs.sort(function(a,b){ return a.value - b.value; });
+							}
+						}else if ( v > maxs[0].value ){
+							maxs.shift();
+
+							if ( maxs[0].value > v ){
+								maxs.unshift( {value: v, node: node} );
+							}else if ( maxs[maxs.length-1].value < v ){
+								maxs.push( {value: v, node: node} );
+							}else{
+								for( i = maxs.length-2; i > 0; i-- ){
+									if ( maxs[i].value < v ){
+										maxs.splice( i+1, 0, {value: v, node: node} );
+										i = 0;
+									}
+								}
+							}
+						}
+					},
+					finalize: function(){
+						maxs.forEach(function( n ){
+							n.node[attr] = true;
+							console.log( n.node );
+						});
+					}
+				};
+			},
 			stack: function( config ){
 				var i, c,
 					j, co,
@@ -1826,6 +1868,55 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 			}
 		}
 
+		function stackFunc( old, fn ){
+			if ( !fn ){
+				return old;
+			}
+			if ( !old ){
+				return fn;
+			}else{
+				return function( node ){
+					old( node );
+					fn( node );
+				};
+			}
+		}
+
+		function formatCalculations( calculations ){
+			var prep,
+				calc,
+				finalize;
+
+			calculations.forEach(function( fn ){
+				if ( angular.isFunction(fn) ){
+					calc = stackFunc( calc, fn );
+				}else{
+					// assume object
+					prep = stackFunc( prep, fn.prep );
+					calc = stackFunc( calc, fn.calc );
+					finalize = stackFunc( finalize, fn.finalize );
+				}
+			});
+
+			return function viewCalulator( collection ){
+				var i, c;
+
+				if ( prep ){
+					prep();
+				}
+
+				if ( calc ){
+					for( i = 0, c = collection.length; i < c; i++ ){
+						calc( collection[i] );
+					}
+				}
+
+				if ( finalize ){
+					finalize();
+				}
+			};
+		}
+
 		ComponentView.prototype.configure = function( settings, chartSettings, box, page ){
 			var normalizer,
 				refs = this.references,
@@ -1843,6 +1934,10 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 				new DataNormalizer(function(index){
 					return Math.round(index);
 				});
+
+			if ( settings.calculations ){
+				this.calculations = formatCalculations(settings.calculations);
+			}
 
 			refNames.forEach(function( name ){
 				loadRefence( refs[name], normalizer );
@@ -1969,6 +2064,10 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 
 				this.setViewportIntervals( this.offset.$left, this.offset.$right );
 				this.normalizer.$reindex( this.filtered, scale );
+
+				if ( this.calculations ){
+					this.calculations( this.normalizer );
+				}
 
 				this.components.forEach(function( component ){
 					var t;

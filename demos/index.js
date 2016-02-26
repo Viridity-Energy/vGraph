@@ -1461,3 +1461,66 @@ angular.module( 'vgraph' ).controller( 'ExportCtrl',
 		}
 	}]
 );
+
+angular.module( 'vgraph' ).controller( 'StatsCtrl',
+	['$scope', 'StatCalculations',
+	function( $scope, StatCalculations ){
+		var data = [ {x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40}  ];
+
+		$scope.graph = {
+			x : {
+				min: -5,
+				max: 105,
+				scale: function(){ return d3.scale.linear(); }
+			},
+			y : {
+				padding : 0.05,
+				format: function( y ){
+					return ':' + y;
+				}
+			},
+			views: {
+				'default': {
+					calculations: [
+						StatCalculations.maximums( 4, function(d){ return d.someLine1; }, 'max' )
+					]
+				}
+			}
+		};
+
+		$scope.page = [{
+			src: data,
+			interval: 'x',
+			readings:{
+				'someLine1': 'y1'
+			}
+		}];
+
+		$scope.config = [
+			{
+				name: 'someLine1',
+				className: 'red',
+				classify: function( node ){
+					if ( node.max ){
+						return {
+							'high-value': true
+						};
+					}
+				},
+				
+			}
+		];
+
+		for( var i = 0, c = 100; i < c; i++ ){
+			var counter = 0;
+			var min = -1,
+				max = 1,
+				t = Math.random() * (max - min) + min;
+
+			data.push({
+				x : data.length,
+				y1 : data[data.length-1].y1 + t
+			});
+		}
+	}]
+);

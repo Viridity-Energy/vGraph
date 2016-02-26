@@ -98,6 +98,48 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 				return nameAs;
 			},
 			*/
+			maximums : function( count, getValue, attr ){
+				var i,
+					maxs;
+
+				return {
+					prep: function(){
+						maxs = [];
+					},
+					calc: function( node ){
+						var v = getValue(node);
+
+						if ( maxs.length < count ){
+							maxs.push( {value: v, node: node} );
+
+							if ( maxs.length === count ){
+								maxs.sort(function(a,b){ return a.value - b.value; });
+							}
+						}else if ( v > maxs[0].value ){
+							maxs.shift();
+
+							if ( maxs[0].value > v ){
+								maxs.unshift( {value: v, node: node} );
+							}else if ( maxs[maxs.length-1].value < v ){
+								maxs.push( {value: v, node: node} );
+							}else{
+								for( i = maxs.length-2; i > 0; i-- ){
+									if ( maxs[i].value < v ){
+										maxs.splice( i+1, 0, {value: v, node: node} );
+										i = 0;
+									}
+								}
+							}
+						}
+					},
+					finalize: function(){
+						maxs.forEach(function( n ){
+							n.node[attr] = true;
+							console.log( n.node );
+						});
+					}
+				};
+			},
 			stack: function( config ){
 				var i, c,
 					j, co,

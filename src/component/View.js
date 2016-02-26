@@ -130,6 +130,55 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 			}
 		}
 
+		function stackFunc( old, fn ){
+			if ( !fn ){
+				return old;
+			}
+			if ( !old ){
+				return fn;
+			}else{
+				return function( node ){
+					old( node );
+					fn( node );
+				};
+			}
+		}
+
+		function formatCalculations( calculations ){
+			var prep,
+				calc,
+				finalize;
+
+			calculations.forEach(function( fn ){
+				if ( angular.isFunction(fn) ){
+					calc = stackFunc( calc, fn );
+				}else{
+					// assume object
+					prep = stackFunc( prep, fn.prep );
+					calc = stackFunc( calc, fn.calc );
+					finalize = stackFunc( finalize, fn.finalize );
+				}
+			});
+
+			return function viewCalulator( collection ){
+				var i, c;
+
+				if ( prep ){
+					prep();
+				}
+
+				if ( calc ){
+					for( i = 0, c = collection.length; i < c; i++ ){
+						calc( collection[i] );
+					}
+				}
+
+				if ( finalize ){
+					finalize();
+				}
+			};
+		}
+
 		ComponentView.prototype.configure = function( settings, chartSettings, box, page ){
 			var normalizer,
 				refs = this.references,
@@ -147,6 +196,10 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 				new DataNormalizer(function(index){
 					return Math.round(index);
 				});
+
+			if ( settings.calculations ){
+				this.calculations = formatCalculations(settings.calculations);
+			}
 
 			refNames.forEach(function( name ){
 				loadRefence( refs[name], normalizer );
@@ -273,6 +326,10 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 
 				this.setViewportIntervals( this.offset.$left, this.offset.$right );
 				this.normalizer.$reindex( this.filtered, scale );
+
+				if ( this.calculations ){
+					this.calculations( this.normalizer );
+				}
 
 				this.components.forEach(function( component ){
 					var t;
