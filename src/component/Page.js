@@ -19,7 +19,9 @@ angular.module( 'vgraph' ).factory( 'ComponentPage',
 		ComponentPage.prototype.configure = function( settings ){
 			var i, c,
 				key,
-				keys;
+				keys,
+				info,
+				manager;
 
 			if ( angular.isArray(settings) ){
 				for( i = 0, c = settings.length; i < c; i++ ){
@@ -29,9 +31,16 @@ angular.module( 'vgraph' ).factory( 'ComponentPage',
 				keys = Object.keys(settings.managers);
 				for( i = 0, c = keys.length; i < c; i++ ){
 					key = keys[i];
-					this.getManager(key).$fillPoints( 
-						settings.managers[key]
-					);
+					info = settings.managers[key];
+					manager = this.getManager(key);
+
+					if ( info.fill ){
+						manager.fillPoints( info.fill );
+					}
+
+					if ( info.calculations ){
+						manager.setCalculations( info.calculations );
+					}
 				}
 
 				for( i = 0, c = settings.feeds.length; i < c; i++ ){
