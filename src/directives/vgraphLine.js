@@ -18,19 +18,16 @@ angular.module( 'vgraph' ).directive( 'vgraphLine',
 					cfg = chart.compileReference( scope.config ),
 					element = requirements[1];
 
+				element.setChart( el );
 				element.setElement( el );
 
 				if ( attrs.pair ){
 					pair = chart.compileReference( scope.pair );
 					className = 'fill ';
-					element.setDrawer(
-						new DrawFill( cfg, pair )
-					);
+					element.setDrawer( new DrawFill(cfg,pair) );
 				}else{
 					className = 'line ';
-					element.setDrawer(
-					   new DrawLine(cfg)
-					);
+					element.setDrawer( new DrawLine(cfg) );
 				}
 
 				if ( cfg.classExtend ){

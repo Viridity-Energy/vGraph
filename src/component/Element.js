@@ -18,7 +18,13 @@ angular.module( 'vgraph' ).factory( 'ComponentElement',
 			root.innerHTML = '';
 			
 			for( i = children.length - 1; i !== -1; i-- ){
-				element.register( dataSets[i], children[i] );
+				if ( element.drawer.getHitbox ){
+					element.chart.addHitbox( 
+						element.drawer.getHitbox(dataSets[i]),
+						children[i]
+					);
+				}
+				
 				root.appendChild( children[i] );
 			}
 		}
@@ -29,6 +35,10 @@ angular.module( 'vgraph' ).factory( 'ComponentElement',
 
 		ComponentElement.svgCompile = svgCompile;
 		
+		ComponentElement.prototype.setChart = function( chart ){
+			this.chart = chart;
+		};
+
 		ComponentElement.prototype.setElement = function( domNode ){
 			this.element = domNode;
 		};

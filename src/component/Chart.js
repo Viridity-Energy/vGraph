@@ -83,6 +83,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 			}
 
 			this.settings.fitToPane = settings.fitToPane;
+			this.settings.adjustSettings = settings.adjustSettings;
 
 			this.page = page;
 			this.normalizeY = settings.normalizeY;
@@ -158,15 +159,24 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 		var cfgUid = 0;
 
 		ComponentChart.prototype.getReference = function( refDef ){
-			var ref = this.references[refDef.name];
+			var ref,
+				name;
+
+			if ( angular.isString(refDef) ){
+				name = refDef;
+			}else{
+				name = refDef.name;
+			}
+
+			ref = this.references[name];
 
 			if ( !ref ){
 				ref = {
 					$uid: cfgUid++,
-					name: refDef.name,
-					className: refDef.className ? refDef.className : 'node-'+refDef.name
+					name: name,
+					className: refDef.className ? refDef.className : 'node-'+name
 				};
-				this.references[refDef.name] = ref;
+				this.references[name] = ref;
 			}
 
 			return ref;
@@ -181,7 +191,16 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 
 			ref = this.getReference( refDef );
 
-			ref.field = ref.name;
+			if ( !refDef.field ){
+				ref.field = ref.name;
+			}else{
+				ref.field = refDef.field;
+			}
+			
+			ref._field = ref.field;
+			ref.$reset = function(){
+				ref.field = ref._field;
+			};
 
 			if ( refDef.getValue === undefined ){
 				ref.getValue = function( d ){
@@ -306,7 +325,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 
 			schedule.startScript( this.$vguid );
 
-			this.configureHitbox();
+			this.configureHitarea();
 			
 			if ( this.loading ){
 				dis.$trigger('loading');
@@ -429,7 +448,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 			var dis = this,
 				settings = this.settings,
 				viewModel = this.getView( viewName );
-
+			
 			viewModel.configure(
 				viewSettings,
 				settings,
@@ -476,7 +495,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 			this.components.push(component);
 		};
 
-		ComponentChart.prototype.configureHitbox = function(){
+		ComponentChart.prototype.configureHitarea = function(){
 			var box = this.box;
 
 			this.hitbox = new Hitbox(
@@ -488,9 +507,9 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 			);
 		};
 
-		ComponentChart.prototype.registerElement = function( info, element ){
+		ComponentChart.prototype.addHitbox = function( info, element ){
 			info.$element = element;
-
+			// to override default hit box, pass in info{ intersect, intersectX, intersectY }, look at Hitbox
 			this.hitbox.add( info );
 		};
 		
@@ -501,7 +520,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 
 			this.unlightElements();
 
-			domHelper.addClass( vertical, 'highlight-vertical' );
+			domHelper.addClass( vertical, 'highlight-vertical' ).bringForward( vertical );
 			domHelper.addClass( horizontal, 'highlight-horizontal' );
 			domHelper.addClass( intersections, 'highlight' );
 
@@ -555,96 +574,94 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 		};
 
 		/*
-		function reduce( arr, target ){
-			var ar,
-				i, c,
-				j, co;
+			expected format
+			{
+				title - heading
+				field - optional
+				reference - name of reference to use as basis
+			}
+		*/
+		function makeArray( size ){
+			var i = 0,
+				arr = [];
+
+			while( i < size ){
+				arr.push( [] );
+				i++;
+			}
+
+			return arr;
+		}
+
+		function addColumn( arr ){
+			var i, c;
 
 			for( i = 0, c = arr.length; i < c; i++ ){
-				ar = arr[i];
+				arr[i].push( null );
+			}
+		}
 
-				for( j = 0, co = ar.length; j < co; j++ ){
-					if ( ar[j] !== null ){
-						target[i].unshift( ar[j] );
-						j = co;
+		ComponentChart.prototype.export = function( config ){
+			var diff,
+				content,
+				interval,
+				headers = config.map(function(m){ return m.title; }),
+				getReference = this.getReference.bind(this);
+
+			config.forEach(function( ref ){
+				var t;
+
+				ref.$link = getReference( ref.reference );
+				ref.$view = ref.$link.$view;
+				t = ref.$view.getBounds();
+				ref.$bounds = t;
+
+				if ( diff ){
+					if ( diff < t.max - t.min ){
+						diff = t.max - t.min;
+					}
+
+					if ( interval > t.interval ){
+						interval = t.interval;
+					}
+				}else{
+					diff = t.max - t.min;
+					interval = t.interval;
+				}
+			});
+
+			content = makeArray( Math.ceil(diff/interval) );
+
+			config.forEach(function( ref ){
+				var i,
+					t,
+					pos,
+					min = ref.$bounds.min,
+					max = min + diff,
+					interval = ref.$bounds.interval;
+
+				pos = content[0].length;
+				addColumn(content);
+
+				for( i = min; i <= max; i += interval ){
+					t = ref.$view.manager.data.$getNode( i );
+					if ( t ){
+						t = t[ ref.field ? ref.field : ref.reference ];
+
+						if ( ref.format ){
+							t = ref.format( t );
+						}
+
+						content[ Math.floor((i-min)/(max-min)*diff+0.5) ][ pos ] = t;
 					}
 				}
-			}
-		}
-
-		function publish( config, views, stats, width, size ){
-			var i,
-				headers = [],
-				content = [];
-
-			for( i = 0; i < size; i++ ){
-				content.push([]);
-			}
-			content.push([]); // size is the limit, so it needs one more
-
-			angular.forEach( config, function( conf ){
-				var view = views[conf.view],
-					stat = stats[view.name];
-
-				headers.push( conf.label );
-				view.publishData( content, conf, function(p){
-					return Math.round( (p.$x-stat.data.min) / width * size );
-				});
 			});
 
-			return {
-				header: headers,
-				body: content
-			};
-		}
+			content.unshift( headers );
 
-		ComponentChart.prototype.publish = function( config, index ){
-			var width,
-				size,
-				step,
-				views = {},
-				stats = {},
-				content;
-
-			angular.forEach( config, function( conf ){
-				var view = this.views[conf.view];
-				if ( view && !views[view.name] ){
-					views[view.name] =  view;
-				}
-			}, this );
-
-			// this assumes each interval is the same units
-			angular.forEach( views, function( view ){
-				var stat = view.publishStats(),
-					s = stat.data.max-stat.data.min;
-				// expect min, max, step
-
-				stats[view.name] = stat;
-
-				if ( !width || s > width ){
-					width = s;
-				}
-
-				if ( !step || stat.step < step ){
-					step = stat.step;
-				}
-			});
-
-			size = Math.ceil( width / step );
-
-			content = publish( config, views, stats, width, size );
-			if ( index ){
-				index = publish( index, views, stats, width, size );
-				reduce( index.body, content.body );
-				content.header.unshift( index.header[0] );
-			}
-
-			content.body.unshift( content.header );
-
-			return content.body;
+			return content;
 		};
-		*/
 
 		return ComponentChart;
-	} ]
+	}]
 );

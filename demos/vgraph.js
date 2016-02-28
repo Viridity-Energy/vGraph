@@ -18,6 +18,18 @@ angular.module( 'vgraph' ).factory( 'DomHelper',
 		}
 		
 		return {
+			bringForward: function( elements ){
+				var i, c,
+					el;
+
+				for( i = 0, c = elements.length; i < c; i++ ){
+					el = elements[i].$element;
+
+					el.parentNode.appendChild( el );
+				}
+
+				return this;
+			},
 			addClass: function( elements, className ){
 				var i, c,
 					el,
@@ -33,6 +45,8 @@ angular.module( 'vgraph' ).factory( 'DomHelper',
 						el.setAttribute( 'class', baseClass+' '+className );
 					}
 				}
+
+				return this;
 			},
 			removeClass: function( elements, className ){
 				var i, c,
@@ -46,6 +60,8 @@ angular.module( 'vgraph' ).factory( 'DomHelper',
 						(el.getAttribute('class')||'').replace( reg, '' )
 					);
 				}
+
+				return this;
 			}
 		};
 	}]
@@ -412,12 +428,75 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 			return arr;
 		}
 
+		function stackFunc( old, fn ){
+			if ( !fn ){
+				return old;
+			}
+			if ( !old ){
+				return fn;
+			}else{
+				return function( node ){
+					old( node );
+					fn( node );
+				};
+			}
+		}
+
+		function makeExtremeTest( compare ){
+			return function( count, getValue, attr ){
+				var i,
+					maxs;
+
+				return {
+					prep: function(){
+						maxs = [];
+					},
+					reset: function(){
+						maxs.forEach(function( n ){
+							n.node[attr] = false;
+						});
+					},
+					calc: function( node ){
+						var v = getValue(node);
+
+						if ( maxs.length < count ){
+							maxs.push( {value: v, node: node} );
+
+							if ( maxs.length === count ){
+								maxs.sort(function(a,b){ return a.value - b.value; });
+							}
+						}else if ( compare(v,maxs[0].value) ){
+							maxs.shift();
+
+							if ( compare(maxs[0].value,v) ){
+								maxs.unshift( {value: v, node: node} );
+							}else if ( compare(v,maxs[maxs.length-1].value) ){
+								maxs.push( {value: v, node: node} );
+							}else{
+								for( i = maxs.length-2; i >= 0; i-- ){
+									if ( compare(v,maxs[i].value) ){
+										maxs.splice( i+1, 0, {value: v, node: node} );
+										i = 0;
+									}
+								}
+							}
+						}
+					},
+					finalize: function(){
+						maxs.forEach(function( n ){
+							n.node[attr] = true;
+						});
+					}
+				};
+			};
+		}
+
 		return {
 			$resetCalcs: function( config ){
 				var i, c;
 
 				for( i = 0, c = config.length; i < c; i++ ){
-					config[i].field = config[i].name;
+					config[i].$reset();
 				}
 			},
 			$getFields: function( config ){
@@ -546,7 +625,7 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 				} else if ( cfg && cfg.getValue ){
 					// used to reduce the checks for parser
 					cfg.$eachNode(function(node){
-						v = cfg.getValue(node);
+						v = +cfg.getValue(node);
 						if ( isNumeric(v) ){
 							if ( min === undefined ){
 								min = v;
@@ -590,6 +669,55 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 				}
 
 				return indexs;
+			},
+			maximums : makeExtremeTest( function(a,b){ return a > b; } ),
+			minimums : makeExtremeTest( function(a,b){ return a < b; } ),
+			compileCalculations: function( calculations ){
+				var fn,
+					prep,
+					calc,
+					reset,
+					finalize;
+
+				calculations.forEach(function( fn ){
+					if ( angular.isFunction(fn) ){
+						calc = stackFunc( calc, fn );
+					}else{
+						// assume object
+						prep = stackFunc( prep, fn.prep );
+						calc = stackFunc( calc, fn.calc );
+						reset = stackFunc( reset, fn.reset );
+						finalize = stackFunc( finalize, fn.finalize );
+					}
+				});
+
+				fn = function viewCalulator( collection, stats ){
+					var i, c;
+
+					if ( calc ){
+						for( i = 0, c = collection.length; i < c; i++ ){
+							calc( collection[i] );
+						}
+					}
+
+					if ( finalize ){
+						finalize( stats );
+					}
+				};
+
+				fn.$reset = function(){
+					if ( reset ){
+						reset();
+					}
+				};
+
+				fn.$init = function(){
+					if ( prep ){
+						prep();
+					}
+				};
+
+				return fn;
 			}
 		};
 	}]
@@ -811,6 +939,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 			}
 
 			this.settings.fitToPane = settings.fitToPane;
+			this.settings.adjustSettings = settings.adjustSettings;
 
 			this.page = page;
 			this.normalizeY = settings.normalizeY;
@@ -886,15 +1015,24 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 		var cfgUid = 0;
 
 		ComponentChart.prototype.getReference = function( refDef ){
-			var ref = this.references[refDef.name];
+			var ref,
+				name;
+
+			if ( angular.isString(refDef) ){
+				name = refDef;
+			}else{
+				name = refDef.name;
+			}
+
+			ref = this.references[name];
 
 			if ( !ref ){
 				ref = {
 					$uid: cfgUid++,
-					name: refDef.name,
-					className: refDef.className ? refDef.className : 'node-'+refDef.name
+					name: name,
+					className: refDef.className ? refDef.className : 'node-'+name
 				};
-				this.references[refDef.name] = ref;
+				this.references[name] = ref;
 			}
 
 			return ref;
@@ -909,7 +1047,16 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 
 			ref = this.getReference( refDef );
 
-			ref.field = ref.name;
+			if ( !refDef.field ){
+				ref.field = ref.name;
+			}else{
+				ref.field = refDef.field;
+			}
+			
+			ref._field = ref.field;
+			ref.$reset = function(){
+				ref.field = ref._field;
+			};
 
 			if ( refDef.getValue === undefined ){
 				ref.getValue = function( d ){
@@ -1034,7 +1181,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 
 			schedule.startScript( this.$vguid );
 
-			this.configureHitbox();
+			this.configureHitarea();
 			
 			if ( this.loading ){
 				dis.$trigger('loading');
@@ -1157,7 +1304,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 			var dis = this,
 				settings = this.settings,
 				viewModel = this.getView( viewName );
-
+			
 			viewModel.configure(
 				viewSettings,
 				settings,
@@ -1204,7 +1351,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 			this.components.push(component);
 		};
 
-		ComponentChart.prototype.configureHitbox = function(){
+		ComponentChart.prototype.configureHitarea = function(){
 			var box = this.box;
 
 			this.hitbox = new Hitbox(
@@ -1216,9 +1363,9 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 			);
 		};
 
-		ComponentChart.prototype.registerElement = function( info, element ){
+		ComponentChart.prototype.addHitbox = function( info, element ){
 			info.$element = element;
-
+			// to override default hit box, pass in info{ intersect, intersectX, intersectY }, look at Hitbox
 			this.hitbox.add( info );
 		};
 		
@@ -1229,7 +1376,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 
 			this.unlightElements();
 
-			domHelper.addClass( vertical, 'highlight-vertical' );
+			domHelper.addClass( vertical, 'highlight-vertical' ).bringForward( vertical );
 			domHelper.addClass( horizontal, 'highlight-horizontal' );
 			domHelper.addClass( intersections, 'highlight' );
 
@@ -1283,98 +1430,96 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 		};
 
 		/*
-		function reduce( arr, target ){
-			var ar,
-				i, c,
-				j, co;
+			expected format
+			{
+				title - heading
+				field - optional
+				reference - name of reference to use as basis
+			}
+		*/
+		function makeArray( size ){
+			var i = 0,
+				arr = [];
+
+			while( i < size ){
+				arr.push( [] );
+				i++;
+			}
+
+			return arr;
+		}
+
+		function addColumn( arr ){
+			var i, c;
 
 			for( i = 0, c = arr.length; i < c; i++ ){
-				ar = arr[i];
+				arr[i].push( null );
+			}
+		}
 
-				for( j = 0, co = ar.length; j < co; j++ ){
-					if ( ar[j] !== null ){
-						target[i].unshift( ar[j] );
-						j = co;
+		ComponentChart.prototype.export = function( config ){
+			var diff,
+				content,
+				interval,
+				headers = config.map(function(m){ return m.title; }),
+				getReference = this.getReference.bind(this);
+
+			config.forEach(function( ref ){
+				var t;
+
+				ref.$link = getReference( ref.reference );
+				ref.$view = ref.$link.$view;
+				t = ref.$view.getBounds();
+				ref.$bounds = t;
+
+				if ( diff ){
+					if ( diff < t.max - t.min ){
+						diff = t.max - t.min;
+					}
+
+					if ( interval > t.interval ){
+						interval = t.interval;
+					}
+				}else{
+					diff = t.max - t.min;
+					interval = t.interval;
+				}
+			});
+
+			content = makeArray( Math.ceil(diff/interval) );
+
+			config.forEach(function( ref ){
+				var i,
+					t,
+					pos,
+					min = ref.$bounds.min,
+					max = min + diff,
+					interval = ref.$bounds.interval;
+
+				pos = content[0].length;
+				addColumn(content);
+
+				for( i = min; i <= max; i += interval ){
+					t = ref.$view.manager.data.$getNode( i );
+					if ( t ){
+						t = t[ ref.field ? ref.field : ref.reference ];
+
+						if ( ref.format ){
+							t = ref.format( t );
+						}
+
+						content[ Math.floor((i-min)/(max-min)*diff+0.5) ][ pos ] = t;
 					}
 				}
-			}
-		}
-
-		function publish( config, views, stats, width, size ){
-			var i,
-				headers = [],
-				content = [];
-
-			for( i = 0; i < size; i++ ){
-				content.push([]);
-			}
-			content.push([]); // size is the limit, so it needs one more
-
-			angular.forEach( config, function( conf ){
-				var view = views[conf.view],
-					stat = stats[view.name];
-
-				headers.push( conf.label );
-				view.publishData( content, conf, function(p){
-					return Math.round( (p.$x-stat.data.min) / width * size );
-				});
 			});
 
-			return {
-				header: headers,
-				body: content
-			};
-		}
+			content.unshift( headers );
 
-		ComponentChart.prototype.publish = function( config, index ){
-			var width,
-				size,
-				step,
-				views = {},
-				stats = {},
-				content;
-
-			angular.forEach( config, function( conf ){
-				var view = this.views[conf.view];
-				if ( view && !views[view.name] ){
-					views[view.name] =  view;
-				}
-			}, this );
-
-			// this assumes each interval is the same units
-			angular.forEach( views, function( view ){
-				var stat = view.publishStats(),
-					s = stat.data.max-stat.data.min;
-				// expect min, max, step
-
-				stats[view.name] = stat;
-
-				if ( !width || s > width ){
-					width = s;
-				}
-
-				if ( !step || stat.step < step ){
-					step = stat.step;
-				}
-			});
-
-			size = Math.ceil( width / step );
-
-			content = publish( config, views, stats, width, size );
-			if ( index ){
-				index = publish( index, views, stats, width, size );
-				reduce( index.body, content.body );
-				content.header.unshift( index.header[0] );
-			}
-
-			content.body.unshift( content.header );
-
-			return content.body;
+			return content;
 		};
-		*/
 
 		return ComponentChart;
-	} ]
+	}]
 );
 
 angular.module( 'vgraph' ).factory( 'ComponentElement',
@@ -1397,7 +1542,13 @@ angular.module( 'vgraph' ).factory( 'ComponentElement',
 			root.innerHTML = '';
 			
 			for( i = children.length - 1; i !== -1; i-- ){
-				element.register( dataSets[i], children[i] );
+				if ( element.drawer.getHitbox ){
+					element.chart.addHitbox( 
+						element.drawer.getHitbox(dataSets[i]),
+						children[i]
+					);
+				}
+				
 				root.appendChild( children[i] );
 			}
 		}
@@ -1408,6 +1559,10 @@ angular.module( 'vgraph' ).factory( 'ComponentElement',
 
 		ComponentElement.svgCompile = svgCompile;
 		
+		ComponentElement.prototype.setChart = function( chart ){
+			this.chart = chart;
+		};
+
 		ComponentElement.prototype.setElement = function( domNode ){
 			this.element = domNode;
 		};
@@ -1502,7 +1657,9 @@ angular.module( 'vgraph' ).factory( 'ComponentPage',
 		ComponentPage.prototype.configure = function( settings ){
 			var i, c,
 				key,
-				keys;
+				keys,
+				info,
+				manager;
 
 			if ( angular.isArray(settings) ){
 				for( i = 0, c = settings.length; i < c; i++ ){
@@ -1512,9 +1669,16 @@ angular.module( 'vgraph' ).factory( 'ComponentPage',
 				keys = Object.keys(settings.managers);
 				for( i = 0, c = keys.length; i < c; i++ ){
 					key = keys[i];
-					this.getManager(key).$fillPoints( 
-						settings.managers[key]
-					);
+					info = settings.managers[key];
+					manager = this.getManager(key);
+
+					if ( info.fill ){
+						manager.fillPoints( info.fill );
+					}
+
+					if ( info.calculations ){
+						manager.setCalculations( info.calculations );
+					}
 				}
 
 				for( i = 0, c = settings.feeds.length; i < c; i++ ){
@@ -1678,8 +1842,8 @@ angular.module( 'vgraph' ).factory( 'ComponentPane',
 	}]
 );
 angular.module( 'vgraph' ).factory( 'ComponentView',
-	[ 'ComponentPane', 'ComponentPage', 'DataNormalizer',
-	function ( ComponentPane, ComponentPage, DataNormalizer ) {
+	[ 'ComponentPane', 'ComponentPage', 'DataNormalizer', 'StatCalculations',
+	function ( ComponentPane, ComponentPage, DataNormalizer, StatCalculations ) {
 		'use strict';
 		
 		var id = 1;
@@ -1720,6 +1884,10 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 				old.padding = settings.padding;
 			}
 
+			if ( settings.tick ){
+				old.tick = settings.tick;
+			}
+
 			return old;
 		}
 
@@ -1753,6 +1921,40 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 			return parseSettings( settings, old );
 		};
 
+		ComponentView.prototype.getBounds = function(){
+			var i, c,
+				t,
+				diff,
+				last,
+				interval,
+				data = this.manager.data;
+
+			data.$sort();
+
+			if ( this.x.interval ){
+				interval = this.x.interval;
+			}else{
+				last = data[1]._$index;
+				interval = last - data[0]._$index;
+				for( i = 2, c = data.length; i < c; i++ ){
+					t = data[i]._$index;
+					diff = t - last;
+					
+					if ( diff < interval ){
+						interval = diff;
+					}
+
+					last = t;
+				}
+			}
+
+			return {
+				min: this.x.min !== undefined ? this.x.min : data[0]._$index,
+				max: this.x.max !== undefined ? this.x.max : data[data.length-1]._$index,
+				interval: interval
+			};
+		};
+
 		function loadRefence( ref, normalizer ){
 			if ( ref.normalizerMap ){
 				normalizer.addPropertyMap( ref.normalizerMap );
@@ -1763,7 +1965,7 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 					normalizer.addPropertyCopy( name );
 				});
 			}else if ( ref.requirements !== null ){
-				normalizer.addPropertyCopy( ref.name );
+				normalizer.addPropertyCopy( ref.field );
 			}
 
 			if ( ref.normalizerFinalize ){
@@ -1788,6 +1990,11 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 				new DataNormalizer(function(index){
 					return Math.round(index);
 				});
+
+			if ( settings.calculations ){
+				this.calculations = 
+					StatCalculations.compileCalculations(settings.calculations);
+			}
 
 			refNames.forEach(function( name ){
 				loadRefence( refs[name], normalizer );
@@ -1915,17 +2122,22 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 				this.setViewportIntervals( this.offset.$left, this.offset.$right );
 				this.normalizer.$reindex( this.filtered, scale );
 
+				if ( this.calculations ){
+					this.calculations.$init();
+					this.calculations( this.normalizer );
+				}
+
 				this.components.forEach(function( component ){
 					var t;
 
 					if ( component.parse ){
 						t = component.parse();
 						if ( t ){
-							if ( t.min !== null && (!min && min !== 0 || min > t.min) ){
+							if ( (t.min || t.min === 0) && (!min && min !== 0 || min > t.min) ){
 								min = t.min;
 							}
 
-							if ( t.max !== null && (!max && max !== 0 || max < t.max) ){
+							if ( (t.max || t.max === 0) && (!max && max !== 0 || max < t.max) ){
 								max = t.max;
 							}
 						}
@@ -1937,6 +2149,7 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 
 					if ( this.adjustSettings ){
 						this.adjustSettings(
+							this.x,
 							this.filtered.$maxIndex - this.filtered.$minIndex,
 							max - min,
 							raw.$maxIndex - raw.$minIndex
@@ -1974,73 +2187,6 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 			return this.normalizer.$getClosest( pos, '$x' );
 		};
 
-		/*
-		ComponentView.prototype.publishStats = function(){
-			var i,
-				s,
-				data = this.dataModel.data,
-				step = this.pane.x.$max || 9007199254740991, // max safe int
-				count = data.length;
-
-			for( i = 1; i < count; i++ ){
-				s = data[i].$x - data[i-1].$x;
-				if ( step > s ){
-					step = s;
-				}
-			}
-
-			return {
-				step: step,
-				count: data.length,
-				bound: {
-					min: this.pane.x.$min,
-					max: this.pane.x.$max
-				},
-				data: {
-					min: this.dataModel.x.$min,
-					max: this.dataModel.x.$max
-				}
-			};
-		};
-
-		ComponentView.prototype.publishData = function( content, conf, calcPos ){
-			publish( this.rawContainer.data, conf.name, content, calcPos, conf.format );
-		};
-
-		function fill( content, start, stop, value ){
-			while ( start < stop ){
-				content[start].push( value );
-				start++;
-			}
-		}
-		
-		function publish( data, name, content, calcPos, format ){
-			var i, c,
-				value,
-				pos,
-				last = 0;
-
-			for( i = 0, c = data.length; i < c; i++ ){
-				value = data[i][name];
-
-				if ( value !== undefined && value !== null ){
-					pos = calcPos( data[i] );
-					if ( pos !== last ){
-						fill( content, last, pos, null );
-					}
-
-					if ( format ){
-						value = format( value );
-					}
-					content[pos].push( value );
-
-					last = pos + 1;
-				}
-			}
-
-			fill( content, last, content.length, null );
-		}
-		*/
 		return ComponentView;
 	}]
 );
@@ -2565,7 +2711,7 @@ angular.module( 'vgraph' ).factory( 'DataLoader',
 
 			if ( !cfg.parseInterval ){
 				cfg.parseInterval = function( datum ){
-					return datum[ cfg.interval ];
+					return +datum[ cfg.interval ];
 				};
 			}
 
@@ -2614,32 +2760,29 @@ angular.module( 'vgraph' ).factory( 'DataLoader',
 	}]
 );
 angular.module( 'vgraph' ).factory( 'DataManager',
-	[ 'DataCollection',
-	function ( DataCollection ) {
+	[ 'DataCollection', 'StatCalculations',
+	function ( DataCollection, StatCalculations ) {
 		'use strict';
 
 		var uid = 1;
 
 		function DataManager(){
-			this.$$managerUid = uid++;
-
-			this.$dataProc = regulator( 20, 200, function( lm ){
-				var registrations = lm.registrations;
-
-				registrations.forEach(function( registration ){
-					registration();
-				});
-			});
-
-			this.construct();
-			this.reset();
-		}
-
-		DataManager.prototype.construct = function(){
 			var loaders = [];
 
 			this.registrations = [];
 			this.errorRegistrations = [];
+
+			this.$$managerUid = uid++;
+			this.$dataProc = regulator( 20, 200, function( dis ){
+				if ( dis.calculations ){
+					dis.calculations.$reset();
+					dis.calculations( dis.data );
+				}
+
+				dis.registrations.forEach(function( registration ){
+					registration();
+				});
+			});
 
 			this.getLoaders = function(){
 				return loaders;
@@ -2656,7 +2799,9 @@ angular.module( 'vgraph' ).factory( 'DataManager',
 					loaders.splice( dex, 1 );
 				}
 			};
-		};
+
+			this.reset();
+		}
 
 		DataManager.prototype.reset = function(){
 			this.data = new DataCollection();
@@ -2666,7 +2811,7 @@ angular.module( 'vgraph' ).factory( 'DataManager',
 		};
 		// expect a seed function to be defined
 
-		 DataManager.prototype.$fillPoints = function( ctrls ){
+		 DataManager.prototype.fillPoints = function( ctrls ){
 			var i, c,
 				prototype = ctrls.prototype;
 
@@ -2679,6 +2824,12 @@ angular.module( 'vgraph' ).factory( 'DataManager',
 			for( i = ctrls.start, c = ctrls.stop + ctrls.interval; i < c; i += ctrls.interval ){
 				this.data._register( i, Object.create(prototype) );
 			}
+		};
+
+		DataManager.prototype.setCalculations = function( calculations ){
+			this.calculations = StatCalculations.compileCalculations( calculations );
+
+			this.calculations.$init();
 		};
 
 		DataManager.prototype.setValue = function( interval, name, value ){
@@ -3058,6 +3209,10 @@ angular.module( 'vgraph' ).factory( 'DrawBar',
 			}
 		};
 		
+		DrawBar.prototype.getHitbox = function( dataSet ){
+			return dataSet;
+		};
+
 		return DrawBar;
 	}]
 );
@@ -3304,6 +3459,20 @@ angular.module( 'vgraph' ).factory( 'DrawDots',
 					'" cy="'+set.y+
 					'" r="'+this.radius+'"/>';
 			}
+		};
+
+		DrawDots.prototype.getHitbox = function( dataSet ){
+			var radius = this.radius;
+
+			return {
+				x1: dataSet.x - radius,
+				x2: dataSet.x + radius,
+				y1: dataSet.y - radius,
+				y2: dataSet.y + radius,
+				intersect: function( x, y ){
+					return Math.sqrt( Math.pow(dataSet.x-x,2) + Math.pow(dataSet.y-y,2) ) < radius;
+				}
+			};
 		};
 
 		return DrawDots;
@@ -4189,14 +4358,9 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
 					element = requirements[1],
 					className = 'bar ';
 
+				element.setChart( chart );
 				element.setElement( el );
-				element.setDrawer(
-					new DrawBar( cfg, pair, attrs.width )
-				);
-
-				element.register = function( data, element ){
-					chart.registerElement( data, element );
-				};
+				element.setDrawer( new DrawBar(cfg,pair,attrs.width) );
 
 				if ( cfg.classExtend ){
 					className += cfg.classExtend + ' ';
@@ -4233,12 +4397,9 @@ angular.module( 'vgraph' ).directive( 'vgraphBox',
 					element = requirements[1],
 					className = 'box ';
 
+				element.setChart( chart );
 				element.setElement( el );
 				element.setDrawer( new DrawBox(cfg) );
-
-				element.register = function( data, element ){
-					chart.registerElement( data, element );
-				};
 
 				if ( cfg.classExtend ){
 					className += cfg.classExtend + ' ';
@@ -4397,10 +4558,9 @@ angular.module( 'vgraph' ).directive( 'vgraphDots',
 					cfg = chart.compileReference( scope.config ),
 					element = requirements[1];
 
+				element.setChart( chart );
 				element.setElement( el );
-				element.setDrawer(
-					new DrawDots( cfg, attrs.radius ? parseInt(attrs.Radius,10) : 5 )
-				);
+				element.setDrawer( new DrawDots(cfg,attrs.radius?parseInt(attrs.Radius,10):5) );
 
 				className = 'point ';
 				if ( cfg.classExtend ){
@@ -4417,6 +4577,59 @@ angular.module( 'vgraph' ).directive( 'vgraphDots',
 	}]
 );
 
+angular.module( 'vgraph' ).directive( 'vgraphExport',
+	[ 
+	function(){
+		'use strict';
+		
+		function formatArray( arr ){
+			return arr.map(function( row ){
+				return '"'+row.join('","')+'"';
+			}).join('\n');
+		}
+
+		return {
+			require : ['^vgraphChart'],
+			scope: {
+				labels: '=?labels',
+				exports: '=vgraphExport',
+				options: '=?options',
+				selected: '=?selected'
+			},
+			template: 
+				'<select ng-model="selected" ng-options="opt as (labels[opt] || opt) for opt in options"></select>'+
+				'<a ng-click="process( exports[selected] )"><span>Export</span></a>',
+			link : function( $scope, el, attrs, requirements ){
+				if ( !$scope.options ){
+					$scope.options = Object.keys( $scope.exports );
+				}
+
+				if ( !$scope.selected ){
+					$scope.selected = $scope.options[0];
+				}
+
+				$scope.process = function( fn ){
+					var t = fn( requirements[0] ), // { data, name, charset }
+						blob = new Blob([formatArray(t.data)], {
+							type: 'text/csv;charset='+ (t.charset || 'utf-8')+ ';'
+						}),
+						downloadLink = angular.element('<a></a>');
+
+					downloadLink.attr( 'href', window.URL.createObjectURL(blob) );
+					downloadLink.attr( 'download', t.name );
+					downloadLink.attr( 'target', '_blank' );
+
+					angular.element(document.getElementsByTagName('body')[0]).append(downloadLink);
+
+					setTimeout(function () {
+						downloadLink[0].click();
+						downloadLink.remove();
+					}, 5);
+				};
+			}
+		};
+	}]
+);
 angular.module( 'vgraph' ).directive( 'vgraphFocus',
 	[
 	function(){
@@ -4566,10 +4779,9 @@ angular.module( 'vgraph' ).directive( 'vgraphIcon',
 
 				el.innerHTML = '';
 
+				element.setChart( chart );
 				element.setElement( el );
-				element.setDrawer(
-					new DrawIcon( cfg, box, content )
-				);
+				element.setDrawer( new DrawIcon(cfg,box,content) );
 
 				if ( cfg.classExtend ){
 					className += cfg.classExtend + ' ';
@@ -4938,19 +5150,16 @@ angular.module( 'vgraph' ).directive( 'vgraphLine',
 					cfg = chart.compileReference( scope.config ),
 					element = requirements[1];
 
+				element.setChart( el );
 				element.setElement( el );
 
 				if ( attrs.pair ){
 					pair = chart.compileReference( scope.pair );
 					className = 'fill ';
-					element.setDrawer(
-						new DrawFill( cfg, pair )
-					);
+					element.setDrawer( new DrawFill(cfg,pair) );
 				}else{
 					className = 'line ';
-					element.setDrawer(
-					   new DrawLine(cfg)
-					);
+					element.setDrawer( new DrawLine(cfg) );
 				}
 
 				if ( cfg.classExtend ){

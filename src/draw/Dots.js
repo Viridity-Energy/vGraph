@@ -63,6 +63,20 @@ angular.module( 'vgraph' ).factory( 'DrawDots',
 			}
 		};
 
+		DrawDots.prototype.getHitbox = function( dataSet ){
+			var radius = this.radius;
+
+			return {
+				x1: dataSet.x - radius,
+				x2: dataSet.x + radius,
+				y1: dataSet.y - radius,
+				y2: dataSet.y + radius,
+				intersect: function( x, y ){
+					return Math.sqrt( Math.pow(dataSet.x-x,2) + Math.pow(dataSet.y-y,2) ) < radius;
+				}
+			};
+		};
+
 		return DrawDots;
 	}]
 );
