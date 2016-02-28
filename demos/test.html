@@ -7,63 +7,39 @@
     <script src="vgraph.js"></script>
   </head>
   <body>
-    <div ng-app="test">
-        <some-directive>
-            <ol>
-                <li>{{ctrl.name}}</li>
-                <li>{{name}}</li>
-                <li>{{shit}}</li>
-            </ol>
-        </some-directive>
-    </div>
     <script>
-    var fn;
+    var i, c,
+      t,
+      content = [];
 
-    function maker( name ){
-      var ofn;
-
-      if ( fn ){
-        ofn = fn;
-        fn = function( n, o ){
-          o[name] = n[name];
-          ofn( n, o );
-        };
-      }else{
-        fn = function( n, o ){
-          o[name] = n[name];
-        }
-      }
+    for( i = 0, c = 1000000; i < c; i++ ){
+      content.push( {v:1} );
     }
 
-    maker( 'one' );
-    maker( 'two' );
-    maker( 'three' );
-
-    var i, time;
-
     time = +(new Date());
-    for( i = 0; i < 1000000; i++ ){
-      maker( {}, {} );
+    t = [];
+    for( i = 0, c = content.length; i < c; i++ ){
+     t.push( content[i] );
     }
     console.log( 'run 1', +(new Date()) - time );
+    console.log( t );
 
     time = +(new Date());
-    for( i = 0; i < 1000000; i++ ){
-      Object.create({})
+    t = []
+    for( i = 0, c = content.length; i < c; i++ ){
+      t[ t.length ] = content[i];
     }
     console.log( 'run 2', +(new Date()) - time );
+    console.log( t );
 
     time = +(new Date());
-    for( i = 0; i < 1000000; i++ ){
-      maker( {}, {} );
-    }
+    t = [1,2];
+    content.unshift( t.length );
+    content.unshift( 0 );
+    Array.prototype.splice.apply( t, content )
     console.log( 'run 3', +(new Date()) - time );
-
-    time = +(new Date());
-    for( i = 0; i < 1000000; i++ ){
-      Object.create({})
-    }
-    console.log( 'run 4', +(new Date()) - time );
+    console.log( t );
+    console.log( content );
 
     </script>
   </body>

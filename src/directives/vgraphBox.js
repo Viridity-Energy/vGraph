@@ -20,12 +20,9 @@ angular.module( 'vgraph' ).directive( 'vgraphBox',
 					element = requirements[1],
 					className = 'box ';
 
+				element.setChart( chart );
 				element.setElement( el );
 				element.setDrawer( new DrawBox(cfg) );
-
-				element.register = function( data, element ){
-					chart.registerElement( data, element );
-				};
 
 				if ( cfg.classExtend ){
 					className += cfg.classExtend + ' ';

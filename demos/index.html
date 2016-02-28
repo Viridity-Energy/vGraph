@@ -98,12 +98,6 @@
 			fill: orange;
 		}
 
-		.bar .highlight-vertical {
-			fill: pink;
-			stroke-width: 5;
-			stroke: pink;
-		}
-
 		rect.bar.active {
 			opacity: .5;
 		}
@@ -139,6 +133,29 @@
 		.point .high-value {
 			opacity: .5;
 		}
+
+		.bar .low-value,
+		.point .low-value {
+			stroke: black;
+		}
+
+		.bar .highlight-vertical,
+		.point .highlight-vertical {
+			stroke-width: 2;
+			stroke: pink;
+		}
+
+		.bar .highlight-horizontal,
+		.point .highlight-horizontal {
+			stroke-width: 2;
+			stroke: black;
+		}
+
+		.bar .highlight,
+		.point .highlight {
+			stroke-width: 2;
+			stroke: white;
+		}
 	</style>
 
 	<article ng-controller="AppCtrl">
@@ -171,6 +188,12 @@
 				ng-click="boxes = !boxes"/></label>
 			<label>Icons<input type='checkbox' ng-checked="icons" 
 				ng-click="icons = !icons"/></label>
+			<label>Export<input type='checkbox' ng-checked="export" 
+				ng-click="export = !export"/></label>
+			<label>Stats<input type='checkbox' ng-checked="stats" 
+				ng-click="stats = !stats"/></label>
+			<label>External<input type='checkbox' ng-checked="external" 
+				ng-click="external = !external"/></label>
 		</section>
 
 		<div ng-if="simple" ng-controller="FloodCtrl">
@@ -613,6 +636,7 @@
 		<section ng-if="compare">
 			<h5>Comparison</h5>
 			<div ng-controller="CompareCtrl">
+				<b>Same Intervals</b>
 				<div vgraph-page="page">
 					<div vgraph-chart="graph">
 						<span vgraph-highlight="point">
@@ -626,6 +650,24 @@
 							<g vgraph-target="config" point-radius="5"></g>
 							<g vgraph-tooltip="config"
 								reference="compare"></g>
+
+							<g vgraph-interact="highlight"></g>
+						</svg>
+					<div>
+				</div>
+			</div>
+
+			<div ng-controller="Compare2Ctrl">
+				<b>Different Intervals</b>
+				<div vgraph-page="page">
+					<div vgraph-chart="graph">
+						<pre vgraph-highlight="point">{{ point }}</pre>
+						<svg>
+							<g vgraph-compare config1="config[0]" config2="config[1]" reference="compare"></g>
+							<g ng-repeat="cfg in config" vgraph-line="cfg"></g>
+							
+							<g vgraph-target="config" point-radius="5"></g>
+							<g vgraph-tooltip="config" reference="compare"></g>
 
 							<g vgraph-interact="highlight"></g>
 						</svg>
@@ -878,7 +920,108 @@
 				</section>
 			</div>
 		</div>
+
+		<div ng-if="export" ng-controller="ExportCtrl">
+			<h5>export</h5>
+			<div vgraph-page="page">
+				<section vgraph-chart="graph">
+					<div vgraph-highlight="point">
+						{{point.default.someLine1}} : {{point.default._$index}}
+					</div>
+					<svg>
+						<g vgraph-axis="'left'"
+							view="firstView"
+							axis-label="'foo'"
+							label-offset="50"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'top'"
+							view="fourthView"
+							axis-label="'bar'"
+							label-offset="40"
+							tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+						<g vgraph-axis="'bottom'"
+							view="firstView"
+							axis-label="woot"
+							tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+
+						<path vgraph-line="config[0]"></path>
+						<path vgraph-line="config[1]"></path>
+						<path vgraph-line="config[2]"></path>
+						<path vgraph-line="config[3]"></path>
+
+						<g vgraph-target="config" point-radius="4"></g>
+
+						<g vgraph-interact></g>
+					</svg>
+					<span vgraph-export="exports"></span>
+				</section>
+			</div>
+		</div>
+
+		<section ng-if="stats">
+			<h5>Stats Data</h5>
+			<div ng-controller="StatsCtrl">
+				<div vgraph-page="page">
+					<div vgraph-chart="graph" name="primary">
+						<div vgraph-highlight="point">{{point}}</div>
+						<svg xmlns="http://www.w3.org/2000/svg"  version="1.1">
+							<g vgraph-axis="'left'"
+								tick-length="4" tick-padding="-2"></g>
+							<g vgraph-axis="'bottom'"
+								tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+
+							<g vgraph-line="config[1]"></g>
+							<g vgraph-line="config[2]"></g>
+							<g vgraph-dots="config[0]"></g>
+
+							<g vgraph-target="config" point-radius="5"></g>
+							<g vgraph-loading="Loading Data"></g>
+
+							<g vgraph-interact></g>
+						</svg>
+					</div>
+
+					<div vgraph-chart="zoom">
+						<svg>
+							<g vgraph-axis="'top'"
+								tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+							<g vgraph-axis="'bottom'"
+								tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+							
+							<path ng-repeat="cfg in config" vgraph-line="cfg"></path>
+
+							<g vgraph-zoom="primary"></g>
+						</svg>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<section ng-if="external">
+			<h5>External Data</h5>
+			<div ng-controller="ExternalCtrl">
+				<div vgraph-page="page">
+					<div vgraph-chart="graph">
+						<div vgraph-highlight="point">{{point}}</div>
+						<svg xmlns="http://www.w3.org/2000/svg"  version="1.1">
+							<g vgraph-axis="'left'"
+								tick-length="4" tick-padding="-2"></g>
+							<g vgraph-axis="'bottom'"
+								tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+
+							<g ng-repeat="cfg in config" vgraph-dots="cfg"></g>
+
+							<g vgraph-target="config" point-radius="5"></g>
+							<g vgraph-loading="Loading Data"></g>
+
+							<g vgraph-interact></g>
+						</svg>
+					</div>
+				</div>
+			</div>
+		</section>
 	</article>
+
 	<script src="index.js"></script>
 
 </body>

@@ -161,6 +161,10 @@ angular.module( 'vgraph' ).factory( 'DrawBar',
 			}
 		};
 		
+		DrawBar.prototype.getHitbox = function( dataSet ){
+			return dataSet;
+		};
+
 		return DrawBar;
 	}]
 );

@@ -82,6 +82,7 @@ angular.module( 'vgraph' ).factory( 'DataNormalizer',
 				this._finalizeProperties( this[i] );
 			}
 
+			this.$stats = Object.create(collection.$stats);
 			this.$parent = collection;
 		};
 

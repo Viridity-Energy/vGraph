@@ -1,30 +1,27 @@
 angular.module( 'vgraph' ).factory( 'DataManager',
-	[ 'DataCollection',
-	function ( DataCollection ) {
+	[ 'DataCollection', 'CalculationsCompile',
+	function ( DataCollection, calculationsCompile ) {
 		'use strict';
 
 		var uid = 1;
 
 		function DataManager(){
-			this.$$managerUid = uid++;
-
-			this.$dataProc = regulator( 20, 200, function( lm ){
-				var registrations = lm.registrations;
-
-				registrations.forEach(function( registration ){
-					registration();
-				});
-			});
-
-			this.construct();
-			this.reset();
-		}
-
-		DataManager.prototype.construct = function(){
 			var loaders = [];
 
 			this.registrations = [];
 			this.errorRegistrations = [];
+
+			this.$$managerUid = uid++;
+			this.$dataProc = regulator( 20, 200, function( dis ){
+				if ( dis.calculations ){
+					dis.calculations.$reset( dis.data );
+					dis.calculations( dis.data );
+				}
+
+				dis.registrations.forEach(function( registration ){
+					registration();
+				});
+			});
 
 			this.getLoaders = function(){
 				return loaders;
@@ -41,7 +38,9 @@ angular.module( 'vgraph' ).factory( 'DataManager',
 					loaders.splice( dex, 1 );
 				}
 			};
-		};
+
+			this.reset();
+		}
 
 		DataManager.prototype.reset = function(){
 			this.data = new DataCollection();
@@ -51,7 +50,7 @@ angular.module( 'vgraph' ).factory( 'DataManager',
 		};
 		// expect a seed function to be defined
 
-		 DataManager.prototype.$fillPoints = function( ctrls ){
+		 DataManager.prototype.fillPoints = function( ctrls ){
 			var i, c,
 				prototype = ctrls.prototype;
 
@@ -64,6 +63,12 @@ angular.module( 'vgraph' ).factory( 'DataManager',
 			for( i = ctrls.start, c = ctrls.stop + ctrls.interval; i < c; i += ctrls.interval ){
 				this.data._register( i, Object.create(prototype) );
 			}
+		};
+
+		DataManager.prototype.setCalculations = function( calculations ){
+			this.calculations = calculationsCompile( calculations );
+
+			this.calculations.$init( calculations );
 		};
 
 		DataManager.prototype.setValue = function( interval, name, value ){

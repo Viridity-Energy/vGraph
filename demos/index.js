@@ -84,7 +84,6 @@ angular.module( 'vgraph' ).controller( 'ClassifyCtrl', [
 		var ref1 = {
 				name: 'someLine1',
 				className: 'red',
-				//requirements: ['someLine1','someLine3'],
 				classify: function( node ){
 					if ( node.someLine1 > node.someLine3 ){
 						return {
@@ -214,12 +213,14 @@ angular.module( 'vgraph' ).controller( 'NullCtrl', [
 		$scope.page = {
 			managers: {
 				'default': {
-					min: 0,
-					max: 500,
-					interval: 1,
-					prototype: {
-						y1: null,
-						y2: null
+					fill: {
+						min: 0,
+						max: 500,
+						interval: 1,
+						prototype: {
+							y1: null,
+							y2: null
+						}
 					}
 				}
 			},
@@ -669,6 +670,88 @@ angular.module( 'vgraph' ).controller( 'CompareCtrl',
 	}]
 );
 
+angular.module( 'vgraph' ).controller( 'Compare2Ctrl',
+	['$scope',
+	function( $scope ){
+		var data1 = [ {x: 0, y: 20} ],
+			data2 = [ {x: 2000, y: 30} ];
+
+		$scope.graph = {
+			views: {
+				first: {
+					manager: 'first',
+					x: {
+						min: -100,
+						max: 2100
+					}
+				},
+				second: {
+					manager: 'second',
+					x: {
+						min: 1900,
+						max: 4100
+					}
+				}
+			}
+		};
+
+		$scope.page = [{
+			src: data1,
+			manager: 'first',
+			interval: 'x',
+			readings:{
+				'y': 'y'
+			}
+		},{
+			src: data2,
+			manager: 'second',
+			interval: 'x',
+			readings:{
+				'y': 'y'
+			}
+		}];
+
+		$scope.formatter = function( point ){
+			if ( point ){
+				return point.compare.diff;
+			}
+		};
+
+		$scope.getX = function( point ){
+			if ( point ){
+				return point.compare.x;
+			}
+		};
+
+		$scope.getY = function( point ){
+			if ( point ){
+				return point.compare.y;
+			}
+		};
+
+		// x is the interval, y is the function pulling the value
+		$scope.config = [
+			{ name : 'y1', field:'y', view:'first', className : 'red' },
+			{ name : 'y2', field:'y', view:'second', className : 'blue' }
+		];
+
+		var min = -1,
+			max = 1
+
+		for( var i = 0, c = 2000; i < c; i++ ){
+			data1.push({
+				x : i,
+				y : data1[data1.length-1].y + Math.random() * (max - min) + min
+			});
+
+			data2.push({
+				x : i + 2000,
+				y : data2[data2.length-1].y + Math.random() * (max - min) + min
+			});
+		}
+	}]
+);
+
 angular.module( 'vgraph' ).controller( 'MultiAxisCtrl',
 	['$scope', 
 	function( $scope ){
@@ -760,14 +843,18 @@ angular.module( 'vgraph' ).controller( 'MultiIntervalCtrl',
 		$scope.page = {
 			managers: {
 				first: {
-					min: 0,
-					max: 1000,
-					interval: 1
+					fill: {
+						min: 0,
+						max: 1000,
+						interval: 1
+					}
 				},
 				second: {
-					min: 0,
-					max: 20,
-					interval: 1
+					fill: {
+						min: 0,
+						max: 20,
+						interval: 1
+					}
 				}
 			},
 			feeds: [{
@@ -890,35 +977,43 @@ angular.module( 'vgraph' ).controller( 'LeadingCtrl',
 		$scope.page = {
 			managers: {
 				eins: {
-					min: 0,
-					max: 100,
-					interval: 1,
-					prototype: {
-						someLine1: null
+					fill: {
+						min: 0,
+						max: 100,
+						interval: 1,
+						prototype: {
+							someLine1: null
+						}
 					}
 				},
 				zwei: {
-					min: 0,
-					max: 100,
-					interval: 2,
-					prototype: {
-						someLine2: null
+					fill: {
+						min: 0,
+						max: 100,
+						interval: 2,
+						prototype: {
+							someLine2: null
+						}
 					}
 				},
 				fier: {
-					min: 0,
-					max: 100,
-					interval: 4,
-					prototype: {
-						someLine3: null
+					fill:{
+						min: 0,
+						max: 100,
+						interval: 4,
+						prototype: {
+							someLine3: null
+						}
 					}
 				},
 				sieben: {
-					min: 0,
-					max: 100,
-					interval: 7,
-					prototype: {
-						someLine4: null
+					fill:{
+						min: 0,
+						max: 100,
+						interval: 7,
+						prototype: {
+							someLine4: null
+						}
 					}
 				}
 			},
@@ -1170,5 +1265,388 @@ angular.module( 'vgraph' ).controller( 'IconCtrl',
 				y1 : data[data.length-1].y1 + t
 			});
 		}
+	}]
+);
+
+angular.module( 'vgraph' ).controller( 'ExportCtrl',
+	['$scope',
+	function( $scope ){
+		var start = +(new Date()).setHours(0,0,0,0),
+			stop = +(new Date()).setHours(23,59,59,999),
+			minute = 60000,
+			ref1 = {
+				name: 'someLine1',
+				view: 'firstView',
+				className: 'red'
+			},
+			ref2 = {
+				name: 'someLine2',
+				view: 'secondView',
+				className: 'blue'
+			},
+			ref3 = {
+				name: 'someLine3',
+				view: 'thirdView',
+				className: 'green'
+			},
+			ref4 = {
+				name: 'someLine4',
+				view: 'fourthView',
+				className: 'orange'
+			},
+			data1 = [ {x : start, y : 20}  ],
+			data2 = [ {x : start, y : 20}  ],
+			data3 = [ {x : start, y : 20}  ],
+			data4 = [ {x : start+86400000, y : 20}  ];
+
+		console.log( start, stop );
+		$scope.exports = {
+			default: function( graph ){
+				var data = graph.export([
+					{ title: 'time 1', reference: 'someLine1', field: '_$index' },
+					{ title: 'field 1', reference: 'someLine1' },
+					{ title: 'field 2', reference: 'someLine2', format: function(v){ return (+v).toFixed(2) } },
+					{ title: 'field 3', reference: 'someLine3' },
+					{ title: 'time 4', reference: 'someLine4', field: '_$index' },
+					{ title: 'field 4', reference: 'someLine4' }
+				]);
+
+				return {
+					data: data,
+					name: 'someFile.csv'
+				};
+			}
+		};
+		$scope.graph = {
+			adjustSettings: function( x ){
+				x.tick = {
+					interval: d3.time.minutes,
+                    step: 30
+				};
+			},
+			x : {
+				min: -5,
+				max: 25,
+				scale : function(){
+                    return d3.time.scale.utc();
+                },
+				format: function( x ){
+					var date = new Date(x),
+						h = date.getHours(),
+						m = date.getMinutes();
+
+					if ( h < 10 ){
+						h = '0'+h;
+					}
+
+					if ( m < 10 ){
+						m = '0'+m;
+					}
+
+					return h+':'+m;
+				},
+				tick: {
+					interval: d3.time.hours,
+                    step: 1
+                }
+			},
+			y : {
+				padding : 0.05,
+				format: function( y ){
+					return ':' + y;
+				}
+			},
+			views: { 
+				'firstView': {
+					x: {
+						min : start, 
+						max : stop
+					},
+					manager: 'first'
+				},
+				'secondView': {
+					x: {
+						min : start, 
+						max : stop
+					},
+					manager: 'second'
+				},
+				'thirdView': {
+					x: {
+						min : start, 
+						max : stop
+					},
+					manager: 'third'
+				},
+				'fourthView': {
+					x: {
+						min : start+86400000, 
+						max : stop+86400000
+					},
+					manager: 'fourth'
+				}
+			}
+		};
+
+		$scope.page = [{
+			src: data1,
+			interval: 'x',
+			manager: 'first',
+			readings:{
+				'someLine1': 'y'
+			}
+		},{
+			src: data2,
+			interval: 'x',
+			manager: 'second',
+			readings:{
+				'someLine2': 'y'
+			}
+		},{
+			src: data3,
+			interval: 'x',
+			manager: 'third',
+			readings:{
+				'someLine3': 'y'
+			}
+		},{
+			src: data4,
+			interval: 'x',
+			manager: 'fourth',
+			readings:{
+				'someLine4': 'y'
+			}
+		}];
+
+		$scope.config = [
+			ref1,
+			ref2,
+			ref3,
+			ref4
+		];
+
+		for( var i = start, c = stop; i < c; i += minute ){
+			var counter = 0;
+			var min = -1,
+				max = 1,
+				t = Math.random() * (max - min) + min;
+
+			data1.push({
+				x : i,
+				y : data1[data1.length-1].y + t
+			});
+		}
+
+		for( var i = start, c = stop; i <= c; i += 5 * minute ){
+			var counter = 0;
+			var min = -1,
+				max = 1,
+				t = Math.random() * (max - min) + min;
+
+			data2.push({
+				x : i,
+				y : data2[data2.length-1].y + t
+			});
+		}
+
+		for( var i = start, c = stop; i <= c; i += 10 * minute ){
+			var counter = 0;
+			var min = -1,
+				max = 1,
+				t = Math.random() * (max - min) + min;
+
+			data3.push({
+				x : i,
+				y : data3[data3.length-1].y + t
+			});
+		}
+
+		for( var i = start+86400000, c = stop+86400000; i <= c; i += 15 * minute ){
+			var counter = 0;
+			var min = -1,
+				max = 1,
+				t = Math.random() * (max - min) + min;
+
+			data4.push({
+				x : i,
+				y : data4[data4.length-1].y + t
+			});
+		}
+	}]
+);
+
+angular.module( 'vgraph' ).controller( 'StatsCtrl',
+	['$scope', 'CalculationsExtremes', 'CalculationsPercentiles',
+	function( $scope, CalculationsExtremes, CalculationsPercentiles ){
+		var data = [ {x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40}  ];
+
+		$scope.graph = {
+			x : {
+				min: -50,
+				max: 200050,
+				scale: function(){ return d3.scale.linear(); }
+			},
+			y : {
+				padding : 0.05,
+				format: function( y ){
+					return ':' + y;
+				}
+			},
+			views: {
+				'default': {
+					calculations: [
+						CalculationsExtremes.maximum( 4, function(d){ return d.someLine1; }, 'max' ),
+						CalculationsPercentiles( 25, function( d ){ return d.someLine1; }, 'perc25' )
+					]
+				}
+			}
+		};
+
+		$scope.zoom = {
+			x : {
+				min: -50,
+				max: 200050,
+				scale: function(){ return d3.scale.linear(); }
+			},
+			y : {
+				padding : 0.05,
+				format: function( y ){
+					return ':' + y;
+				}
+			}
+		};
+
+		$scope.page = {
+			managers: {
+				'default': {
+					calculations: [
+						CalculationsExtremes.minimum( 4, function(d){ return d.someLine1; }, 'min' ),
+						CalculationsPercentiles( 50, function( d ){ return d.someLine1; }, 'median' )
+					]
+				}
+			},
+			feeds: [{
+				src: data,
+				interval: 'x',
+				readings:{
+					'someLine1': 'y1'
+				}
+			}]
+		};
+
+		$scope.config = [
+			{
+				name: 'someLine1',
+				className: 'red',
+				requirements: ['someLine1','min'],
+				classify: function( node ){
+					var t = {};
+
+					if ( node.min ){
+						t['low-value'] = true;
+					}
+
+					if ( node.max ){
+						t['high-value'] = true;
+					}
+
+					return t;
+				},
+				
+			},
+			{
+				name: 'median',
+				field: null,
+				pointeAs: 'median',
+				className: 'green',
+				getValue: function( d, stats ){
+					return stats.median;
+				}
+			},
+			{
+				name: 'perc25',
+				field: null,
+				pointeAs: 'perc25',
+				className: 'blue',
+				getValue: function( d, stats ){
+					return stats.perc25;
+				}
+			}
+		];
+
+		for( var i = 0, c = 200000; i < c; i++ ){
+			var counter = 0;
+			var min = -1,
+				max = 1,
+				t = Math.random() * (max - min) + min;
+
+			data.push({
+				x : data.length,
+				y1 : data[data.length-1].y1 + t
+			});
+		}
+	}]
+);
+
+angular.module( 'vgraph' ).controller( 'ExternalCtrl',
+	['$scope', '$http',
+	function( $scope, $http ){
+		var json = [],
+			csv = [];
+
+		$scope.graph = {
+			x: {
+				min: -1,
+				max: 12
+			}
+		};
+
+		$scope.page = [{
+			src: json,
+			interval: 'interval',
+			readings:{
+				'y1': 'value'
+			}
+		},{
+			src: csv,
+			interval: 'interval',
+			readings:{
+				'y2': 'value'
+			}
+		}];
+
+		// x is the interval, y is the function pulling the value
+		$scope.config = [
+			{ name : 'y1', className : 'red' },
+			{ name : 'y2', className : 'blue' }
+		];
+
+		$http.get('samples/test.json')
+			.then(function(res){
+				res.data.forEach(function( d ){
+					json.push( d );
+				});
+			});
+
+		function lineParse( s ){
+			return s.split(',').map(function( v ){
+				return v.trim().replace(/^"(.+(?="$))"$/, '$1');
+			});
+		}
+
+		$http.get('samples/test.csv')
+			.then(function(res){
+				var content = res.data.split('\n'),
+					headers = lineParse(content.shift());
+				
+				content.forEach(function( line ){
+					var t = {};
+
+					lineParse(line).forEach(function( v, k ){
+						t[headers[k]] = v;
+					});
+					csv.push( t );
+				});
+			});
 	}]
 );

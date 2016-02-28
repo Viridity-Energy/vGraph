@@ -16,10 +16,9 @@ angular.module( 'vgraph' ).directive( 'vgraphDots',
 					cfg = chart.compileReference( scope.config ),
 					element = requirements[1];
 
+				element.setChart( chart );
 				element.setElement( el );
-				element.setDrawer(
-					new DrawDots( cfg, attrs.radius ? parseInt(attrs.Radius,10) : 5 )
-				);
+				element.setDrawer( new DrawDots(cfg,attrs.radius?parseInt(attrs.Radius,10):5) );
 
 				className = 'point ';
 				if ( cfg.classExtend ){

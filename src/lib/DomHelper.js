@@ -17,6 +17,20 @@ angular.module( 'vgraph' ).factory( 'DomHelper',
 		}
 		
 		return {
+			bringForward: function( elements ){
+				var i, c,
+					el;
+
+				for( i = 0, c = elements.length; i < c; i++ ){
+					el = elements[i].$element;
+
+					if ( el.parentNode ){
+						el.parentNode.appendChild( el );
+					}
+				}
+
+				return this;
+			},
 			addClass: function( elements, className ){
 				var i, c,
 					el,
@@ -32,6 +46,8 @@ angular.module( 'vgraph' ).factory( 'DomHelper',
 						el.setAttribute( 'class', baseClass+' '+className );
 					}
 				}
+
+				return this;
 			},
 			removeClass: function( elements, className ){
 				var i, c,
@@ -45,6 +61,8 @@ angular.module( 'vgraph' ).factory( 'DomHelper',
 						(el.getAttribute('class')||'').replace( reg, '' )
 					);
 				}
+
+				return this;
 			}
 		};
 	}]

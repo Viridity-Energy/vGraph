@@ -28,7 +28,7 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 				var i, c;
 
 				for( i = 0, c = config.length; i < c; i++ ){
-					config[i].field = config[i].name;
+					config[i].$reset();
 				}
 			},
 			$getFields: function( config ){
@@ -157,7 +157,7 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 				} else if ( cfg && cfg.getValue ){
 					// used to reduce the checks for parser
 					cfg.$eachNode(function(node){
-						v = cfg.getValue(node);
+						v = +cfg.getValue(node);
 						if ( isNumeric(v) ){
 							if ( min === undefined ){
 								min = v;
