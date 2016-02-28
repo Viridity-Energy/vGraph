@@ -18,6 +18,18 @@ angular.module( 'vgraph' ).factory( 'DomHelper',
 		}
 		
 		return {
+			bringForward: function( elements ){
+				var i, c,
+					el;
+
+				for( i = 0, c = elements.length; i < c; i++ ){
+					el = elements[i].$element;
+
+					el.parentNode.appendChild( el );
+				}
+
+				return this;
+			},
 			addClass: function( elements, className ){
 				var i, c,
 					el,
@@ -33,6 +45,8 @@ angular.module( 'vgraph' ).factory( 'DomHelper',
 						el.setAttribute( 'class', baseClass+' '+className );
 					}
 				}
+
+				return this;
 			},
 			removeClass: function( elements, className ){
 				var i, c,
@@ -46,6 +60,8 @@ angular.module( 'vgraph' ).factory( 'DomHelper',
 						(el.getAttribute('class')||'').replace( reg, '' )
 					);
 				}
+
+				return this;
 			}
 		};
 	}]
@@ -1165,7 +1181,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 
 			schedule.startScript( this.$vguid );
 
-			this.configureHitbox();
+			this.configureHitarea();
 			
 			if ( this.loading ){
 				dis.$trigger('loading');
@@ -1335,7 +1351,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 			this.components.push(component);
 		};
 
-		ComponentChart.prototype.configureHitbox = function(){
+		ComponentChart.prototype.configureHitarea = function(){
 			var box = this.box;
 
 			this.hitbox = new Hitbox(
@@ -1347,9 +1363,9 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 			);
 		};
 
-		ComponentChart.prototype.registerElement = function( info, element ){
+		ComponentChart.prototype.addHitbox = function( info, element ){
 			info.$element = element;
-
+			// to override default hit box, pass in info{ intersect, intersectX, intersectY }, look at Hitbox
 			this.hitbox.add( info );
 		};
 		
@@ -1360,7 +1376,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 
 			this.unlightElements();
 
-			domHelper.addClass( vertical, 'highlight-vertical' );
+			domHelper.addClass( vertical, 'highlight-vertical' ).bringForward( vertical );
 			domHelper.addClass( horizontal, 'highlight-horizontal' );
 			domHelper.addClass( intersections, 'highlight' );
 
@@ -1526,7 +1542,13 @@ angular.module( 'vgraph' ).factory( 'ComponentElement',
 			root.innerHTML = '';
 			
 			for( i = children.length - 1; i !== -1; i-- ){
-				element.register( dataSets[i], children[i] );
+				if ( element.drawer.getHitbox ){
+					element.chart.addHitbox( 
+						element.drawer.getHitbox(dataSets[i]),
+						children[i]
+					);
+				}
+				
 				root.appendChild( children[i] );
 			}
 		}
@@ -1537,6 +1559,10 @@ angular.module( 'vgraph' ).factory( 'ComponentElement',
 
 		ComponentElement.svgCompile = svgCompile;
 		
+		ComponentElement.prototype.setChart = function( chart ){
+			this.chart = chart;
+		};
+
 		ComponentElement.prototype.setElement = function( domNode ){
 			this.element = domNode;
 		};
@@ -3183,6 +3209,10 @@ angular.module( 'vgraph' ).factory( 'DrawBar',
 			}
 		};
 		
+		DrawBar.prototype.getHitbox = function( dataSet ){
+			return dataSet;
+		};
+
 		return DrawBar;
 	}]
 );
@@ -3429,6 +3459,20 @@ angular.module( 'vgraph' ).factory( 'DrawDots',
 					'" cy="'+set.y+
 					'" r="'+this.radius+'"/>';
 			}
+		};
+
+		DrawDots.prototype.getHitbox = function( dataSet ){
+			var radius = this.radius;
+
+			return {
+				x1: dataSet.x - radius,
+				x2: dataSet.x + radius,
+				y1: dataSet.y - radius,
+				y2: dataSet.y + radius,
+				intersect: function( x, y ){
+					return Math.sqrt( Math.pow(dataSet.x-x,2) + Math.pow(dataSet.y-y,2) ) < radius;
+				}
+			};
 		};
 
 		return DrawDots;
@@ -4314,14 +4358,9 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
 					element = requirements[1],
 					className = 'bar ';
 
+				element.setChart( chart );
 				element.setElement( el );
-				element.setDrawer(
-					new DrawBar( cfg, pair, attrs.width )
-				);
-
-				element.register = function( data, element ){
-					chart.registerElement( data, element );
-				};
+				element.setDrawer( new DrawBar(cfg,pair,attrs.width) );
 
 				if ( cfg.classExtend ){
 					className += cfg.classExtend + ' ';
@@ -4358,12 +4397,9 @@ angular.module( 'vgraph' ).directive( 'vgraphBox',
 					element = requirements[1],
 					className = 'box ';
 
+				element.setChart( chart );
 				element.setElement( el );
 				element.setDrawer( new DrawBox(cfg) );
-
-				element.register = function( data, element ){
-					chart.registerElement( data, element );
-				};
 
 				if ( cfg.classExtend ){
 					className += cfg.classExtend + ' ';
@@ -4522,10 +4558,9 @@ angular.module( 'vgraph' ).directive( 'vgraphDots',
 					cfg = chart.compileReference( scope.config ),
 					element = requirements[1];
 
+				element.setChart( chart );
 				element.setElement( el );
-				element.setDrawer(
-					new DrawDots( cfg, attrs.radius ? parseInt(attrs.Radius,10) : 5 )
-				);
+				element.setDrawer( new DrawDots(cfg,attrs.radius?parseInt(attrs.Radius,10):5) );
 
 				className = 'point ';
 				if ( cfg.classExtend ){
@@ -4744,10 +4779,9 @@ angular.module( 'vgraph' ).directive( 'vgraphIcon',
 
 				el.innerHTML = '';
 
+				element.setChart( chart );
 				element.setElement( el );
-				element.setDrawer(
-					new DrawIcon( cfg, box, content )
-				);
+				element.setDrawer( new DrawIcon(cfg,box,content) );
 
 				if ( cfg.classExtend ){
 					className += cfg.classExtend + ' ';
@@ -5116,19 +5150,16 @@ angular.module( 'vgraph' ).directive( 'vgraphLine',
 					cfg = chart.compileReference( scope.config ),
 					element = requirements[1];
 
+				element.setChart( el );
 				element.setElement( el );
 
 				if ( attrs.pair ){
 					pair = chart.compileReference( scope.pair );
 					className = 'fill ';
-					element.setDrawer(
-						new DrawFill( cfg, pair )
-					);
+					element.setDrawer( new DrawFill(cfg,pair) );
 				}else{
 					className = 'line ';
-					element.setDrawer(
-					   new DrawLine(cfg)
-					);
+					element.setDrawer( new DrawLine(cfg) );
 				}
 
 				if ( cfg.classExtend ){

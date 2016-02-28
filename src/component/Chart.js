@@ -325,7 +325,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 
 			schedule.startScript( this.$vguid );
 
-			this.configureHitbox();
+			this.configureHitarea();
 			
 			if ( this.loading ){
 				dis.$trigger('loading');
@@ -495,7 +495,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 			this.components.push(component);
 		};
 
-		ComponentChart.prototype.configureHitbox = function(){
+		ComponentChart.prototype.configureHitarea = function(){
 			var box = this.box;
 
 			this.hitbox = new Hitbox(
@@ -507,9 +507,9 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 			);
 		};
 
-		ComponentChart.prototype.registerElement = function( info, element ){
+		ComponentChart.prototype.addHitbox = function( info, element ){
 			info.$element = element;
-
+			// to override default hit box, pass in info{ intersect, intersectX, intersectY }, look at Hitbox
 			this.hitbox.add( info );
 		};
 		
@@ -520,7 +520,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 
 			this.unlightElements();
 
-			domHelper.addClass( vertical, 'highlight-vertical' );
+			domHelper.addClass( vertical, 'highlight-vertical' ).bringForward( vertical );
 			domHelper.addClass( horizontal, 'highlight-horizontal' );
 			domHelper.addClass( intersections, 'highlight' );
 

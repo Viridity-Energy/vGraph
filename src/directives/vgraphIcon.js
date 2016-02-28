@@ -32,10 +32,9 @@ angular.module( 'vgraph' ).directive( 'vgraphIcon',
 
 				el.innerHTML = '';
 
+				element.setChart( chart );
 				element.setElement( el );
-				element.setDrawer(
-					new DrawIcon( cfg, box, content )
-				);
+				element.setDrawer( new DrawIcon(cfg,box,content) );
 
 				if ( cfg.classExtend ){
 					className += cfg.classExtend + ' ';

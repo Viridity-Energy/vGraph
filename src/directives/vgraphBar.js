@@ -18,14 +18,9 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
 					element = requirements[1],
 					className = 'bar ';
 
+				element.setChart( chart );
 				element.setElement( el );
-				element.setDrawer(
-					new DrawBar( cfg, pair, attrs.width )
-				);
-
-				element.register = function( data, element ){
-					chart.registerElement( data, element );
-				};
+				element.setDrawer( new DrawBar(cfg,pair,attrs.width) );
 
 				if ( cfg.classExtend ){
 					className += cfg.classExtend + ' ';
