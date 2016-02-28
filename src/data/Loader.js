@@ -65,7 +65,7 @@ angular.module( 'vgraph' ).factory( 'DataLoader',
 
 			if ( !cfg.parseInterval ){
 				cfg.parseInterval = function( datum ){
-					return datum[ cfg.interval ];
+					return +datum[ cfg.interval ];
 				};
 			}
 

@@ -139,6 +139,11 @@
 		.point .high-value {
 			opacity: .5;
 		}
+
+		.bar .low-value,
+		.point .low-value {
+			stroke: black;
+		}
 	</style>
 
 	<article ng-controller="AppCtrl">
@@ -175,6 +180,8 @@
 				ng-click="export = !export"/></label>
 			<label>Stats<input type='checkbox' ng-checked="stats" 
 				ng-click="stats = !stats"/></label>
+			<label>External<input type='checkbox' ng-checked="external" 
+				ng-click="external = !external"/></label>
 		</section>
 
 		<div ng-if="simple" ng-controller="FloodCtrl">
@@ -942,6 +949,30 @@
 		<section ng-if="stats">
 			<h5>Stats Data</h5>
 			<div ng-controller="StatsCtrl">
+				<div vgraph-page="page">
+					<div vgraph-chart="graph">
+						<div vgraph-highlight="point">{{point}}</div>
+						<svg xmlns="http://www.w3.org/2000/svg"  version="1.1">
+							<g vgraph-axis="'left'"
+								tick-length="4" tick-padding="-2"></g>
+							<g vgraph-axis="'bottom'"
+								tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+
+							<g ng-repeat="cfg in config" vgraph-dots="cfg"></g>
+
+							<g vgraph-target="config" point-radius="5"></g>
+							<g vgraph-loading="Loading Data"></g>
+
+							<g vgraph-interact></g>
+						</svg>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<section ng-if="external">
+			<h5>External Data</h5>
+			<div ng-controller="ExternalCtrl">
 				<div vgraph-page="page">
 					<div vgraph-chart="graph">
 						<div vgraph-highlight="point">{{point}}</div>

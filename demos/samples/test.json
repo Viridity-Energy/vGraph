@@ -1,0 +1,50 @@
+[
+	{
+		"interval": 0,
+		"value":20
+	},
+	{
+		"interval": 1,
+		"value":21
+	},
+	{
+		"interval": 2,
+		"value":22
+	},
+	{
+		"interval": 3,
+		"value":21
+	},
+	{
+		"interval": 4,
+		"value":18
+	},
+	{
+		"interval": 5,
+		"value":15
+	},
+	{
+		"interval": 6,
+		"value":7
+	},
+	{
+		"interval": 7,
+		"value":9
+	},
+	{
+		"interval": 8,
+		"value":11
+	},
+	{
+		"interval": 9,
+		"value":13
+	},
+	{
+		"interval": 10,
+		"value":20
+	},
+	{
+		"interval": 11,
+		"value":25
+	}
+]

@@ -290,11 +290,11 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 					if ( component.parse ){
 						t = component.parse();
 						if ( t ){
-							if ( t.min !== null && (!min && min !== 0 || min > t.min) ){
+							if ( (t.min || t.min === 0) && (!min && min !== 0 || min > t.min) ){
 								min = t.min;
 							}
 
-							if ( t.max !== null && (!max && max !== 0 || max < t.max) ){
+							if ( (t.max || t.max === 0) && (!max && max !== 0 || max < t.max) ){
 								max = t.max;
 							}
 						}

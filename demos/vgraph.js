@@ -412,6 +412,69 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 			return arr;
 		}
 
+		function stackFunc( old, fn ){
+			if ( !fn ){
+				return old;
+			}
+			if ( !old ){
+				return fn;
+			}else{
+				return function( node ){
+					old( node );
+					fn( node );
+				};
+			}
+		}
+
+		function makeExtremeTest( compare ){
+			return function( count, getValue, attr ){
+				var i,
+					maxs;
+
+				return {
+					prep: function(){
+						maxs = [];
+					},
+					reset: function(){
+						maxs.forEach(function( n ){
+							n.node[attr] = false;
+						});
+					},
+					calc: function( node ){
+						var v = getValue(node);
+
+						if ( maxs.length < count ){
+							maxs.push( {value: v, node: node} );
+
+							if ( maxs.length === count ){
+								maxs.sort(function(a,b){ return a.value - b.value; });
+							}
+						}else if ( compare(v,maxs[0].value) ){
+							maxs.shift();
+
+							if ( compare(maxs[0].value,v) ){
+								maxs.unshift( {value: v, node: node} );
+							}else if ( compare(v,maxs[maxs.length-1].value) ){
+								maxs.push( {value: v, node: node} );
+							}else{
+								for( i = maxs.length-2; i >= 0; i-- ){
+									if ( compare(v,maxs[i].value) ){
+										maxs.splice( i+1, 0, {value: v, node: node} );
+										i = 0;
+									}
+								}
+							}
+						}
+					},
+					finalize: function(){
+						maxs.forEach(function( n ){
+							n.node[attr] = true;
+						});
+					}
+				};
+			};
+		}
+
 		return {
 			$resetCalcs: function( config ){
 				var i, c;
@@ -487,48 +550,6 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 				return nameAs;
 			},
 			*/
-			maximums : function( count, getValue, attr ){
-				var i,
-					maxs;
-
-				return {
-					prep: function(){
-						maxs = [];
-					},
-					calc: function( node ){
-						var v = getValue(node);
-
-						if ( maxs.length < count ){
-							maxs.push( {value: v, node: node} );
-
-							if ( maxs.length === count ){
-								maxs.sort(function(a,b){ return a.value - b.value; });
-							}
-						}else if ( v > maxs[0].value ){
-							maxs.shift();
-
-							if ( maxs[0].value > v ){
-								maxs.unshift( {value: v, node: node} );
-							}else if ( maxs[maxs.length-1].value < v ){
-								maxs.push( {value: v, node: node} );
-							}else{
-								for( i = maxs.length-2; i > 0; i-- ){
-									if ( maxs[i].value < v ){
-										maxs.splice( i+1, 0, {value: v, node: node} );
-										i = 0;
-									}
-								}
-							}
-						}
-					},
-					finalize: function(){
-						maxs.forEach(function( n ){
-							n.node[attr] = true;
-							console.log( n.node );
-						});
-					}
-				};
-			},
 			stack: function( config ){
 				var i, c,
 					j, co,
@@ -588,7 +609,7 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 				} else if ( cfg && cfg.getValue ){
 					// used to reduce the checks for parser
 					cfg.$eachNode(function(node){
-						v = cfg.getValue(node);
+						v = +cfg.getValue(node);
 						if ( isNumeric(v) ){
 							if ( min === undefined ){
 								min = v;
@@ -632,6 +653,55 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 				}
 
 				return indexs;
+			},
+			maximums : makeExtremeTest( function(a,b){ return a > b; } ),
+			minimums : makeExtremeTest( function(a,b){ return a < b; } ),
+			compileCalculations: function( calculations ){
+				var fn,
+					prep,
+					calc,
+					reset,
+					finalize;
+
+				calculations.forEach(function( fn ){
+					if ( angular.isFunction(fn) ){
+						calc = stackFunc( calc, fn );
+					}else{
+						// assume object
+						prep = stackFunc( prep, fn.prep );
+						calc = stackFunc( calc, fn.calc );
+						reset = stackFunc( reset, fn.reset );
+						finalize = stackFunc( finalize, fn.finalize );
+					}
+				});
+
+				fn = function viewCalulator( collection, stats ){
+					var i, c;
+
+					if ( calc ){
+						for( i = 0, c = collection.length; i < c; i++ ){
+							calc( collection[i] );
+						}
+					}
+
+					if ( finalize ){
+						finalize( stats );
+					}
+				};
+
+				fn.$reset = function(){
+					if ( reset ){
+						reset();
+					}
+				};
+
+				fn.$init = function(){
+					if ( prep ){
+						prep();
+					}
+				};
+
+				return fn;
 			}
 		};
 	}]
@@ -1561,7 +1631,9 @@ angular.module( 'vgraph' ).factory( 'ComponentPage',
 		ComponentPage.prototype.configure = function( settings ){
 			var i, c,
 				key,
-				keys;
+				keys,
+				info,
+				manager;
 
 			if ( angular.isArray(settings) ){
 				for( i = 0, c = settings.length; i < c; i++ ){
@@ -1571,9 +1643,16 @@ angular.module( 'vgraph' ).factory( 'ComponentPage',
 				keys = Object.keys(settings.managers);
 				for( i = 0, c = keys.length; i < c; i++ ){
 					key = keys[i];
-					this.getManager(key).$fillPoints( 
-						settings.managers[key]
-					);
+					info = settings.managers[key];
+					manager = this.getManager(key);
+
+					if ( info.fill ){
+						manager.fillPoints( info.fill );
+					}
+
+					if ( info.calculations ){
+						manager.setCalculations( info.calculations );
+					}
 				}
 
 				for( i = 0, c = settings.feeds.length; i < c; i++ ){
@@ -1737,8 +1816,8 @@ angular.module( 'vgraph' ).factory( 'ComponentPane',
 	}]
 );
 angular.module( 'vgraph' ).factory( 'ComponentView',
-	[ 'ComponentPane', 'ComponentPage', 'DataNormalizer',
-	function ( ComponentPane, ComponentPage, DataNormalizer ) {
+	[ 'ComponentPane', 'ComponentPage', 'DataNormalizer', 'StatCalculations',
+	function ( ComponentPane, ComponentPage, DataNormalizer, StatCalculations ) {
 		'use strict';
 		
 		var id = 1;
@@ -1868,55 +1947,6 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 			}
 		}
 
-		function stackFunc( old, fn ){
-			if ( !fn ){
-				return old;
-			}
-			if ( !old ){
-				return fn;
-			}else{
-				return function( node ){
-					old( node );
-					fn( node );
-				};
-			}
-		}
-
-		function formatCalculations( calculations ){
-			var prep,
-				calc,
-				finalize;
-
-			calculations.forEach(function( fn ){
-				if ( angular.isFunction(fn) ){
-					calc = stackFunc( calc, fn );
-				}else{
-					// assume object
-					prep = stackFunc( prep, fn.prep );
-					calc = stackFunc( calc, fn.calc );
-					finalize = stackFunc( finalize, fn.finalize );
-				}
-			});
-
-			return function viewCalulator( collection ){
-				var i, c;
-
-				if ( prep ){
-					prep();
-				}
-
-				if ( calc ){
-					for( i = 0, c = collection.length; i < c; i++ ){
-						calc( collection[i] );
-					}
-				}
-
-				if ( finalize ){
-					finalize();
-				}
-			};
-		}
-
 		ComponentView.prototype.configure = function( settings, chartSettings, box, page ){
 			var normalizer,
 				refs = this.references,
@@ -1936,7 +1966,8 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 				});
 
 			if ( settings.calculations ){
-				this.calculations = formatCalculations(settings.calculations);
+				this.calculations = 
+					StatCalculations.compileCalculations(settings.calculations);
 			}
 
 			refNames.forEach(function( name ){
@@ -2066,6 +2097,7 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 				this.normalizer.$reindex( this.filtered, scale );
 
 				if ( this.calculations ){
+					this.calculations.$init();
 					this.calculations( this.normalizer );
 				}
 
@@ -2075,11 +2107,11 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 					if ( component.parse ){
 						t = component.parse();
 						if ( t ){
-							if ( t.min !== null && (!min && min !== 0 || min > t.min) ){
+							if ( (t.min || t.min === 0) && (!min && min !== 0 || min > t.min) ){
 								min = t.min;
 							}
 
-							if ( t.max !== null && (!max && max !== 0 || max < t.max) ){
+							if ( (t.max || t.max === 0) && (!max && max !== 0 || max < t.max) ){
 								max = t.max;
 							}
 						}
@@ -2653,7 +2685,7 @@ angular.module( 'vgraph' ).factory( 'DataLoader',
 
 			if ( !cfg.parseInterval ){
 				cfg.parseInterval = function( datum ){
-					return datum[ cfg.interval ];
+					return +datum[ cfg.interval ];
 				};
 			}
 
@@ -2702,32 +2734,29 @@ angular.module( 'vgraph' ).factory( 'DataLoader',
 	}]
 );
 angular.module( 'vgraph' ).factory( 'DataManager',
-	[ 'DataCollection',
-	function ( DataCollection ) {
+	[ 'DataCollection', 'StatCalculations',
+	function ( DataCollection, StatCalculations ) {
 		'use strict';
 
 		var uid = 1;
 
 		function DataManager(){
-			this.$$managerUid = uid++;
-
-			this.$dataProc = regulator( 20, 200, function( lm ){
-				var registrations = lm.registrations;
-
-				registrations.forEach(function( registration ){
-					registration();
-				});
-			});
-
-			this.construct();
-			this.reset();
-		}
-
-		DataManager.prototype.construct = function(){
 			var loaders = [];
 
 			this.registrations = [];
 			this.errorRegistrations = [];
+
+			this.$$managerUid = uid++;
+			this.$dataProc = regulator( 20, 200, function( dis ){
+				if ( dis.calculations ){
+					dis.calculations.$reset();
+					dis.calculations( dis.data );
+				}
+
+				dis.registrations.forEach(function( registration ){
+					registration();
+				});
+			});
 
 			this.getLoaders = function(){
 				return loaders;
@@ -2744,7 +2773,9 @@ angular.module( 'vgraph' ).factory( 'DataManager',
 					loaders.splice( dex, 1 );
 				}
 			};
-		};
+
+			this.reset();
+		}
 
 		DataManager.prototype.reset = function(){
 			this.data = new DataCollection();
@@ -2754,7 +2785,7 @@ angular.module( 'vgraph' ).factory( 'DataManager',
 		};
 		// expect a seed function to be defined
 
-		 DataManager.prototype.$fillPoints = function( ctrls ){
+		 DataManager.prototype.fillPoints = function( ctrls ){
 			var i, c,
 				prototype = ctrls.prototype;
 
@@ -2767,6 +2798,12 @@ angular.module( 'vgraph' ).factory( 'DataManager',
 			for( i = ctrls.start, c = ctrls.stop + ctrls.interval; i < c; i += ctrls.interval ){
 				this.data._register( i, Object.create(prototype) );
 			}
+		};
+
+		DataManager.prototype.setCalculations = function( calculations ){
+			this.calculations = StatCalculations.compileCalculations( calculations );
+
+			this.calculations.$init();
 		};
 
 		DataManager.prototype.setValue = function( interval, name, value ){

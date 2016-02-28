@@ -14,13 +14,13 @@ angular.module( 'vgraph' ).factory( 'DataFeed',
 
 		DataFeed.prototype.setSource = function( src ){
 			var dis = this,
-				oldPush = src.push.bind(src);
+				oldPush = src.push;
 
 			this.data = src;
 			this._readPos = 0;
 
 			src.push = function(){
-				oldPush( arguments );
+				oldPush.apply( this, arguments );
 				dis.$push();
 			};
 

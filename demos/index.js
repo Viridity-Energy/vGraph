@@ -84,7 +84,6 @@ angular.module( 'vgraph' ).controller( 'ClassifyCtrl', [
 		var ref1 = {
 				name: 'someLine1',
 				className: 'red',
-				//requirements: ['someLine1','someLine3'],
 				classify: function( node ){
 					if ( node.someLine1 > node.someLine3 ){
 						return {
@@ -214,12 +213,14 @@ angular.module( 'vgraph' ).controller( 'NullCtrl', [
 		$scope.page = {
 			managers: {
 				'default': {
-					min: 0,
-					max: 500,
-					interval: 1,
-					prototype: {
-						y1: null,
-						y2: null
+					fill: {
+						min: 0,
+						max: 500,
+						interval: 1,
+						prototype: {
+							y1: null,
+							y2: null
+						}
 					}
 				}
 			},
@@ -842,14 +843,18 @@ angular.module( 'vgraph' ).controller( 'MultiIntervalCtrl',
 		$scope.page = {
 			managers: {
 				first: {
-					min: 0,
-					max: 1000,
-					interval: 1
+					fill: {
+						min: 0,
+						max: 1000,
+						interval: 1
+					}
 				},
 				second: {
-					min: 0,
-					max: 20,
-					interval: 1
+					fill: {
+						min: 0,
+						max: 20,
+						interval: 1
+					}
 				}
 			},
 			feeds: [{
@@ -972,35 +977,43 @@ angular.module( 'vgraph' ).controller( 'LeadingCtrl',
 		$scope.page = {
 			managers: {
 				eins: {
-					min: 0,
-					max: 100,
-					interval: 1,
-					prototype: {
-						someLine1: null
+					fill: {
+						min: 0,
+						max: 100,
+						interval: 1,
+						prototype: {
+							someLine1: null
+						}
 					}
 				},
 				zwei: {
-					min: 0,
-					max: 100,
-					interval: 2,
-					prototype: {
-						someLine2: null
+					fill: {
+						min: 0,
+						max: 100,
+						interval: 2,
+						prototype: {
+							someLine2: null
+						}
 					}
 				},
 				fier: {
-					min: 0,
-					max: 100,
-					interval: 4,
-					prototype: {
-						someLine3: null
+					fill:{
+						min: 0,
+						max: 100,
+						interval: 4,
+						prototype: {
+							someLine3: null
+						}
 					}
 				},
 				sieben: {
-					min: 0,
-					max: 100,
-					interval: 7,
-					prototype: {
-						someLine4: null
+					fill:{
+						min: 0,
+						max: 100,
+						interval: 7,
+						prototype: {
+							someLine4: null
+						}
 					}
 				}
 			},
@@ -1488,24 +1501,40 @@ angular.module( 'vgraph' ).controller( 'StatsCtrl',
 			}
 		};
 
-		$scope.page = [{
-			src: data,
-			interval: 'x',
-			readings:{
-				'someLine1': 'y1'
-			}
-		}];
+		$scope.page = {
+			managers: {
+				'default': {
+					calculations: [
+						StatCalculations.minimums( 4, function(d){ return d.someLine1; }, 'min' )
+					]
+				}
+			},
+			feeds: [{
+				src: data,
+				interval: 'x',
+				readings:{
+					'someLine1': 'y1'
+				}
+			}]
+		};
 
 		$scope.config = [
 			{
 				name: 'someLine1',
 				className: 'red',
+				requirements: ['someLine1','min'],
 				classify: function( node ){
-					if ( node.max ){
-						return {
-							'high-value': true
-						};
+					var t = {};
+
+					if ( node.min ){
+						t['low-value'] = true;
 					}
+
+					if ( node.max ){
+						t['high-value'] = true;
+					}
+
+					return t;
 				},
 				
 			}
@@ -1522,5 +1551,68 @@ angular.module( 'vgraph' ).controller( 'StatsCtrl',
 				y1 : data[data.length-1].y1 + t
 			});
 		}
+	}]
+);
+
+angular.module( 'vgraph' ).controller( 'ExternalCtrl',
+	['$scope', '$http',
+	function( $scope, $http ){
+		var json = [],
+			csv = [];
+
+		$scope.graph = {
+			x: {
+				min: -1,
+				max: 12
+			}
+		};
+
+		$scope.page = [{
+			src: json,
+			interval: 'interval',
+			readings:{
+				'y1': 'value'
+			}
+		},{
+			src: csv,
+			interval: 'interval',
+			readings:{
+				'y2': 'value'
+			}
+		}];
+
+		// x is the interval, y is the function pulling the value
+		$scope.config = [
+			{ name : 'y1', className : 'red' },
+			{ name : 'y2', className : 'blue' }
+		];
+
+		$http.get('samples/test.json')
+			.then(function(res){
+				res.data.forEach(function( d ){
+					json.push( d );
+				});
+			});
+
+		function lineParse( s ){
+			return s.split(',').map(function( v ){
+				return v.trim().replace(/^"(.+(?="$))"$/, '$1');
+			});
+		}
+
+		$http.get('samples/test.csv')
+			.then(function(res){
+				var content = res.data.split('\n'),
+					headers = lineParse(content.shift());
+				
+				content.forEach(function( line ){
+					var t = {};
+
+					lineParse(line).forEach(function( v, k ){
+						t[headers[k]] = v;
+					});
+					csv.push( t );
+				});
+			});
 	}]
 );

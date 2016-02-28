@@ -220,7 +220,7 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 				} else if ( cfg && cfg.getValue ){
 					// used to reduce the checks for parser
 					cfg.$eachNode(function(node){
-						v = cfg.getValue(node);
+						v = +cfg.getValue(node);
 						if ( isNumeric(v) ){
 							if ( min === undefined ){
 								min = v;
