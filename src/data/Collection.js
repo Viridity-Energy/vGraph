@@ -71,6 +71,7 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 		function DataCollection(){
 			this._$index = {};
 			this.$dirty = false;
+			this.$stats = {};
 		}
 
 		DataCollection.prototype = [];
@@ -331,7 +332,8 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 			filtered.$minIndex = filtered[0]._$index;
 			filtered.$maxIndex = filtered[filtered.length-1]._$index;
 			filtered.$dirty = false;
-			
+
+			filtered.$stats = Object.create( this.$stats );
 			filtered.$parent = this;
 
 			return filtered;

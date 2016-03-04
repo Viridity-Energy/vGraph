@@ -25,7 +25,9 @@ angular.module( 'vgraph' ).factory( 'DomHelper',
 				for( i = 0, c = elements.length; i < c; i++ ){
 					el = elements[i].$element;
 
-					el.parentNode.appendChild( el );
+					if ( el.parentNode ){
+						el.parentNode.appendChild( el );
+					}
 				}
 
 				return this;
@@ -428,69 +430,6 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 			return arr;
 		}
 
-		function stackFunc( old, fn ){
-			if ( !fn ){
-				return old;
-			}
-			if ( !old ){
-				return fn;
-			}else{
-				return function( node ){
-					old( node );
-					fn( node );
-				};
-			}
-		}
-
-		function makeExtremeTest( compare ){
-			return function( count, getValue, attr ){
-				var i,
-					maxs;
-
-				return {
-					prep: function(){
-						maxs = [];
-					},
-					reset: function(){
-						maxs.forEach(function( n ){
-							n.node[attr] = false;
-						});
-					},
-					calc: function( node ){
-						var v = getValue(node);
-
-						if ( maxs.length < count ){
-							maxs.push( {value: v, node: node} );
-
-							if ( maxs.length === count ){
-								maxs.sort(function(a,b){ return a.value - b.value; });
-							}
-						}else if ( compare(v,maxs[0].value) ){
-							maxs.shift();
-
-							if ( compare(maxs[0].value,v) ){
-								maxs.unshift( {value: v, node: node} );
-							}else if ( compare(v,maxs[maxs.length-1].value) ){
-								maxs.push( {value: v, node: node} );
-							}else{
-								for( i = maxs.length-2; i >= 0; i-- ){
-									if ( compare(v,maxs[i].value) ){
-										maxs.splice( i+1, 0, {value: v, node: node} );
-										i = 0;
-									}
-								}
-							}
-						}
-					},
-					finalize: function(){
-						maxs.forEach(function( n ){
-							n.node[attr] = true;
-						});
-					}
-				};
-			};
-		}
-
 		return {
 			$resetCalcs: function( config ){
 				var i, c;
@@ -669,56 +608,212 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 				}
 
 				return indexs;
-			},
-			maximums : makeExtremeTest( function(a,b){ return a > b; } ),
-			minimums : makeExtremeTest( function(a,b){ return a < b; } ),
-			compileCalculations: function( calculations ){
-				var fn,
-					prep,
-					calc,
-					reset,
-					finalize;
-
-				calculations.forEach(function( fn ){
-					if ( angular.isFunction(fn) ){
-						calc = stackFunc( calc, fn );
-					}else{
-						// assume object
-						prep = stackFunc( prep, fn.prep );
-						calc = stackFunc( calc, fn.calc );
-						reset = stackFunc( reset, fn.reset );
-						finalize = stackFunc( finalize, fn.finalize );
-					}
-				});
-
-				fn = function viewCalulator( collection, stats ){
-					var i, c;
-
-					if ( calc ){
-						for( i = 0, c = collection.length; i < c; i++ ){
-							calc( collection[i] );
-						}
-					}
-
-					if ( finalize ){
-						finalize( stats );
-					}
-				};
-
-				fn.$reset = function(){
-					if ( reset ){
-						reset();
-					}
-				};
-
-				fn.$init = function(){
-					if ( prep ){
-						prep();
-					}
-				};
-
-				return fn;
 			}
+		};
+	}]
+);
+angular.module( 'vgraph' ).factory( 'CalculationsCompile',
+	[
+	function () {
+		'use strict';
+
+		function stackFunc( old, fn ){
+			if ( !fn ){
+				return old;
+			}
+			if ( !old ){
+				return fn;
+			}else{
+				return function( node ){
+					old( node );
+					fn( node );
+				};
+			}
+		}
+
+		return function( calculations ){
+			var fn,
+				prep,
+				calc,
+				reset,
+				finalize;
+
+			calculations.forEach(function( fn ){
+				if ( angular.isFunction(fn) ){
+					calc = stackFunc( calc, fn );
+				}else{
+					// assume object
+					prep = stackFunc( prep, fn.prep );
+					calc = stackFunc( calc, fn.calc );
+					reset = stackFunc( reset, fn.reset );
+					finalize = stackFunc( finalize, fn.finalize );
+				}
+			});
+
+			fn = function viewCalulator( collection ){
+				var i, c;
+
+				if ( calc ){
+					for( i = 0, c = collection.length; i < c; i++ ){
+						calc( collection[i] );
+					}
+				}
+
+				if ( finalize ){
+					finalize( collection.$stats );
+				}
+			};
+
+			// TODO : do I want to add a method that sets the collection?
+			
+			fn.$reset = function( collection ){
+				if ( reset ){
+					reset( collection.$stats );
+				}
+			};
+
+			fn.$init = function( collection ){
+				if ( prep ){
+					prep( collection.$stats );
+				}
+			};
+
+			return fn;
+		};
+	}]
+);
+angular.module( 'vgraph' ).factory( 'CalculationsExtremes',
+	[
+	function () {
+		'use strict';
+
+		function makeExtremeTest( compare ){
+			return function( count, getValue, attr ){
+				var i,
+					maxs;
+
+				return {
+					prep: function(){
+						maxs = [];
+					},
+					reset: function(){
+						maxs.forEach(function( n ){
+							n.node[attr] = false;
+						});
+					},
+					calc: function( node ){
+						var v = getValue(node);
+
+						if ( maxs.length < count ){
+							maxs.push( {value: v, node: node} );
+
+							if ( maxs.length === count ){
+								maxs.sort(function(a,b){ return a.value - b.value; });
+							}
+						}else if ( compare(v,maxs[0].value) ){
+							maxs.shift();
+
+							if ( compare(maxs[0].value,v) ){
+								maxs.unshift( {value: v, node: node} );
+							}else if ( compare(v,maxs[maxs.length-1].value) ){
+								maxs.push( {value: v, node: node} );
+							}else{
+								for( i = maxs.length-2; i >= 0; i-- ){
+									if ( compare(v,maxs[i].value) ){
+										maxs.splice( i+1, 0, {value: v, node: node} );
+										i = 0;
+									}
+								}
+							}
+						}
+					},
+					finalize: function(){
+						maxs.forEach(function( n ){
+							n.node[attr] = true;
+						});
+					}
+				};
+			};
+		}
+
+		return {
+			maximum : makeExtremeTest( function(a,b){ return a > b; } ),
+			minimum : makeExtremeTest( function(a,b){ return a < b; } )
+		};
+	}]
+);
+angular.module( 'vgraph' ).factory( 'CalculationsPercentiles',
+	[
+	function () {
+		'use strict';
+
+		function makeExtremeTest( compare ){
+			return function( count, getValue, attr ){
+				var maxs;
+
+				return {
+					prep: function(){
+						maxs = [];
+					},
+					reset: function(){
+						maxs.forEach(function( n ){
+							n.node[attr] = false;
+						});
+					},
+					calc: function( node ){
+						var i,
+							v = getValue(node);
+
+						if ( maxs.length < count ){
+							maxs.push( {value: v, node: node} );
+
+							if ( maxs.length === count ){
+								maxs.sort(function(a,b){ return a.value - b.value; });
+							}
+						}else if ( compare(v,maxs[0].value) ){
+							maxs.shift();
+
+							if ( compare(maxs[0].value,v) ){
+								maxs.unshift( {value: v, node: node} );
+							}else if ( compare(v,maxs[maxs.length-1].value) ){
+								maxs.push( {value: v, node: node} );
+							}else{
+								for( i = maxs.length-2; i >= 0; i-- ){
+									if ( compare(v,maxs[i].value) ){
+										maxs.splice( i+1, 0, {value: v, node: node} );
+										i = 0;
+									}
+								}
+							}
+						}
+					},
+					finalize: function(){
+						maxs.forEach(function( n ){
+							n.node[attr] = true;
+						});
+					}
+				};
+			};
+		}
+
+		return function( percentile, getValue, attr ){
+			var data;
+
+			return {
+				prep: function(){
+					data = [];
+				},
+				calc: function( node ){
+					data.push( getValue(node) );
+				},
+				finalize: function( stats ){
+					var pos = Math.round( data.length*(percentile / 100) );
+
+					data.sort(function( a, b ){ return a - b; });
+
+					stats[attr] = data[pos];
+				}
+			};
 		};
 	}]
 );
@@ -1047,12 +1142,16 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 
 			ref = this.getReference( refDef );
 
-			if ( !refDef.field ){
+			if ( refDef.field === undefined ){
 				ref.field = ref.name;
 			}else{
 				ref.field = refDef.field;
 			}
 			
+			if ( refDef.pointAs ){
+				ref.pointAs = refDef.pointAs;
+			}
+
 			ref._field = ref.field;
 			ref.$reset = function(){
 				ref.field = ref._field;
@@ -1064,8 +1163,10 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 						return d[ ref.field ];
 					}
 				};
-			}else{
-				ref.getValue = refDef.getValue;
+			}else if ( refDef.getValue ){
+				ref.getValue = function( d ){
+					return refDef.getValue( d, this.$view.normalizer.$stats );
+				};
 			}
 
 			// undefined allow lax definining, and simplicity for one view sake.
@@ -1081,6 +1182,9 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 				ref.$view = this.getView( refDef.view );
 				ref.$getNode = function( index ){
 					return this.$view.normalizer.$getNode(index);
+				};
+				ref.$getClosest = function( index ){
+					return this.$view.normalizer.$getClosest(index,'$x');
 				};
 				ref.$getValue = function( index ){
 					var t = this.$view.normalizer.$getNode(index);
@@ -1400,7 +1504,8 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 		ComponentChart.prototype.highlightOn = function( pos ){
 			var sum = 0,
 				count = 0,
-				points = {};
+				points = {},
+				references = this.references;
 
 			angular.forEach( this.views, function( view, viewName ){
 				var p;
@@ -1417,6 +1522,14 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 
 			points.$pos = sum / count;
 			points.pos = pos;
+
+			Object.keys(this.references).forEach(function(key){
+				var ref = references[key];
+				
+				if ( ref.pointAs ){
+					points[ref.pointAs] =  ref.getValue( ref.$getClosest(pos.x) );
+				}
+			});
 
 			this.$trigger( 'focus-point', points );
 			this.$trigger( 'highlight', points );
@@ -1842,8 +1955,8 @@ angular.module( 'vgraph' ).factory( 'ComponentPane',
 	}]
 );
 angular.module( 'vgraph' ).factory( 'ComponentView',
-	[ 'ComponentPane', 'ComponentPage', 'DataNormalizer', 'StatCalculations',
-	function ( ComponentPane, ComponentPage, DataNormalizer, StatCalculations ) {
+	[ 'ComponentPane', 'ComponentPage', 'DataNormalizer', 'CalculationsCompile',
+	function ( ComponentPane, ComponentPage, DataNormalizer, calculationsCompile ) {
 		'use strict';
 		
 		var id = 1;
@@ -1986,14 +2099,13 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 			
 			this.box = box;
 			this.manager = page.getManager( settings.manager || ComponentPage.defaultManager );
-			this.normalizer  = normalizer = settings.normalizer || 
+			this.normalizer = normalizer = settings.normalizer || 
 				new DataNormalizer(function(index){
 					return Math.round(index);
 				});
 
 			if ( settings.calculations ){
-				this.calculations = 
-					StatCalculations.compileCalculations(settings.calculations);
+				this.calculations = calculationsCompile(settings.calculations);
 			}
 
 			refNames.forEach(function( name ){
@@ -2122,11 +2234,13 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 				this.setViewportIntervals( this.offset.$left, this.offset.$right );
 				this.normalizer.$reindex( this.filtered, scale );
 
+				// first we run the calculations
 				if ( this.calculations ){
-					this.calculations.$init();
+					this.calculations.$init( this.normalizer );
 					this.calculations( this.normalizer );
 				}
 
+				// and then we get the min and max, this allows for calculations to be included
 				this.components.forEach(function( component ){
 					var t;
 
@@ -2184,7 +2298,8 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 		};
 
 		ComponentView.prototype.getPoint = function( pos ){
-			return this.normalizer.$getClosest( pos, '$x' );
+			// I want a shadow copy so i can overwrite but not cause problems
+			return this.normalizer.$getClosest(pos,'$x');
 		};
 
 		return ComponentView;
@@ -2263,6 +2378,7 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 		function DataCollection(){
 			this._$index = {};
 			this.$dirty = false;
+			this.$stats = {};
 		}
 
 		DataCollection.prototype = [];
@@ -2523,7 +2639,8 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 			filtered.$minIndex = filtered[0]._$index;
 			filtered.$maxIndex = filtered[filtered.length-1]._$index;
 			filtered.$dirty = false;
-			
+
+			filtered.$stats = Object.create( this.$stats );
 			filtered.$parent = this;
 
 			return filtered;
@@ -2760,8 +2877,8 @@ angular.module( 'vgraph' ).factory( 'DataLoader',
 	}]
 );
 angular.module( 'vgraph' ).factory( 'DataManager',
-	[ 'DataCollection', 'StatCalculations',
-	function ( DataCollection, StatCalculations ) {
+	[ 'DataCollection', 'CalculationsCompile',
+	function ( DataCollection, calculationsCompile ) {
 		'use strict';
 
 		var uid = 1;
@@ -2775,7 +2892,7 @@ angular.module( 'vgraph' ).factory( 'DataManager',
 			this.$$managerUid = uid++;
 			this.$dataProc = regulator( 20, 200, function( dis ){
 				if ( dis.calculations ){
-					dis.calculations.$reset();
+					dis.calculations.$reset( dis.data );
 					dis.calculations( dis.data );
 				}
 
@@ -2827,9 +2944,9 @@ angular.module( 'vgraph' ).factory( 'DataManager',
 		};
 
 		DataManager.prototype.setCalculations = function( calculations ){
-			this.calculations = StatCalculations.compileCalculations( calculations );
+			this.calculations = calculationsCompile( calculations );
 
-			this.calculations.$init();
+			this.calculations.$init( calculations );
 		};
 
 		DataManager.prototype.setValue = function( interval, name, value ){
@@ -3040,6 +3157,7 @@ angular.module( 'vgraph' ).factory( 'DataNormalizer',
 				this._finalizeProperties( this[i] );
 			}
 
+			this.$stats = Object.create(collection.$stats);
 			this.$parent = collection;
 		};
 

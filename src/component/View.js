@@ -1,6 +1,6 @@
 angular.module( 'vgraph' ).factory( 'ComponentView',
-	[ 'ComponentPane', 'ComponentPage', 'DataNormalizer', 'StatCalculations',
-	function ( ComponentPane, ComponentPage, DataNormalizer, StatCalculations ) {
+	[ 'ComponentPane', 'ComponentPage', 'DataNormalizer', 'CalculationsCompile',
+	function ( ComponentPane, ComponentPage, DataNormalizer, calculationsCompile ) {
 		'use strict';
 		
 		var id = 1;
@@ -143,14 +143,13 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 			
 			this.box = box;
 			this.manager = page.getManager( settings.manager || ComponentPage.defaultManager );
-			this.normalizer  = normalizer = settings.normalizer || 
+			this.normalizer = normalizer = settings.normalizer || 
 				new DataNormalizer(function(index){
 					return Math.round(index);
 				});
 
 			if ( settings.calculations ){
-				this.calculations = 
-					StatCalculations.compileCalculations(settings.calculations);
+				this.calculations = calculationsCompile(settings.calculations);
 			}
 
 			refNames.forEach(function( name ){
@@ -279,11 +278,13 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 				this.setViewportIntervals( this.offset.$left, this.offset.$right );
 				this.normalizer.$reindex( this.filtered, scale );
 
+				// first we run the calculations
 				if ( this.calculations ){
-					this.calculations.$init();
+					this.calculations.$init( this.normalizer );
 					this.calculations( this.normalizer );
 				}
 
+				// and then we get the min and max, this allows for calculations to be included
 				this.components.forEach(function( component ){
 					var t;
 
@@ -341,7 +342,8 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 		};
 
 		ComponentView.prototype.getPoint = function( pos ){
-			return this.normalizer.$getClosest( pos, '$x' );
+			// I want a shadow copy so i can overwrite but not cause problems
+			return this.normalizer.$getClosest(pos,'$x');
 		};
 
 		return ComponentView;

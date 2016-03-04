@@ -24,7 +24,9 @@ angular.module( 'vgraph' ).factory( 'DomHelper',
 				for( i = 0, c = elements.length; i < c; i++ ){
 					el = elements[i].$element;
 
-					el.parentNode.appendChild( el );
+					if ( el.parentNode ){
+						el.parentNode.appendChild( el );
+					}
 				}
 
 				return this;

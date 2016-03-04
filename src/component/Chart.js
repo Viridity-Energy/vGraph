@@ -191,12 +191,16 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 
 			ref = this.getReference( refDef );
 
-			if ( !refDef.field ){
+			if ( refDef.field === undefined ){
 				ref.field = ref.name;
 			}else{
 				ref.field = refDef.field;
 			}
 			
+			if ( refDef.pointAs ){
+				ref.pointAs = refDef.pointAs;
+			}
+
 			ref._field = ref.field;
 			ref.$reset = function(){
 				ref.field = ref._field;
@@ -208,8 +212,10 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 						return d[ ref.field ];
 					}
 				};
-			}else{
-				ref.getValue = refDef.getValue;
+			}else if ( refDef.getValue ){
+				ref.getValue = function( d ){
+					return refDef.getValue( d, this.$view.normalizer.$stats );
+				};
 			}
 
 			// undefined allow lax definining, and simplicity for one view sake.
@@ -225,6 +231,9 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 				ref.$view = this.getView( refDef.view );
 				ref.$getNode = function( index ){
 					return this.$view.normalizer.$getNode(index);
+				};
+				ref.$getClosest = function( index ){
+					return this.$view.normalizer.$getClosest(index,'$x');
 				};
 				ref.$getValue = function( index ){
 					var t = this.$view.normalizer.$getNode(index);
@@ -544,7 +553,8 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 		ComponentChart.prototype.highlightOn = function( pos ){
 			var sum = 0,
 				count = 0,
-				points = {};
+				points = {},
+				references = this.references;
 
 			angular.forEach( this.views, function( view, viewName ){
 				var p;
@@ -561,6 +571,14 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 
 			points.$pos = sum / count;
 			points.pos = pos;
+
+			Object.keys(this.references).forEach(function(key){
+				var ref = references[key];
+				
+				if ( ref.pointAs ){
+					points[ref.pointAs] =  ref.getValue( ref.$getClosest(pos.x) );
+				}
+			});
 
 			this.$trigger( 'focus-point', points );
 			this.$trigger( 'highlight', points );

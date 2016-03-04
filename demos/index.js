@@ -1476,14 +1476,14 @@ angular.module( 'vgraph' ).controller( 'ExportCtrl',
 );
 
 angular.module( 'vgraph' ).controller( 'StatsCtrl',
-	['$scope', 'StatCalculations',
-	function( $scope, StatCalculations ){
+	['$scope', 'CalculationsExtremes', 'CalculationsPercentiles',
+	function( $scope, CalculationsExtremes, CalculationsPercentiles ){
 		var data = [ {x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40}  ];
 
 		$scope.graph = {
 			x : {
-				min: -5,
-				max: 105,
+				min: -50,
+				max: 200050,
 				scale: function(){ return d3.scale.linear(); }
 			},
 			y : {
@@ -1495,8 +1495,23 @@ angular.module( 'vgraph' ).controller( 'StatsCtrl',
 			views: {
 				'default': {
 					calculations: [
-						StatCalculations.maximums( 4, function(d){ return d.someLine1; }, 'max' )
+						CalculationsExtremes.maximum( 4, function(d){ return d.someLine1; }, 'max' ),
+						CalculationsPercentiles( 25, function( d ){ return d.someLine1; }, 'perc25' )
 					]
+				}
+			}
+		};
+
+		$scope.zoom = {
+			x : {
+				min: -50,
+				max: 200050,
+				scale: function(){ return d3.scale.linear(); }
+			},
+			y : {
+				padding : 0.05,
+				format: function( y ){
+					return ':' + y;
 				}
 			}
 		};
@@ -1505,7 +1520,8 @@ angular.module( 'vgraph' ).controller( 'StatsCtrl',
 			managers: {
 				'default': {
 					calculations: [
-						StatCalculations.minimums( 4, function(d){ return d.someLine1; }, 'min' )
+						CalculationsExtremes.minimum( 4, function(d){ return d.someLine1; }, 'min' ),
+						CalculationsPercentiles( 50, function( d ){ return d.someLine1; }, 'median' )
 					]
 				}
 			},
@@ -1537,10 +1553,28 @@ angular.module( 'vgraph' ).controller( 'StatsCtrl',
 					return t;
 				},
 				
+			},
+			{
+				name: 'median',
+				field: null,
+				pointeAs: 'median',
+				className: 'green',
+				getValue: function( d, stats ){
+					return stats.median;
+				}
+			},
+			{
+				name: 'perc25',
+				field: null,
+				pointeAs: 'perc25',
+				className: 'blue',
+				getValue: function( d, stats ){
+					return stats.perc25;
+				}
 			}
 		];
 
-		for( var i = 0, c = 100; i < c; i++ ){
+		for( var i = 0, c = 200000; i < c; i++ ){
 			var counter = 0;
 			var min = -1,
 				max = 1,

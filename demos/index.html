@@ -962,7 +962,7 @@
 			<h5>Stats Data</h5>
 			<div ng-controller="StatsCtrl">
 				<div vgraph-page="page">
-					<div vgraph-chart="graph">
+					<div vgraph-chart="graph" name="primary">
 						<div vgraph-highlight="point">{{point}}</div>
 						<svg xmlns="http://www.w3.org/2000/svg"  version="1.1">
 							<g vgraph-axis="'left'"
@@ -970,12 +970,27 @@
 							<g vgraph-axis="'bottom'"
 								tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
 
-							<g ng-repeat="cfg in config" vgraph-dots="cfg"></g>
+							<g vgraph-line="config[1]"></g>
+							<g vgraph-line="config[2]"></g>
+							<g vgraph-dots="config[0]"></g>
 
 							<g vgraph-target="config" point-radius="5"></g>
 							<g vgraph-loading="Loading Data"></g>
 
 							<g vgraph-interact></g>
+						</svg>
+					</div>
+
+					<div vgraph-chart="zoom">
+						<svg>
+							<g vgraph-axis="'top'"
+								tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+							<g vgraph-axis="'bottom'"
+								tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+							
+							<path ng-repeat="cfg in config" vgraph-line="cfg"></path>
+
+							<g vgraph-zoom="primary"></g>
 						</svg>
 					</div>
 				</div>

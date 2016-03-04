@@ -1,6 +1,6 @@
 angular.module( 'vgraph' ).factory( 'DataManager',
-	[ 'DataCollection', 'StatCalculations',
-	function ( DataCollection, StatCalculations ) {
+	[ 'DataCollection', 'CalculationsCompile',
+	function ( DataCollection, calculationsCompile ) {
 		'use strict';
 
 		var uid = 1;
@@ -14,7 +14,7 @@ angular.module( 'vgraph' ).factory( 'DataManager',
 			this.$$managerUid = uid++;
 			this.$dataProc = regulator( 20, 200, function( dis ){
 				if ( dis.calculations ){
-					dis.calculations.$reset();
+					dis.calculations.$reset( dis.data );
 					dis.calculations( dis.data );
 				}
 
@@ -66,9 +66,9 @@ angular.module( 'vgraph' ).factory( 'DataManager',
 		};
 
 		DataManager.prototype.setCalculations = function( calculations ){
-			this.calculations = StatCalculations.compileCalculations( calculations );
+			this.calculations = calculationsCompile( calculations );
 
-			this.calculations.$init();
+			this.calculations.$init( calculations );
 		};
 
 		DataManager.prototype.setValue = function( interval, name, value ){
