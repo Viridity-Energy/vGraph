@@ -1,13 +1,13 @@
-angular.module( 'vgraph' ).factory( 'DrawBuilder', 
+angular.module( 'vgraph' ).factory( 'DrawLinear', 
 	[
 	function(){
 		'use strict';
 
-		function DrawBuilder(){
+		function DrawLinear(){
 			this.references = [];
 		}
 
-		DrawBuilder.isNumeric = function( v ){
+		DrawLinear.isNumeric = function( v ){
 			if ( v === null ){
 				return false;
 			}else if ( Number.isFinite ){
@@ -17,21 +17,21 @@ angular.module( 'vgraph' ).factory( 'DrawBuilder',
 			}
 		};
 
-		DrawBuilder.prototype.getReferences = function(){
+		DrawLinear.prototype.getReferences = function(){
 			return this.references;
 		};
 
 		// allows for very complex checks of if the value is defined, allows checking previous and next value
-		DrawBuilder.prototype.parse = function( d ){
+		DrawLinear.prototype.parse = function( d ){
 			return d;
 		};
 
-		DrawBuilder.prototype.makeSet = function(){
+		DrawLinear.prototype.makeSet = function(){
 			return [];
 		};
 
 		// merging set, returning true means to end the set, returning false means to continue it
-		DrawBuilder.prototype.mergeParsed = function( parsed, set ){
+		DrawLinear.prototype.mergeParsed = function( parsed, set ){
 			if ( parsed ){
 				set.push( set );
 				return false;
@@ -40,15 +40,15 @@ angular.module( 'vgraph' ).factory( 'DrawBuilder',
 			}
 		};
 
-		DrawBuilder.prototype.isValidSet = function( set ){
+		DrawLinear.prototype.isValidSet = function( set ){
 			return set.length !== 0;
 		};
 
-		DrawBuilder.prototype.finalizeSet = function( set ){
+		DrawLinear.prototype.finalizeSet = function( set ){
 			return set;
 		};
 
-		DrawBuilder.prototype.makeSets = function( keys ){
+		DrawLinear.prototype.makeSets = function( keys ){
 			var i, c,
 				raw,
 				parsed,
@@ -108,16 +108,16 @@ angular.module( 'vgraph' ).factory( 'DrawBuilder',
 			return sets;
 		};
 
-		DrawBuilder.prototype.makeElement = function( convertedSet ){
+		DrawLinear.prototype.makeElement = function( convertedSet ){
 			console.log( 'makeElement', convertedSet );
 			return '<text>Element not overriden</text>';
 		};
 
-		DrawBuilder.prototype.makePath = function( convertedSet ){
+		DrawLinear.prototype.makePath = function( convertedSet ){
 			console.log( 'makePath', convertedSet );
 			return 'M0,0Z';
 		};
 
-		return DrawBuilder;
+		return DrawLinear;
 	}]
 );

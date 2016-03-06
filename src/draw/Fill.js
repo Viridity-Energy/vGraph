@@ -1,9 +1,9 @@
 angular.module( 'vgraph' ).factory( 'DrawFill', 
-	['DrawBuilder',
-	function( DrawBuilder ){
+	['DrawLinear',
+	function( DrawLinear ){
 		'use strict';
 		
-		var isNumeric = DrawBuilder.isNumeric;
+		var isNumeric = DrawLinear.isNumeric;
 		
 		function DrawFill( top, bottom ){
 			this.top = top;
@@ -17,7 +17,7 @@ angular.module( 'vgraph' ).factory( 'DrawFill',
 			}
 		}
 
-		DrawFill.prototype = new DrawBuilder();
+		DrawFill.prototype = new DrawLinear();
 
 		DrawFill.prototype.parse = function( index ){
 			var y1,
@@ -50,7 +50,7 @@ angular.module( 'vgraph' ).factory( 'DrawFill',
 				y2 = parsed.y2,
 				last = set[set.length-1];
 
-			if ( DrawBuilder.isNumeric(y1) && DrawBuilder.isNumeric(y2) ){
+			if ( DrawLinear.isNumeric(y1) && DrawLinear.isNumeric(y2) ){
 				set.push({
 					x: x,
 					y1: this.top.$view.y.scale(y1),

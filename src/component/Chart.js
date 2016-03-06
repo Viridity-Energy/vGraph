@@ -114,6 +114,10 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 			}
 			
 			angular.forEach( views, addView );
+
+			if ( settings.onLoad ){
+				settings.onLoad( this );
+			}
 		};
 
 		function normalizeY( views ){
@@ -297,6 +301,8 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 				isReady = false,
 				hasViews = 0;
 
+			this.$trigger('render');
+			
 			try{
 				// generate data limits for all views
 				angular.forEach( this.views, function( view, name ){
@@ -383,6 +389,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 
 				schedule.loop( activeViews, function( view ){
 					view.finalize();
+					dis.$trigger( 'publish:'+view.$name, view.normalizer );
 				});
 
 				schedule.func(function(){
@@ -464,6 +471,8 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 				this.box,
 				this.page
 			);
+
+			viewModel.$name = viewName;
 
 			viewModel.manager.register(function(){
 				dis.needsRender(viewModel);

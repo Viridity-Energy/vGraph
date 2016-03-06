@@ -1,6 +1,6 @@
 angular.module( 'vgraph' ).factory( 'DrawDots', 
-	['DrawBuilder',
-	function( DrawBuilder ){
+	['DrawLinear',
+	function( DrawLinear ){
 		'use strict';
 		
 		function DrawDots( ref, radius ){
@@ -9,7 +9,7 @@ angular.module( 'vgraph' ).factory( 'DrawDots',
 			this.references = [ref];
 		}
 
-		DrawDots.prototype = new DrawBuilder();
+		DrawDots.prototype = new DrawLinear();
 
 		DrawDots.prototype.makeSet = function(){
 			return {};
@@ -40,8 +40,7 @@ angular.module( 'vgraph' ).factory( 'DrawDots',
 				r2 = radius*2;
 
 			if ( set.x !== undefined ){
-				return 'M' + 
-					set.x+' '+set.y+
+				return 'M' + set.x+' '+set.y+
 					'm -'+radius+', 0'+
 					'a '+radius+','+radius+' 0 1,1 '+r2+',0'+
 					'a '+radius+','+radius+' 0 1,1 -'+r2+',0';
@@ -72,7 +71,7 @@ angular.module( 'vgraph' ).factory( 'DrawDots',
 				y1: dataSet.y - radius,
 				y2: dataSet.y + radius,
 				intersect: function( x, y ){
-					return Math.sqrt( Math.pow(dataSet.x-x,2) + Math.pow(dataSet.y-y,2) ) < radius;
+					return Math.sqrt( Math.pow(dataSet.x-x,2) + Math.pow(dataSet.y-y,2) ) <= radius;
 				}
 			};
 		};

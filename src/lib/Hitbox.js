@@ -35,13 +35,29 @@ angular.module( 'vgraph' ).factory( 'Hitbox',
 			this._yDex = yDex;
 		}
 
-	  	Hitbox.prototype.$hashX = function( x ){
-	  		return ( ((x - this.xMin) / this.xDiff) * this.count ) | 0;
-	  	};
+		Hitbox.prototype.$hashX = function( x ){
+			var t = ( ((x - this.xMin) / this.xDiff) * this.count ) | 0;
 
-	  	Hitbox.prototype.$hashY = function( y ){
-	  		return ( ((y - this.yMin) / this.yDiff) * this.count ) | 0;
-	  	};
+			if ( t < 0 ){
+				t = 0;
+			}else if ( t >= this.count ){
+				t = this.count-1;
+			}
+
+			return t;
+		};
+
+		Hitbox.prototype.$hashY = function( y ){
+			var t = ( ((y - this.yMin) / this.yDiff) * this.count ) | 0;
+
+			if ( t < 0 ){
+				t = 0;
+			}else if ( t >= this.count ){
+				t = this.count-1;
+			}
+
+			return t;
+		};
 
 		Hitbox.prototype.add = function( info ){
 			var i, c,
