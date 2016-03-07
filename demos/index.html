@@ -28,6 +28,11 @@
 			height: 220;
 		}
 
+		svg.pie {
+			width: 200;
+			height: 200;
+		}
+
 		.narrow [vgraph-chart] {
 			width: 340;
 			height: 90;
@@ -74,25 +79,25 @@
 			fill: none;
 		}
 
-		.red.fill, .red.point, rect.red, .red.bar, .red.box {
+		.red.fill, .red.point, rect.red, .red.bar, .red.box, .red.slice {
 			stroke-width: 1;
 			stroke: red;
 			fill: red;
 		}
 
-		.blue.fill, .blue.point, rect.blue, .blue.bar, .blue.box {
+		.blue.fill, .blue.point, rect.blue, .blue.bar, .blue.box, .blue.slice {
 			stroke-width: 1;
 			stroke: blue;
 			fill: blue;
 		}
 
-		.green.fill, .green.point, rect.green, .green.bar, .green.box {
+		.green.fill, .green.point, rect.green, .green.bar, .green.box, .green.slice {
 			stroke-width: 1;
 			stroke: green;
 			fill: green;
 		}
 
-		.orange.fill, .orange.point, rect.orange, .orange.bar, .orange.box {
+		.orange.fill, .orange.point, rect.orange, .orange.bar, .orange.box, .orange.slice {
 			stroke-width: 1;
 			stroke: orange;
 			fill: orange;
@@ -194,6 +199,10 @@
 				ng-click="stats = !stats"/></label>
 			<label>External<input type='checkbox' ng-checked="external" 
 				ng-click="external = !external"/></label>
+			<label>Speed<input type='checkbox' ng-checked="speed" 
+				ng-click="speed = !speed"/></label>
+			<label>Pie<input type='checkbox' ng-checked="pie" 
+				ng-click="pie = !pie"/></label>
 		</section>
 
 		<div ng-if="simple" ng-controller="FloodCtrl">
@@ -963,7 +972,10 @@
 			<div ng-controller="StatsCtrl">
 				<div vgraph-page="page">
 					<div vgraph-chart="graph" name="primary">
-						<div vgraph-highlight="point">{{point}}</div>
+						<div vgraph-highlight="point" vgraph-publish="{default:'model'}"
+							>{{point}}
+								| median:{{model.$stats.median}}
+								| 25th:{{model.$stats.perc25}}</div>
 						<svg xmlns="http://www.w3.org/2000/svg"  version="1.1">
 							<g vgraph-axis="'left'"
 								tick-length="4" tick-padding="-2"></g>
@@ -1014,6 +1026,61 @@
 							<g vgraph-target="config" point-radius="5"></g>
 							<g vgraph-loading="Loading Data"></g>
 
+							<g vgraph-interact></g>
+						</svg>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<section ng-if="speed">
+			<h5>Speed Test</h5>
+			<div ng-controller="SpeedCtrl">
+				<div vgraph-page="page">
+					<div vgraph-chart="graph">
+						<div vgraph-highlight="point">{{point}}</div>
+						<svg xmlns="http://www.w3.org/2000/svg"  version="1.1">
+							<g vgraph-axis="'left'"
+								tick-length="4" tick-padding="-2"></g>
+							<g vgraph-axis="'bottom'"
+								tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+
+							<path vgraph-line="ref"></path>
+
+							<g vgraph-target="[ref]" point-radius="5"></g>
+							<g vgraph-loading="Loading Data"></g>
+
+							<g vgraph-interact></g>
+						</svg>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<section ng-if="pie">
+			<h5>Pie Chart</h5>
+			<div ng-controller="PieCtrl">
+				<div vgraph-page="page">
+					<div vgraph-chart="graph">
+						<div vgraph-highlight="point">{{point}}</div>
+						<svg xmlns="http://www.w3.org/2000/svg"  version="1.1">
+							<g vgraph-axis="'left'"
+								tick-length="4" tick-padding="-2"></g>
+							<g vgraph-axis="'bottom'"
+								tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+
+							<path vgraph-line="ref"></path>
+
+							<g vgraph-target="[ref]" point-radius="5"></g>
+							<g vgraph-loading="Loading Data"></g>
+
+							<g vgraph-interact></g>
+						</svg>
+					</div>
+					<div vgraph-chart="graph">
+						<div vgraph-publish="{pie:'content'}">{{content}}</div>
+						<svg xmlns="http://www.w3.org/2000/svg"  version="1.1" class="pie">
+							<g vgraph-pie="ref" buckets="buckets" publish="pie"></g>
 							<g vgraph-interact></g>
 						</svg>
 					</div>

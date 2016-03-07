@@ -1,9 +1,9 @@
 angular.module( 'vgraph' ).factory( 'DrawBar', 
-	['DrawBuilder',
-	function( DrawBuilder ){
+	['DrawLinear',
+	function( DrawLinear ){
 		'use strict';
 
-		var isNumeric = DrawBuilder.isNumeric;
+		var isNumeric = DrawLinear.isNumeric;
 
 		function DrawBar( top, bottom, width ){
 			this.width = width;
@@ -18,7 +18,7 @@ angular.module( 'vgraph' ).factory( 'DrawBar',
 			}
 		}
 
-		DrawBar.prototype = new DrawBuilder();
+		DrawBar.prototype = new DrawLinear();
 
 		function calcBar( x1, x2, y1, y2, box ){
 			var t;

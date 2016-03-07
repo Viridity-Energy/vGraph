@@ -1299,7 +1299,6 @@ angular.module( 'vgraph' ).controller( 'ExportCtrl',
 			data3 = [ {x : start, y : 20}  ],
 			data4 = [ {x : start+86400000, y : 20}  ];
 
-		console.log( start, stop );
 		$scope.exports = {
 			default: function( graph ){
 				var data = graph.export([
@@ -1478,7 +1477,9 @@ angular.module( 'vgraph' ).controller( 'ExportCtrl',
 angular.module( 'vgraph' ).controller( 'StatsCtrl',
 	['$scope', 'CalculationsExtremes', 'CalculationsPercentiles',
 	function( $scope, CalculationsExtremes, CalculationsPercentiles ){
-		var data = [ {x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40}  ];
+		var data = [ {x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40}  ],
+			startHook = function(){},
+			stopHook = function(){};
 
 		$scope.graph = {
 			x : {
@@ -1499,6 +1500,14 @@ angular.module( 'vgraph' ).controller( 'StatsCtrl',
 						CalculationsPercentiles( 25, function( d ){ return d.someLine1; }, 'perc25' )
 					]
 				}
+			},
+			onLoad: function( chart ){
+				chart.$on('render', function(){
+					startHook();
+				});
+				chart.$on('done', function(){
+					stopHook();
+				});
 			}
 		};
 
@@ -1574,6 +1583,19 @@ angular.module( 'vgraph' ).controller( 'StatsCtrl',
 			}
 		];
 
+		var startTime,
+			beginTime = +(new Date());
+		startHook = function(){
+			startTime = +(new Date());
+			$scope.loadTime = startTime - beginTime;
+			console.log('=>', $scope.loadTime);
+		};
+
+		stopHook = function(){
+			$scope.runTime = +(new Date()) - startTime;
+			console.log( '->', $scope.runTime );
+		};
+
 		for( var i = 0, c = 200000; i < c; i++ ){
 			var counter = 0;
 			var min = -1,
@@ -1648,5 +1670,112 @@ angular.module( 'vgraph' ).controller( 'ExternalCtrl',
 					csv.push( t );
 				});
 			});
+	}]
+);
+	
+angular.module( 'vgraph' ).controller( 'SpeedCtrl',
+	['$scope', '$timeout',
+	function( $scope, $timeout ){
+		var data = [ { x: 0, y: 10} ];
+
+		$scope.graph = {
+			onLoad: function( chart ){
+				var begin = +(new Date()),
+					startTime;
+
+				chart.$on('render', function(){
+					var now = +(new Date());
+					console.log('=>', chart.$vguid, now-begin);
+					startTime = now;
+				});
+				chart.$on('done', function(){
+					var now = +(new Date());
+					console.log('->', chart.$vguid, now-startTime);
+				});
+			}
+		};
+
+		$scope.page = [{
+			src: data,
+			interval: 'x',
+			readings:{
+				'y': 'y'
+			}
+		}];
+
+		$scope.ref = { name : 'y', className : 'red' };
+
+		function makeData(){
+			for( var i = 0, c = 200000; i < c; i++ ){
+				var counter = 0;
+				var min = -1,
+					max = 1,
+					t = Math.random() * (max - min) + min,
+					p = {
+						x : data.length,
+						y : data[data.length-1].y + t
+					};
+
+				data.push( p );
+			}
+		}
+
+		$timeout( makeData, 1000 );
+
+		$timeout( makeData, 6000 );
+	}]
+);
+
+angular.module( 'vgraph' ).controller( 'PieCtrl',
+	['$scope', '$timeout',
+	function( $scope, $timeout ){
+		var data = [ { x: 0, y: 10} ];
+
+		$scope.graph = {};
+
+		$scope.page = [{
+			src: data,
+			interval: 'x',
+			readings:{
+				'y': 'y'
+			}
+		}];
+
+		$scope.buckets = {
+			blue: function( datum, value ){
+				return 1;
+			},
+			red: function( datum, value ){
+				if ( value > 15 ){
+					return 1;
+				}
+			},
+			green: function( datum, value ){
+				if ( value < 5 ){
+					return 1;
+				}
+			}
+		};
+
+		$scope.ref = { name : 'y', className : 'red' };
+
+		function makeData(){
+			for( var i = 0, c = 2000; i < c; i++ ){
+				var counter = 0;
+				var min = -1,
+					max = 1,
+					t = Math.random() * (max - min) + min,
+					p = {
+						x : data.length,
+						y : data[data.length-1].y + t
+					};
+
+				data.push( p );
+			}
+		}
+
+		$timeout( makeData, 1000 );
+
+		$timeout( makeData, 6000 );
 	}]
 );

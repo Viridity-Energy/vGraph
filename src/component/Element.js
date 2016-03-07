@@ -35,8 +35,9 @@ angular.module( 'vgraph' ).factory( 'ComponentElement',
 
 		ComponentElement.svgCompile = svgCompile;
 		
-		ComponentElement.prototype.setChart = function( chart ){
+		ComponentElement.prototype.setChart = function( chart, publish ){
 			this.chart = chart;
+			this.publish = publish;
 		};
 
 		ComponentElement.prototype.setElement = function( domNode ){
@@ -68,6 +69,10 @@ angular.module( 'vgraph' ).factory( 'ComponentElement',
 			var drawer = this.drawer,
 				indexs = StatCalculations.indexs( this.references ),
 				dataSets = drawer.makeSets( indexs );
+
+			if ( this.publish ){
+				this.chart.$trigger( 'publish:'+this.publish, dataSets );
+			}
 
 			// dataSets will be the content, preParsed, used to make the data
 			if ( this.element.tagName === 'g' ){

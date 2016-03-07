@@ -1,46 +1,73 @@
 <html>
-  <head>
-    <meta charset="utf-8">
-    <script src="bower_components/d3/d3.js"></script>
-    <script src="bower_components/jquery/dist/jquery.js"></script>
-    <script src="bower_components/angular/angular.js"></script>
-    <script src="vgraph.js"></script>
-  </head>
-  <body>
-    <script>
-    var i, c,
-      t,
-      content = [];
+<head>
+<meta charset="utf-8">
+<script src="bower_components/d3/d3.js"></script>
+<script src="bower_components/jquery/dist/jquery.js"></script>
+<script src="bower_components/angular/angular.js"></script>
+<script src="vgraph.js"></script>
+</head>
+<body>
+	<script>
+		function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
+			var angleInRadians = (angleInDegrees-90) * Math.PI / 180.0;
 
-    for( i = 0, c = 1000000; i < c; i++ ){
-      content.push( {v:1} );
-    }
+			return {
+				x: centerX + (radius * Math.cos(angleInRadians)),
+				y: centerY + (radius * Math.sin(angleInRadians))
+			};
+		}
 
-    time = +(new Date());
-    t = [];
-    for( i = 0, c = content.length; i < c; i++ ){
-     t.push( content[i] );
-    }
-    console.log( 'run 1', +(new Date()) - time );
-    console.log( t );
+		console.log( polarToCartesian(80,80,45,0) );
+		console.log( polarToCartesian(80,80,45,45) );
+		console.log( polarToCartesian(80,80,45,90) );
 
-    time = +(new Date());
-    t = []
-    for( i = 0, c = content.length; i < c; i++ ){
-      t[ t.length ] = content[i];
-    }
-    console.log( 'run 2', +(new Date()) - time );
-    console.log( t );
+		function describeArc(x, y, radius, startAngle, endAngle){
+			var start = polarToCartesian(x, y, radius, endAngle);
+			var end = polarToCartesian(x, y, radius, startAngle);
 
-    time = +(new Date());
-    t = [1,2];
-    content.unshift( t.length );
-    content.unshift( 0 );
-    Array.prototype.splice.apply( t, content )
-    console.log( 'run 3', +(new Date()) - time );
-    console.log( t );
-    console.log( content );
+			var arcSweep = endAngle - startAngle <= 180 ? "0" : "1";
 
-    </script>
-  </body>
+			var d = [
+				"M", start.x, start.y, 
+				"A", radius, radius, 0, arcSweep, 0, end.x, end.y
+			].join(" ");
+
+			return d;       
+		}
+
+		function makeSliver( x, y, radius, startAngle, stopAngle ){
+			var arcSweep = stopAngle - startAngle <= 180 ? "0" : "1",
+				start = polarToCartesian(x, y, radius, stopAngle),
+				stop = polarToCartesian(x, y, radius, startAngle);
+
+			return 'M'+x+','+y+
+				'L'+start.x+','+start.y+
+				'A'+radius+','+radius+' 0 '+arcSweep+' 0 '+stop.x+','+stop.y+'Z';
+		}
+
+		console.log( makeSliver(80,80,45,0,45) );
+		console.log( makeSliver(80,80,45,0,90) );
+		console.log( makeSliver(80,80,45,0,135) );
+		console.log( makeSliver(80,80,45,0,225) );
+	</script>
+	<svg width="160px" height="160px">
+		<path d="M80 80 A 45 45, 0, 0, 0, 125 125 L 125 80 Z" fill="green"/>
+	</svg>
+	<h5>Degrees 45</h5>
+	<svg width="160px" height="160px">
+		<path d="M80 80 L 111.81980515339464 48.18019484660536 A 45 45 0 0 0 80 35 Z" fill="green"/>
+	</svg>
+	<h5>Degrees 90</h5>
+	<svg width="160px" height="160px">
+		<path d="M 80 80 L 125 80 A 45 45 0 0 0 80 35Z" fill="green"/>
+	</svg>
+	<h5>Degrees 125</h5>
+	<svg width="160px" height="160px">
+		<path d="M80 80 L 111.81980515339464 111.81980515339464 A 45 45 0 0 0 80 35Z" fill="green"/>
+	</svg>
+	<h5>Degrees 225</h5>
+	<svg width="160px" height="160px">
+		<path d="M80,80 L48.18019484660536,111.81980515339464A45,45 0 1 0 80,35Z" fill="green"/>
+	</svg>
+</body>
 </html>

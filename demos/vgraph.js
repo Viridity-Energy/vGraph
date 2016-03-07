@@ -169,13 +169,29 @@ angular.module( 'vgraph' ).factory( 'Hitbox',
 			this._yDex = yDex;
 		}
 
-	  	Hitbox.prototype.$hashX = function( x ){
-	  		return ( ((x - this.xMin) / this.xDiff) * this.count ) | 0;
-	  	};
+		Hitbox.prototype.$hashX = function( x ){
+			var t = ( ((x - this.xMin) / this.xDiff) * this.count ) | 0;
 
-	  	Hitbox.prototype.$hashY = function( y ){
-	  		return ( ((y - this.yMin) / this.yDiff) * this.count ) | 0;
-	  	};
+			if ( t < 0 ){
+				t = 0;
+			}else if ( t >= this.count ){
+				t = this.count-1;
+			}
+
+			return t;
+		};
+
+		Hitbox.prototype.$hashY = function( y ){
+			var t = ( ((y - this.yMin) / this.yDiff) * this.count ) | 0;
+
+			if ( t < 0 ){
+				t = 0;
+			}else if ( t >= this.count ){
+				t = this.count-1;
+			}
+
+			return t;
+		};
 
 		Hitbox.prototype.add = function( info ){
 			var i, c,
@@ -747,55 +763,6 @@ angular.module( 'vgraph' ).factory( 'CalculationsPercentiles',
 	function () {
 		'use strict';
 
-		function makeExtremeTest( compare ){
-			return function( count, getValue, attr ){
-				var maxs;
-
-				return {
-					prep: function(){
-						maxs = [];
-					},
-					reset: function(){
-						maxs.forEach(function( n ){
-							n.node[attr] = false;
-						});
-					},
-					calc: function( node ){
-						var i,
-							v = getValue(node);
-
-						if ( maxs.length < count ){
-							maxs.push( {value: v, node: node} );
-
-							if ( maxs.length === count ){
-								maxs.sort(function(a,b){ return a.value - b.value; });
-							}
-						}else if ( compare(v,maxs[0].value) ){
-							maxs.shift();
-
-							if ( compare(maxs[0].value,v) ){
-								maxs.unshift( {value: v, node: node} );
-							}else if ( compare(v,maxs[maxs.length-1].value) ){
-								maxs.push( {value: v, node: node} );
-							}else{
-								for( i = maxs.length-2; i >= 0; i-- ){
-									if ( compare(v,maxs[i].value) ){
-										maxs.splice( i+1, 0, {value: v, node: node} );
-										i = 0;
-									}
-								}
-							}
-						}
-					},
-					finalize: function(){
-						maxs.forEach(function( n ){
-							n.node[attr] = true;
-						});
-					}
-				};
-			};
-		}
-
 		return function( percentile, getValue, attr ){
 			var data;
 
@@ -1065,6 +1032,10 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 			}
 			
 			angular.forEach( views, addView );
+
+			if ( settings.onLoad ){
+				settings.onLoad( this );
+			}
 		};
 
 		function normalizeY( views ){
@@ -1248,6 +1219,8 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 				isReady = false,
 				hasViews = 0;
 
+			this.$trigger('render');
+			
 			try{
 				// generate data limits for all views
 				angular.forEach( this.views, function( view, name ){
@@ -1334,6 +1307,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 
 				schedule.loop( activeViews, function( view ){
 					view.finalize();
+					dis.$trigger( 'publish:'+view.$name, view.normalizer );
 				});
 
 				schedule.func(function(){
@@ -1415,6 +1389,8 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 				this.box,
 				this.page
 			);
+
+			viewModel.$name = viewName;
 
 			viewModel.manager.register(function(){
 				dis.needsRender(viewModel);
@@ -1672,8 +1648,9 @@ angular.module( 'vgraph' ).factory( 'ComponentElement',
 
 		ComponentElement.svgCompile = svgCompile;
 		
-		ComponentElement.prototype.setChart = function( chart ){
+		ComponentElement.prototype.setChart = function( chart, publish ){
 			this.chart = chart;
+			this.publish = publish;
 		};
 
 		ComponentElement.prototype.setElement = function( domNode ){
@@ -1705,6 +1682,10 @@ angular.module( 'vgraph' ).factory( 'ComponentElement',
 			var drawer = this.drawer,
 				indexs = StatCalculations.indexs( this.references ),
 				dataSets = drawer.makeSets( indexs );
+
+			if ( this.publish ){
+				this.chart.$trigger( 'publish:'+this.publish, dataSets );
+			}
 
 			// dataSets will be the content, preParsed, used to make the data
 			if ( this.element.tagName === 'g' ){
@@ -3165,11 +3146,11 @@ angular.module( 'vgraph' ).factory( 'DataNormalizer',
 	}]
 );
 angular.module( 'vgraph' ).factory( 'DrawBar', 
-	['DrawBuilder',
-	function( DrawBuilder ){
+	['DrawLinear',
+	function( DrawLinear ){
 		'use strict';
 
-		var isNumeric = DrawBuilder.isNumeric;
+		var isNumeric = DrawLinear.isNumeric;
 
 		function DrawBar( top, bottom, width ){
 			this.width = width;
@@ -3184,7 +3165,7 @@ angular.module( 'vgraph' ).factory( 'DrawBar',
 			}
 		}
 
-		DrawBar.prototype = new DrawBuilder();
+		DrawBar.prototype = new DrawLinear();
 
 		function calcBar( x1, x2, y1, y2, box ){
 			var t;
@@ -3391,132 +3372,9 @@ angular.module( 'vgraph' ).factory( 'DrawBox',
 		return DrawBox;
 	}]
 );
-angular.module( 'vgraph' ).factory( 'DrawBuilder', 
-	[
-	function(){
-		'use strict';
-
-		function DrawBuilder(){
-			this.references = [];
-		}
-
-		DrawBuilder.isNumeric = function( v ){
-			if ( v === null ){
-				return false;
-			}else if ( Number.isFinite ){
-				return Number.isFinite(v) && !Number.isNaN(v);
-			}else{
-				return isFinite(v) && !isNaN(v);
-			}
-		};
-
-		DrawBuilder.prototype.getReferences = function(){
-			return this.references;
-		};
-
-		// allows for very complex checks of if the value is defined, allows checking previous and next value
-		DrawBuilder.prototype.parse = function( d ){
-			return d;
-		};
-
-		DrawBuilder.prototype.makeSet = function(){
-			return [];
-		};
-
-		// merging set, returning true means to end the set, returning false means to continue it
-		DrawBuilder.prototype.mergeParsed = function( parsed, set ){
-			if ( parsed ){
-				set.push( set );
-				return false;
-			}else{
-				return true;
-			}
-		};
-
-		DrawBuilder.prototype.isValidSet = function( set ){
-			return set.length !== 0;
-		};
-
-		DrawBuilder.prototype.finalizeSet = function( set ){
-			return set;
-		};
-
-		DrawBuilder.prototype.makeSets = function( keys ){
-			var i, c,
-				raw,
-				parsed,
-				state,
-				dis = this,
-				set = this.makeSet(),
-				sets = [];
-
-			function mergeParsed(){
-				state = dis.mergeParsed( 
-					parsed,
-					set
-				);
-
-				if ( state !== 1 && parsed.$classify ){
-					if ( !set.$classify ){
-						set.$classify = {};
-					}
-
-					Object.keys(parsed.$classify).forEach(function( c ){
-						set.$classify[c] = true;
-					});
-				}
-			}
-
-			// I need to start on the end, and find the last valid point.  Go until there
-			for( i = 0, c = keys.length; i < c; i++ ){
-				raw = keys[i];
-				parsed = this.parse(raw);
-				
-				if ( parsed ){
-					// -1 : added to old set, continue set
-					// 0 : create new set
-					// 1 : create new set, add parsed to that
-					mergeParsed();
-				} else {
-					state = 0;
-				} 
-
-				if ( state > -1 ){
-					if ( this.isValidSet(set) ){
-						sets.push( this.finalizeSet(set) );
-					}
-
-					set = this.makeSet();
-
-					if ( state ){ // state === 1
-						mergeParsed();
-					}
-				}
-			}
-
-			if ( this.isValidSet(set) ){
-				sets.push( this.finalizeSet(set) );
-			}
-
-			return sets;
-		};
-
-		DrawBuilder.prototype.makeElement = function( convertedSet ){
-			console.log( 'makeElement', convertedSet );
-			return '<text>Element not overriden</text>';
-		};
-
-		DrawBuilder.prototype.makePath = function( convertedSet ){
-			console.log( 'makePath', convertedSet );
-			return 'M0,0Z';
-		};
-
-		return DrawBuilder;
-	}]
-);
 angular.module( 'vgraph' ).factory( 'DrawDots', 
-	['DrawBuilder',
-	function( DrawBuilder ){
+	['DrawLinear',
+	function( DrawLinear ){
 		'use strict';
 		
 		function DrawDots( ref, radius ){
@@ -3525,7 +3383,7 @@ angular.module( 'vgraph' ).factory( 'DrawDots',
 			this.references = [ref];
 		}
 
-		DrawDots.prototype = new DrawBuilder();
+		DrawDots.prototype = new DrawLinear();
 
 		DrawDots.prototype.makeSet = function(){
 			return {};
@@ -3556,8 +3414,7 @@ angular.module( 'vgraph' ).factory( 'DrawDots',
 				r2 = radius*2;
 
 			if ( set.x !== undefined ){
-				return 'M' + 
-					set.x+' '+set.y+
+				return 'M' + set.x+' '+set.y+
 					'm -'+radius+', 0'+
 					'a '+radius+','+radius+' 0 1,1 '+r2+',0'+
 					'a '+radius+','+radius+' 0 1,1 -'+r2+',0';
@@ -3588,7 +3445,7 @@ angular.module( 'vgraph' ).factory( 'DrawDots',
 				y1: dataSet.y - radius,
 				y2: dataSet.y + radius,
 				intersect: function( x, y ){
-					return Math.sqrt( Math.pow(dataSet.x-x,2) + Math.pow(dataSet.y-y,2) ) < radius;
+					return Math.sqrt( Math.pow(dataSet.x-x,2) + Math.pow(dataSet.y-y,2) ) <= radius;
 				}
 			};
 		};
@@ -3597,11 +3454,11 @@ angular.module( 'vgraph' ).factory( 'DrawDots',
 	}]
 );
 angular.module( 'vgraph' ).factory( 'DrawFill', 
-	['DrawBuilder',
-	function( DrawBuilder ){
+	['DrawLinear',
+	function( DrawLinear ){
 		'use strict';
 		
-		var isNumeric = DrawBuilder.isNumeric;
+		var isNumeric = DrawLinear.isNumeric;
 		
 		function DrawFill( top, bottom ){
 			this.top = top;
@@ -3615,7 +3472,7 @@ angular.module( 'vgraph' ).factory( 'DrawFill',
 			}
 		}
 
-		DrawFill.prototype = new DrawBuilder();
+		DrawFill.prototype = new DrawLinear();
 
 		DrawFill.prototype.parse = function( index ){
 			var y1,
@@ -3648,7 +3505,7 @@ angular.module( 'vgraph' ).factory( 'DrawFill',
 				y2 = parsed.y2,
 				last = set[set.length-1];
 
-			if ( DrawBuilder.isNumeric(y1) && DrawBuilder.isNumeric(y2) ){
+			if ( DrawLinear.isNumeric(y1) && DrawLinear.isNumeric(y2) ){
 				set.push({
 					x: x,
 					y1: this.top.$view.y.scale(y1),
@@ -3747,13 +3604,13 @@ angular.module( 'vgraph' ).factory( 'DrawIcon',
 	}]
 );
 angular.module( 'vgraph' ).factory( 'DrawLine', 
-	['DrawBuilder',
-	function( DrawBuilder ){
+	['DrawLinear',
+	function( DrawLinear ){
 		'use strict';
 		
 		// If someone is hell bent on performance, you can override DrawLine so that a lot of this flexibility
 		// is removed
-		var isNumeric = DrawBuilder.isNumeric;
+		var isNumeric = DrawLinear.isNumeric;
 		
 		function DrawLine( ref ){
 			var oldMerge = this.mergeParsed;
@@ -3773,7 +3630,7 @@ angular.module( 'vgraph' ).factory( 'DrawLine',
 			}
 		}
 
-		DrawLine.prototype = new DrawBuilder();
+		DrawLine.prototype = new DrawLinear();
 
 		DrawLine.prototype.parse = function( index ){
 			var node = this.ref.$getNode(index);
@@ -3879,6 +3736,369 @@ angular.module( 'vgraph' ).factory( 'DrawLine',
 		};
 
 		return DrawLine;
+	}]
+);
+angular.module( 'vgraph' ).factory( 'DrawLinear', 
+	[
+	function(){
+		'use strict';
+
+		function DrawLinear(){
+			this.references = [];
+		}
+
+		DrawLinear.isNumeric = function( v ){
+			if ( v === null ){
+				return false;
+			}else if ( Number.isFinite ){
+				return Number.isFinite(v) && !Number.isNaN(v);
+			}else{
+				return isFinite(v) && !isNaN(v);
+			}
+		};
+
+		DrawLinear.prototype.getReferences = function(){
+			return this.references;
+		};
+
+		// allows for very complex checks of if the value is defined, allows checking previous and next value
+		DrawLinear.prototype.parse = function( d ){
+			return d;
+		};
+
+		DrawLinear.prototype.makeSet = function(){
+			return [];
+		};
+
+		// merging set, returning true means to end the set, returning false means to continue it
+		DrawLinear.prototype.mergeParsed = function( parsed, set ){
+			if ( parsed ){
+				set.push( set );
+				return false;
+			}else{
+				return true;
+			}
+		};
+
+		DrawLinear.prototype.isValidSet = function( set ){
+			return set.length !== 0;
+		};
+
+		DrawLinear.prototype.finalizeSet = function( set ){
+			return set;
+		};
+
+		DrawLinear.prototype.makeSets = function( keys ){
+			var i, c,
+				raw,
+				parsed,
+				state,
+				dis = this,
+				set = this.makeSet(),
+				sets = [];
+
+			function mergeParsed(){
+				state = dis.mergeParsed( 
+					parsed,
+					set
+				);
+
+				if ( state !== 1 && parsed.$classify ){
+					if ( !set.$classify ){
+						set.$classify = {};
+					}
+
+					Object.keys(parsed.$classify).forEach(function( c ){
+						set.$classify[c] = true;
+					});
+				}
+			}
+
+			// I need to start on the end, and find the last valid point.  Go until there
+			for( i = 0, c = keys.length; i < c; i++ ){
+				raw = keys[i];
+				parsed = this.parse(raw);
+				
+				if ( parsed ){
+					// -1 : added to old set, continue set
+					// 0 : create new set
+					// 1 : create new set, add parsed to that
+					mergeParsed();
+				} else {
+					state = 0;
+				} 
+
+				if ( state > -1 ){
+					if ( this.isValidSet(set) ){
+						sets.push( this.finalizeSet(set) );
+					}
+
+					set = this.makeSet();
+
+					if ( state ){ // state === 1
+						mergeParsed();
+					}
+				}
+			}
+
+			if ( this.isValidSet(set) ){
+				sets.push( this.finalizeSet(set) );
+			}
+
+			return sets;
+		};
+
+		DrawLinear.prototype.makeElement = function( convertedSet ){
+			console.log( 'makeElement', convertedSet );
+			return '<text>Element not overriden</text>';
+		};
+
+		DrawLinear.prototype.makePath = function( convertedSet ){
+			console.log( 'makePath', convertedSet );
+			return 'M0,0Z';
+		};
+
+		return DrawLinear;
+	}]
+);
+angular.module( 'vgraph' ).factory( 'DrawPie', 
+	[
+	function(){
+		'use strict';
+		
+		function getCoords( centerX, centerY, radius, angleInDegrees ) {
+			var angleInRadians = (angleInDegrees-90) * Math.PI / 180.0;
+
+			return {
+				x: centerX + ( radius * Math.cos(angleInRadians) ),
+				y: centerY + ( radius * Math.sin(angleInRadians) )
+			};
+		}
+
+		function makeSliver( x, y, radius, start, stop, bigArc ){
+			var arcSweep = bigArc ? '1' : '0';
+			
+			return 'M'+x+','+y+
+				'L'+start.x+','+start.y+
+				'A'+radius+','+radius+' 0 '+arcSweep+' 0 '+stop.x+','+stop.y+'Z';
+		}
+
+		function stackFunc( bucket, old, fn ){
+			function test( node, value ){
+				var v = fn(node,value);
+
+				if ( v !== undefined ){
+					return {
+						bucket: bucket,
+						value: v
+					};
+				}
+			}
+
+			if ( !old ){
+				return test;
+			}else{
+				return function( node, value ){
+					return test(node,value) || old(node,value);
+				};
+			}
+		}
+
+		function DrawPie( reference, buckets, area ){
+			var fn;
+
+			this.area = area;
+			this.buckets = Object.keys(buckets);
+			this.references = [reference];
+
+			this.buckets.forEach(function(bucket){
+				fn = stackFunc( bucket, fn, buckets[bucket] );
+			});
+
+			this.parse = function( index ){
+				var node = reference.$getNode( index );
+
+				return fn( node, reference.getValue(node) );
+			};
+		}
+
+		DrawPie.prototype.getReferences = function(){
+			return this.references;
+		};
+
+		DrawPie.prototype.makeSets = function( keys ){
+			var i, c,
+				parsed,
+				sets = [],
+				total = 0,
+				buckets = {};
+
+			// I need to start on the end, and find the last valid point.  Go until there
+			for( i = 0, c = keys.length; i < c; i++ ){
+				parsed = this.parse(keys[i]); // { bucket, value }
+				if ( parsed ){
+					if ( !buckets[parsed.bucket] ){
+						buckets[parsed.bucket] = parsed.value;
+					}else{
+						buckets[parsed.bucket] += parsed.value;
+					}
+				}
+			}
+
+			Object.keys(buckets).forEach(function(bucket){
+				var start = total,
+					value = buckets[bucket];
+
+				total += value;
+
+				sets.push({
+					value: value,
+					bucket: bucket,
+					start: start,
+					stop: total
+				});
+			});
+
+			sets.forEach(function(set){
+				set.total = total;
+			});
+
+			return sets;
+		};
+
+		DrawPie.prototype.makePath = function( set ){
+			var x = this.area.x || 0,
+				y = this.area.y || 0,
+				radius = this.area.radius || 1,
+				startAngle = (set.start / set.total) * 360,
+				stopAngle = (set.stop / set.total) * 360,
+				start = getCoords(x, y, radius, stopAngle),
+				stop = getCoords(x, y, radius, startAngle),
+				bigArc = stopAngle - startAngle > 180;
+			
+			if ( set.value ){
+				set.$start = start;
+				set.$startAngle = startAngle;
+				set.$stop = stop;
+				set.$stopAngle = stopAngle;
+
+				return makeSliver( 
+					x, y, radius, 
+					start, 
+					stop,
+					bigArc 
+				);
+			}
+		};
+
+		DrawPie.prototype.makeElement = function( set ){
+			var className = set.bucket;
+
+			if ( set.value ){
+				return '<path class="slice '+className+
+					'" d="'+this.makePath(set)+'"/>';
+			}
+		};
+
+		function getMax( eins, zwei, drei ){
+			if ( eins > zwei && eins > drei ){
+				return eins;
+			}else if ( zwei > drei ){
+				return zwei;
+			}else{
+				return drei;
+			}
+		}
+
+		function getMin( eins, zwei, drei ){
+			if ( eins < zwei && eins < drei ){
+				return eins;
+			}else if ( zwei < drei ){
+				return zwei;
+			}else{
+				return drei;
+			}
+		}
+
+		function calcBox( x, y, radius, start, startAngle, stop, stopAngle ){
+			var minX = x,
+				maxX = x,
+				minY = y,
+				maxY = y;
+
+			if ( startAngle === 0 || stopAngle === 0 ){
+				minY = y - radius;
+			}
+
+			if ( startAngle < 180 && stopAngle > 180 ){
+				maxY = y + radius;
+			}
+
+			if ( startAngle < 90 && stopAngle > 90 ){
+				minX = x - radius;
+			}
+
+			if ( startAngle < 270 && stopAngle > 270 ){
+				maxX = x + radius;
+			}
+
+			return {
+				minX: getMin( minX, start.x, stop.x ),
+				maxX: getMax( maxX, start.x, stop.x ),
+				minY: getMin( minY, start.y, stop.y ),
+				maxY: getMax( maxY, start.y, stop.y )
+			};
+		}
+
+		DrawPie.prototype.getHitbox = function( set ){
+			var centerX = this.area.x || 0,
+				centerY = this.area.y || 0,
+				startAngle = set.$startAngle,
+				stopAngle = set.$stopAngle,
+				radius = this.area.radius || 1,
+				box = calcBox(
+					centerX,
+					centerY,
+					radius,
+					set.$start,
+					startAngle,
+					set.$stop,
+					stopAngle
+				);
+			
+			return {
+				x1: box.minX,
+				x2: box.maxX,
+				y1: box.minY,
+				y2: box.maxY,
+				intersect: function( x, y ){
+					var angle,
+						dx = x-centerX,
+						dy = y-centerY;
+
+					if ( Math.sqrt( Math.pow(dx,2) + Math.pow(dy,2) ) <= radius ){
+						angle = Math.atan(dy/dx) * 180 / Math.PI;
+						if ( x > centerX ){
+							if ( y < centerY ){
+								// upper right
+								angle = angle * -1;
+							}else{
+								// lower right
+								angle = 360 - angle;
+							}
+						}else{
+							angle = 180 - angle;
+						}
+						
+						return ( angle > startAngle && angle < stopAngle );
+					}
+
+					return false;
+				}
+			};
+		};
+		
+		return DrawPie;
 	}]
 );
 
@@ -5509,6 +5729,75 @@ angular.module( 'vgraph' ).directive( 'vgraphPage',
 			}
 		};
 	}]
+);
+
+angular.module( 'vgraph' ).directive( 'vgraphPie',
+	[ 'DrawPie', 'ComponentElement',
+	function( DrawPie, ComponentElement ) {
+		'use strict';
+
+		return {
+			scope : {
+				config: '=vgraphPie',
+				buckets: '=buckets'
+			},
+			require : ['^vgraphChart','vgraphPie'],
+			controller: ComponentElement,
+			link : function( scope, $el, attrs, requirements ){
+				var el = $el[0],
+					area = {},
+					chart = requirements[0],
+					box = chart.box,
+					cfg = chart.compileReference( scope.config ),
+					element = requirements[1],
+					className = 'pie ';
+
+				function calcArea(){
+					area.radius = ( (box.innerWidth < box.innerHeight) ?
+						box.innerWidth : box.innerHeight ) / 2;
+					area.x = box.center;
+					area.y = box.middle;
+				}
+
+				element.setChart( chart, attrs.publish );
+				element.setElement( el );
+				element.setDrawer( new DrawPie(cfg,scope.buckets,area) );
+
+				if ( cfg.classExtend ){
+					className += cfg.classExtend + ' ';
+				}
+
+				className += attrs.className || cfg.className;
+
+				el.setAttribute( 'class', className );
+
+				cfg.$view.registerComponent(element);
+
+				box.$on( 'resize', calcArea );
+			}
+		};
+	} ]
+);
+angular.module( 'vgraph' ).directive( 'vgraphPublish',
+	[
+	function(){
+		'use strict';
+
+		return {
+			require: ['^vgraphChart'],
+			scope: true,
+			link: function( $scope, el, attrs, requirements ){
+				var connections = $scope.$eval( attrs.vgraphPublish );
+
+				Object.keys(connections).forEach(function(key){
+					requirements[0].$on('publish:'+key, function( point ){
+						$scope[ connections[key] ] = point;
+						$scope.$digest();
+					});
+				});	
+			}
+		};
+	} ]
 );
 
 angular.module( 'vgraph' ).directive( 'vgraphStack',

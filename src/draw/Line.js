@@ -1,11 +1,11 @@
 angular.module( 'vgraph' ).factory( 'DrawLine', 
-	['DrawBuilder',
-	function( DrawBuilder ){
+	['DrawLinear',
+	function( DrawLinear ){
 		'use strict';
 		
 		// If someone is hell bent on performance, you can override DrawLine so that a lot of this flexibility
 		// is removed
-		var isNumeric = DrawBuilder.isNumeric;
+		var isNumeric = DrawLinear.isNumeric;
 		
 		function DrawLine( ref ){
 			var oldMerge = this.mergeParsed;
@@ -25,7 +25,7 @@ angular.module( 'vgraph' ).factory( 'DrawLine',
 			}
 		}
 
-		DrawLine.prototype = new DrawBuilder();
+		DrawLine.prototype = new DrawLinear();
 
 		DrawLine.prototype.parse = function( index ){
 			var node = this.ref.$getNode(index);
