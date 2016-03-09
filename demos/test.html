@@ -8,66 +8,24 @@
 </head>
 <body>
 	<script>
-		function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
-			var angleInRadians = (angleInDegrees-90) * Math.PI / 180.0;
+		var t = {};
 
-			return {
-				x: centerX + (radius * Math.cos(angleInRadians)),
-				y: centerY + (radius * Math.sin(angleInRadians))
-			};
-		}
+		t[1] = 'a';
+		t[1.2] = 'b';
+		t[1.3] = 'c';
+		t[1.4] = 'd';
+		t[1.5] = 'a';
+		t[1.6] = 'b';
+		t[1.7] = 'c';
+		t[1.8] = 'd';
+		t[1.9] = 'a';
+		t[2.1] = 'b';
+		t[2.2] = 'c';
+		t[2] = 'd';
+		t[2.0] = 'd';
 
-		console.log( polarToCartesian(80,80,45,0) );
-		console.log( polarToCartesian(80,80,45,45) );
-		console.log( polarToCartesian(80,80,45,90) );
-
-		function describeArc(x, y, radius, startAngle, endAngle){
-			var start = polarToCartesian(x, y, radius, endAngle);
-			var end = polarToCartesian(x, y, radius, startAngle);
-
-			var arcSweep = endAngle - startAngle <= 180 ? "0" : "1";
-
-			var d = [
-				"M", start.x, start.y, 
-				"A", radius, radius, 0, arcSweep, 0, end.x, end.y
-			].join(" ");
-
-			return d;       
-		}
-
-		function makeSliver( x, y, radius, startAngle, stopAngle ){
-			var arcSweep = stopAngle - startAngle <= 180 ? "0" : "1",
-				start = polarToCartesian(x, y, radius, stopAngle),
-				stop = polarToCartesian(x, y, radius, startAngle);
-
-			return 'M'+x+','+y+
-				'L'+start.x+','+start.y+
-				'A'+radius+','+radius+' 0 '+arcSweep+' 0 '+stop.x+','+stop.y+'Z';
-		}
-
-		console.log( makeSliver(80,80,45,0,45) );
-		console.log( makeSliver(80,80,45,0,90) );
-		console.log( makeSliver(80,80,45,0,135) );
-		console.log( makeSliver(80,80,45,0,225) );
+		console.log( t );
+		console.log( Object.keys(t) )
 	</script>
-	<svg width="160px" height="160px">
-		<path d="M80 80 A 45 45, 0, 0, 0, 125 125 L 125 80 Z" fill="green"/>
-	</svg>
-	<h5>Degrees 45</h5>
-	<svg width="160px" height="160px">
-		<path d="M80 80 L 111.81980515339464 48.18019484660536 A 45 45 0 0 0 80 35 Z" fill="green"/>
-	</svg>
-	<h5>Degrees 90</h5>
-	<svg width="160px" height="160px">
-		<path d="M 80 80 L 125 80 A 45 45 0 0 0 80 35Z" fill="green"/>
-	</svg>
-	<h5>Degrees 125</h5>
-	<svg width="160px" height="160px">
-		<path d="M80 80 L 111.81980515339464 111.81980515339464 A 45 45 0 0 0 80 35Z" fill="green"/>
-	</svg>
-	<h5>Degrees 225</h5>
-	<svg width="160px" height="160px">
-		<path d="M80,80 L48.18019484660536,111.81980515339464A45,45 0 1 0 80,35Z" fill="green"/>
-	</svg>
 </body>
 </html>

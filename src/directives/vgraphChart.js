@@ -43,7 +43,8 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
 					el = $el.find('svg')[0];
 				}
 
-				graph.$root = $el[0]; 
+				graph.$root = $el[0];
+				graph.$svg = el;
 
 				box.$on('resize',function(){
 					resize( box );

@@ -50,11 +50,9 @@ angular.module( 'vgraph' ).factory( 'DataNormalizer',
 				newIndex,
 				grouper = this.$grouper;
 
-			this.length = 0;
-			this._$index = {};
+			this.$reset();
 
 			collection.$sort();
-
 			for( i = 0, c = collection.length; i < c; i++ ){
 				datum = collection[i];
 				oldIndex = datum._$index;

@@ -1,14 +1,8 @@
 angular.module( 'vgraph' ).directive( 'vgraphExport',
-	[ 
-	function(){
+	[ 'makeBlob',
+	function( makeBlob ){
 		'use strict';
 		
-		function formatArray( arr ){
-			return arr.map(function( row ){
-				return '"'+row.join('","')+'"';
-			}).join('\n');
-		}
-
 		return {
 			require : ['^vgraphChart'],
 			scope: {
@@ -31,20 +25,18 @@ angular.module( 'vgraph' ).directive( 'vgraphExport',
 
 				$scope.process = function( fn ){
 					var t = fn( requirements[0] ), // { data, name, charset }
-						blob = new Blob([formatArray(t.data)], {
-							type: 'text/csv;charset='+ (t.charset || 'utf-8')+ ';'
-						}),
-						downloadLink = angular.element('<a></a>');
+						blob = makeBlob( t ),
+						downloadLink = document.createElement('a');
 
-					downloadLink.attr( 'href', window.URL.createObjectURL(blob) );
-					downloadLink.attr( 'download', t.name );
-					downloadLink.attr( 'target', '_blank' );
+					downloadLink.setAttribute( 'href', window.URL.createObjectURL(blob) );
+					downloadLink.setAttribute( 'download', t.name );
+					downloadLink.setAttribute( 'target', '_blank' );
 
-					angular.element(document.getElementsByTagName('body')[0]).append(downloadLink);
+					document.getElementsByTagName('body')[0].appendChild(downloadLink);
 
 					setTimeout(function () {
-						downloadLink[0].click();
-						downloadLink.remove();
+						downloadLink.click();
+						document.getElementsByTagName('body')[0].removeChild(downloadLink);
 					}, 5);
 				};
 			}

@@ -69,9 +69,7 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 		}
 
 		function DataCollection(){
-			this._$index = {};
-			this.$dirty = false;
-			this.$stats = {};
+			this.$reset();
 		}
 
 		DataCollection.prototype = [];
@@ -84,6 +82,14 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 			return v || v === 0;
 		}
 		DataCollection.isValid = _validate;
+
+		DataCollection.prototype.$reset = function(){
+			this.length = 0;
+			this.$dirty = false;
+			this.$stats = {};
+			this._$index = {};
+			this._$indexs = [];
+		};
 
 		DataCollection.prototype.addPropertyCopy = function( name ){
 			var cfn,
@@ -129,9 +135,10 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 		};
 
 		DataCollection.prototype._register = function( index, node, shift ){
-			var dex = +index;
+			var dex = +index; //(+index).toFixed(2);
 
 			if ( !this._$index[dex] ){
+				this._$indexs.push( dex ); // this keeps the indexs what they were, not casted to string
 				this._$index[dex] = node;
 				
 				if ( shift ){
@@ -161,7 +168,7 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 
 				node._$index = dex;
 			}
-
+			
 			return node;
 		};
 
@@ -185,11 +192,11 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 		};
 
 		DataCollection.prototype.$getIndexs = function(){
-			return Object.keys( this._$index );
+			return this._$indexs;
 		};
 
 		DataCollection.prototype.$getNode = function( index ){
-			return this._$index[+index];
+			return this._$index[index];
 		};
 
 		DataCollection.prototype._setValue = function ( node, field, value ){

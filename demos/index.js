@@ -558,6 +558,12 @@ angular.module( 'vgraph' ).controller( 'BucketsCtrl',
 					normalizer: new DataNormalizer(function(index){
 						return Math.round(index); // combine to every pixel
 					})
+				},
+				'tertiary': {
+					manager: 'data',
+					normalizer: new DataNormalizer(function(index){
+						return index; // don't combine at all
+					})
 				}
 			}
 		};
@@ -582,6 +588,12 @@ angular.module( 'vgraph' ).controller( 'BucketsCtrl',
 				name : 'y2', 
 				view: 'secondary', 
 				className : 'blue'
+			},
+			{ 
+				name : 'y3',
+				field: 'y2',
+				view: 'tertiary', 
+				className : 'green'
 			}
 		];
 
@@ -1313,6 +1325,12 @@ angular.module( 'vgraph' ).controller( 'ExportCtrl',
 				return {
 					data: data,
 					name: 'someFile.csv'
+				};
+			},
+			content: function( graph ){
+				return {
+					data: graph.$svg,
+					name: 'someFile.svg'
 				};
 			}
 		};

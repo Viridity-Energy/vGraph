@@ -12,7 +12,6 @@
 	* create pie director
 
 * export functionality
-	* export from models or from raw DataManager
 	* support the export of the svg image
 
 * configer
