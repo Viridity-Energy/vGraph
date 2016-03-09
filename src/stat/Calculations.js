@@ -182,6 +182,7 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 				var indexs,
 					seen = {};
 				
+				//console.log( cfg );
 				if ( cfg.length === 1 ){
 					indexs = cfg[0].$getIndexs();
 				}else{
@@ -199,7 +200,7 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 						return x;
 					});
 				}
-
+				//console.log( indexs );
 				return indexs;
 			}
 		};

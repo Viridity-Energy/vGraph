@@ -421,6 +421,110 @@ angular.module( 'vgraph' ).factory( 'Scheduler',
 		return Scheduler;
 	}]
 );
+angular.module( 'vgraph' ).factory( 'makeBlob',
+	[ 'svgColorize',
+	function ( svgColorize ) {
+		'use strict';
+
+		function formatArray( arr ){
+			return arr.map(function( row ){
+				return '"'+row.join('","')+'"';
+			}).join('\n');
+		}
+
+		function formatCanvas( canvas ){
+			var binStr = atob( canvas.toDataURL('image/png').split(',')[1] ),
+				len = binStr.length,
+				arr = new Uint8Array(len);
+
+			for (var i=0; i<len; i++ ) {
+				arr[i] = binStr.charCodeAt(i);
+			}
+
+			return arr;
+		}
+
+		function makeBlob( cfg ){
+			var res,
+				type,
+				content = cfg.data,
+				charset = cfg.charset || 'utf-8';
+
+			console.log( content, content instanceof Node );
+			if ( content instanceof Node ){
+				if ( content.tagName === 'svg' ){
+					svgColorize( content );
+					type = 'image/svg+xml';
+				}else if ( content.tagName === 'canvas' ){
+					res = formatCanvas( content );
+					type = 'image/png';
+				}else{
+					type = 'text/html';
+				}
+
+				if ( !res ){
+					res = (new XMLSerializer()).serializeToString(content);
+				}
+			}else if ( content.length && content[0] && content[content.length-1] ){
+				res = formatArray( content );
+				type = 'text/csv';
+			}else{
+				res = JSON.stringify( content );
+				type = 'text/json';
+			}
+
+			return new Blob([res], {type: type+';charset='+charset+';'});
+		}
+
+		return makeBlob;
+	}]
+);
+angular.module( 'vgraph' ).factory( 'svgColorize',
+	[
+	function () {
+		'use strict';
+
+		var tagWatch = {
+			'path': ['fill','stroke','stroke-width'],
+			'rect': ['fill','stroke','opacity'],
+			'line': ['stroke','stroke-width'],
+			'text': ['text-anchor','font-size','color','font-family'],
+			'circle': ['fill','stroke']
+		};
+
+		function convert( els, styles ){
+			Array.prototype.forEach.call(els,function( el ){
+				var fullStyle = '';
+
+				styles.forEach(function(styleName){
+					var style = document.defaultView
+						.getComputedStyle(el, '')
+						.getPropertyValue(styleName);
+
+					if ( style !== '' ){
+						fullStyle += styleName+':'+style+';';
+					}
+				});
+
+				el.setAttribute('style', fullStyle);
+			});
+		}
+
+		function colorize( el ){
+			var watches = colorize.settings;
+
+			Object.keys(watches).forEach(function(tagName){
+				var els = el.getElementsByTagName(tagName);
+
+				convert( els, watches[tagName] );
+			});
+		}
+
+		colorize.settings = tagWatch;
+
+		return colorize;
+	}]
+);
 angular.module( 'vgraph' ).factory( 'StatCalculations',
 	[
 	function () {
@@ -605,6 +709,7 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 				var indexs,
 					seen = {};
 				
+				//console.log( cfg );
 				if ( cfg.length === 1 ){
 					indexs = cfg[0].$getIndexs();
 				}else{
@@ -622,7 +727,7 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 						return x;
 					});
 				}
-
+				//console.log( indexs );
 				return indexs;
 			}
 		};
@@ -2357,9 +2462,7 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 		}
 
 		function DataCollection(){
-			this._$index = {};
-			this.$dirty = false;
-			this.$stats = {};
+			this.$reset();
 		}
 
 		DataCollection.prototype = [];
@@ -2372,6 +2475,14 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 			return v || v === 0;
 		}
 		DataCollection.isValid = _validate;
+
+		DataCollection.prototype.$reset = function(){
+			this.length = 0;
+			this.$dirty = false;
+			this.$stats = {};
+			this._$index = {};
+			this._$indexs = [];
+		};
 
 		DataCollection.prototype.addPropertyCopy = function( name ){
 			var cfn,
@@ -2417,9 +2528,10 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 		};
 
 		DataCollection.prototype._register = function( index, node, shift ){
-			var dex = +index;
+			var dex = +index; //(+index).toFixed(2);
 
 			if ( !this._$index[dex] ){
+				this._$indexs.push( dex ); // this keeps the indexs what they were, not casted to string
 				this._$index[dex] = node;
 				
 				if ( shift ){
@@ -2449,7 +2561,7 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 
 				node._$index = dex;
 			}
-
+			
 			return node;
 		};
 
@@ -2473,11 +2585,11 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 		};
 
 		DataCollection.prototype.$getIndexs = function(){
-			return Object.keys( this._$index );
+			return this._$indexs;
 		};
 
 		DataCollection.prototype.$getNode = function( index ){
-			return this._$index[+index];
+			return this._$index[index];
 		};
 
 		DataCollection.prototype._setValue = function ( node, field, value ){
@@ -3106,11 +3218,9 @@ angular.module( 'vgraph' ).factory( 'DataNormalizer',
 				newIndex,
 				grouper = this.$grouper;
 
-			this.length = 0;
-			this._$index = {};
+			this.$reset();
 
 			collection.$sort();
-
 			for( i = 0, c = collection.length; i < c; i++ ){
 				datum = collection[i];
 				oldIndex = datum._$index;
@@ -4797,7 +4907,8 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
 					el = $el.find('svg')[0];
 				}
 
-				graph.$root = $el[0]; 
+				graph.$root = $el[0];
+				graph.$svg = el;
 
 				box.$on('resize',function(){
 					resize( box );
@@ -4916,16 +5027,10 @@ angular.module( 'vgraph' ).directive( 'vgraphDots',
 );
 
 angular.module( 'vgraph' ).directive( 'vgraphExport',
-	[ 
-	function(){
+	[ 'makeBlob',
+	function( makeBlob ){
 		'use strict';
 		
-		function formatArray( arr ){
-			return arr.map(function( row ){
-				return '"'+row.join('","')+'"';
-			}).join('\n');
-		}
-
 		return {
 			require : ['^vgraphChart'],
 			scope: {
@@ -4948,20 +5053,18 @@ angular.module( 'vgraph' ).directive( 'vgraphExport',
 
 				$scope.process = function( fn ){
 					var t = fn( requirements[0] ), // { data, name, charset }
-						blob = new Blob([formatArray(t.data)], {
-							type: 'text/csv;charset='+ (t.charset || 'utf-8')+ ';'
-						}),
-						downloadLink = angular.element('<a></a>');
+						blob = makeBlob( t ),
+						downloadLink = document.createElement('a');
 
-					downloadLink.attr( 'href', window.URL.createObjectURL(blob) );
-					downloadLink.attr( 'download', t.name );
-					downloadLink.attr( 'target', '_blank' );
+					downloadLink.setAttribute( 'href', window.URL.createObjectURL(blob) );
+					downloadLink.setAttribute( 'download', t.name );
+					downloadLink.setAttribute( 'target', '_blank' );
 
-					angular.element(document.getElementsByTagName('body')[0]).append(downloadLink);
+					document.getElementsByTagName('body')[0].appendChild(downloadLink);
 
 					setTimeout(function () {
-						downloadLink[0].click();
-						downloadLink.remove();
+						downloadLink.click();
+						document.getElementsByTagName('body')[0].removeChild(downloadLink);
 					}, 5);
 				};
 			}
