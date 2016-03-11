@@ -61,8 +61,8 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
 				graph.$on( 'highlight', highlight );
 
 				box.$on('resize',function(){
-					$highlight.attr( 'y1', box.innerTop )
-						.attr( 'y2', box.innerBottom );
+					$highlight.attr( 'y1', box.inner.top )
+						.attr( 'y2', box.inner.bottom );
 				});
 
 				$scope.$watchCollection('config', function( cfgs ){
@@ -70,8 +70,12 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
 
 					configs = [];
 
-					for( i = 0, c = cfgs.length; i < c; i++ ){
-						configs.push( graph.getReference(cfgs[i]) );
+					if ( cfgs ){
+						for( i = 0, c = cfgs.length; i < c; i++ ){
+							if ( cfgs[i] ){
+								configs.push( graph.getReference(cfgs[i]) );
+							}
+						}
 					}
 				});
 			}

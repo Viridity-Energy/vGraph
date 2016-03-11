@@ -6,12 +6,12 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
 		return {
 			require : ['^vgraphChart'],
 			scope : {
-				cfg: '=?vgraphIndicator'
+				config: '=?vgraphIndicator'
 			},
 			link : function( scope, el, attrs, requirements ){
-				var pulse,
+				var cfg,
+					pulse,
 					graph = requirements[0],
-					cfg = graph.getReference(scope.cfg),
 					radius = scope.$eval( attrs.pointRadius ) || 3,
 					outer = scope.$eval( attrs.outerRadius ),
 					$el = d3.select( el[0] )
@@ -22,27 +22,33 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
 					$outer = $el.append( 'circle' )
 						.attr( 'r', radius );
 
-				$circle.attr( 'class', 'point inner '+cfg.className );
-				$outer.attr( 'class', 'line outer '+cfg.className );
+				scope.$watch('config', function( config ){
+					if ( config ){
+						cfg = graph.getReference( config );
+					
+						$circle.attr( 'class', 'point inner '+cfg.className );
+						$outer.attr( 'class', 'line outer '+cfg.className );
 
-				if ( outer ){
-					pulse = function() {
-						$outer.transition()
-							.duration( 1000 )
-							.attr( 'r', outer )
-							.transition()
-							.duration( 1000 )
-							.attr( 'r', radius )
-							.ease( 'sine' )
-							.each( 'end', function(){
-								setTimeout(function(){
-									pulse();
-								}, 3000);
-							});
-					};
+						if ( outer ){
+							pulse = function() {
+								$outer.transition()
+									.duration( 1000 )
+									.attr( 'r', outer )
+									.transition()
+									.duration( 1000 )
+									.attr( 'r', radius )
+									.ease( 'sine' )
+									.each( 'end', function(){
+										setTimeout(function(){
+											pulse();
+										}, 3000);
+									});
+							};
 
-					pulse();
-				}
+							pulse();
+						}
+					}
+				});
 
 				function clearComponent(){
 					$el.attr( 'visibility', 'hidden' );

@@ -42,6 +42,10 @@ angular.module( 'vgraph' ).factory( 'DataManager',
 			this.reset();
 		}
 
+		DataManager.prototype.$destroy = function(){
+			this.reset();
+		};
+
 		DataManager.prototype.reset = function(){
 			this.data = new DataCollection();
 			this.ready = false;

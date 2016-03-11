@@ -11,34 +11,40 @@ angular.module( 'vgraph' ).directive( 'vgraphLine',
 			require : ['^vgraphChart','vgraphLine'],
 			controller: ComponentElement,
 			link : function( scope, $el, attrs, requirements ){
-				var pair,
-					className,
+				var className,
 					el = $el[0],
 					chart = requirements[0],
-					cfg = chart.compileReference( scope.config ),
 					element = requirements[1];
 
 				element.setChart( el );
 				element.setElement( el );
 
-				if ( attrs.pair ){
-					pair = chart.compileReference( scope.pair );
-					className = 'fill ';
-					element.setDrawer( new DrawFill(cfg,pair) );
-				}else{
-					className = 'line ';
-					element.setDrawer( new DrawLine(cfg) );
-				}
+				scope.$watch('config', function( config ){
+					var pair,
+						cfg = chart.compileReference( config );
 
-				if ( cfg.classExtend ){
-					className += cfg.classExtend + ' ';
-				}
+					if ( cfg ){
+						if ( attrs.pair ){
+							pair = chart.compileReference( scope.pair );
+							className = 'fill ';
+							element.setDrawer( new DrawFill(cfg,pair) );
+						}else{
+							className = 'line ';
+							element.setDrawer( new DrawLine(cfg) );
+						}
 
-				className += attrs.className || cfg.className;
+						if ( cfg.classExtend ){
+							className += cfg.classExtend + ' ';
+						}
 
-				el.setAttribute( 'class', className );
+						className += attrs.className || cfg.className;
 
-				cfg.$view.registerComponent(element);
+						el.setAttribute( 'class', className );
+
+						cfg.$view.registerComponent(element);
+					}
+				});
+				
 			}
 		};
 	}]

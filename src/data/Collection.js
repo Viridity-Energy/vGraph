@@ -329,8 +329,10 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 			}while( node && node._$index < startIndex);
 
 			while( node && node._$index <= stopIndex){
+				// TODO: I should have an _insert that does this
 				filtered.push( node );
 				filtered._$index[ node._$index ] = node;
+				filtered._$indexs.push( node._$index );
 
 				i++;
 				node = this[i];

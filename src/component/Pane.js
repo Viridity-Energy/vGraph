@@ -55,11 +55,11 @@ angular.module( 'vgraph' ).factory( 'ComponentPane',
 				x.$min = $min;
 				x.$max = $max;
 
-				if ( this._pane.x && this._pane.x.stop ){
+				if ( this._pane.x && this._pane.x.max ){
 					change = this._pane.x;
 				   
-					minInterval = $min + change.start * ($max - $min);
-					maxInterval = $min + change.stop * ($max - $min);
+					minInterval = $min + change.min * ($max - $min);
+					maxInterval = $min + change.max * ($max - $min);
 				}else{
 					minInterval = $min;
 					maxInterval = $max;

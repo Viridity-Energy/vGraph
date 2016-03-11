@@ -4,14 +4,14 @@ angular.module( 'vgraph' ).directive( 'vgraphChart',
 		'use strict';
 
 		function resize( box ){
-			if ( box.$mat && box.innerWidth ){
+			if ( box.$mat && box.inner.width ){
 				// this isn't the bed way to do it, but since I'm already planning on fixing stuff up, I'm leaving it
 				box.$mat.attr( 'class', 'mat' )
-					.attr( 'width', box.innerWidth )
-					.attr( 'height', box.innerHeight )
+					.attr( 'width', box.inner.width )
+					.attr( 'height', box.inner.height )
 					.attr( 'transform', 'translate(' +
-						box.innerLeft + ',' +
-						box.innerTop + ')'
+						box.inner.left + ',' +
+						box.inner.top + ')'
 					);
 
 				box.$frame.attr( 'class', 'frame' )

@@ -15,32 +15,39 @@ angular.module( 'vgraph' ).directive( 'vgraphPie',
 					area = {},
 					chart = requirements[0],
 					box = chart.box,
-					cfg = chart.compileReference( scope.config ),
 					element = requirements[1],
 					className = 'pie ';
 
 				function calcArea(){
-					area.radius = ( (box.innerWidth < box.innerHeight) ?
-						box.innerWidth : box.innerHeight ) / 2;
-					area.x = box.center;
-					area.y = box.middle;
+					area.radius = ( (box.inner.width < box.inner.height) ?
+						box.inner.width : box.inner.height ) / 2;
+					area.x = box.inner.left + box.inner.width / 2;
+					area.y = box.inner.top + box.inner.height / 2;
 				}
 
 				element.setChart( chart, attrs.publish );
 				element.setElement( el );
-				element.setDrawer( new DrawPie(cfg,scope.buckets,area) );
 
-				if ( cfg.classExtend ){
-					className += cfg.classExtend + ' ';
-				}
-
-				className += attrs.className || cfg.className;
-
-				el.setAttribute( 'class', className );
-
-				cfg.$view.registerComponent(element);
-
+				calcArea();
 				box.$on( 'resize', calcArea );
+
+				scope.$watch('config', function( config ){
+					var cfg = chart.compileReference( config );
+
+					if ( cfg ){
+						element.setDrawer( new DrawPie(cfg,scope.buckets,area) );
+
+						if ( cfg.classExtend ){
+							className += cfg.classExtend + ' ';
+						}
+
+						className += attrs.className || cfg.className;
+
+						el.setAttribute( 'class', className );
+
+						cfg.$view.registerComponent(element);
+					}
+				});
 			}
 		};
 	} ]

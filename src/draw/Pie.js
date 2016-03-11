@@ -163,20 +163,20 @@ angular.module( 'vgraph' ).factory( 'DrawPie',
 				minY = y,
 				maxY = y;
 
-			if ( startAngle === 0 || stopAngle === 0 ){
+			if ( startAngle === 0 || stopAngle === 360 ){
 				minY = y - radius;
 			}
 
-			if ( startAngle < 180 && stopAngle > 180 ){
+			if ( startAngle <= 90 && stopAngle >= 90 ){
+				maxX = x + radius;
+			}
+
+			if ( startAngle < 180 && stopAngle >= 180 ){
 				maxY = y + radius;
 			}
 
-			if ( startAngle < 90 && stopAngle > 90 ){
+			if ( startAngle <= 270 && stopAngle >= 270 ){
 				minX = x - radius;
-			}
-
-			if ( startAngle < 270 && stopAngle > 270 ){
-				maxX = x + radius;
 			}
 
 			return {
@@ -203,36 +203,49 @@ angular.module( 'vgraph' ).factory( 'DrawPie',
 					stopAngle
 				);
 			
-			return {
-				x1: box.minX,
-				x2: box.maxX,
-				y1: box.minY,
-				y2: box.maxY,
-				intersect: function( x, y ){
-					var angle,
-						dx = x-centerX,
-						dy = y-centerY;
+			set.x1 = box.minX;
+			set.x2 = box.maxX;
+			set.y1 = box.minY;
+			set.y2 = box.maxY;
+			set.intersect = function( x, y ){
+				var angle,
+					dx = x-centerX,
+					dy = y-centerY;
 
-					if ( Math.sqrt( Math.pow(dx,2) + Math.pow(dy,2) ) <= radius ){
-						angle = Math.atan(dy/dx) * 180 / Math.PI;
-						if ( x > centerX ){
-							if ( y < centerY ){
-								// upper right
-								angle = angle * -1;
-							}else{
-								// lower right
-								angle = 360 - angle;
-							}
+				if ( Math.sqrt( Math.pow(dx,2) + Math.pow(dy,2) ) <= radius ){
+					angle = Math.atan(dy/dx) * 180 / Math.PI;
+					
+					if ( x === centerX ){
+						if ( y < centerY ){
+							angle = 0;
 						}else{
-							angle = 180 - angle;
+							angle = 180;
 						}
-						
-						return ( angle > startAngle && angle < stopAngle );
+					}else if ( y === centerY ){
+						if ( x < centerX ){
+							angle = 270;
+						}else{
+							angle = 90;
+						}
+					}else if ( x > centerX ){
+						if ( y < centerY ){
+							// upper right
+							angle = 90 + angle;
+						}else{
+							// lower right
+							angle = 90 + angle;
+						}
+					}else{
+						angle = 270 + angle;
 					}
-
-					return false;
+					
+					return ( angle >= startAngle && angle <= stopAngle );
 				}
+
+				return false;
 			};
+
+			return set;
 		};
 		
 		return DrawPie;

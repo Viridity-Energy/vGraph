@@ -95,10 +95,10 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
 				graph.registerComponent({
 					finalize : function(){
 						$rect.attr({
-							'x' : box.innerLeft,
-							'y' : box.innerTop,
-							'width' : box.innerWidth,
-							'height' : box.innerHeight
+							'x' : box.inner.left,
+							'y' : box.inner.top,
+							'width' : box.inner.width,
+							'height' : box.inner.height
 						});
 					}
 				});

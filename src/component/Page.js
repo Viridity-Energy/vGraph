@@ -1,20 +1,55 @@
 angular.module( 'vgraph' ).factory( 'ComponentPage',
-	[ 'DataFeed', 'DataLoader', 'DataManager',
-	function ( DataFeed, DataLoader, DataManager ) {
+	[ 'DataFeed', 'DataLoader', 'DataManager', 'ComponentZoom',
+	function ( DataFeed, DataLoader, DataManager, ComponentZoom ) {
 		'use strict';
 		
 		var uid = 1;
 
 		function ComponentPage(){
 			this.$$pageUid = uid++;
-			
-			this.feeds = {};
+
 			this.charts = {};
-			this.managers = {};
-			this.connections = {};
+			this.zooms = {};
 		}
 
 		ComponentPage.defaultManager = 'default';
+
+		ComponentPage.defaultZoom = 'default';
+
+		ComponentPage.prototype.reset = function(){
+			var zooms = this.zooms,
+				feeds = this.feed,
+				loaders = this.loaders,
+				managers = this.managers;
+
+			Object.keys(zooms).forEach(function( zoom ){
+				zooms[zoom].reset();
+			});
+
+			if ( loaders ){
+				Object.keys(loaders).forEach(function( loader ){
+					var t = loaders[loader];
+					Object.keys(t).forEach(function( which ){
+						t[which].$destroy();
+					});
+				});
+			}
+			this.loaders = {};
+
+			if ( feeds ){
+				Object.keys(feeds).forEach(function( feed ){
+					feeds[feed].$destroy();
+				});
+			}
+			this.feeds = {};
+
+			if ( managers ){
+				Object.keys(managers).forEach(function( manager ){
+					managers[manager].$destroy();
+				});
+			}
+			this.managers = {};
+		};
 
 		ComponentPage.prototype.configure = function( settings ){
 			var i, c,
@@ -23,28 +58,34 @@ angular.module( 'vgraph' ).factory( 'ComponentPage',
 				info,
 				manager;
 
+			this.reset();
+
 			if ( angular.isArray(settings) ){
 				for( i = 0, c = settings.length; i < c; i++ ){
 					this.addFeed( settings[i] );
 				}
 			}else{
-				keys = Object.keys(settings.managers);
-				for( i = 0, c = keys.length; i < c; i++ ){
-					key = keys[i];
-					info = settings.managers[key];
-					manager = this.getManager(key);
+				if ( settings.managers ){
+					keys = Object.keys(settings.managers);
+					for( i = 0, c = keys.length; i < c; i++ ){
+						key = keys[i];
+						info = settings.managers[key];
+						manager = this.getManager(key);
 
-					if ( info.fill ){
-						manager.fillPoints( info.fill );
-					}
+						if ( info.fill ){
+							manager.fillPoints( info.fill );
+						}
 
-					if ( info.calculations ){
-						manager.setCalculations( info.calculations );
+						if ( info.calculations ){
+							manager.setCalculations( info.calculations );
+						}
 					}
 				}
-
-				for( i = 0, c = settings.feeds.length; i < c; i++ ){
-					this.addFeed( settings.feeds[i] );
+				
+				if ( settings.feeds ){
+					for( i = 0, c = settings.feeds.length; i < c; i++ ){
+						this.addFeed( settings.feeds[i] );
+					}
 				}
 			}
 		};
@@ -71,14 +112,14 @@ angular.module( 'vgraph' ).factory( 'ComponentPage',
 			
 			manager = this.getManager( managerName );
 
-			if ( !this.connections[feed.$$feedUid] ){
-				this.connections[feed.$$feedUid] = {};
+			if ( !this.loaders[feed.$$feedUid] ){
+				this.loaders[feed.$$feedUid] = {};
 			}
 
-			loader = this.connections[feed.$$feedUid][manager.$$managerUid];
+			loader = this.loaders[feed.$$feedUid][manager.$$managerUid];
 			if ( !loader ){
 				loader = new DataLoader( feed, manager );
-				this.connections[feed.$$feedUid][manager.$$managerUid] = loader;
+				this.loaders[feed.$$feedUid][manager.$$managerUid] = loader;
 			}
 
 			loader.addConfig(cfg);
@@ -104,6 +145,18 @@ angular.module( 'vgraph' ).factory( 'ComponentPage',
 
 		ComponentPage.prototype.getChart = function( chartName ){
 			return this.charts[chartName];
+		};
+
+		ComponentPage.prototype.getZoom = function( zoomName ){
+			var name = zoomName || ComponentPage.defaultManager,
+				zoom = this.zooms[name];
+
+			if ( !zoom ){
+				zoom = new ComponentZoom();
+				this.zooms[name] = zoom;
+			}
+			
+			return zoom;
 		};
 
 		return ComponentPage;

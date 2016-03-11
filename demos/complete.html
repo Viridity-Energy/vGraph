@@ -1,0 +1,313 @@
+<html>
+
+<head>
+	<!-- TODO: interval and value, not x and y -->
+	<meta charset="utf-8">
+	<script src="bower_components/d3/d3.js"></script>
+	<script src="bower_components/jquery/dist/jquery.js"></script>
+	<script src="bower_components/angular/angular.js"></script>
+	<script src="vgraph.js"></script>
+
+	<link href="vgraph.css" rel="stylesheet" type="text/css" />
+</head>
+<body ng-app="vgraph">
+
+	<h1>Hello World</h1>
+	<h5>Growing Graph</h5>
+	<style>
+		[ng-controller] {
+			display : inline-block;
+			width: 800;
+			margin: 10px 0;
+		}
+
+		svg[vgraph-chart], [vgraph-chart] svg{
+			margin: 10px 30px 30px;
+			padding: 20px 40px;
+			width: 740;
+			height: 220;
+		}
+
+		svg.pie {
+			width: 200;
+			height: 200;
+		}
+
+		.narrow [vgraph-chart] {
+			width: 340;
+			height: 90;
+		}
+
+		.grid-on .top line,
+		.grid-on .right line {
+			stroke: #626262;
+			stroke-width: 1;
+		}
+
+		[vgraph-chart] .mat {
+			fill: #ddd;
+		}
+
+		[vgraph-line] {
+			stroke: black;
+			stroke-width: 2;
+			fill: none;
+		}
+
+		[vgraph-line] .fill {
+			stroke-width: 1;
+			fill: #bbb;
+		}
+
+		.red.line {
+			stroke: red;
+			fill: none;
+		}
+
+		.blue.line {
+			stroke: blue;
+			fill: none;
+		}
+
+		.green.line {
+			stroke: green;
+			fill: none;
+		}
+
+		.orange.line {
+			stroke: orange;
+			fill: none;
+		}
+
+		.red.fill, .red.point, rect.red, .red.bar, .red.box, .red.slice {
+			stroke-width: 1;
+			stroke: red;
+			fill: red;
+		}
+
+		.blue.fill, .blue.point, rect.blue, .blue.bar, .blue.box, .blue.slice {
+			stroke-width: 1;
+			stroke: blue;
+			fill: blue;
+		}
+
+		.green.fill, .green.point, rect.green, .green.bar, .green.box, .green.slice {
+			stroke-width: 1;
+			stroke: green;
+			fill: green;
+		}
+
+		.orange.fill, .orange.point, rect.orange, .orange.bar, .orange.box, .orange.slice {
+			stroke-width: 1;
+			stroke: orange;
+			fill: orange;
+		}
+
+		rect.bar.active {
+			opacity: .5;
+		}
+
+		rect.bar.lower {
+			stroke: black;
+		}
+
+		rect.bar.higher {
+			stroke: grey;
+		}
+
+		rect.bar.newer {
+			stroke: yellow;
+		}
+
+		rect.bar.newest {
+			fill: pink;
+			stroke: pink;
+		}
+
+		[vgraph-compare] .fill {
+			stroke: grey;
+			fill: grey;
+		}
+
+		.line .high-value {
+			stroke-dasharray: 1,1;
+			opacity: .5;
+		}
+
+		.bar .high-value,
+		.point .high-value {
+			opacity: .5;
+		}
+
+		.bar .low-value,
+		.point .low-value {
+			stroke: black;
+		}
+
+		.bar .highlight-vertical,
+		.point .highlight-vertical {
+			stroke-width: 2;
+			stroke: pink;
+		}
+
+		.bar .highlight-horizontal,
+		.point .highlight-horizontal {
+			stroke-width: 2;
+			stroke: black;
+		}
+
+		.bar .highlight,
+		.point .highlight {
+			stroke-width: 2;
+			stroke: white;
+		}
+	</style>
+
+	<article ng-controller="AppCtrl">
+		<div vgraph-page="page">
+			<section vgraph-chart="graph">
+				<div vgraph-highlight="other">
+					{{other.first}}:{{other.second}}
+				</div>
+				<svg>
+					<g vgraph-axis="'left'"
+						view="first"
+						axis-label="'foo'"
+						label-offset="50"
+						tick-length="4" tick-padding="-2"></g>
+					<g vgraph-axis="'right'"
+						view="second"
+						axis-label="'bar'"
+						label-offset="40"
+						tick-length="4" tick-padding="-2"></g>
+					<g vgraph-axis="'top'"
+						view="first"
+						axis-label="woot"
+						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+					<g vgraph-axis="'bottom'"
+						view="second"
+						axis-label="woot"
+						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+					
+					<g vgraph-line="config[0]"></g>
+					<g vgraph-line="config[1]"></g>
+
+					<g vgraph-indicator="config[0]"
+						outer-radius="10"
+						point-radius="5"></g>
+
+					<g vgraph-target="config" point-radius="5"></g>
+					
+					<g vgraph-interact></g>
+				</svg>
+			</section>
+		</div>
+	</article>
+
+	<script>
+angular.module( 'vgraph' ).controller( 'AppCtrl',
+	['$scope', '$timeout',
+	function( $scope, $timeout ){
+
+		$scope.graph = {};
+		$scope.page = {};
+
+		function makeChart( start1, stop1, start2, stop2 ){
+			var data1 = [ {x: start1, y: stop1} ],
+				data2 = [ {x: start2, y: stop2} ],
+				middle1 = Math.round( (start1+stop1)/2 ),
+				middle2 = Math.round( (start2+stop2)/2 );
+
+			$scope.graph = {
+				views: {
+					first: {
+						manager: 'first',
+						x: {
+							min: start1-100,
+							max: stop1+100
+						}
+					},
+					second: {
+						manager: 'second',
+						x: {
+							min: start2-100,
+							max: stop2+100
+						}
+					}
+				}
+			};
+
+			$scope.page = [{
+				src: data1,
+				manager: 'first',
+				interval: 'x',
+				readings:{
+					'y': 'y'
+				}
+			},{
+				src: data2,
+				manager: 'second',
+				interval: 'x',
+				readings:{
+					'y': 'y'
+				}
+			}];
+
+			// x is the interval, y is the function pulling the value
+			$scope.config = [
+				{ name : 'y1', field:'y', view:'first', className : 'red' },
+				{ name : 'y2', field:'y', view:'second', className : 'blue' }
+			];
+
+			var min = -1,
+				max = 1
+
+			for( var i = start1, c = middle1; i < c; i++ ){
+				data1.push({
+					x : i,
+					y : data1[data1.length-1].y + Math.random() * (max - min) + min
+				});
+			}
+
+			for( var i = start2, c = middle2; i < c; i++ ){
+				data2.push({
+					x : i,
+					y : data2[data2.length-1].y + Math.random() * (max - min) + min
+				});
+			}
+
+			$timeout(function(){
+				for( var i = middle1, c = stop1; i < c; i++ ){
+					data1.push({
+						x : i,
+						y : data1[data1.length-1].y + Math.random() * (max - min) + min
+					});
+				}
+
+				for( var i = middle2, c = stop2; i < c; i++ ){
+					data2.push({
+						x : i,
+						y : data2[data2.length-1].y + Math.random() * (max - min) + min
+					});
+				}
+			},1000);
+		}
+
+		$timeout(function(){
+			makeChart( 0, 2000, 2000, 4000 );
+		},500);
+
+		$timeout(function(){
+			makeChart( 0, 2000, 2000, 4000 );
+		},3000);
+
+		$timeout(function(){
+			makeChart( 2000, 4000, 6000, 8000 );
+		},5000);
+	}]
+);
+	</script>
+
+</body>
+
+</html>

@@ -13,24 +13,30 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
 			link : function( scope, $el, attrs, requirements ){
 				var el = $el[0],
 					chart = requirements[0],
-					cfg = chart.compileReference( scope.config ),
-					pair = chart.compileReference( scope.pair ),
 					element = requirements[1],
 					className = 'bar ';
 
 				element.setChart( chart );
 				element.setElement( el );
-				element.setDrawer( new DrawBar(cfg,pair,attrs.width) );
 
-				if ( cfg.classExtend ){
-					className += cfg.classExtend + ' ';
-				}
+				scope.$watch('config', function( config ){
+					var cfg = chart.compileReference( config ),
+						pair = chart.compileReference( scope.pair );
 
-				className += attrs.className || cfg.className;
+					if ( cfg ){
+						element.setDrawer( new DrawBar(cfg,pair,attrs.width) );
 
-				el.setAttribute( 'class', className );
+						if ( cfg.classExtend ){
+							className += cfg.classExtend + ' ';
+						}
 
-				cfg.$view.registerComponent(element);
+						className += attrs.className || cfg.className;
+
+						el.setAttribute( 'class', className );
+
+						cfg.$view.registerComponent(element);
+					}
+				});	
 			}
 		};
 	} ]

@@ -47,21 +47,37 @@ angular.module( 'vgraph' ).factory( 'DataLoader',
 			};
 		}
 
-		DataLoader.unregister = function(){};
+		// DataLoader.prototype.$destory is defined on a per instance level
 
 		DataLoader.prototype.addConfig = function( cfg ){
-			var keys = Object.keys(cfg.readings),
+			var reader,
 				proc = this._process.bind( this );
 			
-			keys.forEach(function( key ){
-				var fn = cfg.readings[ key ];
+			// readings : readFrom => mapTo
+			Object.keys(cfg.readings).forEach(function( readFrom ){
+				var old = reader,
+					writeTo = cfg.readings[ readFrom ];
 				
-				if ( typeof(fn) === 'string' ){
-					cfg.readings[key] = function( datum ){
-						return datum[fn];
+				if ( old ){
+					reader = function( interval, feedData, dm ){
+						var value = feedData[readFrom];
+
+						old( interval, feedData, dm );
+						if ( value !== undefined ){
+							dm.setValue( interval, writeTo, value );
+						}
+					};
+				}else{
+					reader = function( interval, feedData, dm ){
+						var value = feedData[readFrom];
+
+						if ( value !== undefined ){
+							dm.setValue( interval, writeTo, value );
+						}
 					};
 				}
 			});
+			cfg.reader = reader;
 
 			if ( !cfg.parseInterval ){
 				cfg.parseInterval = function( datum ){
@@ -90,19 +106,15 @@ angular.module( 'vgraph' ).factory( 'DataLoader',
 		};
 
 		DataLoader.prototype._process = function( cfg, datum ){
-			var interval,
-				dm = this.dataManager,
-				keys = Object.keys(cfg.readings);
+			var interval;
 
 			if ( cfg.isDefined && !cfg.isDefined(datum) ){
 				return;
 			}
 
 			try{
-				interval = cfg.parseInterval( datum );
-				keys.forEach(function( key ){
-					dm.setValue( interval, key, cfg.readings[key](datum) );
-				});
+				interval = cfg.parseInterval(datum);
+				cfg.reader( interval, datum, this.dataManager );
 			}catch( ex ){
 				console.log( 'failed to load', datum, interval );
 				console.log( 'conf:', cfg );

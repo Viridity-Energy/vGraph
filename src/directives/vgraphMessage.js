@@ -18,10 +18,10 @@ angular.module( 'vgraph' ).directive( 'vgraphMessage',
 				$el.attr( 'visibility', 'hidden' );
 
 				box.$on('resize',function(){
-					if ( box.innerHeight ){
-						$outline.attr( 'transform', 'translate('+box.innerLeft+','+box.innerTop+')' )
-							.attr( 'width', box.innerWidth )
-							.attr( 'height', box.innerHeight );
+					if ( box.inner.height ){
+						$outline.attr( 'transform', 'translate('+box.inner.left+','+box.inner.top+')' )
+							.attr( 'width', box.inner.width )
+							.attr( 'height', box.inner.height );
 						
 						try {
 							$text.attr( 'text-anchor', 'middle' )

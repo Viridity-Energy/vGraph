@@ -12,6 +12,8 @@ angular.module( 'vgraph' ).factory( 'DataFeed',
 			this.$$feedUid = uid++;
 		}
 
+		// DataFeed.prototype.$destroy
+
 		DataFeed.prototype.setSource = function( src ){
 			var dis = this,
 				oldPush = src.push;
@@ -39,6 +41,11 @@ angular.module( 'vgraph' ).factory( 'DataFeed',
 			};
 
 			this.$push();
+
+			this.$destroy = function(){
+				delete dis.data;
+				src.push = oldPush;
+			};
 		};
 
 		makeEventing( DataFeed.prototype );
@@ -60,7 +67,7 @@ angular.module( 'vgraph' ).factory( 'DataFeed',
 					}
 
 					dis._$push = null;
-				}, 0);
+				}, 5); // because one feed might load, then another, make this a bit more than 0
 			}
 		};
 

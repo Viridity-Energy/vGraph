@@ -1,6 +1,6 @@
 angular.module( 'vgraph' ).factory( 'ComponentView',
-	[ 'ComponentPane', 'ComponentPage', 'DataNormalizer', 'CalculationsCompile',
-	function ( ComponentPane, ComponentPage, DataNormalizer, calculationsCompile ) {
+	[ 'ComponentPane', 'DataNormalizer', 'CalculationsCompile',
+	function ( ComponentPane, DataNormalizer, calculationsCompile ) {
 		'use strict';
 		
 		var id = 1;
@@ -130,7 +130,7 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 			}
 		}
 
-		ComponentView.prototype.configure = function( settings, chartSettings, box, page ){
+		ComponentView.prototype.configure = function( settings, chartSettings, box, page, zoom ){
 			var normalizer,
 				refs = this.references,
 				refNames = Object.keys(this.references);
@@ -142,7 +142,7 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 			ComponentView.parseSettingsY( settings.y, this.y );
 			
 			this.box = box;
-			this.manager = page.getManager( settings.manager || ComponentPage.defaultManager );
+			this.manager = page.getManager( settings.manager );
 			this.normalizer = normalizer = settings.normalizer || 
 				new DataNormalizer(function(index){
 					return Math.round(index);
@@ -166,12 +166,12 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 				});
 			}
 
-			if ( this.x.maxPane ){
-				this.pane.setPane({
-					min: this.x.minPane, 
-					max: this.x.maxPane
-				});
-			}
+			this.pane.setPane({
+				min: zoom.left, 
+				max: zoom.right
+			});
+
+			zoom.$on('update', this.pane.setPane.bind(this.pane));
 		};
 
 		ComponentView.prototype.registerComponent = function( component ){
@@ -239,8 +239,8 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 					max
 				])
 				.range([
-					box.innerBottom,
-					box.innerTop
+					box.inner.bottom,
+					box.inner.top
 				]);
 		};
 
@@ -257,61 +257,66 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 					max
 				])
 				.range([
-					box.innerLeft,
-					box.innerRight
+					box.inner.left,
+					box.inner.right
 				]);
 		};
 
 		ComponentView.prototype.parse = function(){
 			var min,
 				max,
-				raw = this.manager.data,
+				raw,
+				scale;
+
+			if ( this.manager ){
+				raw = this.manager.data;
 				scale = this.x.scale;
 
-			this._sample();
-			
-			if ( this.filtered ){
-				if ( !this.viewport ){
-					this.viewport = {};
-				}
+				this._sample();
+				
+				if ( this.filtered ){
+					if ( !this.viewport ){
+						this.viewport = {};
+					}
 
-				this.setViewportIntervals( this.offset.$left, this.offset.$right );
-				this.normalizer.$reindex( this.filtered, scale );
+					this.setViewportIntervals( this.offset.$left, this.offset.$right );
+					this.normalizer.$reindex( this.filtered, scale );
 
-				// first we run the calculations
-				if ( this.calculations ){
-					this.calculations.$init( this.normalizer );
-					this.calculations( this.normalizer );
-				}
+					// first we run the calculations
+					if ( this.calculations ){
+						this.calculations.$init( this.normalizer );
+						this.calculations( this.normalizer );
+					}
 
-				// and then we get the min and max, this allows for calculations to be included
-				this.components.forEach(function( component ){
-					var t;
+					// and then we get the min and max, this allows for calculations to be included
+					this.components.forEach(function( component ){
+						var t;
 
-					if ( component.parse ){
-						t = component.parse();
-						if ( t ){
-							if ( (t.min || t.min === 0) && (!min && min !== 0 || min > t.min) ){
-								min = t.min;
-							}
+						if ( component.parse ){
+							t = component.parse();
+							if ( t ){
+								if ( (t.min || t.min === 0) && (!min && min !== 0 || min > t.min) ){
+									min = t.min;
+								}
 
-							if ( (t.max || t.max === 0) && (!max && max !== 0 || max < t.max) ){
-								max = t.max;
+								if ( (t.max || t.max === 0) && (!max && max !== 0 || max < t.max) ){
+									max = t.max;
+								}
 							}
 						}
-					}
-				});
+					});
 
-				if ( min !== undefined ){
-					this.setViewportValues( min, max );	
+					if ( min !== undefined ){
+						this.setViewportValues( min, max );	
 
-					if ( this.adjustSettings ){
-						this.adjustSettings(
-							this.x,
-							this.filtered.$maxIndex - this.filtered.$minIndex,
-							max - min,
-							raw.$maxIndex - raw.$minIndex
-						);
+						if ( this.adjustSettings ){
+							this.adjustSettings(
+								this.x,
+								this.filtered.$maxIndex - this.filtered.$minIndex,
+								max - min,
+								raw.$maxIndex - raw.$minIndex
+							);
+						}
 					}
 				}
 			}
