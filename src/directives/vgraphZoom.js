@@ -13,7 +13,7 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
 				var graph = requirements[0],
 					page = requirements[1],
 					box = graph.box,
-					target = page.getChart(attrs.vgraphZoom),
+					zoom = page.getZoom(attrs.vgraphZoom),
 					dragging = false,
 					zoomed = false,
 					dragStart,
@@ -39,8 +39,8 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
 					$rightDrag,
 					$rightNub;
 				
-				function redraw( noApply ){
-					if ( minPos === 0 && maxPos === box.innerWidth ){
+				function redraw( ratio ){
+					if ( minPos === 0 && maxPos === box.inner.width ){
 						zoomed = false;
 						$focus.attr( 'class', 'focus' );
 					}else{
@@ -52,8 +52,8 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
 						minPos = 0;
 					}
 
-					if ( maxPos > box.innerWidth ){
-						maxPos = box.innerWidth;
+					if ( maxPos > box.inner.width ){
+						maxPos = box.inner.width;
 					}
 
 					if ( minPos > maxPos ){
@@ -67,20 +67,16 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
 						.attr( 'width', minPos );
 
 					$right.attr( 'transform', 'translate(' +maxPos+ ',0)' );
-					$rightShade.attr( 'width', box.innerWidth - maxPos );
+					$rightShade.attr( 'width', box.inner.width - maxPos );
 
 					$focus.attr( 'transform', 'translate(' + minPos + ',0)' )
 						.attr( 'width', maxPos - minPos );
 
-					if ( !noApply ){
-						scope.$apply(function(){
-							target.setPane(
-								minPos / box.innerWidth,
-								maxPos / box.innerWidth
-							);
-
-							target.rerender();
-						});
+					if ( ratio ){
+						zoom.setRatio(
+							minPos / box.inner.width,
+							maxPos / box.inner.width
+						);
 					}
 				}
 
@@ -113,7 +109,7 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
 					})
 					.on('drag', function(){
 						minPos = d3.mouse( el[0] )[0];
-						redraw();
+						redraw( true );
 					})
 				);
 
@@ -127,7 +123,7 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
 					})
 					.on('drag', function(){
 						maxPos = d3.mouse( el[0] )[0];
-						redraw();
+						redraw( true );
 					})
 				);
 
@@ -155,59 +151,59 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
 							maxPos = dragStart.maxPos + dX;
 							minPos = dragStart.minPos + dX;
 
-							redraw();
+							redraw( true );
 						}else if ( dX > 1 ){
 							// I'm assuming 1 px zoom is way too small
 							// this is a zoom in on an area
 							maxPos = dragStart.mouse + Math.abs(dX);
 							minPos = dragStart.mouse - Math.abs(dX);
 
-							redraw();
+							redraw( true );
 							zoomed = false;
 						}
 					})
 				);
 
 				$el.on('dblclick', function(){
-					maxPos = box.innerWidth;
+					maxPos = box.inner.width;
 					minPos = 0;
 
-					redraw();
+					redraw( true );
 				});
 
 				box.$on('resize',function(){
-					$el.attr( 'width', box.innerWidth )
-						.attr( 'height', box.innerHeight )
+					$el.attr( 'width', box.inner.width )
+						.attr( 'height', box.inner.height )
 						.attr( 'transform', 'translate(' +
-							box.innerLeft + ',' +
-							box.innerTop + ')'
+							box.inner.left + ',' +
+							box.inner.top + ')'
 						);
 
-					$rightNub.attr('transform', 'translate(0,'+(box.innerHeight/2 - 30)+')');
-					$leftNub.attr('transform', 'translate(0,'+(box.innerHeight/2 - 30)+')');
+					$rightNub.attr('transform', 'translate(0,'+(box.inner.height/2 - 30)+')');
+					$leftNub.attr('transform', 'translate(0,'+(box.inner.height/2 - 30)+')');
 
-					$leftShade.attr( 'height', box.innerHeight );
-					$rightShade.attr( 'height', box.innerHeight );
+					$leftShade.attr( 'height', box.inner.height );
+					$rightShade.attr( 'height', box.inner.height );
 
-					$leftDrag.attr( 'height', box.innerHeight );
-					$rightDrag.attr( 'height', box.innerHeight );
+					$leftDrag.attr( 'height', box.inner.height );
+					$rightDrag.attr( 'height', box.inner.height );
 
-					$focus.attr( 'height', box.innerHeight );
+					$focus.attr( 'height', box.inner.height );
+
+					calcZoom();
 				});
 
-				target.$on('success', function( primaryView ){
+				function calcZoom(){
 					if ( !dragging ){
-						if ( primaryView.offset ) {
-							minPos = primaryView.offset.left * box.innerWidth;
-							maxPos = primaryView.offset.right * box.innerWidth;
-						}else{
-							minPos = 0;
-							maxPos = box.innerWidth;
-						}
-
-						redraw( true );
+						minPos = zoom.left * box.inner.width;
+						maxPos = zoom.right * box.inner.width;
+						
+						redraw();
 					}
-				});
+				}
+				
+				zoom.$on('update', calcZoom);
+				calcZoom();
 			}
 		};
 	} ]

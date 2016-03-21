@@ -13,19 +13,28 @@ angular.module( 'vgraph' ).factory( 'ComponentElement',
 
 		function appendChildren( element, dataSets, children ){
 			var i,
+				child,
+				dataSet,
 				root = element.element;
 
 			root.innerHTML = '';
 			
 			for( i = children.length - 1; i !== -1; i-- ){
+				dataSet = dataSets[i];
+				child = children[i];
+
 				if ( element.drawer.getHitbox ){
-					element.chart.addHitbox( 
-						element.drawer.getHitbox(dataSets[i]),
-						children[i]
+					element.chart.addHitbox(
+						element.drawer.getHitbox(dataSet),
+						child
 					);
 				}
 				
-				root.appendChild( children[i] );
+				root.appendChild( child );
+				
+				if ( element.onAppend ){
+					element.onAppend( child, dataSet );
+				}
 			}
 		}
 
@@ -75,6 +84,10 @@ angular.module( 'vgraph' ).factory( 'ComponentElement',
 			}
 
 			// dataSets will be the content, preParsed, used to make the data
+			if ( this.prepBuild ){
+				this.prepBuild( dataSets );
+			}
+
 			if ( this.element.tagName === 'g' ){
 				appendChildren(
 					this,

@@ -44,35 +44,45 @@ angular.module( 'vgraph' ).factory( 'ComponentBox',
 			}
 
 			// set up the knowns
-			model.outerWidth = merge( settings.outerWidth, model.outerWidth ) || 0;
-			model.outerHeight = merge( settings.outerHeight, model.outerHeight ) || 0;
+			if ( !model.outer ){
+				model.outer = {
+					left: 0,
+					top: 0
+				};
+			}
+			
+			model.outer.width = merge( settings.outer.width, model.outer.width ) || 0;
+			model.outer.right = model.outer.width;
+			model.outer.height = merge( settings.outer.height, model.outer.height ) || 0;
+			model.outer.bottom = model.outer.height;
 
 			// where is the box
 			model.top = oMargin.top;
-			model.bottom = model.outerHeight - oMargin.bottom;
+			model.bottom = model.outer.height - oMargin.bottom;
 			model.left = oMargin.left;
-			model.right = model.outerWidth - oMargin.right;
+			model.right = model.outer.width - oMargin.right;
+			model.width = model.right - model.left;
+			model.height = model.bottom - model.top;
 
 			model.center = ( model.left + model.right ) / 2;
 			model.middle = ( model.top + model.bottom ) / 2;
 
-			model.width = model.right - model.left;
-			model.height = model.bottom - model.top;
-
 			// where are the inners
-			model.innerTop = model.top + oPadding.top;
-			model.innerBottom = model.bottom - oPadding.bottom;
-			model.innerLeft = model.left + oPadding.left;
-			model.innerRight = model.right - oPadding.right;
+			model.inner = {
+				top: model.top + oPadding.top,
+				bottom: model.bottom - oPadding.bottom,
+				left: model.left + oPadding.left,
+				right: model.right - oPadding.right
+			};
+				
+			model.inner.width = model.inner.right - model.inner.left;
+			model.inner.height = model.inner.bottom - model.inner.top;
 
-			model.innerWidth = model.innerRight - model.innerLeft;
-			model.innerHeight = model.innerBottom - model.innerTop;
-
-			model.ratio = model.outerWidth + ' x ' + model.outerHeight;
+			model.ratio = model.outer.width + ' x ' + model.outer.height;
 		}
 
 		function ComponentBox( settings ){
-			extend( this, settings || {} );
+			extend( this, settings || { outer:{} } );
 		}
 
 		makeEventing( ComponentBox.prototype );
@@ -96,8 +106,10 @@ angular.module( 'vgraph' ).factory( 'ComponentBox',
 			el[0].style.cssText = null;
 
 			extend( this, {
-				outerWidth : el.outerWidth( true ),
-				outerHeight : el.outerHeight( true ),
+				outer: {
+					width : el.outerWidth( true ),
+					height : el.outerHeight( true )
+				},
 				margin : {
 					top : el.css('margin-top'),
 					right : el.css('margin-right'),
@@ -114,14 +126,14 @@ angular.module( 'vgraph' ).factory( 'ComponentBox',
 
 			el.css('margin', '0')
 				.css('padding', '0')
-				.attr( 'width', this.outerWidth )
-				.attr( 'height', this.outerHeight )
+				.attr( 'width', this.outer.width )
+				.attr( 'height', this.outer.height )
 				.css({
-					width : this.outerWidth+'px',
-					height : this.outerHeight+'px'
+					width : this.outer.width+'px',
+					height : this.outer.height+'px'
 				});
 
-			if ( this.innerWidth && this.innerHeight ){
+			if ( this.inner.width && this.inner.height ){
 				this.$trigger('resize');
 			}
 		};

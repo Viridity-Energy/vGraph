@@ -14,8 +14,8 @@ angular.module( 'vgraph' ).directive( 'vgraphFocus',
 						.attr('visibility', 'hidden');
 
 				box.$on('resize',function(){
-					$focus.attr( 'height', box.innerHeight )
-						.attr( 'y', box.innerTop );
+					$focus.attr( 'height', box.inner.height )
+						.attr( 'y', box.inner.top );
 				});
 
 				graph.$on('drag', function( value ){
@@ -31,15 +31,15 @@ angular.module( 'vgraph' ).directive( 'vgraphFocus',
 
 						$focus.attr( 'visibility', 'visible' );
 
-						if ( start > box.innerLeft ){
+						if ( start > box.inner.left ){
 							$focus.attr( 'x', start );
 						}else{
-							start = box.innerLeft;
-							$focus.attr( 'x', box.innerLeft );
+							start = box.inner.left;
+							$focus.attr( 'x', box.inner.left );
 						}
 						
-						if ( stop > box.innerRight ){
-							$focus.attr( 'width', box.innerRight - start );
+						if ( stop > box.inner.right ){
+							$focus.attr( 'width', box.inner.right - start );
 						}else{
 							$focus.attr( 'width', stop - start );
 						}
@@ -62,27 +62,25 @@ angular.module( 'vgraph' ).directive( 'vgraphFocus',
 							start = value.x0 - xDiff;
 							stop = value.x0 + xDiff;
 
-							if ( start < box.innerLeft ){
+							if ( start < box.inner.left ){
 								start = 0;
 							}else{
-								start = start - box.innerLeft;
+								start = start - box.inner.left;
 							}
 
-							if ( stop > box.innerRight ){
-								stop = box.innerWidth;
+							if ( stop > box.inner.right ){
+								stop = box.inner.width;
 							}else{
-								stop = stop - box.innerLeft;
+								stop = stop - box.inner.left;
 							}
 
 							offset = graph.views[Object.keys(graph.views)[0]].offset;
-							currentWidth = box.innerWidth * offset.right - box.innerWidth * offset.left;
+							currentWidth = box.inner.width * offset.right - box.inner.width * offset.left;
 							
-							graph.setPane(
-								( box.innerWidth * offset.left + start / box.innerWidth * currentWidth ) / box.innerWidth,
-								( box.innerWidth * offset.right - (box.innerWidth-stop) / box.innerWidth * currentWidth ) / box.innerWidth
+							graph.zoom.setRatio(
+								( box.inner.width * offset.left + start / box.inner.width * currentWidth ) / box.inner.width,
+								( box.inner.width * offset.right - (box.inner.width-stop) / box.inner.width * currentWidth ) / box.inner.width
 							);
-
-							graph.rerender();
 						}
 					}
 				});

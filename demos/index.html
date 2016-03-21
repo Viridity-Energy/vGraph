@@ -25,12 +25,22 @@
 			margin: 10px 30px 30px;
 			padding: 20px 40px;
 			width: 740;
-			height: 220;
+			height: 150;
 		}
 
 		svg.pie {
 			width: 200;
 			height: 200;
+		}
+
+		svg.heatmap {
+			font-size: 10px;
+			width: 700;
+			height: 300;
+		}
+
+		[vgraph-chart="zoom"] svg {
+			height: 50px;
 		}
 
 		.narrow [vgraph-chart] {
@@ -161,6 +171,35 @@
 			stroke-width: 2;
 			stroke: white;
 		}
+
+		.pie .highlight {
+			opacity: .4;
+		}
+
+		[vgraph-heatmap] .bucket {
+			fill: transparent;
+			stroke: black;
+		}
+
+		[vgraph-heatmap] .heading {
+			fill: green;
+			stroke: black;
+		}
+
+		[vgraph-heatmap] .bucket.highlight-vertical {
+			fill: yellow;
+			opacity: .50;
+		}
+
+		[vgraph-heatmap] .bucket.highlight-horizontal {
+			fill: yellow;
+			opacity: .50;
+		}
+
+		[vgraph-heatmap] .bucket.highlight {
+			fill: yellow;
+			opacity: .80;
+		}
 	</style>
 
 	<article ng-controller="AppCtrl">
@@ -203,6 +242,8 @@
 				ng-click="speed = !speed"/></label>
 			<label>Pie<input type='checkbox' ng-checked="pie" 
 				ng-click="pie = !pie"/></label>
+			<label>Heatmap<input type='checkbox' ng-checked="heatmap" 
+				ng-click="heatmap = !heatmap"/></label>
 		</section>
 
 		<div ng-if="simple" ng-controller="FloodCtrl">
@@ -609,10 +650,14 @@
 			<div ng-controller="BucketsCtrl">
 				<div vgraph-page="page">
 					<div vgraph-chart="graph">
+						<span vgraph-highlight="point"
+							>{{ point }}</span>
 						<svg>
-							<g vgraph-axis="'left'" view="primary"
+							<g vgraph-axis="'left'" 
+								view="primary"
 								tick-length="4" tick-padding="-2"></g>
-							<g vgraph-axis="'bottom'" view="primary"
+							<g vgraph-axis="'bottom'" 
+								view="primary"
 								tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
 
 							<path ng-repeat="cfg in config" vgraph-line="cfg"></path>
@@ -724,7 +769,7 @@
 							
 							<path ng-repeat="cfg in config" vgraph-line="cfg"></path>
 
-							<g vgraph-zoom="primary"></g>
+							<g vgraph-zoom="zoomable"></g>
 						</svg>
 					</div>
 				</div>
@@ -1003,7 +1048,7 @@
 							
 							<path ng-repeat="cfg in config" vgraph-line="cfg"></path>
 
-							<g vgraph-zoom="primary"></g>
+							<g vgraph-zoom="zoomable"></g>
 						</svg>
 					</div>
 				</div>
@@ -1081,7 +1126,120 @@
 					<div vgraph-chart="graph">
 						<div vgraph-publish="{pie:'content'}">{{content}}</div>
 						<svg xmlns="http://www.w3.org/2000/svg"  version="1.1" class="pie">
+							<g vgraph-label="margin" x="left" y="top">
+								<text text-anchor="start" dy="1em">Top Left</text>
+							</g>
+							<g vgraph-label="margin" x="right" y="top">
+								<text text-anchor="end" dy="1em">Top Right</text>
+							</g>
+							<g vgraph-label="margin" x="left" y="bottom">
+								<text text-anchor="start">Bottom Left</text>
+							</g>
+							<g vgraph-label="margin" x="right" y="bottom">
+								<text text-anchor="end">Bottom Right</text>
+							</g>
+							<g vgraph-label="margin" x="center" y="top">
+								<text text-anchor="middle" dy="1em">Top Center</text>
+							</g>
+							<g vgraph-label="margin" x="center" y="bottom">
+								<text text-anchor="middle">Bottom Center</text>
+							</g>
+							<g vgraph-label="margin" x="left" y="middle">
+								<text text-anchor="middle" dy="1em" transform="rotate(-90)">Left Middle</text>
+							</g>
+							<g vgraph-label="margin" x="right" y="middle">
+								<text text-anchor="middle" dy="1em" transform="rotate(90)">Right Middle</text>
+							</g>
+							<g vgraph-label="padding" x="left" y="middle">
+								<text text-anchor="middle" dy="1em" transform="rotate(-90)">Left Middle</text>
+							</g>
+							<g vgraph-label="padding" x="right" y="middle">
+								<text text-anchor="middle" dy="1em" transform="rotate(90)">Right Middle</text>
+							</g>
 							<g vgraph-pie="ref" buckets="buckets" publish="pie"></g>
+							<g vgraph-interact></g>
+						</svg>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<section ng-if="heatmap">
+			<h5>Heatmap</h5>
+			<div ng-controller="HeatmapCtrl">
+				<div vgraph-page="page">
+					<div vgraph-chart="linear" name="primary">
+						<div vgraph-highlight="point">{{point}}</div>
+						<svg xmlns="http://www.w3.org/2000/svg"  version="1.1">
+							<g vgraph-axis="'left'"
+								view="someView"
+								tick-length="4" tick-padding="-2"></g>
+							<g vgraph-axis="'bottom'"
+								view="someView"
+								tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+
+							<path vgraph-line="ref"></path>
+
+							<g vgraph-target="[ref]" point-radius="5"></g>
+							<g vgraph-loading="Loading Data"></g>
+
+							<g vgraph-interact></g>
+						</svg>
+					</div>
+					
+					<div vgraph-chart="zoom">
+						<svg>
+							<g vgraph-axis="'top'" 
+								view="someView"
+								tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+							<g vgraph-axis="'bottom'" 
+								view="someView"
+								tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+							
+							<path vgraph-line="ref"></path>
+
+							<g vgraph-zoom="zoomable"></g>
+						</svg>
+					</div>
+
+					<div vgraph-chart="heatmap">
+						<div vgraph-publish="{focus:'content',pie:'other'}">
+							{{content}}
+							<br>
+							{{other}}
+						</div>
+						<svg>
+							<g vgraph-pie="ref" buckets="buckets" publish="pie"></g>
+							<g vgraph-interact></g>
+						</svg>
+					</div>
+
+					<div vgraph-chart="heatmap">
+						<div vgraph-publish="{focus:'content'}">{{content}}</div>
+						<svg xmlns="http://www.w3.org/2000/svg"  version="1.1" class="heatmap">
+							<g vgraph-label="padding" x="left" y="middle">
+								<text text-anchor="middle" dy="1em" transform="rotate(-90)">10s</text>
+							</g>
+							<g vgraph-label="padding" x="center" y="top">
+								<text text-anchor="middle" dy="1em">100s</text>
+							</g>
+							<g vgraph-heatmap="ref" indexs="indexs" calculator="calculator" publish="heatmap">
+								<cell><text
+									ng-attr-x="{{ content.width / 2 }}" 
+									ng-attr-y="{{ content.height / 2 }}"
+									style="text-anchor: middle;"
+									>{{content.data.display}}</text><g></cell>
+								<x-heading><text
+									ng-attr-x="{{ content.width / 2 }}"
+									ng-attr-y="{{ content.height / 2 }}"
+									style="text-anchor: middle;"
+									>{{content.text}}</text></x-heading>
+								<y-heading><text
+									ng-attr-x="{{ content.width / 2 }}"
+									ng-attr-y="{{ content.height / 2 }}"
+									style="text-anchor: middle;"
+									>{{content.text}}</text></y-heading>
+							</g>
 							<g vgraph-interact></g>
 						</svg>
 					</div>

@@ -77,7 +77,10 @@ angular.module( 'vgraph' ).factory( 'DataNormalizer',
 			}
 
 			for( i = 0, c = this.length; i < c; i++ ){
-				this._finalizeProperties( this[i] );
+				datum = this[i];
+
+				datum.$avgIndex = (datum.$minIndex+datum.$maxIndex) / 2;
+				this._finalizeProperties( datum );
 			}
 
 			this.$stats = Object.create(collection.$stats);

@@ -98,7 +98,7 @@ angular.module( 'vgraph' ).directive( 'vgraphTooltip',
 						$el.style( 'visibility', 'visible' );
 
 						// go to the right or the left of the point of interest?
-						if ( $x + width + 16 < graph.box.innerRight ){
+						if ( $x + width + 16 < graph.box.inner.right ){
 							$el.attr( 'transform', 'translate('+$x+','+$y+')' );
 							$text.attr( 'transform', 'translate(10,5)' );
 							$polygon.attr( 'points', '0,15 10,0 '+( width + 10 )+',0 '+( width + 10 )+',30 10,30 0,15' );

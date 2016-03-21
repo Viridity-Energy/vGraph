@@ -28,23 +28,24 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
 			},
 			require : ['^vgraphChart'],
 			link : function( scope, el, attrs, requirements ){
+				// I'd like to not do it this way, but can't think of a good way how not to.
 				var graph = requirements[0],
 					view = graph.getView( attrs.view || 'default' ),
-					makeTicks,
 					express,
-					axis = d3.svg.axis(),
-					className= 'axis',
+					makeTicks,
 					box = graph.box,
+					axis = d3.svg.axis(),
+					className = 'axis',
 					labelOffset = 0,
 					tickRotation = null,
 					labelClean = true,
 					labelEndpoints = false,
-					ticks,
 					tickLength = parseInt( attrs.tickLength ) || 0,
 					tickPadding = parseInt( attrs.tickPadding ) || 3,
 					tickMargin = parseInt( attrs.tickMargin ) || 0,
 					min,
 					max,
+					ticks,
 					$ticks,
 					$tickMarks,
 					$tickMargin,
@@ -123,7 +124,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
 							if ( tickMargin ){
 								$tickMargin
 									.attr( 'height', tickMargin )
-									.attr( 'width', box.innerWidth )
+									.attr( 'width', box.inner.width )
 									.attr( 'x', 0 )
 									.attr( 'y', -tickMargin );
 							}
@@ -133,7 +134,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
 							if ( ticks ){
 								axis.orient('top')
 									.tickFormat( view.x.format )
-									.innerTickSize( -(box.innerHeight + tickLength + tickMargin) )
+									.innerTickSize( -(box.inner.height + tickLength + tickMargin) )
 									.outerTickSize( 0 )
 									.tickPadding( tickPadding + tickLength + tickMargin )
 									.scale( view.x.scale );
@@ -196,7 +197,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
 
 							$el.attr( 'class', className + ' x bottom' )
 								.attr( 'transform',
-									'translate('+box.left+','+box.innerBottom+')'
+									'translate('+box.left+','+box.inner.bottom+')'
 								)
 								.attr( 'width', box.width )
 								.attr( 'height', box.padding.bottom );
@@ -210,7 +211,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
 							if ( tickMargin ){
 								$tickMargin
 									.attr( 'height', tickMargin )
-									.attr( 'width', box.innerWidth )
+									.attr( 'width', box.inner.width )
 									.attr( 'x', 0 )
 									.attr( 'y', 0 );
 							}
@@ -220,7 +221,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
 							if ( ticks ){
 								axis.orient('bottom')
 									.tickFormat( view.x.format )
-									.innerTickSize( box.innerHeight + tickLength + tickMargin )
+									.innerTickSize( box.inner.height + tickLength + tickMargin )
 									.outerTickSize( 0 )
 									.tickPadding( tickPadding + tickLength + tickMargin )
 									.scale( view.x.scale );
@@ -232,7 +233,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
 									);
 								}
 
-								$ticks.attr( 'transform', 'translate(-'+box.margin.left+','+(-box.innerHeight)+')' )
+								$ticks.attr( 'transform', 'translate(-'+box.margin.left+','+(-box.inner.height)+')' )
 									.call( axis );
 
 								axisMaxMin = $el.selectAll('g.axis-cap').data( view.x.scale.domain() );
@@ -306,7 +307,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
 
 							if ( tickMargin ){
 								$tickMargin
-									.attr( 'height', box.innerHeight )
+									.attr( 'height', box.inner.height )
 									.attr( 'width', tickMargin )
 									.attr( 'x', -tickMargin )
 									.attr( 'y', 0 );
@@ -317,7 +318,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
 							if ( ticks ){
 								axis.orient('right')
 									.tickFormat( view.y.format )
-									.innerTickSize( -(box.innerWidth + tickLength + tickMargin) )
+									.innerTickSize( -(box.inner.width + tickLength + tickMargin) )
 									.outerTickSize( 0 )
 									.tickPadding( tickPadding + tickLength + tickMargin )
 									.scale( view.y.scale );
@@ -329,7 +330,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
 									);
 								}
 
-								$ticks.attr('transform', 'translate('+(box.innerRight)+','+(-box.top||0)+')');
+								$ticks.attr('transform', 'translate('+(box.inner.right)+','+(-box.top||0)+')');
 								$ticks.call( axis );
 								$ticks.select('.domain').attr( 'transform', 'translate('+( tickLength + tickMargin )+',0)' );
 
@@ -383,7 +384,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
 
 							if ( tickMargin ){
 								$tickMargin
-									.attr( 'height', box.innerHeight )
+									.attr( 'height', box.inner.height )
 									.attr( 'width', tickMargin )
 									.attr( 'x', -tickMargin )
 									.attr( 'y', 0 );
@@ -394,7 +395,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
 							if ( ticks ){
 								axis.orient('left')
 									.tickFormat( view.y.format )
-									.innerTickSize( -(box.innerWidth + tickLength + tickMargin) )
+									.innerTickSize( -(box.inner.width + tickLength + tickMargin) )
 									.outerTickSize( 0 )
 									.tickPadding( tickPadding + tickLength + tickMargin )
 									.scale( view.y.scale );
@@ -501,7 +502,7 @@ angular.module( 'vgraph' ).directive( 'vgraphAxis',
 							change,
 							boundry = {};
 
-						if ( !data.length ){
+						if ( !(data && data.length) ){
 							$el.attr( 'visibility', 'hidden' );
 							return;
 						}

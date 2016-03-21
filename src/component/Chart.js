@@ -69,6 +69,11 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 		makeEventing( ComponentChart.prototype );
 
 		ComponentChart.defaultView = 'default';
+		
+		ComponentChart.prototype.reset = function(){
+			this.settings = {};
+		};
+
 
 		ComponentChart.prototype.configure = function( page, settings ){
 			var views,
@@ -78,14 +83,13 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 				settings = {};
 			}
 
-			if ( !this.settings ){
-				this.settings = {};
-			}
+			this.reset();
 
 			this.settings.fitToPane = settings.fitToPane;
 			this.settings.adjustSettings = settings.adjustSettings;
 
 			this.page = page;
+			this.zoom = page.getZoom( settings.zoom );
 			this.normalizeY = settings.normalizeY;
 			this.normalizeX = settings.normalizeX;
 
@@ -118,6 +122,8 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 			if ( settings.onLoad ){
 				settings.onLoad( this );
 			}
+
+			this.zoom.$on( 'update',this.rerender.bind(this) );
 		};
 
 		function normalizeY( views ){
@@ -408,6 +414,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 			schedule.endScript(
 				function(){
 					// always
+					dis.rendered = true;
 					dis.$trigger('done');
 				},
 				function(){
@@ -438,8 +445,10 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 		};
 
 		ComponentChart.prototype.rerender = function( cb ){
-			this.scheduleRender( cb );
-			this.waiting = this.views;
+			if ( this.rendered ){
+				this.scheduleRender( cb );
+				this.waiting = this.views;
+			}
 		};
 
 		ComponentChart.prototype.needsRender = function( view, cb ){
@@ -469,7 +478,8 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 				viewSettings,
 				settings,
 				this.box,
-				this.page
+				this.page,
+				this.zoom
 			);
 
 			viewModel.$name = viewName;
@@ -492,21 +502,6 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 			}
 
 			this.$trigger('error');
-		};
-
-		ComponentChart.prototype.setPane = function( leftPercent, rightPercent ){
-			var views = this.views,
-				viewNames = Object.keys(this.views);
-
-			this.settings.x.minPane = leftPercent;
-			this.settings.x.maxPane = rightPercent;
-
-			viewNames.forEach(function( viewName ){
-				views[viewName].pane.setPane({
-					start: leftPercent,
-					stop: rightPercent
-				});
-			});
 		};
 
 		ComponentChart.prototype.registerComponent = function( component ){
@@ -542,6 +537,8 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 			domHelper.addClass( horizontal, 'highlight-horizontal' );
 			domHelper.addClass( intersections, 'highlight' );
 
+			this.$trigger( 'publish:focus', intersections );
+
 			this._activeElements = {
 				vertical: vertical,
 				horizontal: horizontal,
@@ -568,13 +565,15 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 			angular.forEach( this.views, function( view, viewName ){
 				var p;
 
-				points[viewName] = view.getPoint( pos.x );
+				if ( view.components.length ){
+					points[viewName] = view.getPoint( pos.x );
 
-				p = points[viewName].$x;
+					p = points[viewName].$x;
 
-				if ( p !== undefined ){
-					count++;
-					sum += p;
+					if ( p !== undefined ){
+						count++;
+						sum += p;
+					}
 				}
 			});
 
@@ -596,7 +595,8 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 		};
 
 		ComponentChart.prototype.highlightOff = function(){
-			this.$trigger('highlight',null);
+			this.$trigger( 'publish:focus', null );
+			this.$trigger( 'highlight', null );
 			this.unlightElements();	
 		};
 

@@ -44,10 +44,10 @@ angular.module( 'vgraph' ).controller( 'FloodCtrl',
 			src: data,
 			interval: 'x',
 			readings:{
-				'someLine1': 'y1',
-				'someLine2': 'y2',
-				'someLine3': 'y3',
-				'someLine4': 'y4'
+				'y1': 'someLine1',
+				'y2': 'someLine2',
+				'y3': 'someLine3',
+				'y4': 'someLine4'
 			}
 		}];
 
@@ -163,10 +163,10 @@ angular.module( 'vgraph' ).controller( 'ClassifyCtrl', [
 			src: data,
 			interval: 'x',
 			readings:{
-				'someLine1': 'y1',
-				'someLine2': 'y2',
-				'someLine3': 'y3',
-				'someLine4': 'y4'
+				'y1': 'someLine1',
+				'y2': 'someLine2',
+				'y3': 'someLine3',
+				'y4': 'someLine4'
 			}
 		}];
 
@@ -293,10 +293,10 @@ angular.module( 'vgraph' ).controller( 'ResizeCtrl', [
 			src: data,
 			interval: 'x',
 			readings:{
-				'y1': 'y_line_1',
-				'y2': 'y_line_2',
-				'y3': 'y_line_3',
-				'y4': 'y_line_4'
+				'y_line_1': 'y1',
+				'y_line_2': 'y2',
+				'y_line_3': 'y3',
+				'y_line_4': 'y4' 
 			}
 		}];
 
@@ -353,10 +353,10 @@ angular.module( 'vgraph' ).controller( 'LoadingCtrl',
 			src: data,
 			interval: 'x',
 			readings:{
-				'someLine1': 'y1',
-				'someLine2': 'y2',
-				'someLine3': 'y3',
-				'someLine4': 'y4'
+				'y1': 'someLine1',
+				'y2': 'someLine2',
+				'y3': 'someLine3',
+				'y4': 'someLine4'
 			}
 		}];
 
@@ -547,12 +547,6 @@ angular.module( 'vgraph' ).controller( 'BucketsCtrl',
 				max : 1000
 			},
 			views: {
-				'primary': {
-					manager: 'data',
-					normalizer: new DataNormalizer(function(index){
-						return Math.round(index / 10); // combine every 10 pixels
-					})
-				},
 				'secondary': {
 					manager: 'data',
 					normalizer: new DataNormalizer(function(index){
@@ -564,6 +558,12 @@ angular.module( 'vgraph' ).controller( 'BucketsCtrl',
 					normalizer: new DataNormalizer(function(index){
 						return index; // don't combine at all
 					})
+				},
+				'primary': {
+					manager: 'data',
+					normalizer: new DataNormalizer(function(index){
+						return Math.round(index / 10); // combine every 10 pixels
+					})
 				}
 			}
 		};
@@ -573,27 +573,28 @@ angular.module( 'vgraph' ).controller( 'BucketsCtrl',
 			manager: 'data',
 			interval: 'x',
 			readings:{
-				'y1': 'y',
-				'y2': 'y'
+				'y': 'y'
 			}
 		}];
 
 		$scope.config = [
 			{ 
-				name : 'y1', 
+				name: 'y1',
 				view: 'primary', 
-				className : 'red'
+				field: 'y',
+				className: 'red'
 			},
 			{ 
-				name : 'y2', 
+				name: 'y2',
 				view: 'secondary', 
-				className : 'blue'
+				field: 'y',
+				className: 'blue'
 			},
 			{ 
-				name : 'y3',
-				field: 'y2',
+				name: 'y3',
 				view: 'tertiary', 
-				className : 'green'
+				field: 'y',
+				className: 'green'
 			}
 		];
 
@@ -632,10 +633,10 @@ angular.module( 'vgraph' ).controller( 'CompareCtrl',
 			src: data,
 			interval: 'x',
 			readings:{
-				'y1': 'input1',
-				'y2': 'input2',
-				'y3': 'input3',
-				'y4': 'input4'
+				'input1': 'y1',
+				'input2': 'y2',
+				'input3': 'y3',
+				'input4': 'y4' 
 			}
 		}];
 
@@ -804,19 +805,20 @@ angular.module( 'vgraph' ).controller( 'MultiAxisCtrl',
 			manager: 'first',
 			interval: 'x',
 			readings:{
-				'y-1': 'y1'
+				'y1': 'y-1'
 			}
 		},{
 			src: data,
 			manager: 'second',
 			interval: 'x2',
 			readings:{
-				'y-2': 'y2'
+				'y2': 'y-2'
 			}
 		}];
 
 		$scope.graph = {
 			fitToPane: true,
+			zoom: 'zoomable',
 			views: viewInfo
 		};
 
@@ -874,14 +876,14 @@ angular.module( 'vgraph' ).controller( 'MultiIntervalCtrl',
 				manager: 'first',
 				interval: 'x1',
 				readings:{
-					'y-1': 'y1'
+					'y1': 'y-1'
 				}
 			},{
 				src: data2,
 				manager: 'second',
 				interval: 'x2',
 				readings:{
-					'y-2': 'y2'
+					'y2': 'y-2'
 				}
 			}]
 		};
@@ -1033,38 +1035,38 @@ angular.module( 'vgraph' ).controller( 'LeadingCtrl',
 				src: data,
 				interval: 'x',
 				readings:{
-					'someLine1': 'y1',
-					'someLine2': 'y2',
-					'someLine3': 'y3',
-					'someLine4': 'y4'
+					'y1': 'someLine1',
+					'y2': 'someLine2',
+					'y3': 'someLine3',
+					'y4': 'someLine4' 
 				}
 			},{
 				src: data,
 				manager: 'eins',
 				interval: 'x',
 				readings:{
-					'someLine1': 'y1'
+					'y1': 'someLine1'
 				}
 			},{
 				src: data,
 				manager: 'zwei',
 				interval: 'x',
 				readings:{
-					'someLine2': 'y2'
+					'y2': 'someLine2'
 				}
 			},{
 				src: data,
 				manager: 'fier',
 				interval: 'x',
 				readings:{
-					'someLine3': 'y3'
+					'y3': 'someLine3'
 				}
 			},{
 				src: data,
 				manager: 'sieben',
 				interval: 'x',
 				readings:{
-					'someLine4': 'y4'
+					'y4': 'someLine4'
 				}
 			}]
 		};
@@ -1190,7 +1192,7 @@ angular.module( 'vgraph' ).controller( 'BoxCtrl',
 			src: data,
 			interval: 'x',
 			readings:{
-				'someLine1': 'y1'
+				'y1': 'someLine1'
 			}
 		}];
 
@@ -1237,7 +1239,7 @@ angular.module( 'vgraph' ).controller( 'IconCtrl',
 			src: data,
 			interval: 'x',
 			readings:{
-				'someLine1': 'y1'
+				'y1': 'someLine1'
 			}
 		}];
 
@@ -1410,28 +1412,28 @@ angular.module( 'vgraph' ).controller( 'ExportCtrl',
 			interval: 'x',
 			manager: 'first',
 			readings:{
-				'someLine1': 'y'
+				'y': 'someLine1'
 			}
 		},{
 			src: data2,
 			interval: 'x',
 			manager: 'second',
 			readings:{
-				'someLine2': 'y'
+				'y': 'someLine2'
 			}
 		},{
 			src: data3,
 			interval: 'x',
 			manager: 'third',
 			readings:{
-				'someLine3': 'y'
+				'y': 'someLine3'
 			}
 		},{
 			src: data4,
 			interval: 'x',
 			manager: 'fourth',
 			readings:{
-				'someLine4': 'y'
+				'y': 'someLine4'
 			}
 		}];
 
@@ -1511,6 +1513,7 @@ angular.module( 'vgraph' ).controller( 'StatsCtrl',
 					return ':' + y;
 				}
 			},
+			zoom: 'zoomable',
 			views: {
 				'default': {
 					calculations: [
@@ -1556,7 +1559,7 @@ angular.module( 'vgraph' ).controller( 'StatsCtrl',
 				src: data,
 				interval: 'x',
 				readings:{
-					'someLine1': 'y1'
+					'y1': 'someLine1'
 				}
 			}]
 		};
@@ -1603,15 +1606,14 @@ angular.module( 'vgraph' ).controller( 'StatsCtrl',
 
 		var startTime,
 			beginTime = +(new Date());
+
 		startHook = function(){
 			startTime = +(new Date());
 			$scope.loadTime = startTime - beginTime;
-			console.log('=>', $scope.loadTime);
 		};
 
 		stopHook = function(){
 			$scope.runTime = +(new Date()) - startTime;
-			console.log( '->', $scope.runTime );
 		};
 
 		for( var i = 0, c = 200000; i < c; i++ ){
@@ -1645,13 +1647,13 @@ angular.module( 'vgraph' ).controller( 'ExternalCtrl',
 			src: json,
 			interval: 'interval',
 			readings:{
-				'y1': 'value'
+				'value': 'y1'
 			}
 		},{
 			src: csv,
 			interval: 'interval',
 			readings:{
-				'y2': 'value'
+				'value': 'y2'
 			}
 		}];
 
@@ -1795,5 +1797,185 @@ angular.module( 'vgraph' ).controller( 'PieCtrl',
 		$timeout( makeData, 1000 );
 
 		$timeout( makeData, 6000 );
+	}]
+);
+
+angular.module( 'vgraph' ).controller( 'HeatmapCtrl',
+	['$scope', '$timeout', 'DataNormalizer',
+	function( $scope, $timeout, DataNormalizer ){
+		var data = [ { x: 0, y: 10} ];
+
+		$scope.page = [{
+			src: data,
+			manager: 'feed',
+			interval: 'x',
+			readings:{
+				'y': 'y'
+			}
+		}];
+
+		$scope.linear = {
+			zoom: 'zoomable',
+			views: {
+				someView: {
+					manager: 'feed',
+					normalizer: new DataNormalizer(function(index){
+						return Math.round(index); // combine to every pixel
+					})
+				}
+			}
+		};
+
+		$scope.zoom = {
+			views: {
+				someView: {
+					manager: 'feed'
+				}
+			}
+		};
+
+		$scope.heatmap = {
+			zoom: 'zoomable',
+			views: {
+				someView: {
+					manager: 'feed',
+					normalizer: new DataNormalizer(function(index){
+						return index; // don't combine at all
+					})
+				}
+			}
+		};
+
+		$scope.indexs = {
+			'100s': function( datum ){
+				return Math.round( datum.$avgIndex/100 );
+			},
+			'10s': function( datum ){
+				return Math.round( datum.$avgIndex % 10 );
+			}
+		};
+
+		$scope.buckets = {
+			blue: function( datum, value ){
+				return 1;
+			},
+			red: function( datum, value ){
+				if ( value > 15 ){
+					return 1;
+				}
+			},
+			green: function( datum, value ){
+				if ( value < 5 ){
+					return 1;
+				}
+			}
+		};
+
+		$scope.ref = { name : 'y', view: 'someView', className: 'red' };
+
+		function calcSet( data ){
+			var i, c,
+				sum = 0;
+
+			if ( !data ){
+				return null;
+			}
+
+			for( i = 0, c = data.length; i < c; i++ ){
+				sum += data[i].y;
+			}
+
+			return sum;
+		};
+
+		function calcColumn( column ){
+			var i, c,
+				datum,
+				value,
+				compare;
+
+			for( i = 0, c = column.length; i < c; i++ ){
+				datum = column[i];
+				value = calcSet( datum );
+
+				if ( value || value === 0 ){
+					datum.value = value;
+					datum.display = value.toFixed(2);
+
+					if ( !compare ){
+						compare = {
+							min: value,
+							max: value
+						};
+					}else if ( compare.min > value ){
+						compare.min = value;
+					}else if ( compare.max < value ){
+						compare.max = value;
+					}
+				}
+			}
+			
+			return compare;
+		};
+
+		$scope.calculator = function( dataSets ){
+			var i, c,
+				min,
+				max,
+				datum,
+				compare,
+				colorScale,
+				grid = dataSets.$grid;
+
+			for( i = 0, c = grid.length; i < c; i++ ){
+				compare = calcColumn(grid[i]);
+
+				if ( compare ){
+					if ( min === undefined ){
+						min = compare.min;
+						max = compare.max;
+					}else{
+						if ( min > compare.min ){
+							min = compare.min;
+						}
+
+						if ( max < compare.max ){
+							max = compare.max;
+						}
+					}
+				}
+			}
+
+			colorScale = d3.scale.linear()
+                .domain( [min,max] )
+                .range( ['#FF0000','#00FF00'] );
+
+        	for( i = 0, c = dataSets.length; i < c; i++ ){
+        		datum = dataSets[i];
+        		if ( datum.data ){
+        			datum.$color = colorScale(datum.data.value);
+        		}
+        	}
+		};
+
+		function makeData(){
+			for( var i = 0, c = 2000; i < c; i++ ){
+				var counter = 0;
+				var min = -1,
+					max = 1,
+					t = Math.random() * (max - min) + min,
+					p = {
+						x : data.length,
+						y : data[data.length-1].y + t
+					};
+
+				data.push( p );
+			}
+		}
+
+		makeData();
+		//$timeout( makeData, 1000 );
+
+		//$timeout( makeData, 6000 );
 	}]
 );
