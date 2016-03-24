@@ -167,13 +167,13 @@ angular.module( 'vgraph' ).factory( 'DataManager',
 			var r, l,
 				d,
 				dx,
-				p = this.data.$pos( pos, '_$index' );
+				p = this.data.closestPair( pos );
 
 			if ( p.right === p.left ){
-				return this.data[p.right];
+				return p.right;
 			}else{
-				r = this.data[p.right];
-				l = this.data[p.left];
+				r = p.right;
+				l = p.left;
 				d = {};
 				dx = (pos - l._$index) / (r._$index - l._$index);
 

@@ -57,22 +57,24 @@ angular.module( 'vgraph' ).factory( 'DataNormalizer',
 				datum = collection[i];
 				oldIndex = datum._$index;
 				newIndex = reindex( datum._$index );
-				index = grouper( newIndex );
+				index = grouper( newIndex, oldIndex );
 
-				node = this.$addNode( index, datum );
+				if ( index !== undefined ){
+					node = this.$addNode( index, datum );
 
-				if ( node.$minIndex === undefined ){
-					node.$x = newIndex;
-					node.$minIndex = oldIndex;
-					node.$xMin = newIndex;
-					node.$maxIndex = oldIndex;
-					node.$xMax = newIndex;
-					node.$count = 1;
-				}else{
-					node.$x += newIndex;
-					node.$maxIndex = oldIndex;
-					node.$xMax = newIndex;
-					node.$count++;
+					if ( node.$minIndex === undefined ){
+						node.$x = newIndex;
+						node.$minIndex = oldIndex;
+						node.$xMin = newIndex;
+						node.$maxIndex = oldIndex;
+						node.$xMax = newIndex;
+						node.$count = 1;
+					}else{
+						node.$x += newIndex;
+						node.$maxIndex = oldIndex;
+						node.$xMax = newIndex;
+						node.$count++;
+					}
 				}
 			}
 

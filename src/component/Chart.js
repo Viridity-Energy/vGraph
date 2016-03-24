@@ -53,10 +53,6 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 			this.references = {};
 			this.components = [];
 
-			this.pristine = false;
-			this.loading = true;
-			this.message = null;
-
 			this.$on('focus',function( pos ){
 				if ( pos ){
 					dis.highlightOn( pos );
@@ -64,6 +60,8 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 					dis.highlightOff();
 				}
 			});
+
+			this.reset();
 		}
 
 		makeEventing( ComponentChart.prototype );
@@ -71,59 +69,63 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 		ComponentChart.defaultView = 'default';
 		
 		ComponentChart.prototype.reset = function(){
+			this.message = 'Configuring';
+			this.loading = true;
+			this.pristine = false;
 			this.settings = {};
 		};
-
 
 		ComponentChart.prototype.configure = function( page, settings ){
 			var views,
 				addView = this.addView.bind(this);
 
-			if ( !settings ){
-				settings = {};
-			}
-
 			this.reset();
 
-			this.settings.fitToPane = settings.fitToPane;
-			this.settings.adjustSettings = settings.adjustSettings;
+			if ( settings ){
+				this.settings.fitToPane = settings.fitToPane;
+				this.settings.adjustSettings = settings.adjustSettings;
 
-			this.page = page;
-			this.zoom = page.getZoom( settings.zoom );
-			this.normalizeY = settings.normalizeY;
-			this.normalizeX = settings.normalizeX;
+				this.page = page;
+				this.zoom = page.getZoom( settings.zoom );
+				this.normalizeY = settings.normalizeY;
+				this.normalizeX = settings.normalizeX;
 
-			this.settings.x = ComponentView.parseSettingsX( settings.x, this.settings.x );
-			this.settings.y = ComponentView.parseSettingsY( settings.y, this.settings.y );
+				this.settings.x = ComponentView.parseSettingsX( settings.x, this.settings.x );
+				this.settings.y = ComponentView.parseSettingsY( settings.y, this.settings.y );
 
-			// I want to compile everything but scale.
-			if ( settings.x ){
-				this.settings.x.scale = settings.x.scale;
-			}else{
-				this.settings.x.scale = null;
+				// I want to compile everything but scale.
+				if ( settings.x ){
+					this.settings.x.scale = settings.x.scale;
+				}else{
+					this.settings.x.scale = null;
+				}
+
+				if ( settings.y ){
+					this.settings.y.scale = settings.y.scale;
+				}else{
+					this.settings.y.scale = null;
+				}
+				
+				views = settings.views;
+				if ( !views ){
+					views = {};
+					views[ ComponentChart.defaultView ] = {};
+				}else if ( angular.isFunction(views) ){
+					views = views();
+				}
+				
+				angular.forEach( views, addView );
+
+				if ( settings.onLoad ){
+					settings.onLoad( this );
+				}
+
+				this.zoom.$on( 'update',this.rerender.bind(this) );
+
+				this.message = null;
 			}
 
-			if ( settings.y ){
-				this.settings.y.scale = settings.y.scale;
-			}else{
-				this.settings.y.scale = null;
-			}
-			
-			views = settings.views;
-			if ( !views ){
-				views = {};
-				views[ ComponentChart.defaultView ] = {};
-			}else if ( angular.isFunction(views) ){
-				views = views();
-			}
-			
-			angular.forEach( views, addView );
-
-			if ( settings.onLoad ){
-				settings.onLoad( this );
-			}
-
-			this.zoom.$on( 'update',this.rerender.bind(this) );
+			this.$trigger('configured');
 		};
 
 		function normalizeY( views ){
@@ -276,16 +278,12 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 			}
 
 			// these are used to load in data from DataManager
-			if ( refDef.normalizerMap ){
-				ref.normalizerMap = refDef.normalizerMap;
-			}
-
 			if ( refDef.requirements ){
 				ref.requirements = refDef.requirements;
 			}
 
-			if ( refDef.normalizerFinalize ){
-				ref.normalizerFinalize = refDef.normalizerFinalize;
+			if ( refDef.normalizer ){
+				ref.normalizer = refDef.normalizer;
 			}
 
 			if ( refDef.classify ){
@@ -294,6 +292,10 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 
 			if ( refDef.mergeParsed ){
 				ref.mergeParsed = refDef.mergeParsed;
+			}
+
+			if ( refDef.$meta ){
+				ref.$meta = refDef.$meta;
 			}
 
 			return ref;
@@ -307,7 +309,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 				isReady = false,
 				hasViews = 0;
 
-			this.$trigger('render');
+			dis.$trigger('render');
 			
 			try{
 				// generate data limits for all views
@@ -415,7 +417,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 				function(){
 					// always
 					dis.rendered = true;
-					dis.$trigger('done');
+					dis.$trigger('rendered');
 				},
 				function(){
 					// if success

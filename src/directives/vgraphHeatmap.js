@@ -41,15 +41,18 @@ angular.module( 'vgraph' ).directive( 'vgraphHeatmap',
 				calcArea();
 				box.$on( 'resize', calcArea );
 
-				element.prepBuild = function( dataSets ){
+				element._build = element.build;
+				element.build = function(){
 					children.forEach(function( child ){
 						child.$destroy();
 					});
 					children = [];
 
 					if ( scope.calculate ){
-						scope.calculate( dataSets );
+						scope.calculate( this.drawer.dataSets );
 					}
+
+					this._build();
 				};
 
 				element.onAppend = function( element, dataSet ){

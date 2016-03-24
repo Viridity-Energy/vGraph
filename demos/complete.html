@@ -196,7 +196,9 @@
 						outer-radius="10"
 						point-radius="5"></g>
 
-					<g vgraph-target="config" point-radius="5"></g>
+					<g vgraph-target="config" point-radius="5"></g>	
+
+					<g vgraph-loading></g>
 					
 					<g vgraph-interact></g>
 				</svg>
@@ -209,12 +211,12 @@ angular.module( 'vgraph' ).controller( 'AppCtrl',
 	['$scope', '$timeout',
 	function( $scope, $timeout ){
 
-		$scope.graph = {};
+		$scope.graph = null;
 		$scope.page = {};
 
 		function makeChart( start1, stop1, start2, stop2 ){
-			var data1 = [ {x: start1, y: stop1} ],
-				data2 = [ {x: start2, y: stop2} ],
+			var data1 = [],
+				data2 = [],
 				middle1 = Math.round( (start1+stop1)/2 ),
 				middle2 = Math.round( (start2+stop2)/2 );
 
@@ -262,19 +264,24 @@ angular.module( 'vgraph' ).controller( 'AppCtrl',
 			var min = -1,
 				max = 1
 
-			for( var i = start1, c = middle1; i < c; i++ ){
-				data1.push({
-					x : i,
-					y : data1[data1.length-1].y + Math.random() * (max - min) + min
-				});
-			}
+			$timeout(function(){
+				data1.push( {x: start1, y: stop1} );
+				data2.push( {x: start2, y: stop2} );
 
-			for( var i = start2, c = middle2; i < c; i++ ){
-				data2.push({
-					x : i,
-					y : data2[data2.length-1].y + Math.random() * (max - min) + min
-				});
-			}
+				for( var i = start1, c = middle1; i < c; i++ ){
+					data1.push({
+						x : i,
+						y : data1[data1.length-1].y + Math.random() * (max - min) + min
+					});
+				}
+
+				for( var i = start2, c = middle2; i < c; i++ ){
+					data2.push({
+						x : i,
+						y : data2[data2.length-1].y + Math.random() * (max - min) + min
+					});
+				}
+			},1000);
 
 			$timeout(function(){
 				for( var i = middle1, c = stop1; i < c; i++ ){
@@ -290,20 +297,24 @@ angular.module( 'vgraph' ).controller( 'AppCtrl',
 						y : data2[data2.length-1].y + Math.random() * (max - min) + min
 					});
 				}
-			},1000);
+			},1500);
 		}
 
 		$timeout(function(){
 			makeChart( 0, 2000, 2000, 4000 );
-		},500);
+		},2000);
+
+		$timeout(function(){
+			$scope.graph = null;
+		},4000);
 
 		$timeout(function(){
 			makeChart( 0, 2000, 2000, 4000 );
-		},3000);
+		},5000);
 
 		$timeout(function(){
 			makeChart( 2000, 4000, 6000, 8000 );
-		},5000);
+		},7000);
 	}]
 );
 	</script>

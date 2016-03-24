@@ -11,7 +11,7 @@ angular.module( 'vgraph' ).factory( 'DrawBox',
 
 		DrawBox.prototype = new DrawBar();
 
-		DrawBox.prototype.parse = function( index ){
+		DrawBox.prototype.getPoint = function( index ){
 			var t,
 				value,
 				node = this.top.$getNode(index);
@@ -29,8 +29,8 @@ angular.module( 'vgraph' ).factory( 'DrawBox',
 					t = {
 						x1: node.$x,
 						x2: node.$x,
-						y1: this.top.$view.viewport.minValue,
-						y2: this.top.$view.viewport.maxValue
+						y1: '+',
+						y2: '-'
 					};
 				}
 
@@ -42,10 +42,9 @@ angular.module( 'vgraph' ).factory( 'DrawBox',
 			}
 		};
 
-		DrawBox.prototype.mergeParsed = function( parsed, set ){
-			if ( (parsed.y1 || parsed.y1 === 0) && 
-				(parsed.y2 || parsed.y2 === 0) ){
-				DrawBar.prototype.mergeParsed.call( this, parsed, set );
+		DrawBox.prototype.mergePoint = function( parsed, set ){
+			if ( (parsed.y1 || parsed.y1 === 0) && (parsed.y2 || parsed.y2 === 0) ){
+				DrawBar.prototype.mergePoint.call( this, parsed, set );
 				return -1;
 			}else{
 				return 0;

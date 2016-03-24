@@ -3,16 +3,6 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 	function () {
 		'use strict';
 
-		function isNumeric( v ){
-			if ( v === null ){
-				return false;
-			}else if ( Number.isFinite ){
-				return Number.isFinite(v) && !Number.isNaN(v);
-			}else{
-				return isFinite(v) && !isNaN(v);
-			}
-		}
-
 		function createNames( config, prefix ){
 			var arr = [];
 
@@ -130,78 +120,6 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 				}
 
 				return nameAs;
-			},
-			limits: function( cfg ){
-				var i, c,
-					v,
-					min,
-					max;
-
-				if ( angular.isArray(cfg) ){
-					// go through an array of names
-					for( i = 0, c = cfg.length; i < c; i++ ){
-						v = this.limits( cfg[i] );
-						if ( min === undefined ){
-							min = v.min;
-							max = v.max;
-						}else{
-							if ( v.min < min ){
-								min = v.min;
-							}
-
-							if ( v.max > max ){
-								max = v.max;
-							}
-						}
-					}
-				} else if ( cfg && cfg.getValue ){
-					// used to reduce the checks for parser
-					cfg.$eachNode(function(node){
-						v = +cfg.getValue(node);
-						if ( isNumeric(v) ){
-							if ( min === undefined ){
-								min = v;
-								max = v;
-							}else if ( min > v ){
-								min = v;
-							}else if ( max < v ){
-								max = v;
-							}
-						}
-					});
-				}
-
-				return {
-					min : min,
-					max : max
-				};
-			},
-			indexs: function( cfg ){
-				// Need to calculate the indexs of the data.  Multiple references might have different views
-				// TOOD : this is most likely suboptimal, I'd like to improve
-				var indexs,
-					seen = {};
-				
-				//console.log( cfg );
-				if ( cfg.length === 1 ){
-					indexs = cfg[0].$getIndexs();
-				}else{
-					indexs = [];
-
-					cfg.forEach(function( ref ){
-						indexs = indexs.concat( ref.$getIndexs() );
-					});
-
-					indexs = indexs.filter(function(x) {
-						if ( seen[x] ){
-							return;
-						}
-						seen[x] = true;
-						return x;
-					});
-				}
-				//console.log( indexs );
-				return indexs;
 			}
 		};
 	}]

@@ -95,17 +95,22 @@ angular.module( 'vgraph' ).factory( 'ComponentPage',
 				loader,
 				manager,
 				managerName,
-				source = cfg.src || [];
+				source = cfg.src;
 
 			if ( !cfg.manager ){
 				cfg.manager = ComponentPage.defaultManager;
 			}
 			managerName = cfg.manager;
 
-			if ( source._$feedUid ){
+			if ( source._$feedUid && this.feeds[source._$feedUid] ){
 				feed = this.feeds[ source._$feedUid ];
 			}else{
-				feed = new DataFeed( source, cfg.explode );
+				if ( source instanceof DataFeed ){
+					feed = source;
+				}else{
+					feed = new DataFeed( source, cfg.explode );
+				}
+				
 				this.feeds[ feed.$$feedUid ] = feed;
 				source._$feedUid = feed.$$feedUid;
 			}

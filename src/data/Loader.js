@@ -48,29 +48,90 @@ angular.module( 'vgraph' ).factory( 'DataLoader',
 		}
 
 		// DataLoader.prototype.$destory is defined on a per instance level
+		/*
+		function _makeSetter( property, next ){
+			if ( next ){
+				return function( ctx, value ){
+					if ( !ctx[property] ){
+						ctx[property] = {};
+					}
+
+					next( ctx[property], value );
+				};
+			}else{
+				return function( ctx, value ){
+					ctx[property] = value;
+				};
+			}
+		}
+
+		function makeSetter( readFrom ){
+			var i, c,
+				fn,
+				readings = readFrom.split('.');
+		
+			for( i = reading.length; i > -1; i-- ){
+				fn = _makeGetter( readings[i], fn );
+			}
+		}
+		*/
+		function _makeGetter( property, next ){
+			if ( next ){
+				return function( ctx ){
+					try {
+						return next( ctx[property] );
+					}catch( ex ){
+						return undefined;
+					}
+				};
+			}else{
+				return function( ctx ){
+					try {
+						return ctx[property];
+					}catch( ex ){
+						return undefined;
+					}
+				};
+			}
+		}
+
+		function makeGetter( readFrom ){
+			var i,
+				fn,
+				readings = readFrom.split('.');
+		
+			for( i = readings.length-1; i > -1; i-- ){
+				fn = _makeGetter( readings[i], fn );
+			}
+
+			return fn;
+		}
 
 		DataLoader.prototype.addConfig = function( cfg ){
 			var reader,
 				proc = this._process.bind( this );
 			
 			// readings : readFrom => mapTo
+			// we flatten the data, so readers can be complex, but write to one property
 			Object.keys(cfg.readings).forEach(function( readFrom ){
 				var old = reader,
+					getter = makeGetter( readFrom ),
 					writeTo = cfg.readings[ readFrom ];
 				
 				if ( old ){
 					reader = function( interval, feedData, dm ){
-						var value = feedData[readFrom];
-
-						old( interval, feedData, dm );
+						var value = getter(feedData);
+						
 						if ( value !== undefined ){
 							dm.setValue( interval, writeTo, value );
 						}
+
+						old( interval, feedData, dm );
 					};
 				}else{
 					reader = function( interval, feedData, dm ){
-						var value = feedData[readFrom];
-
+						var value = getter(feedData);
+						
 						if ( value !== undefined ){
 							dm.setValue( interval, writeTo, value );
 						}
@@ -82,6 +143,13 @@ angular.module( 'vgraph' ).factory( 'DataLoader',
 			if ( !cfg.parseInterval ){
 				cfg.parseInterval = function( datum ){
 					return +datum[ cfg.interval ];
+				};
+			}
+
+			if ( cfg.massage ){
+				cfg._parseInterval = cfg.parseInterval;
+				cfg.parseInterval = function( datum ){
+					return this.massage( this._parseInterval(datum) );
 				};
 			}
 

@@ -16,31 +16,33 @@ angular.module( 'vgraph' ).factory( 'DataFeed',
 
 		DataFeed.prototype.setSource = function( src ){
 			var dis = this,
+				data = src || [],
 				oldPush = src.push;
 
-			this.data = src;
+
+			this.data = data;
 			this._readPos = 0;
 
-			src.push = function(){
+			data.push = function(){
 				oldPush.apply( this, arguments );
-				dis.$push();
+				dis.$onPush();
 			};
 
-			src.$ready = function(){
+			data.$ready = function(){
 				dis.$trigger('ready');
 			};
 
-			src.$error = function( err ){
+			data.$error = function( err ){
 				dis.$trigger( 'error', err );
 			};
 
-			src.$reset = function(){
+			data.$reset = function(){
 				dis.$trigger( 'reset' );
 				dis._readPos = 0;
-				dis.data.length = 0;
+				data.length = 0;
 			};
 
-			this.$push();
+			this.$onPush();
 
 			this.$destroy = function(){
 				delete dis.data;
@@ -50,11 +52,19 @@ angular.module( 'vgraph' ).factory( 'DataFeed',
 
 		makeEventing( DataFeed.prototype );
 
-		DataFeed.prototype.$push = function(){
+		DataFeed.prototype.consume = function( arr ){
+			var i, c;
+
+			for( i = 0, c = arr.length; i < c; i++ ){
+				this.data.push( arr[i] );
+			}
+		};
+
+		DataFeed.prototype.$onPush = function(){
 			var dis = this;
 
-			if ( !this._$push ){
-				this._$push = setTimeout(function(){
+			if ( !this._$onPush ){
+				this._$onPush = setTimeout(function(){
 					var t = dis._readNext();
 
 					if ( t ){
@@ -66,7 +76,7 @@ angular.module( 'vgraph' ).factory( 'DataFeed',
 						t = dis._readNext();
 					}
 
-					dis._$push = null;
+					dis._$onPush = null;
 				}, 5); // because one feed might load, then another, make this a bit more than 0
 			}
 		};

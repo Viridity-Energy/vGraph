@@ -19,7 +19,7 @@ angular.module( 'vgraph' ).factory( 'DrawFill',
 
 		DrawFill.prototype = new DrawLinear();
 
-		DrawFill.prototype.parse = function( index ){
+		DrawFill.prototype.getPoint = function( index ){
 			var y1,
 				y2,
 				node = this.top.$getNode(index);
@@ -29,7 +29,7 @@ angular.module( 'vgraph' ).factory( 'DrawFill',
 			if ( this.references.length === 2 ){
 				y2 = this.bottom.$getValue( index );
 			}else{
-				y2 = this.bottom.$view.viewport.minValue;
+				y2 = '-';
 			}
 
 			if ( isNumeric(y1) && isNumeric(y2) ){
@@ -44,17 +44,17 @@ angular.module( 'vgraph' ).factory( 'DrawFill',
 			}
 		};
 
-		DrawFill.prototype.mergeParsed = function( parsed, set ){
+		DrawFill.prototype.mergePoint = function( parsed, set ){
 			var x = parsed.x,
 				y1 = parsed.y1,
 				y2 = parsed.y2,
 				last = set[set.length-1];
 
-			if ( DrawLinear.isNumeric(y1) && DrawLinear.isNumeric(y2) ){
+			if ( isNumeric(y1) && isNumeric(y2) ){
 				set.push({
 					x: x,
-					y1: this.top.$view.y.scale(y1),
-					y2: this.bottom.$view.y.scale(y2)
+					y1: y1,
+					y2: y2
 				});
 
 				return -1;
@@ -63,14 +63,10 @@ angular.module( 'vgraph' ).factory( 'DrawFill',
 			} else {
 				if ( y1 === undefined ){
 					y1 = last.y1;
-				}else{
-					y1 = this.top.$view.y.scale(y1);
 				}
 
 				if ( y2 === undefined && last ){
 					y2 = last.y2;
-				}else{
-					y2 = this.bottom.$view.y.scale(y2);
 				}
 
 				set.push({
@@ -85,7 +81,11 @@ angular.module( 'vgraph' ).factory( 'DrawFill',
 
 		DrawFill.prototype.makePath = function( set ){
 			var i, c,
+				y1,
+				y2,
 				point,
+				top = this.top.$view,
+				bottom = this.bottom.$view,
 				line1 = [],
 				line2 = [];
 
@@ -93,8 +93,11 @@ angular.module( 'vgraph' ).factory( 'DrawFill',
 				for( i = 0, c = set.length; i < c; i++ ){
 					point = set[i];
 					
-					line1.push( point.x+','+point.y1 );
-					line2.unshift( point.x+','+point.y2 );
+					y1 = point.y1 === '+' ? top.viewport.maxValue : point.y1;
+					y2 = point.y2 === '-' ? bottom.viewport.minValue : point.y2;
+
+					line1.push( point.x+','+top.y.scale(y1) );
+					line2.unshift( point.x+','+bottom.y.scale(y2) );
 				}
 
 				return 'M' + line1.join('L') + 'L' + line2.join('L') + 'Z';

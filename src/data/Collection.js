@@ -1,78 +1,20 @@
 angular.module( 'vgraph' ).factory( 'DataCollection',
-	[
-	function () {
+	[ 'DataList',
+	function ( DataList ) {
 		'use strict';
-
-		function bisect( arr, value, func, preSorted ){
-			var idx,
-				val,
-				bottom = 0,
-				top = arr.length - 1;
-
-			if ( !preSorted ){
-				arr.sort(function(a,b){
-					return func(a) - func(b);
-				});
-			}
-
-			if ( func(arr[bottom]) >= value ){
-				return {
-					left : bottom,
-					right : bottom
-				};
-			}
-
-			if ( func(arr[top]) <= value ){
-				return {
-					left : top,
-					right : top
-				};
-			}
-
-			if ( arr.length ){
-				while( top - bottom > 1 ){
-					idx = Math.floor( (top+bottom)/2 );
-					val = func(arr[idx]);
-
-					if ( val === value ){
-						top = idx;
-						bottom = idx;
-					}else if ( val > value ){
-						top = idx;
-					}else{
-						bottom = idx;
-					}
-				}
-
-				// if it is one of the end points, make it that point
-				if ( top !== idx && func(arr[top]) === value ){
-					return {
-						left : top,
-						right : top
-					};
-				}else if ( bottom !== idx && func(arr[bottom]) === value ){
-					return {
-						left : bottom,
-						right : bottom
-					};
-				}else{
-					return {
-						left : bottom,
-						right : top
-					};
-				}
-			}
-		}
 
 		function isNumeric( value ){
 			return value !== null && value !== undefined && typeof(value) !== 'object';
 		}
 
 		function DataCollection(){
+			this.$getValue = function( d ){
+				return d._$index;
+			};
 			this.$reset();
 		}
 
-		DataCollection.prototype = [];
+		DataCollection.prototype = new DataList();
 
 		DataCollection.isNumeric = isNumeric;
 
@@ -267,53 +209,12 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 			return node;
 		};
 
-		DataCollection.prototype.$pos = function( value, field ){
-			var p;
-
+		DataCollection.prototype.$getClosest = function( value, field ){
 			if ( !field ){
 				field = '_$index';
 			}
 
-			this.$sort();
-
-			p = bisect( this, value, function( datum ){
-					return datum[field];
-				}, true );
-			p.field = field;
-
-			return p;
-		};
-
-		DataCollection.prototype.$getClosestPair = function( value, field ){
-			var p = this.$pos( value, field );
-			
-			return {
-				left: this[p.left],
-				right: this[p.right],
-				field: p.field
-			};
-		};
-
-		DataCollection.prototype.$getClosest = function( value, field ){
-			var l, r,
-				p = this.$getClosestPair(value,field);
-
-			l = value - p.left[p.field];
-			r = p.right[p.field] - value;
-
-			return l < r ? p.left : p.right;
-		};
-
-		DataCollection.prototype.$sort = function(){
-			if ( this.$dirty ){
-				this.sort(function(a, b){
-					return a._$index - b._$index;
-				});
-
-				this.$dirty = false;
-			}
-
-			return this;
+			return this.closest( value, function( datum ){ return datum[field]; } );
 		};
 
 		DataCollection.prototype.$slice = function( startIndex, stopIndex ){

@@ -15,7 +15,7 @@ angular.module( 'vgraph' ).factory( 'DrawDots',
 			return {};
 		};
 
-		DrawDots.prototype.parse = function( index ){
+		DrawDots.prototype.getPoint = function( index ){
 			var node = this.ref.$getNode(index),
 				value = this.ref.getValue(node);
 
@@ -28,11 +28,15 @@ angular.module( 'vgraph' ).factory( 'DrawDots',
 			}
 		};
 
-		DrawDots.prototype.mergeParsed = function( parsed, set ){
+		DrawDots.prototype.mergePoint = function( parsed, set ){
 			set.x = parsed.x;
-			set.y = this.ref.$view.y.scale(parsed.y);
+			set.y = parsed.y;
 
 			return 0;
+		};
+
+		DrawDots.prototype.closeSet = function( set ){
+			set.y = this.ref.$view.y.scale(set.y);
 		};
 
 		DrawDots.prototype.makePath = function( set ){

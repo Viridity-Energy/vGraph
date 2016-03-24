@@ -11,7 +11,6 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
 					pulsing = false,
 					interval,
 					box = graph.box,
-					text = attrs.vgraphLoading || 'Loading Data',
 					left,
 					width,
 					right,
@@ -24,11 +23,12 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
 						.attr( 'width', 0 )
 						.attr( 'height', 20 )
 						.attr( 'class', 'filling' ),
-					$text = $el.append( 'text' )
-						.text( text );
+					$text = $el.append( 'text' );
 
 				function startPulse(){
 					if ( !pulsing && graph.loading ){
+						$text.text( graph.message || 'Loading Data' );
+
 						$el.attr( 'visibility', 'visible' );
 						pulsing = true;
 						$interval.cancel( interval );
@@ -117,16 +117,19 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
 				});
 
 				startPulse();
-				
-				unsubscribe = graph.$subscribe({
-					'done': function(){
-						stopPulse();
 
-						if ( graph.loading && box.ratio ){
-							startPulse();
-						}
-					},
-					'error': stopPulse
+				function checkPulse(){
+					stopPulse();
+
+					if ( graph.loading && box.ratio ){
+						startPulse();
+					}
+				}
+
+				unsubscribe = graph.$subscribe({
+					'error': checkPulse,
+					'rendered': checkPulse,
+					'configured': checkPulse
 				});
 
 				scope.$on('$destroy', function(){

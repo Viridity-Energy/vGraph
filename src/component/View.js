@@ -113,20 +113,24 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 		};
 
 		function loadRefence( ref, normalizer ){
-			if ( ref.normalizerMap ){
-				normalizer.addPropertyMap( ref.normalizerMap );
-			}
-
+			// set up standard requests for references
 			if ( ref.requirements ){
+				// need to copy over multiple values
 				ref.requirements.forEach(function( name ){
 					normalizer.addPropertyCopy( name );
 				});
 			}else if ( ref.requirements !== null ){
+				// need to copy over just the field
 				normalizer.addPropertyCopy( ref.field );
 			}
 
-			if ( ref.normalizerFinalize ){
-				normalizer.addPropertyFinalize( ref.normalizerFinalize );
+			if ( ref.normalizer ){
+				if ( ref.normalizer.map ){
+					normalizer.addPropertyMap( ref.normalizer.map ); // function of type ( incoming, old )
+				}
+				if ( ref.normalizer.finalize ){
+					normalizer.addPropertyFinalize( ref.normalizer.finalize );
+				}
 			}
 		}
 
@@ -152,12 +156,13 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 				this.calculations = calculationsCompile(settings.calculations);
 			}
 
+			// load in all the references, tieing them in with the normalizer
 			refNames.forEach(function( name ){
 				loadRefence( refs[name], normalizer );
 			});
 
-			this.adjustSettings = chartSettings.adjustSettings;
-			this.pane = new ComponentPane( chartSettings.fitToPane, this.x, this.y );
+			this.adjustSettings = settings.adjustSettings||chartSettings.adjustSettings;
+			this.pane = new ComponentPane( settings.fitToPane||chartSettings.fitToPane, this.x, this.y );
 
 			if ( this.x.max ){
 				this.pane.setBounds({
@@ -347,7 +352,6 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 		};
 
 		ComponentView.prototype.getPoint = function( pos ){
-			// I want a shadow copy so i can overwrite but not cause problems
 			return this.normalizer.$getClosest(pos,'$x');
 		};
 
