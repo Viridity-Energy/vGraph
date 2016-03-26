@@ -20,6 +20,7 @@ angular.module( 'vgraph' ).factory( 'DrawBar',
 
 		DrawBar.prototype = new DrawLinear();
 
+		// y1 > y2, x1 < x2
 		function calcBar( x1, x2, y1, y2, box ){
 			var t;
 
@@ -29,12 +30,12 @@ angular.module( 'vgraph' ).factory( 'DrawBar',
 				x2 = t;
 			}
 
-			if ( y1 > y2 ){
+			if ( y1 !== '+' && y2 !== '-' && y1 < y2 ){
 				t = y1;
 				y1 = y2;
 				y2 = t;
 			}
-
+			
 			if ( box.x1 === undefined ){
 				box.x1 = x1;
 				box.x2 = x2;
@@ -49,11 +50,11 @@ angular.module( 'vgraph' ).factory( 'DrawBar',
 					box.x2 = x2;
 				}
 
-				if ( box.y1 > y1 ){
+				if ( box.y1 !== '+' && (y1 === '+' || box.y1 < y1) ){
 					box.y1 = y1;
 				}
 
-				if ( y2 > box.y2 ){
+				if ( box.y2 !== '-' && (y2 === '-' || box.y2 > y2) ){
 					box.y2 = y2;
 				}
 			}
@@ -69,7 +70,7 @@ angular.module( 'vgraph' ).factory( 'DrawBar',
 			return box.x1 !== undefined;
 		};
 
-		DrawBar.prototype.parse = function( index ){
+		DrawBar.prototype.getPoint = function( index ){
 			var min,
 				max,
 				y1,
@@ -83,7 +84,7 @@ angular.module( 'vgraph' ).factory( 'DrawBar',
 			if ( this.bottom !== this.top ){
 				y2 = this.bottom.$getValue(index);
 			}else{
-				y2 = this.bottom.$view.viewport.minValue;
+				y2 = '-'; // this.bottom.$view.viewport.minValue;
 			}
 
 			if ( this.width ){
@@ -110,7 +111,7 @@ angular.module( 'vgraph' ).factory( 'DrawBar',
 			return t;
 		};
 
-		DrawBar.prototype.mergeParsed = function( parsed, set ){
+		DrawBar.prototype.mergePoint = function( parsed, set ){
 			var x1 = parsed.x1,
 				x2 = parsed.x2,
 				y1 = parsed.y1,
@@ -119,14 +120,10 @@ angular.module( 'vgraph' ).factory( 'DrawBar',
 			if ( y1 !== null && y2 !== null ){
 				if ( y1 === undefined ){
 					y1 = set.y1;
-				}else{
-					y1 = this.top.$view.y.scale(y1);
 				}
 
 				if ( y2 === undefined ){
 					y2 = set.y2;
-				}else{
-					y2 = this.bottom.$view.y.scale(y2);
 				}
 
 				calcBar( x1, x2, y1, y2, set );
@@ -135,29 +132,39 @@ angular.module( 'vgraph' ).factory( 'DrawBar',
 			return 0;
 		};
 
-		DrawBar.prototype.makePath = function( boxInfo ){
-			if ( boxInfo ){
+		DrawBar.prototype.closeSet = function( set ){
+			var top = this.top.$view,
+				bottom = this.bottom.$view,
+				y1 = set.y1 === '+' ? top.viewport.maxValue : set.y1,
+				y2 = set.y2 === '-' ? bottom.viewport.minValue : set.y2;
+
+			set.y1 = top.y.scale(y1);
+			set.y2 = bottom.y.scale(y2);
+		};
+
+		DrawBar.prototype.makePath = function( dataSet ){
+			if ( dataSet ){
 				return 'M' + 
-					(boxInfo.x1+','+boxInfo.y1) + 'L' +
-					(boxInfo.x2+','+boxInfo.y1) + 'L' +
-					(boxInfo.x2+','+boxInfo.y2) + 'L' +
-					(boxInfo.x1+','+boxInfo.y2) + 'Z';
+					(dataSet.x1+','+dataSet.y1) + 'L' +
+					(dataSet.x2+','+dataSet.y1) + 'L' +
+					(dataSet.x2+','+dataSet.y2) + 'L' +
+					(dataSet.x1+','+dataSet.y2) + 'Z';
 			}
 		};
 
-		DrawBar.prototype.makeElement = function( boxInfo ){
+		DrawBar.prototype.makeElement = function( dataSet ){
 			var className = '';
 
-			if ( boxInfo ){
-				if ( boxInfo.$classify ){
-					className = Object.keys(boxInfo.$classify).join(' ');
+			if ( dataSet ){
+				if ( dataSet.$classify ){
+					className = Object.keys(dataSet.$classify).join(' ');
 				}
-
+				
 				return '<rect class="'+className+
-					'" x="'+boxInfo.x1+
-					'" y="'+boxInfo.y1+
-					'" width="'+(boxInfo.x2 - boxInfo.x1)+
-					'" height="'+(boxInfo.y2 - boxInfo.y1)+'"/>';
+					'" x="'+dataSet.x1+
+					'" y="'+dataSet.y1+
+					'" width="'+(dataSet.x2 - dataSet.x1)+
+					'" height="'+(dataSet.y2 - dataSet.y1)+'"/>';
 			}
 		};
 		

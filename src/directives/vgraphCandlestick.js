@@ -1,14 +1,13 @@
-angular.module( 'vgraph' ).directive( 'vgraphLine',
-	['DrawLine', 'DrawFill', 'ComponentElement',
-	function( DrawLine, DrawFill, ComponentElement ){
+angular.module( 'vgraph' ).directive( 'vgraphCandlestick',
+	['DrawCandlestick', 'DrawFill', 'ComponentElement',
+	function( DrawCandlestick, DrawFill, ComponentElement ){
 		'use strict';
 
 		return {
 			scope: {
-				config: '=vgraphLine',
-				pair: '=?pair'
+				config: '=vgraphCandlestick'
 			},
-			require : ['^vgraphChart','vgraphLine'],
+			require : ['^vgraphChart','vgraphCandlestick'],
 			controller: ComponentElement,
 			link : function( scope, $el, attrs, requirements ){
 				var className,
@@ -20,18 +19,11 @@ angular.module( 'vgraph' ).directive( 'vgraphLine',
 				element.setElement( el );
 
 				scope.$watch('config', function( config ){
-					var pair,
-						cfg = chart.compileReference( config );
+					var cfg = chart.compileReference( config );
 
 					if ( cfg ){
-						if ( attrs.pair ){
-							pair = chart.compileReference( scope.pair );
-							className = 'fill ';
-							element.setDrawer( new DrawFill(cfg,pair) );
-						}else{
-							className = 'line ';
-							element.setDrawer( new DrawLine(cfg) );
-						}
+						className = 'candlestick ';
+						element.setDrawer( new DrawCandlestick(cfg) );
 
 						if ( cfg.classExtend ){
 							className += cfg.classExtend + ' ';

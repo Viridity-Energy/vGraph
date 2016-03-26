@@ -8,13 +8,7 @@ angular.module( 'vgraph' ).factory( 'DrawLinear',
 		}
 
 		DrawLinear.isNumeric = function( v ){
-			if ( v === null ){
-				return false;
-			}else if ( Number.isFinite ){
-				return Number.isFinite(v) && !Number.isNaN(v);
-			}else{
-				return isFinite(v) && !isNaN(v);
-			}
+			return v || v === 0;
 		};
 
 		DrawLinear.prototype.getReferences = function(){
@@ -22,16 +16,14 @@ angular.module( 'vgraph' ).factory( 'DrawLinear',
 		};
 
 		// allows for very complex checks of if the value is defined, allows checking previous and next value
-		DrawLinear.prototype.parse = function( d ){
-			return d;
-		};
-
 		DrawLinear.prototype.makeSet = function(){
 			return [];
 		};
 
+		// DrawLinear.prototype.getPoint
+
 		// merging set, returning true means to end the set, returning false means to continue it
-		DrawLinear.prototype.mergeParsed = function( parsed, set ){
+		DrawLinear.prototype.mergePoint = function( parsed, set ){
 			if ( parsed ){
 				set.push( set );
 				return false;
@@ -44,11 +36,7 @@ angular.module( 'vgraph' ).factory( 'DrawLinear',
 			return set.length !== 0;
 		};
 
-		DrawLinear.prototype.finalizeSet = function( set ){
-			return set;
-		};
-
-		DrawLinear.prototype.makeSets = function( keys ){
+		DrawLinear.prototype.parse = function( keys ){
 			var i, c,
 				raw,
 				parsed,
@@ -57,8 +45,8 @@ angular.module( 'vgraph' ).factory( 'DrawLinear',
 				set = this.makeSet(),
 				sets = [];
 
-			function mergeParsed(){
-				state = dis.mergeParsed( 
+			function mergePoint(){
+				state = dis.mergePoint( 
 					parsed,
 					set
 				);
@@ -77,35 +65,67 @@ angular.module( 'vgraph' ).factory( 'DrawLinear',
 			// I need to start on the end, and find the last valid point.  Go until there
 			for( i = 0, c = keys.length; i < c; i++ ){
 				raw = keys[i];
-				parsed = this.parse(raw);
+				parsed = this.getPoint(raw);
 				
 				if ( parsed ){
 					// -1 : added to old set, continue set
 					// 0 : create new set
 					// 1 : create new set, add parsed to that
-					mergeParsed();
+					mergePoint();
 				} else {
 					state = 0;
 				} 
 
 				if ( state > -1 ){
 					if ( this.isValidSet(set) ){
-						sets.push( this.finalizeSet(set) );
+						sets.push( set );
 					}
 
 					set = this.makeSet();
 
 					if ( state ){ // state === 1
-						mergeParsed();
+						mergePoint();
 					}
 				}
 			}
 
 			if ( this.isValidSet(set) ){
-				sets.push( this.finalizeSet(set) );
+				sets.push( set );
 			}
 
-			return sets;
+			this.dataSets = sets;
+		};
+
+		DrawLinear.prototype.getLimits = function(){
+			var min,
+				max;
+
+			this.references.forEach(function( ref ){
+				if ( ref.getValue ){
+					ref.$eachNode(function(node){
+						var v = +ref.getValue(node);
+						if ( v || v === 0 ){
+							if ( min === undefined ){
+								min = v;
+								max = v;
+							}else if ( min > v ){
+								min = v;
+							}else if ( max < v ){
+								max = v;
+							}
+						}
+					});
+				}
+			});
+
+			return {
+				min: min,
+				max: max
+			};
+		};
+
+		DrawLinear.prototype.closeSet = function( set ){
+			return set;
 		};
 
 		DrawLinear.prototype.makeElement = function( convertedSet ){

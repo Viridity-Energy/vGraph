@@ -35,18 +35,20 @@ angular.module( 'vgraph' ).directive( 'vgraphMessage',
 					}
 				});
 
-				unsubscribe = graph.$subscribe({
-					'error': function(){
-						var msg = graph.message;
+				function checkMessage(){
+					var msg = graph.message;
 
-						if ( msg && !graph.loading ){
-							$el.attr( 'visibility', 'visible' );
-							$text.text( msg );
-						}
-					},
-					'done': function(){
+					if ( msg && !graph.loading ){
+						$el.attr( 'visibility', 'visible' );
+						$text.text( msg );
+					}else{
 						$el.attr( 'visibility', 'hidden' );
 					}
+				}
+				unsubscribe = graph.$subscribe({
+					'error': checkMessage,
+					'rendered': checkMessage,
+					'configured': checkMessage
 				});
 			}
 		};

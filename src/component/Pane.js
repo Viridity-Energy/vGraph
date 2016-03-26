@@ -1,13 +1,19 @@
 angular.module( 'vgraph' ).factory( 'ComponentPane',
-	[
-	function () {
+	['DataList',
+	function ( DataList ) {
 		'use strict';
 
 		function ComponentPane( fitToPane, xObj, yObj ){
 			this.x = xObj;
 			this.y = yObj;
-			this.fitToPane = fitToPane || false;
-			
+
+			if ( fitToPane === true ){
+				this.fitToPane = fitToPane || false;
+			}else if ( fitToPane ){
+				this.snapTo = new DataList(function(a){ return a; });
+				this.snapTo.absorb( fitToPane );
+			}
+
 			this._pane = {};
 			this._bounds = {};
 			
@@ -49,8 +55,8 @@ angular.module( 'vgraph' ).factory( 'ComponentPane',
 			if ( data.length ){
 				dataManager.clean();
 				
-				$min = this._bounds.x.min || data.$minIndex;
-				$max = this._bounds.x.max || data.$maxIndex;
+				$min = this._bounds.x.min !== undefined ? this._bounds.x.min : data.$minIndex;
+				$max = this._bounds.x.max !== undefined ? this._bounds.x.max : data.$maxIndex;
 
 				x.$min = $min;
 				x.$max = $max;
@@ -58,13 +64,18 @@ angular.module( 'vgraph' ).factory( 'ComponentPane',
 				if ( this._pane.x && this._pane.x.max ){
 					change = this._pane.x;
 				   
-					minInterval = $min + change.min * ($max - $min);
+				   	minInterval = $min + change.min * ($max - $min);
 					maxInterval = $min + change.max * ($max - $min);
+				   	
+				   	if ( this.snapTo ){
+				   		minInterval = this.snapTo.closest( minInterval );
+				   		maxInterval = this.snapTo.closest( maxInterval );
+				   	}
 				}else{
 					minInterval = $min;
 					maxInterval = $max;
 				}
-
+				
 				offset.$left = minInterval;
 				offset.left = (minInterval - $min) / ($max - $min);
 				offset.$right = maxInterval;

@@ -19,8 +19,9 @@ angular.module( 'vgraph' ).directive( 'vgraphStatus',
 				}
 
 				chart.$subscribe({
-					'done': pushUpdate,
-					'error': pushUpdate
+					'error': pushUpdate,
+					'success': pushUpdate,
+					'configured': pushUpdate
 				});
 			}
 		};

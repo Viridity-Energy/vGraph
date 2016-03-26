@@ -2,10 +2,8 @@
 * linear 
 	* move all applicable directives under linear directory
 
-* heat map
-	* create grid directory
-	- Filters { filterName => filterFunction }
-	- Selected [filters]
+* Snap-to for views
+* massage for DataLoader
 
 ## Prolly not happening for a while
 * create editor (WYSIWYG graph editor)

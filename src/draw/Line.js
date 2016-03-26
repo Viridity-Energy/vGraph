@@ -27,9 +27,9 @@ angular.module( 'vgraph' ).factory( 'DrawLine',
 
 		DrawLine.prototype = new DrawLinear();
 
-		DrawLine.prototype.parse = function( index ){
+		DrawLine.prototype.getPoint = function( index ){
 			var node = this.ref.$getNode(index);
-
+			
 			return {
 				$classify: this.ref.classify ? this.ref.classify(node) : null,
 				x: node.$x,
@@ -37,7 +37,7 @@ angular.module( 'vgraph' ).factory( 'DrawLine',
 			};
 		};
 
-		DrawLine.prototype.mergeParsed = function( parsed, set ){
+		DrawLine.prototype.mergePoint = function( parsed, set ){
 			var x = parsed.x,
 				y = parsed.y,
 				last = set[set.length-1];
@@ -45,7 +45,7 @@ angular.module( 'vgraph' ).factory( 'DrawLine',
 			if ( isNumeric(y) ){
 				set.push({
 					x: x,
-					y: this.ref.$view.y.scale(y)
+					y: y
 				});
 
 				return -1;
@@ -84,7 +84,7 @@ angular.module( 'vgraph' ).factory( 'DrawLine',
 		}
 
 		// Since during set creation I can't see the future, here I need to clean up now that I can
-		DrawLine.prototype.finalizeSet = function( set ){
+		DrawLine.prototype.closeSet = function( set ){
 			var i;
 
 			while( set[set.length-1].$faux ){
@@ -109,7 +109,7 @@ angular.module( 'vgraph' ).factory( 'DrawLine',
 			if ( set.length ){
 				for( i = 0, c = set.length; i < c; i++ ){
 					point = set[i];
-					res.push( point.x + ',' + point.y );
+					res.push( point.x + ',' + this.ref.$view.y.scale(point.y) );
 				}
 
 				return 'M' + res.join('L');

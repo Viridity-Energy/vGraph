@@ -28,7 +28,7 @@ angular.module( 'vgraph' ).factory( 'DrawHeatmap',
 			return this.references;
 		};
 
-		DrawHeatmap.prototype.makeSets = function( keys ){
+		DrawHeatmap.prototype.parse = function( keys ){
 			var xPos,
 				yPos,
 				xSize,
@@ -148,8 +148,14 @@ angular.module( 'vgraph' ).factory( 'DrawHeatmap',
 
 			sets.$grid = grid;
 
-			return sets;
+			this.dataSets = sets;
 		};
+
+		DrawHeatmap.prototype.getLimits = function(){
+			return null;
+		};
+
+		DrawHeatmap.prototype.closeSet = function(){};
 
 		DrawHeatmap.prototype.makePath = function( boxInfo ){
 			if ( boxInfo ){

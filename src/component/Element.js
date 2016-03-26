@@ -1,6 +1,6 @@
 angular.module( 'vgraph' ).factory( 'ComponentElement',
-	[ 'StatCalculations',
-	function ( StatCalculations ) {
+	[ 
+	function () {
 		'use strict';
 
 		function svgCompile( template ){
@@ -22,7 +22,7 @@ angular.module( 'vgraph' ).factory( 'ComponentElement',
 			for( i = children.length - 1; i !== -1; i-- ){
 				dataSet = dataSets[i];
 				child = children[i];
-
+				
 				if ( element.drawer.getHitbox ){
 					element.chart.addHitbox(
 						element.drawer.getHitbox(dataSet),
@@ -70,49 +70,42 @@ angular.module( 'vgraph' ).factory( 'ComponentElement',
 			this.references = refs;
 		};
 
-		ComponentElement.prototype.parse = function(){
-			return StatCalculations.limits( this.references );
-		};
-
-		ComponentElement.prototype.build = function(){
-			var drawer = this.drawer,
-				indexs = StatCalculations.indexs( this.references ),
-				dataSets = drawer.makeSets( indexs );
-
-			if ( this.publish ){
-				this.chart.$trigger( 'publish:'+this.publish, dataSets );
-			}
-
-			// dataSets will be the content, preParsed, used to make the data
-			if ( this.prepBuild ){
-				this.prepBuild( dataSets );
-			}
-
-			if ( this.element.tagName === 'g' ){
-				appendChildren(
-					this,
-					dataSets,
-					svgCompile(
-						this.make( 
-							dataSets, 
-							drawer.makeElement.bind( drawer ) 
-						).join('')
-					)
-				);
+		function getIndexs( cfg ){
+			// Need to calculate the indexs of the data.  Multiple references might have different views
+			// TOOD : this is most likely suboptimal, I'd like to improve
+			var indexs,
+				seen = {};
+			
+			if ( cfg.length === 1 ){
+				indexs = cfg[0].$getIndexs();
 			}else{
-				this.element.setAttribute(
-					'd',
-					this.make( 
-						dataSets, 
-						drawer.makePath.bind( drawer ) 
-					).join('')
-				);
+				indexs = [];
+
+				cfg.forEach(function( ref ){
+					indexs = indexs.concat( ref.$getIndexs() );
+				});
+
+				indexs = indexs.filter(function(x) {
+					if ( seen[x] ){
+						return;
+					}
+					seen[x] = true;
+					return x;
+				});
 			}
+			
+			return indexs;
+		}
+
+		ComponentElement.prototype.parse = function(){
+			var drawer = this.drawer;
+
+			drawer.parse( getIndexs(this.references) );
+			
+			return drawer.getLimits();
 		};
 
-		ComponentElement.prototype.register = function(){}; // hook for registering data -> elements
-
-		ComponentElement.prototype.make = function( dataSets, maker ){
+		function make( dataSets, maker ){
 			var i, c,
 				t,
 				res = [];
@@ -125,7 +118,44 @@ angular.module( 'vgraph' ).factory( 'ComponentElement',
 			}
 			
 			return res;
+		}
+
+		ComponentElement.prototype.build = function(){
+			var drawer = this.drawer,
+				dataSets = drawer.dataSets;
+
+			if ( this.publish ){
+				this.chart.$trigger( 'publish:'+this.publish, dataSets );
+			}
+
+			dataSets.forEach(function( dataSet ){
+				drawer.closeSet( dataSet );
+			});
+
+			// dataSets will be the content, preParsed, used to make the data
+			if ( this.element.tagName === 'g' ){
+				appendChildren(
+					this,
+					dataSets,
+					svgCompile(
+						make(
+							dataSets,
+							drawer.makeElement.bind( drawer ) 
+						).join('')
+					)
+				);
+			}else{
+				this.element.setAttribute(
+					'd',
+					make( 
+						dataSets, 
+						drawer.makePath.bind( drawer ) 
+					).join('')
+				);
+			}
 		};
+
+		ComponentElement.prototype.register = function(){}; // hook for registering data -> elements
 
 		return ComponentElement;
 	}]

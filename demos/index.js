@@ -147,8 +147,8 @@ angular.module( 'vgraph' ).controller( 'ClassifyCtrl', [
 
 		$scope.graph = {
 			x : {
-				min: -5,
-				max: 105,
+				min: 0,
+				max: 110,
 				scale: function(){ return d3.scale.linear(); }
 			},
 			y : {
@@ -162,6 +162,7 @@ angular.module( 'vgraph' ).controller( 'ClassifyCtrl', [
 		$scope.page = [{
 			src: data,
 			interval: 'x',
+			massage: function( x ){ return x+5; },
 			readings:{
 				'y1': 'someLine1',
 				'y2': 'someLine2',
@@ -1703,12 +1704,13 @@ angular.module( 'vgraph' ).controller( 'SpeedCtrl',
 				var begin = +(new Date()),
 					startTime;
 
+
 				chart.$on('render', function(){
 					var now = +(new Date());
 					console.log('=>', chart.$vguid, now-begin);
 					startTime = now;
 				});
-				chart.$on('done', function(){
+				chart.$on('rendered', function(){
 					var now = +(new Date());
 					console.log('->', chart.$vguid, now-startTime);
 				});
@@ -1801,8 +1803,8 @@ angular.module( 'vgraph' ).controller( 'PieCtrl',
 );
 
 angular.module( 'vgraph' ).controller( 'HeatmapCtrl',
-	['$scope', '$timeout', 'DataNormalizer',
-	function( $scope, $timeout, DataNormalizer ){
+	['$scope', '$timeout', 'DataNormalizer', 'DataHasher',
+	function( $scope, $timeout, DataNormalizer, DataHasher ){
 		var data = [ { x: 0, y: 10} ];
 
 		$scope.page = [{
@@ -1814,21 +1816,29 @@ angular.module( 'vgraph' ).controller( 'HeatmapCtrl',
 			}
 		}];
 
+		var buckets = [0,20,40,80,100,120,140,160,180,200,250,300,350,400,450,500,600,700,800,850,900,1000,1200,1400,1600,1800,2000]
+			grouper = DataHasher.bucketize( buckets );
+
 		$scope.linear = {
 			zoom: 'zoomable',
 			views: {
+				basic: {
+					manager: 'feed'
+				},
 				someView: {
+					fitToPane: buckets,
 					manager: 'feed',
-					normalizer: new DataNormalizer(function(index){
-						return Math.round(index); // combine to every pixel
+					normalizer: new DataNormalizer(function(index,value){
+						return grouper(value);
 					})
 				}
-			}
+			},
+			normalizeY: true
 		};
 
 		$scope.zoom = {
 			views: {
-				someView: {
+				basic: {
 					manager: 'feed'
 				}
 			}
@@ -1837,7 +1847,7 @@ angular.module( 'vgraph' ).controller( 'HeatmapCtrl',
 		$scope.heatmap = {
 			zoom: 'zoomable',
 			views: {
-				someView: {
+				basic: {
 					manager: 'feed',
 					normalizer: new DataNormalizer(function(index){
 						return index; // don't combine at all
@@ -1871,7 +1881,8 @@ angular.module( 'vgraph' ).controller( 'HeatmapCtrl',
 			}
 		};
 
-		$scope.ref = { name : 'y', view: 'someView', className: 'red' };
+		$scope.ref = { name : 'y', view: 'basic', className: 'red' };
+		$scope.ref2 = { name : 'average', field: 'y', view: 'someView', className: 'red' };
 
 		function calcSet( data ){
 			var i, c,

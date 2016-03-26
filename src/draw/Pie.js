@@ -52,7 +52,7 @@ angular.module( 'vgraph' ).factory( 'DrawPie',
 				fn = stackFunc( bucket, fn, buckets[bucket] );
 			});
 
-			this.parse = function( index ){
+			this.getPoint = function( index ){
 				var node = reference.$getNode( index );
 
 				return fn( node, reference.getValue(node) );
@@ -63,7 +63,7 @@ angular.module( 'vgraph' ).factory( 'DrawPie',
 			return this.references;
 		};
 
-		DrawPie.prototype.makeSets = function( keys ){
+		DrawPie.prototype.parse = function( keys ){
 			var i, c,
 				parsed,
 				sets = [],
@@ -72,7 +72,7 @@ angular.module( 'vgraph' ).factory( 'DrawPie',
 
 			// I need to start on the end, and find the last valid point.  Go until there
 			for( i = 0, c = keys.length; i < c; i++ ){
-				parsed = this.parse(keys[i]); // { bucket, value }
+				parsed = this.getPoint(keys[i]); // { bucket, value }
 				if ( parsed ){
 					if ( !buckets[parsed.bucket] ){
 						buckets[parsed.bucket] = parsed.value;
@@ -100,7 +100,7 @@ angular.module( 'vgraph' ).factory( 'DrawPie',
 				set.total = total;
 			});
 
-			return sets;
+			this.dataSets = sets;
 		};
 
 		DrawPie.prototype.makePath = function( set ){
@@ -119,14 +119,34 @@ angular.module( 'vgraph' ).factory( 'DrawPie',
 				set.$stop = stop;
 				set.$stopAngle = stopAngle;
 
-				return makeSliver( 
-					x, y, radius, 
-					start, 
-					stop,
-					bigArc 
-				);
+				if ( startAngle === 0 && stopAngle === 360 ){
+					return makeSliver( 
+						x, y, radius, 
+						getCoords(x, y, radius, 0), 
+						getCoords(x, y, radius, 180),
+						bigArc 
+					)+makeSliver( 
+						x, y, radius, 
+						getCoords(x, y, radius, 180), 
+						getCoords(x, y, radius, 360),
+						bigArc 
+					);
+				}else{
+					return makeSliver( 
+						x, y, radius, 
+						start, 
+						stop,
+						bigArc 
+					);
+				}
 			}
 		};
+
+		DrawPie.prototype.getLimits = function(){
+			return null;
+		};
+
+		DrawPie.prototype.closeSet = function(){};
 
 		DrawPie.prototype.makeElement = function( set ){
 			var className = set.bucket;
