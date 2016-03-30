@@ -95,7 +95,7 @@ angular.module( 'vgraph' ).controller( 'ClassifyCtrl', [
 						};
 					}
 				},
-				mergeParsed: function( parsed, set, old ){
+				mergePoint: function( parsed, set, old ){
 					if ( set.$classify && parsed.$classify ){
 						if( set.$classify['high-value'] &&
 							parsed.$classify['low-value'] ){
@@ -461,10 +461,10 @@ angular.module( 'vgraph' ).controller( 'StackedCtrl',
 		}];
 
 		$scope.config = [
-			{ name : 'y1', className : 'red' },
-			{ name : 'y2', className : 'blue' },
-			{ name : 'y3', className : 'green' },
-			{ name : 'y4', className : 'orange' }
+			{ name : 'y1', className : 'red', pointAs: 'p1' },
+			{ name : 'y2', className : 'blue', pointAs: 'p2' },
+			{ name : 'y3', className : 'green', pointAs: 'p3' },
+			{ name : 'y4', className : 'orange', pointAs: 'p4' }
 		];
 
 		for( var i = 0, c = 2000; i < c; i++ ){

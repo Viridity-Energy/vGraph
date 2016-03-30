@@ -290,12 +290,8 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 				ref.classify = refDef.classify;
 			}
 
-			if ( refDef.mergeParsed ){
-				ref.mergeParsed = refDef.mergeParsed;
-			}
-
-			if ( refDef.$meta ){
-				ref.$meta = refDef.$meta;
+			if ( refDef.mergePoint ){
+				ref.mergePoint = refDef.mergePoint;
 			}
 
 			return ref;
@@ -312,7 +308,18 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 			dis.$trigger('render');
 			
 			try{
+				angular.forEach( this.views, function( view, name ){
+					currentView = name;
+					view.normalize();
+				});
+
 				// generate data limits for all views
+				angular.forEach( this.components, function( component ){
+					if ( component.parse ){
+						component.parse();
+					}
+				});
+
 				angular.forEach( this.views, function( view, name ){
 					currentView = name;
 					view.parse();
@@ -565,16 +572,20 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 				references = this.references;
 
 			angular.forEach( this.views, function( view, viewName ){
-				var p;
+				var point,
+					p;
 
 				if ( view.components.length ){
-					points[viewName] = view.getPoint( pos.x );
+					point = view.getPoint( pos.x );
 
-					p = points[viewName].$x;
+					if ( point ){
+						points[viewName] = point;
+						p = point.$x;
 
-					if ( p !== undefined ){
-						count++;
-						sum += p;
+						if ( p !== undefined ){
+							count++;
+							sum += p;
+						}
 					}
 				}
 			});
@@ -582,11 +593,12 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 			points.$pos = sum / count;
 			points.pos = pos;
 
+			// if you want something like the stacked value to show up in highlight, use pointAs
 			Object.keys(this.references).forEach(function(key){
 				var ref = references[key];
 				
 				if ( ref.pointAs ){
-					points[ref.pointAs] =  ref.getValue( ref.$getClosest(pos.x) );
+					points[ref.view][ref.pointAs] =  ref.getValue( ref.$getClosest(pos.x) );
 				}
 			});
 

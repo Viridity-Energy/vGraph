@@ -60,7 +60,9 @@ angular.module( 'vgraph' ).factory( 'ComponentPage',
 
 			this.reset();
 
-			if ( angular.isArray(settings) ){
+			if ( !settings ){
+				return;
+			}else if ( angular.isArray(settings) ){
 				for( i = 0, c = settings.length; i < c; i++ ){
 					this.addFeed( settings[i] );
 				}

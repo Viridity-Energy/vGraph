@@ -17,8 +17,7 @@ angular.module( 'vgraph' ).factory( 'DataFeed',
 		DataFeed.prototype.setSource = function( src ){
 			var dis = this,
 				data = src || [],
-				oldPush = src.push;
-
+				oldPush = data.push;
 
 			this.data = data;
 			this._readPos = 0;

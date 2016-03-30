@@ -203,6 +203,18 @@
 					<g vgraph-interact></g>
 				</svg>
 			</section>
+			<div vgraph-chart="zoom">
+				<svg>
+					<g vgraph-axis="'top'" view="secondView"
+						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+					<g vgraph-axis="'bottom'" view="firstView"
+						tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+					
+					<path ng-repeat="cfg in config" vgraph-line="cfg"></path>
+
+					<g vgraph-zoom="zoomable"></g>
+				</svg>
+			</div>
 		</div>
 	</article>
 
@@ -218,10 +230,8 @@ angular.module( 'vgraph' ).controller( 'AppCtrl',
 			var data1 = [],
 				data2 = [],
 				middle1 = Math.round( (start1+stop1)/2 ),
-				middle2 = Math.round( (start2+stop2)/2 );
-
-			$scope.graph = {
-				views: {
+				middle2 = Math.round( (start2+stop2)/2 ),
+				views = {
 					first: {
 						manager: 'first',
 						x: {
@@ -236,8 +246,7 @@ angular.module( 'vgraph' ).controller( 'AppCtrl',
 							max: stop2+100
 						}
 					}
-				}
-			};
+				};
 
 			$scope.page = [{
 				src: data1,
@@ -254,6 +263,15 @@ angular.module( 'vgraph' ).controller( 'AppCtrl',
 					'y': 'y'
 				}
 			}];
+			
+			$scope.primary = {
+				zoom: 'zoomable',
+				views: views
+			};
+
+			$scope.zoom = {
+				views: views
+			};
 
 			// x is the interval, y is the function pulling the value
 			$scope.config = [

@@ -8,14 +8,14 @@ angular.module( 'vgraph' ).factory( 'DrawLine',
 		var isNumeric = DrawLinear.isNumeric;
 		
 		function DrawLine( ref ){
-			var oldMerge = this.mergeParsed;
+			var oldMerge = this.mergePoint;
 
 			this.ref = ref;
 			this.references = [ ref ];
 
-			if ( ref.mergeParsed ){
-				this.mergeParsed = function( parsed, set ){
-					return ref.mergeParsed.call( 
+			if ( ref.mergePoint ){
+				this.mergePoint = function( parsed, set ){
+					return ref.mergePoint.call( 
 						this,
 						parsed,
 						set,

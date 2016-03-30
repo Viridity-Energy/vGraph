@@ -1,6 +1,6 @@
 angular.module( 'vgraph' ).directive( 'vgraphStack',
-	[ '$compile', 'ComponentElement', 'StatCalculations', 'ComponentChart',
-	function( $compile, ComponentElement, StatCalculations, ComponentChart ) {
+	[ '$compile', 'ComponentElement', 'StatCalculations',
+	function( $compile, ComponentElement, StatCalculations ) {
 		'use strict';
 
 		return {
@@ -11,10 +11,7 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
 			},
 			link : function( scope, $el, attrs, requirements ){
 				var configs,
-					viewName = attrs.view || ComponentChart.defaultView,
-					childTag = attrs.childTag,
 					graph = requirements[0],
-					view = graph.getView(viewName),
 					unwatch,
 					childScope;
 
@@ -36,35 +33,8 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
 				}
 
 				function parseConf( cfgs ){
-					var i, c,
-						lines,
-						elements;
-
 					if ( cfgs ){
 						pairElements( cfgs );
-
-						if ( childTag ){
-							d3.select( $el[0] ).selectAll( 'g' ).remove();
-
-							if ( childScope ){
-								childScope.$destroy();
-							}
-
-							lines = '';
-
-							for( i = 0, c = configs.length; i < c; i++ ){
-								lines += '<g '+childTag+'="config['+i+']"></g>';
-							}
-
-							elements = ComponentElement.svgCompile( lines );
-							
-							for( i = 0, c = elements.length; i < c; i++ ){
-								$el[0].appendChild( elements[i] );
-							}
-
-							childScope = scope.$new();
-							$compile( elements )( childScope );
-						}
 					}
 				}
 
@@ -80,7 +50,7 @@ angular.module( 'vgraph' ).directive( 'vgraphStack',
 					unwatch();
 				});
 
-				view.registerComponent({
+				graph.registerComponent({
 					parse : function(){
 						if ( configs ){
 							StatCalculations.$resetCalcs( configs );
