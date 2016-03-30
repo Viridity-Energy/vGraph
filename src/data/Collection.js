@@ -76,14 +76,14 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 			}
 		};
 
-		DataCollection.prototype._register = function( index, node, shift ){
+		DataCollection.prototype.$add = function( index, node, front ){
 			var dex = +index; //(+index).toFixed(2);
 
 			if ( !this._$index[dex] ){
 				this._$indexs.push( dex ); // this keeps the indexs what they were, not casted to string
 				this._$index[dex] = node;
 				
-				if ( shift ){
+				if ( front ){
 					if ( this.length && dex > this[0]._$index ){
 						this.$dirty = true;
 					}
@@ -127,7 +127,7 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 			if ( !node ){
 				node = {};
 				
-				this._register( dex, node );
+				this.$add( dex, node );
 			}
 
 			return node;
@@ -203,7 +203,7 @@ angular.module( 'vgraph' ).factory( 'DataCollection',
 					this._copyProperties( newNode, node, dex );
 				}
 
-				this._register( dex, node, shift );
+				this.$add( dex, node, shift );
 			}
 
 			return node;

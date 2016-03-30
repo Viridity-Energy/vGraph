@@ -521,10 +521,10 @@
 				<div vgraph-chart="graph">
 					<pre vgraph-highlight="point">
 					Stacked - Lines
-	{{ config[0].name }} : {{ point.default.y1 }} : {{ point.default.$stack$y1 }} : {{ config[0].className }}
-	{{ config[1].name }} : {{ point.default.y2 }} : {{ point.default.$stack$y2 }} : {{ config[1].className }}
-	{{ config[2].name }} : {{ point.default.y3 }} : {{ point.default.$stack$y3 }} : {{ config[2].className }}
-	{{ config[3].name }} : {{ point.default.y4 }} : {{ point.default.$stack$y4 }} : {{ config[3].className }}
+	{{ config[0].name }} : {{ point.default[config[0].name] }} : {{config[0].pointAs}} : {{ point.default[config[0].pointAs] }}:{{ config[0].className }}
+	{{ config[1].name }} : {{ point.default[config[1].name] }} : {{config[0].pointAs}} : {{ point.default[config[1].pointAs] }}:{{ config[1].className }}
+	{{ config[2].name }} : {{ point.default[config[2].name] }} : {{config[0].pointAs}} : {{ point.default[config[2].pointAs] }}:{{ config[2].className }}
+	{{ config[3].name }} : {{ point.default[config[3].name] }} : {{config[0].pointAs}} : {{ point.default[config[3].pointAs] }}:{{ config[3].className }}
 					</pre>
 					<svg>
 						<g vgraph-axis="'left'"
@@ -746,8 +746,8 @@
 				<div vgraph-page="page">
 					<div vgraph-chart="graph" name="primary">
 						<span vgraph-highlight="point">
-							({{point.firstView.$x}},{{point.firstView['y-1']}}) : 
-							({{point.secondView.$x}},{{point.secondView['y-2']}})
+							({{point.firstView.$avgIndex}},{{point.firstView['y-1']}}) : 
+							({{point.secondView.$avgIndex}},{{point.secondView['y-2']}})
 						</span>
 						<svg>
 							<g vgraph-axis="'left'" view="firstView"
@@ -791,8 +791,8 @@
 				<div vgraph-page="page">
 					<div vgraph-chart="graph" name="primary">
 						<span vgraph-highlight="point">
-							({{point.firstView.$x}},{{point.firstView['y-1']}}) : 
-							({{point.secondView.$x}},{{point.secondView['y-2']}})
+							({{point.firstView.$avgIndex}},{{point.firstView['y-1']}}) : 
+							({{point.secondView.$avgIndex}},{{point.secondView['y-2']}})
 						</span>
 						<svg>
 							<g vgraph-axis="'left'" view="firstView"

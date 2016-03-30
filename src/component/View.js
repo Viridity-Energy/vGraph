@@ -267,16 +267,8 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 				]);
 		};
 
-		ComponentView.prototype.parse = function(){
-			var min,
-				max,
-				raw,
-				scale;
-
+		ComponentView.prototype.normalize = function(){
 			if ( this.manager ){
-				raw = this.manager.data;
-				scale = this.x.scale;
-
 				this._sample();
 				
 				if ( this.filtered ){
@@ -285,43 +277,49 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 					}
 
 					this.setViewportIntervals( this.offset.$left, this.offset.$right );
-					this.normalizer.$reindex( this.filtered, scale );
+					this.normalizer.$reindex( this.filtered, this.x.scale );
 
 					// first we run the calculations
 					if ( this.calculations ){
 						this.calculations.$init( this.normalizer );
 						this.calculations( this.normalizer );
 					}
+				}
+			}
+		};
 
-					// and then we get the min and max, this allows for calculations to be included
-					this.components.forEach(function( component ){
-						var t;
+		ComponentView.prototype.parse = function(){
+			var min,
+				max;
 
-						if ( component.parse ){
-							t = component.parse();
-							if ( t ){
-								if ( (t.min || t.min === 0) && (!min && min !== 0 || min > t.min) ){
-									min = t.min;
-								}
+			if ( this.normalizer && this.normalizer.length ){
+				this.components.forEach(function( component ){
+					var t;
 
-								if ( (t.max || t.max === 0) && (!max && max !== 0 || max < t.max) ){
-									max = t.max;
-								}
+					if ( component.parse ){
+						t = component.parse();
+						if ( t ){
+							if ( (t.min || t.min === 0) && (!min && min !== 0 || min > t.min) ){
+								min = t.min;
+							}
+
+							if ( (t.max || t.max === 0) && (!max && max !== 0 || max < t.max) ){
+								max = t.max;
 							}
 						}
-					});
+					}
+				});
 
-					if ( min !== undefined ){
-						this.setViewportValues( min, max );	
+				if ( min !== undefined ){
+					this.setViewportValues( min, max );	
 
-						if ( this.adjustSettings ){
-							this.adjustSettings(
-								this.x,
-								this.filtered.$maxIndex - this.filtered.$minIndex,
-								max - min,
-								raw.$maxIndex - raw.$minIndex
-							);
-						}
+					if ( this.adjustSettings ){
+						this.adjustSettings(
+							this.x,
+							this.filtered.$maxIndex - this.filtered.$minIndex,
+							this.y,
+							max - min
+						);
 					}
 				}
 			}
@@ -352,7 +350,11 @@ angular.module( 'vgraph' ).factory( 'ComponentView',
 		};
 
 		ComponentView.prototype.getPoint = function( pos ){
-			return this.normalizer.$getClosest(pos,'$x');
+			if ( this.normalizer ){
+				return this.normalizer.$getClosest(pos,'$x');
+			}else{
+				console.log( 'unconfigured', this );
+			}
 		};
 
 		return ComponentView;

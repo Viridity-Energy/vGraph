@@ -1,6 +1,6 @@
 angular.module( 'vgraph' ).factory( 'ComponentElement',
-	[ 
-	function () {
+	[ 'StatCalculations',
+	function ( StatCalculations ) {
 		'use strict';
 
 		function svgCompile( template ){
@@ -70,37 +70,12 @@ angular.module( 'vgraph' ).factory( 'ComponentElement',
 			this.references = refs;
 		};
 
-		function getIndexs( cfg ){
-			// Need to calculate the indexs of the data.  Multiple references might have different views
-			// TOOD : this is most likely suboptimal, I'd like to improve
-			var indexs,
-				seen = {};
-			
-			if ( cfg.length === 1 ){
-				indexs = cfg[0].$getIndexs();
-			}else{
-				indexs = [];
-
-				cfg.forEach(function( ref ){
-					indexs = indexs.concat( ref.$getIndexs() );
-				});
-
-				indexs = indexs.filter(function(x) {
-					if ( seen[x] ){
-						return;
-					}
-					seen[x] = true;
-					return x;
-				});
-			}
-			
-			return indexs;
-		}
+		
 
 		ComponentElement.prototype.parse = function(){
 			var drawer = this.drawer;
 
-			drawer.parse( getIndexs(this.references) );
+			drawer.parse( StatCalculations.getIndexs(this.references) );
 			
 			return drawer.getLimits();
 		};

@@ -108,7 +108,8 @@ angular.module( 'vgraph' ).factory( 'DataLoader',
 		}
 
 		DataLoader.prototype.addConfig = function( cfg ){
-			var reader,
+			var tmp,
+				reader,
 				proc = this._process.bind( this );
 			
 			// readings : readFrom => mapTo
@@ -138,17 +139,23 @@ angular.module( 'vgraph' ).factory( 'DataLoader',
 					};
 				}
 			});
-			cfg.reader = reader;
 
-			if ( !cfg.parseInterval ){
-				cfg.parseInterval = function( datum ){
+			tmp = {
+				reader: reader
+			};
+
+			if ( cfg.parseInterval ){
+				tmp.parseInterval = cfg.parseInterval;
+			}else{
+				tmp.parseInterval = function( datum ){
 					return +datum[ cfg.interval ];
 				};
 			}
 
 			if ( cfg.massage ){
-				cfg._parseInterval = cfg.parseInterval;
-				cfg.parseInterval = function( datum ){
+				tmp._parseInterval = tmp.parseInterval;
+				tmp.massage = cfg.massage;
+				tmp.parseInterval = function( datum ){
 					return this.massage( this._parseInterval(datum) );
 				};
 			}
@@ -158,11 +165,11 @@ angular.module( 'vgraph' ).factory( 'DataLoader',
 					points = data.points;
 
 				for( i = 0, c = points.length; i < c; i++ ){
-					proc( cfg, points[i] );
+					proc( tmp, points[i] );
 				}
 			});
 
-			this.confs.push(cfg);
+			this.confs.push(tmp);
 		};
 
 		DataLoader.prototype.removeConf = function( /* conf */ ){

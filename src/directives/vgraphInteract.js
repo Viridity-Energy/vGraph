@@ -78,18 +78,7 @@ angular.module( 'vgraph' ).directive( 'vgraphInteract',
 				);
 
 				$el.on('dblclick', function(){
-					graph.setPane(
-						{
-							'start' : null,
-							'stop' : null
-						},
-						{
-							'start' : null,
-							'stop' : null
-						}
-					);
-					
-					graph.rerender();
+					graph.zoom.setRatio(0,1);
 				});
 
 				graph.registerComponent({

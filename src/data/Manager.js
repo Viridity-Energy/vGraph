@@ -65,7 +65,7 @@ angular.module( 'vgraph' ).factory( 'DataManager',
 			}
 
 			for( i = ctrls.start, c = ctrls.stop + ctrls.interval; i < c; i += ctrls.interval ){
-				this.data._register( i, Object.create(prototype) );
+				this.data.$add( i, Object.create(prototype) );
 			}
 		};
 

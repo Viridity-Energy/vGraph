@@ -8,7 +8,7 @@ angular.module( 'vgraph' ).factory( 'ComponentPane',
 			this.y = yObj;
 
 			if ( fitToPane === true ){
-				this.fitToPane = fitToPane || false;
+				this.fitToPane = true;
 			}else if ( fitToPane ){
 				this.snapTo = new DataList(function(a){ return a; });
 				this.snapTo.absorb( fitToPane );
@@ -85,12 +85,13 @@ angular.module( 'vgraph' ).factory( 'ComponentPane',
 				filtered = data.$slice( minInterval, maxInterval );
 
 				if ( this.fitToPane && data.length > 1 ){
+					//console.log( minInterval, maxInterval, data.$minIndex, data.$maxIndex );
 					if ( minInterval > data.$minIndex ){
-						filtered.$addNode( minInterval, dataManager.$makePoint(minInterval), true );
+						filtered.$add( minInterval, dataManager.$makePoint(minInterval), true );
 					}
 
 					if ( maxInterval < data.$maxIndex ){
-						filtered.$addNode( dataManager.$makePoint(maxInterval) );
+						filtered.$add( maxInterval, dataManager.$makePoint(maxInterval) );
 					}
 				}
 

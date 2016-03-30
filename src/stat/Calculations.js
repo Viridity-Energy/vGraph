@@ -88,6 +88,32 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 				return nameAs;
 			},
 			*/
+			getIndexs: function ( cfg ){
+				// Need to calculate the indexs of the data.  Multiple references might have different views
+				// TOOD : this is most likely suboptimal, I'd like to improve
+				var indexs,
+					seen = {};
+				
+				if ( cfg.length === 1 ){
+					indexs = cfg[0].$getIndexs();
+				}else{
+					indexs = [];
+
+					cfg.forEach(function( ref ){
+						indexs = indexs.concat( ref.$getIndexs() );
+					});
+
+					indexs = indexs.filter(function(x) {
+						if ( seen[x] ){
+							return;
+						}
+						seen[x] = true;
+						return x;
+					});
+				}
+				
+				return indexs;
+			},
 			stack: function( config ){
 				var i, c,
 					j, co,
@@ -97,9 +123,10 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 					cfg,
 					datum,
 					nameAs = createNames( config, 'stack' ),
-					indexs = this.indexs( config );
+					indexs = this.getIndexs( config );
 
 				co = config.length;
+				
 				for( i = 0, c = indexs.length; i < c; i++ ){
 					sum = 0;
 					dex = indexs[i];
