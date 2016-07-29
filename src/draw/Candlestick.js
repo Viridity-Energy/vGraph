@@ -12,7 +12,7 @@ angular.module( 'vgraph' ).factory( 'DrawCandlestick',
 			// this overrides normalizer settings, this this is best way?
 			ref.normalizer = {
 				map: function( n, o ){
-					var field = ref.field,
+					var field = ref.getField(),
 						min = '$min'+field,
 						max = '$max'+field,
 						counter = '$'+field,
@@ -50,14 +50,15 @@ angular.module( 'vgraph' ).factory( 'DrawCandlestick',
 
 		DrawCandlestick.prototype.getPoint = function( index ){
 			var ref = this.ref,
-				node = ref.$getNode(index);
+				node = ref.$getNode(index),
+				field = ref.getField();
 			
 			return {
 				$classify: this.ref.classify ? this.ref.classify(node) : null,
 				x: node.$x,
-				y: node['$'+ref.field],
-				min: node['$min'+ref.field],
-				max: node['$max'+ref.field]
+				y: node['$'+field],
+				min: node['$min'+field],
+				max: node['$max'+field]
 			};
 		};
 

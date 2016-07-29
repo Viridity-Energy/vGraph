@@ -172,21 +172,24 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 
 		ComponentChart.prototype.getReference = function( refDef ){
 			var ref,
-				name;
+				name,
+				uid = cfgUid++;
 
 			if ( angular.isString(refDef) ){
 				name = refDef;
-			}else{
+			}else if ( refDef.name ){
 				name = refDef.name;
+			}else{
+				throw new Error('a reference without a name is not valid');
 			}
 
 			ref = this.references[name];
 
 			if ( !ref ){
 				ref = {
-					$uid: cfgUid++,
+					$uid: uid,
 					name: name,
-					className: refDef.className ? refDef.className : 'node-'+name
+					className: refDef.className || 'node-'+name
 				};
 				this.references[name] = ref;
 			}
@@ -195,7 +198,9 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 		};
 
 		ComponentChart.prototype.compileReference = function( refDef ){
-			var ref;
+			var t,
+				ref,
+				field;
 
 			if ( typeof(refDef) !== 'object' ){
 				return null;
@@ -213,15 +218,23 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 				ref.pointAs = refDef.pointAs;
 			}
 
-			ref._field = ref.field;
+			field = ref.field;
 			ref.$reset = function(){
-				ref.field = ref._field;
+				field = ref.field;
+			};
+
+			ref.setField = function( f ){
+				field = f;
+			};
+
+			ref.getField = function(){
+				return field;
 			};
 
 			if ( refDef.getValue === undefined ){
 				ref.getValue = function( d ){
 					if ( d ){
-						return d[ ref.field ];
+						return d[ field ];
 					}
 				};
 			}else if ( refDef.getValue ){
@@ -272,9 +285,23 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 				ref.isValid = refDef.isValid;
 			}
 
+			// className is the primary css class, but not neccisarily unique
+			t = refDef.className.indexOf(' ');
+			if ( t !== -1 ){
+				if ( refDef.classExtend ){
+					refDef.classExtend += ' ' + refDef.className.substring( t, -1 );
+				}else{
+					refDef.classExtend = refDef.className.substring( t, -1 );
+				}
+
+				ref.className = refDef.className.substring( 0, t );
+			}
+
 			// used in elements to allow external classes be defined
 			if ( refDef.classExtend ){
 				ref.classExtend = refDef.classExtend;
+			}else{
+				ref.classExtend = '';
 			}
 
 			// these are used to load in data from DataManager
@@ -441,7 +468,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 			schedule.run();
 		};
 
-		ComponentChart.prototype.scheduleRender = function( cb ){
+		ComponentChart.prototype.scheduleRender = function( cb, delay ){
 			var dis = this;
 
 			if ( !this.nrTimeout ){
@@ -449,7 +476,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 					dis.render( dis.waiting, cb );
 					dis.waiting = {};
 					dis.nrTimeout = null;
-				}, 30 );
+				}, delay||30 );
 			}
 		};
 
@@ -460,9 +487,13 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 			}
 		};
 
-		ComponentChart.prototype.needsRender = function( view, cb ){
-			this.scheduleRender( cb );
+		ComponentChart.prototype.needsRender = function( view, cb, delay ){
+			if ( typeof(cb) !== 'function' ){
+				delay = cb;
+			}
+
 			if ( !this.waiting[view.name] ){
+				this.scheduleRender( cb, delay );
 				this.waiting[view.name] = view;
 			}
 		};
@@ -494,7 +525,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 			viewModel.$name = viewName;
 
 			viewModel.manager.register(function(){
-				dis.needsRender(viewModel);
+				dis.needsRender(viewModel,300);
 			});
 
 			viewModel.manager.onError(function( error ){
@@ -687,6 +718,7 @@ angular.module( 'vgraph' ).factory( 'ComponentChart',
 				for( i = min; i <= max; i += interval ){
 					t = ref.$view.manager.data.$getNode( i );
 					if ( t ){
+						// TODO : why did I do this?
 						t = t[ ref.field ? ref.field : ref.reference ];
 
 						if ( ref.format ){

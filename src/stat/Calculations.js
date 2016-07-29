@@ -7,7 +7,7 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 			var arr = [];
 
 			config.forEach(function(cfg){
-				arr.push( '$'+prefix+'$'+cfg.field );
+				arr.push( '$'+prefix+'$'+cfg.getField() );
 			}); 
 
 			return arr;
@@ -15,6 +15,7 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 
 		return {
 			$resetCalcs: function( config ){
+				// TODO : shouldn't this be a part of the render schedule?
 				var i, c;
 
 				for( i = 0, c = config.length; i < c; i++ ){
@@ -26,7 +27,7 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 					fields = [];
 
 				for( i = 0, c = config.length; i < c; i++ ){
-					fields.push( config[i].field );
+					fields.push( config[i].getField() );
 				}
 
 				return fields;
@@ -35,7 +36,7 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 				var i, c;
 
 				for( i = 0, c = config.length; i < c; i++ ){
-					config[i].field = calcedFields[i];
+					config[i].setField( calcedFields[i] );
 				}
 			},
 			/*
@@ -142,9 +143,7 @@ angular.module( 'vgraph' ).factory( 'StatCalculations',
 					}
 				}
 
-				for( j = 0; j < co; j++ ){
-					config[j].field = nameAs[j];
-				}
+				this.$setFields( config, nameAs );
 
 				return nameAs;
 			}

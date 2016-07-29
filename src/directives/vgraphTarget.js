@@ -38,17 +38,17 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
 									value = cfg.getValue(datum);
 								
 								if ( value !== undefined && value !== null ){
-									node = $dots.selectAll( 'circle.point.'+className );
+									node = $dots.selectAll( 'circle.point.'+cfg.name );
 									if ( !node[0].length ){
 										node = $dots.append( 'circle' )
-											.attr( 'class', 'point '+className+' '+cfg.classExtend );
+											.attr( 'class', 'point '+className+' '+cfg.classExtend+' '+cfg.name );
 									}
 
 									node.attr( 'cx', datum.$x - curX )
 										.attr( 'cy', view.y.scale(value) )
 										.attr( 'r', $scope.$eval( attrs.pointRadius ) || 3 );
 								}else{
-									$dots.selectAll( 'circle.point.'+className ).remove();
+									$dots.selectAll( 'circle.point.'+cfg.name ).remove();
 								}
 							});
 						}
