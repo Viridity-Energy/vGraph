@@ -1,8 +1,9 @@
-angular.module( 'vgraph' ).directive( 'vgraphBar',
-	[ 'DrawBar', 'ComponentElement',
-	function( DrawBar, ComponentElement ) {
-		'use strict';
+var DrawBar = require('../draw/Bar.js'),
+	ComponentElement = require('../component/Element.js');
 
+require('angular').module( 'vgraph' ).directive( 'vgraphBar',
+	[
+	function() {
 		return {
 			scope : {
 				config: '=vgraphBar',

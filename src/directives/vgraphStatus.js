@@ -1,8 +1,6 @@
-angular.module( 'vgraph' ).directive( 'vgraphStatus',
+require('angular').module( 'vgraph' ).directive( 'vgraphStatus',
 	[
 	function(){
-		'use strict';
-
 		return {
 			require: ['^vgraphChart'],
 			scope: true,
@@ -15,7 +13,10 @@ angular.module( 'vgraph' ).directive( 'vgraphStatus',
 						loading: chart.loading,
 						pristine: chart.pristine
 					};
-					$scope.$digest();
+
+					if(!$scope.$$phase) {
+						$scope.$digest();
+					}
 				}
 
 				chart.$subscribe({

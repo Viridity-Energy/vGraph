@@ -1,30 +1,23 @@
-angular.module( 'vgraph' ).factory( 'DrawIcon', 
-	[ 'DrawBox',
-	function( DrawBox ){
-		'use strict';
+var DrawBox = require('./Box.js');
+
+class Icon extends DrawBox{
+	constructor( ref, box, template ){
+		super( ref );
 		
-		function DrawIcon( ref, box, template ){
-			this.top = ref;
-			this.bottom = ref;
-			this.references = [ ref ];
-			
-			this.box = box;
-			this.template = template;
+		this.box = box;
+		this.template = template;
+	}
+
+	makeElement( boxInfo ){
+		var x, y;
+		
+		if ( boxInfo ){
+			x = (boxInfo.x1 + boxInfo.x2 - this.box.width ) / 2; // v / 2 - width / 2 
+			y = (boxInfo.y1 + boxInfo.y2 - this.box.height ) / 2;
+
+			return '<g transform="translate('+x+','+y+')">' + this.template + '</g>';
 		}
+	}
+}
 
-		DrawIcon.prototype = new DrawBox();
-
-		DrawIcon.prototype.makeElement = function( boxInfo ){
-			var x, y;
-			
-			if ( boxInfo ){
-				x = (boxInfo.x1 + boxInfo.x2 - this.box.width ) / 2; // v / 2 - width / 2 
-				y = (boxInfo.y1 + boxInfo.y2 - this.box.height ) / 2;
-
-				return '<g transform="translate('+x+','+y+')">' + this.template + '</g>';
-			}
-		};
-
-		return DrawIcon;
-	}]
-);
+module.exports = Icon;

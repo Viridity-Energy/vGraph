@@ -1,8 +1,9 @@
-angular.module( 'vgraph' ).directive( 'vgraphDots',
-	['DrawDots', 'ComponentElement',
-	function( DrawDots, ComponentElement ){
-		'use strict';
+var DrawDots = require('../draw/Dots.js'), 
+	ComponentElement =  require('../component/Element.js');
 
+require('angular').module( 'vgraph' ).directive( 'vgraphDots',
+	[
+	function(){
 		return {
 			scope: {
 				config: '=vgraphDots'

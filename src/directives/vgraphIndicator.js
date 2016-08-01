@@ -1,8 +1,8 @@
-angular.module( 'vgraph' ).directive( 'vgraphIndicator',
+var d3 = require('d3');
+
+require('angular').module( 'vgraph' ).directive( 'vgraphIndicator',
 	[
 	function(){
-		'use strict';
-
 		return {
 			require : ['^vgraphChart'],
 			scope : {

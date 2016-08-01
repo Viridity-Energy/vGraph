@@ -1,8 +1,9 @@
-angular.module( 'vgraph' ).directive( 'vgraphBox',
-	[ 'DrawBox', 'ComponentElement',
-	function( DrawBox, ComponentElement ) {
-		'use strict';
+var DrawBox = require('../draw/Box.js'),
+	ComponentElement = require('../component/Element.js');
 
+require('angular').module( 'vgraph' ).directive( 'vgraphBox',
+	[
+	function() {
 		return {
 			scope : {
 				config: '=vgraphBox'

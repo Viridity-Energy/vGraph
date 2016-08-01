@@ -1,8 +1,8 @@
-angular.module( 'vgraph' ).directive( 'vgraphFocus',
+var d3 = require('d3');
+
+require('angular').module( 'vgraph' ).directive( 'vgraphFocus',
 	[
 	function(){
-		'use strict';
-
 		return {
 			require : ['^vgraphChart'],
 			link : function( scope, el, attrs, requirements ){

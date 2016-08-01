@@ -1,8 +1,9 @@
-angular.module( 'vgraph' ).directive( 'vgraphCandlestick',
-	['DrawCandlestick', 'DrawFill', 'ComponentElement',
-	function( DrawCandlestick, DrawFill, ComponentElement ){
-		'use strict';
+var DrawCandlestick = require('../draw/Candlestick.js'),
+	ComponentElement = require('../component/Element.js');
 
+require('angular').module( 'vgraph' ).directive( 'vgraphCandlestick',
+	[
+	function(){
 		return {
 			scope: {
 				config: '=vgraphCandlestick'

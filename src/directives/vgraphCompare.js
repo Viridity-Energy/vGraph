@@ -1,8 +1,8 @@
-angular.module( 'vgraph' ).directive( 'vgraphCompare',
-	[ '$compile', 'ComponentElement',
-	function( $compile, ComponentElement ) {
-		'use strict';
+var ComponentElement = require('../component/Element.js');
 
+require('angular').module( 'vgraph' ).directive( 'vgraphCompare',
+	[ '$compile',
+	function( $compile ) {
 		return {
 			scope : {
 				config1: '=config1',

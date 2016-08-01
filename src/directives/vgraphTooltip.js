@@ -1,8 +1,24 @@
-angular.module( 'vgraph' ).directive( 'vgraphTooltip',
+var d3 = require('d3');
+
+require('angular').module( 'vgraph' ).directive( 'vgraphTooltip',
 	[
 	function(){
-		'use strict';
+		function makeByConfig( graph, cfg ){
+			var ref = graph.getReference(cfg);
 
+			return {
+				formatter: function( point ){
+					return ref.getValue( point[ref.view] );
+				},
+				xParse: function( point ){
+					return point[ref.view].$x;
+				},
+				yParse: function( point ){
+					return ref.$view.y.scale( ref.getValue(point[ref.view]) );
+				}
+			};
+		}
+		
 		function makeConfig( graph, $scope, $attrs ){
 			var cfg = $scope.config;
 
@@ -23,22 +39,6 @@ angular.module( 'vgraph' ).directive( 'vgraphTooltip',
 			}else{
 				return cfg;
 			}
-		}
-
-		function makeByConfig( graph, cfg ){
-			var ref = graph.getReference(cfg);
-
-			return {
-				formatter: function( point ){
-					return ref.getValue( point[ref.view] );
-				},
-				xParse: function( point ){
-					return point[ref.view].$x;
-				},
-				yParse: function( point ){
-					return ref.$view.y.scale( ref.getValue(point[ref.view]) );
-				}
-			};
 		}
 
 		return {

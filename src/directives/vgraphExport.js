@@ -1,8 +1,8 @@
-angular.module( 'vgraph' ).directive( 'vgraphExport',
-	[ 'makeBlob',
-	function( makeBlob ){
-		'use strict';
-		
+var makeBlob = require('../lib/makeBlob.js');
+
+require('angular').module( 'vgraph' ).directive( 'vgraphExport',
+	[
+	function(){
 		return {
 			require : ['^vgraphChart'],
 			scope: {

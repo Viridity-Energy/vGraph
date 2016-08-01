@@ -1,1 +1,1 @@
-angular.module( 'vgraph', [] );
+module.exports = require('angular').module( 'vgraph', [] );

@@ -1,8 +1,9 @@
+var d3 = require('d3'),
+	angular = require('angular');
+
 angular.module( 'vgraph' ).directive( 'vgraphMessage',
 	[
 	function(){
-		'use strict';
-
 		return {
 			require : ['^vgraphChart'],
 			link : function( scope, el, attrs, requirements ){

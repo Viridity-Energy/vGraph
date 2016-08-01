@@ -1,8 +1,9 @@
+var d3 = require('d3'),
+	angular = require('angular');
+
 angular.module( 'vgraph' ).directive( 'vgraphLoading',
 	[ '$interval',
 	function( $interval ){
-		'use strict';
-		
 		return {
 			require : ['^vgraphChart'],
 			link : function( scope, el, attrs, requirements ){
@@ -24,26 +25,6 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
 						.attr( 'height', 20 )
 						.attr( 'class', 'filling' ),
 					$text = $el.append( 'text' );
-
-				function startPulse(){
-					if ( !pulsing && graph.loading ){
-						$text.text( graph.message || 'Loading Data' );
-
-						$el.attr( 'visibility', 'visible' );
-						pulsing = true;
-						$interval.cancel( interval );
-
-						pulse();
-						interval = $interval( pulse, 4005 );
-					}
-				}
-
-				function stopPulse(){
-					$el.attr( 'visibility', 'hidden' );
-
-					pulsing = false;
-					$interval.cancel( interval );
-				}
 
 				function pulse() {
 					$filling
@@ -85,6 +66,26 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
 							})
 							.attr( 'width', 0 )
 							.ease( 'sine' );
+				}
+				
+				function startPulse(){
+					if ( !pulsing && graph.loading ){
+						$text.text( graph.message || 'Loading Data' );
+
+						$el.attr( 'visibility', 'visible' );
+						pulsing = true;
+						$interval.cancel( interval );
+
+						pulse();
+						interval = $interval( pulse, 4005 );
+					}
+				}
+
+				function stopPulse(){
+					$el.attr( 'visibility', 'hidden' );
+
+					pulsing = false;
+					$interval.cancel( interval );
 				}
 
 				box.$on('resize',function(){

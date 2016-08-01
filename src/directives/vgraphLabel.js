@@ -1,8 +1,6 @@
-angular.module( 'vgraph' ).directive( 'vgraphLabel',
+require('angular').module( 'vgraph' ).directive( 'vgraphLabel',
 	[
 	function(){
-		'use strict';
-
 		return {
 			require: ['^vgraphChart'],
 			link: function( $scope, el, attrs, requirements ){

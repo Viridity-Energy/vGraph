@@ -1,8 +1,8 @@
-angular.module( 'vgraph' ).directive( 'vgraphZoom',
+var d3 = require('d3');
+
+require('angular').module( 'vgraph' ).directive( 'vgraphZoom',
 	[
 	function(){
-		'use strict';
-
 		return {
 			scope : {
 				min : '=zoomMin',
@@ -77,6 +77,15 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
 							minPos / box.inner.width,
 							maxPos / box.inner.width
 						);
+					}
+				}
+
+				function calcZoom(){
+					if ( !dragging ){
+						minPos = zoom.left * box.inner.width;
+						maxPos = zoom.right * box.inner.width;
+						
+						redraw();
 					}
 				}
 
@@ -192,15 +201,6 @@ angular.module( 'vgraph' ).directive( 'vgraphZoom',
 
 					calcZoom();
 				});
-
-				function calcZoom(){
-					if ( !dragging ){
-						minPos = zoom.left * box.inner.width;
-						maxPos = zoom.right * box.inner.width;
-						
-						redraw();
-					}
-				}
 				
 				zoom.$on('update', calcZoom);
 				calcZoom();

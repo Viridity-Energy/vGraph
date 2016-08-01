@@ -1,8 +1,9 @@
-angular.module( 'vgraph' ).directive( 'vgraphPie',
-	[ 'DrawPie', 'ComponentElement',
-	function( DrawPie, ComponentElement ) {
-		'use strict';
+var DrawPie = require('../draw/Pie.js'),
+	ComponentElement = require('../component/Element.js');
 
+require('angular').module( 'vgraph' ).directive( 'vgraphPie',
+	[
+	function() {
 		return {
 			scope : {
 				config: '=vgraphPie',

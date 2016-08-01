@@ -1,8 +1,9 @@
-angular.module( 'vgraph' ).directive( 'vgraphHeatmap',
-	[ '$compile', 'DrawHeatmap', 'ComponentElement',
-	function( $compile, DrawHeatmap, ComponentElement ) {
-		'use strict';
+var DrawHeatmap =  require('../draw/Heatmap.js'),
+	ComponentElement = require('../component/Element.js');
 
+require('angular').module( 'vgraph' ).directive( 'vgraphHeatmap',
+	[ '$compile',
+	function( $compile ) {
 		return {
 			scope : {
 				config: '=vgraphHeatmap',

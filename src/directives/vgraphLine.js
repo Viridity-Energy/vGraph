@@ -1,8 +1,10 @@
-angular.module( 'vgraph' ).directive( 'vgraphLine',
-	['DrawLine', 'DrawFill', 'ComponentElement',
-	function( DrawLine, DrawFill, ComponentElement ){
-		'use strict';
+var DrawLine = require('../draw/Line.js'),
+	DrawFill = require('../draw/Fill.js'),
+	ComponentElement = require('../component/Element.js');
 
+require('angular').module( 'vgraph' ).directive( 'vgraphLine',
+	[
+	function(){
 		return {
 			scope: {
 				config: '=vgraphLine',

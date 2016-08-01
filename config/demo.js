@@ -1,3 +1,7 @@
+var d3 = require('d3'),
+	angular = require('angular'),
+	vGraph = require('../vgraph.js');
+
 angular.module( 'vgraph' ).controller( 'AppCtrl', [
 	'$scope',
 	function( $scope ){
@@ -36,7 +40,8 @@ angular.module( 'vgraph' ).controller( 'FloodCtrl',
 				padding : 0.05,
 				format: function( y ){
 					return ':' + y;
-				}
+				},
+				scale: function(){ return d3.scale.linear(); }
 			}
 		};
 
@@ -155,7 +160,8 @@ angular.module( 'vgraph' ).controller( 'ClassifyCtrl', [
 				padding : 0.05,
 				format: function( y ){
 					return ':' + y;
-				}
+				},
+				scale: function(){ return d3.scale.linear(); }
 			}
 		};
 
@@ -207,7 +213,11 @@ angular.module( 'vgraph' ).controller( 'NullCtrl', [
 		$scope.graph = {
 			x: {
 				min: -20,
-				max: 600
+				max: 600,
+				scale: function(){ return d3.scale.linear(); }
+			},
+			y: {
+				scale: function(){ return d3.scale.linear(); }
 			}
 		};
 
@@ -289,7 +299,14 @@ angular.module( 'vgraph' ).controller( 'ResizeCtrl', [
 			wide = true;
 
 		$scope.interface = {};
-		$scope.graph = {};
+		$scope.graph = {
+			x: {
+				scale: function(){ return d3.scale.linear(); }
+			},
+			y: {
+				scale: function(){ return d3.scale.linear(); }
+			}
+		};
 		$scope.page = [{
 			src: data,
 			interval: 'x',
@@ -347,7 +364,11 @@ angular.module( 'vgraph' ).controller( 'LoadingCtrl',
 		$scope.graph = {
 			x: {
 				min: -5,
-				max: 2005
+				max: 2005,
+				scale: function(){ return d3.scale.linear(); }
+			},
+			y: {
+				scale: function(){ return d3.scale.linear(); }
 			}
 		};
 		$scope.page = [{
@@ -447,7 +468,14 @@ angular.module( 'vgraph' ).controller( 'StackedCtrl',
 	function( $scope ){
 		var data = [ { x: 0, y1 : 10, y2 : 5, y3 : 15, y4 : 8} ];
 
-		$scope.graph = {};
+		$scope.graph = {
+			x: {
+				scale: function(){ return d3.scale.linear(); }
+			},
+			y: {
+				scale: function(){ return d3.scale.linear(); }
+			}
+		};
 
 		$scope.page = [{
 			src: data,
@@ -490,14 +518,25 @@ angular.module( 'vgraph' ).controller( 'GrowingCtrl',
 	function( $scope, $attrs ){
 		var data = [ {x : 0, y : 20}  ],
 			interval; 
-
+		
 		if( $attrs.$attr.noBounds ){
-			$scope.graph = {};
+			$scope.graph = {
+				x: {
+					scale: function(){ return d3.scale.linear(); }
+				},
+				y: {
+					scale: function(){ return d3.scale.linear(); }
+				}
+			};
 		}else{
 			$scope.graph = {
 				x: {
 					min: 0,
-					max: 100000
+					max: 100000,
+					scale: function(){ return d3.scale.linear(); }
+				},
+				y: {
+					scale: function(){ return d3.scale.linear(); }
 				}
 			};
 		}
@@ -536,8 +575,8 @@ angular.module( 'vgraph' ).controller( 'GrowingCtrl',
 );
 
 angular.module( 'vgraph' ).controller( 'BucketsCtrl',
-	['$scope', 'DataNormalizer',
-	function( $scope, DataNormalizer ){
+	['$scope',
+	function( $scope ){
 		var data = [ {x : 0, y : 20}  ],
 			interval; 
 
@@ -545,24 +584,28 @@ angular.module( 'vgraph' ).controller( 'BucketsCtrl',
 			fitToPane: true,
 			x: {
 				min : 0, 
-				max : 1000
+				max : 1000,
+				scale: function(){ return d3.scale.linear(); }
+			},
+			y: {
+				scale: function(){ return d3.scale.linear(); }
 			},
 			views: {
 				'secondary': {
 					manager: 'data',
-					normalizer: new DataNormalizer(function(index){
+					normalizer: new vGraph.data.Normalizer(function(index){
 						return Math.round(index); // combine to every pixel
 					})
 				},
 				'tertiary': {
 					manager: 'data',
-					normalizer: new DataNormalizer(function(index){
+					normalizer: new vGraph.data.Normalizer(function(index){
 						return index; // don't combine at all
 					})
 				},
 				'primary': {
 					manager: 'data',
-					normalizer: new DataNormalizer(function(index){
+					normalizer: new vGraph.data.Normalizer(function(index){
 						return Math.round(index / 10); // combine every 10 pixels
 					})
 				}
@@ -626,7 +669,11 @@ angular.module( 'vgraph' ).controller( 'CompareCtrl',
 		$scope.graph = {
 			x: {
 				min: -100,
-				max: 2100
+				max: 2100,
+				scale: function(){ return d3.scale.linear(); }
+			},
+			y: {
+				scale: function(){ return d3.scale.linear(); }
 			}
 		};
 
@@ -691,6 +738,12 @@ angular.module( 'vgraph' ).controller( 'Compare2Ctrl',
 			data2 = [ {x: 2000, y: 30} ];
 
 		$scope.graph = {
+			x: {
+				scale: function(){ return d3.scale.linear(); }
+			},
+			y: {
+				scale: function(){ return d3.scale.linear(); }
+			},
 			views: {
 				first: {
 					manager: 'first',
@@ -818,12 +871,24 @@ angular.module( 'vgraph' ).controller( 'MultiAxisCtrl',
 		}];
 
 		$scope.graph = {
+			x: {
+				scale: function(){ return d3.scale.linear(); }
+			},
+			y: {
+				scale: function(){ return d3.scale.linear(); }
+			},
 			fitToPane: true,
 			zoom: 'zoomable',
 			views: viewInfo
 		};
 
 		$scope.zoom = {
+			x: {
+				scale: function(){ return d3.scale.linear(); }
+			},
+			y: {
+				scale: function(){ return d3.scale.linear(); }
+			},
 			views: viewInfo
 		};
 
@@ -890,6 +955,12 @@ angular.module( 'vgraph' ).controller( 'MultiIntervalCtrl',
 		};
 
 		$scope.graph = {
+			x: {
+				scale: function(){ return d3.scale.linear(); }
+			},
+			y: {
+				scale: function(){ return d3.scale.linear(); }
+			},
 			fitToPane: true,
 			views: {
 				'firstView': {
@@ -952,26 +1023,30 @@ angular.module( 'vgraph' ).controller( 'LeadingCtrl',
 		$scope.graphUnified = {
 			x : {
 				min: -5,
-				max: 105
+				max: 105,
+				scale: function(){ return d3.scale.linear(); }
 			},
 			y : {
 				padding : 0.05,
 				format: function( y ){
 					return ':' + y;
-				}
+				},
+				scale: function(){ return d3.scale.linear(); }
 			}
 		};
 
 		$scope.graphIntervals = {
 			x : {
 				min: -5,
-				max: 105
+				max: 105,
+				scale: function(){ return d3.scale.linear(); }
 			},
 			y : {
 				padding : 0.05,
 				format: function( y ){
 					return ':' + y;
-				}
+				},
+				scale: function(){ return d3.scale.linear(); }
 			},
 			views:{
 				eins: {
@@ -1114,16 +1189,16 @@ angular.module( 'vgraph' ).controller( 'LeadingCtrl',
 			}
 		];
 
-		var y1 = 20, 
+		var node,
+			min = -1,
+			max = 1,
+			y1 = 20, 
 			y2 = 25,
 			y3 = 30,
 			y4 = 35;
 
 		for( var i = 0, c = 100; i < c; i++ ){
-			var counter = 0
-				node = { x : i },
-				min = -1,
-				max = 1;
+			node = { x : i };
 
 			y1 += Math.random() * (max - min) + min;
 			node.y1 = y1;
@@ -1185,7 +1260,8 @@ angular.module( 'vgraph' ).controller( 'BoxCtrl',
 				padding : 0.05,
 				format: function( y ){
 					return ':' + y;
-				}
+				},
+				scale: function(){ return d3.scale.linear(); }
 			}
 		};
 
@@ -1232,7 +1308,8 @@ angular.module( 'vgraph' ).controller( 'IconCtrl',
 				padding : 0.05,
 				format: function( y ){
 					return ':' + y;
-				}
+				},
+				scale: function(){ return d3.scale.linear(); }
 			}
 		};
 
@@ -1374,7 +1451,8 @@ angular.module( 'vgraph' ).controller( 'ExportCtrl',
 				padding : 0.05,
 				format: function( y ){
 					return ':' + y;
-				}
+				},
+				scale: function(){ return d3.scale.linear(); }
 			},
 			views: { 
 				'firstView': {
@@ -1496,8 +1574,8 @@ angular.module( 'vgraph' ).controller( 'ExportCtrl',
 );
 
 angular.module( 'vgraph' ).controller( 'StatsCtrl',
-	['$scope', 'CalculationsExtremes', 'CalculationsPercentiles',
-	function( $scope, CalculationsExtremes, CalculationsPercentiles ){
+	['$scope',
+	function( $scope ){
 		var data = [ {x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40}  ],
 			startHook = function(){},
 			stopHook = function(){};
@@ -1512,14 +1590,15 @@ angular.module( 'vgraph' ).controller( 'StatsCtrl',
 				padding : 0.05,
 				format: function( y ){
 					return ':' + y;
-				}
+				},
+				scale: function(){ return d3.scale.linear(); }
 			},
 			zoom: 'zoomable',
 			views: {
 				'default': {
 					calculations: [
-						CalculationsExtremes.maximum( 4, function(d){ return d.someLine1; }, 'max' ),
-						CalculationsPercentiles( 25, function( d ){ return d.someLine1; }, 'perc25' )
+						vGraph.calculations.maximum( 4, function(d){ return d.someLine1; }, 'max' ),
+						vGraph.calculations.percentile( 25, function( d ){ return d.someLine1; }, 'perc25' )
 					]
 				}
 			},
@@ -1543,7 +1622,8 @@ angular.module( 'vgraph' ).controller( 'StatsCtrl',
 				padding : 0.05,
 				format: function( y ){
 					return ':' + y;
-				}
+				},
+				scale: function(){ return d3.scale.linear(); }
 			}
 		};
 
@@ -1551,8 +1631,8 @@ angular.module( 'vgraph' ).controller( 'StatsCtrl',
 			managers: {
 				'default': {
 					calculations: [
-						CalculationsExtremes.minimum( 4, function(d){ return d.someLine1; }, 'min' ),
-						CalculationsPercentiles( 50, function( d ){ return d.someLine1; }, 'median' )
+						vGraph.calculations.minimum( 4, function(d){ return d.someLine1; }, 'min' ),
+						vGraph.calculations.percentile( 50, function( d ){ return d.someLine1; }, 'median' )
 					]
 				}
 			},
@@ -1640,7 +1720,11 @@ angular.module( 'vgraph' ).controller( 'ExternalCtrl',
 		$scope.graph = {
 			x: {
 				min: -1,
-				max: 12
+				max: 12,
+				scale: function(){ return d3.scale.linear(); }
+			},
+			y: {
+				scale: function(){ return d3.scale.linear(); }
 			}
 		};
 
@@ -1700,19 +1784,24 @@ angular.module( 'vgraph' ).controller( 'SpeedCtrl',
 		var data = [ { x: 0, y: 10} ];
 
 		$scope.graph = {
+			x: {
+				scale: function(){ return d3.scale.linear(); }
+			},
+			y: {
+				scale: function(){ return d3.scale.linear(); }
+			},
 			onLoad: function( chart ){
 				var begin = +(new Date()),
 					startTime;
 
-
 				chart.$on('render', function(){
 					var now = +(new Date());
-					console.log('=>', chart.$vguid, now-begin);
+					console.log(data.length, '=>', chart.$vguid, now-begin);
 					startTime = now;
 				});
 				chart.$on('rendered', function(){
 					var now = +(new Date());
-					console.log('->', chart.$vguid, now-startTime);
+					console.log(data.length, '->', chart.$vguid, now-startTime);
 				});
 			}
 		};
@@ -1753,7 +1842,14 @@ angular.module( 'vgraph' ).controller( 'PieCtrl',
 	function( $scope, $timeout ){
 		var data = [ { x: 0, y: 10} ];
 
-		$scope.graph = {};
+		$scope.graph = {
+			x: {
+				scale: function(){ return d3.scale.linear(); }
+			},
+			y: {
+				scale: function(){ return d3.scale.linear(); }
+			}
+		};
 
 		$scope.page = [{
 			src: data,
@@ -1803,8 +1899,8 @@ angular.module( 'vgraph' ).controller( 'PieCtrl',
 );
 
 angular.module( 'vgraph' ).controller( 'HeatmapCtrl',
-	['$scope', '$timeout', 'DataNormalizer', 'DataHasher',
-	function( $scope, $timeout, DataNormalizer, DataHasher ){
+	['$scope', '$timeout',
+	function( $scope, $timeout ){
 		var data = [ { x: 0, y: 10} ];
 
 		$scope.page = [{
@@ -1816,11 +1912,17 @@ angular.module( 'vgraph' ).controller( 'HeatmapCtrl',
 			}
 		}];
 
-		var buckets = [0,20,40,80,100,120,140,160,180,200,250,300,350,400,450,500,600,700,800,850,900,1000,1200,1400,1600,1800,2000]
-			grouper = DataHasher.bucketize( buckets );
+		var buckets = [0,20,40,80,100,120,140,160,180,200,250,300,350,400,450,500,600,700,800,850,900,1000,1200,1400,1600,1800,2000],
+			grouper = vGraph.data.Hasher.bucketize( buckets );
 
 		$scope.linear = {
 			zoom: 'zoomable',
+			x: {
+				scale: function(){ return d3.scale.linear(); }
+			},
+			y: {
+				scale: function(){ return d3.scale.linear(); }
+			},
 			views: {
 				basic: {
 					manager: 'feed'
@@ -1828,7 +1930,7 @@ angular.module( 'vgraph' ).controller( 'HeatmapCtrl',
 				someView: {
 					fitToPane: buckets,
 					manager: 'feed',
-					normalizer: new DataNormalizer(function(index,value){
+					normalizer: new vGraph.data.Normalizer(function(index,value){
 						return grouper(value);
 					})
 				}
@@ -1837,6 +1939,12 @@ angular.module( 'vgraph' ).controller( 'HeatmapCtrl',
 		};
 
 		$scope.zoom = {
+			x: {
+				scale: function(){ return d3.scale.linear(); }
+			},
+			y: {
+				scale: function(){ return d3.scale.linear(); }
+			},
 			views: {
 				basic: {
 					manager: 'feed'
@@ -1846,10 +1954,16 @@ angular.module( 'vgraph' ).controller( 'HeatmapCtrl',
 
 		$scope.heatmap = {
 			zoom: 'zoomable',
+			x: {
+				scale: function(){ return d3.scale.linear(); }
+			},
+			y: {
+				scale: function(){ return d3.scale.linear(); }
+			},
 			views: {
 				basic: {
 					manager: 'feed',
-					normalizer: new DataNormalizer(function(index){
+					normalizer: new vGraph.data.Normalizer(function(index){
 						return index; // don't combine at all
 					})
 				}
@@ -1990,3 +2104,4 @@ angular.module( 'vgraph' ).controller( 'HeatmapCtrl',
 		//$timeout( makeData, 6000 );
 	}]
 );
+

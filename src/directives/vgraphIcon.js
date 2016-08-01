@@ -1,8 +1,10 @@
-angular.module( 'vgraph' ).directive( 'vgraphIcon',
-	['DrawIcon', 'ComponentElement',
-	function( DrawIcon, ComponentElement ){
-		'use strict';
+var d3 = require('d3'),
+	DrawIcon =  require('../draw/Icon.js'),
+	ComponentElement = require('../component/Element.js');
 
+require('angular').module( 'vgraph' ).directive( 'vgraphIcon',
+	[
+	function(){
 		return {
 			scope : {
 				config: '=vgraphIcon'
