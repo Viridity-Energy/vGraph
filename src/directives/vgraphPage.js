@@ -1,8 +1,8 @@
-angular.module( 'vgraph' ).directive( 'vgraphPage',
-	['ComponentPage',
-	function( ComponentPage ){
-		'use strict';
+var ComponentPage = require('../component/Page.js');
 
+require('angular').module( 'vgraph' ).directive( 'vgraphPage',
+	[
+	function(){
 		return {
 			restrict: 'A',
 			scope : {

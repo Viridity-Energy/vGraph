@@ -1,8 +1,9 @@
-angular.module( 'vgraph' ).directive( 'vgraphBox',
-	[ 'DrawBox', 'ComponentElement',
-	function( DrawBox, ComponentElement ) {
-		'use strict';
+var DrawBox = require('../draw/Box.js'),
+	ComponentElement = require('../component/Element.js');
 
+require('angular').module( 'vgraph' ).directive( 'vgraphBox',
+	[
+	function() {
 		return {
 			scope : {
 				config: '=vgraphBox'
@@ -23,7 +24,7 @@ angular.module( 'vgraph' ).directive( 'vgraphBox',
 				element.setElement( el );
 
 				scope.$watch('config', function( config ){
-					var cfg = chart.compileReference( config );
+					var cfg = chart.getReference( config );
 					
 					if ( cfg ){
 						element.setDrawer( new DrawBox(cfg) );
@@ -36,7 +37,7 @@ angular.module( 'vgraph' ).directive( 'vgraphBox',
 
 						el.setAttribute( 'class', className );
 
-						cfg.$view.registerComponent(element);
+						cfg.$ops.$view.registerComponent(element);
 					}
 				});
 			}

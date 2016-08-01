@@ -1,8 +1,9 @@
-angular.module( 'vgraph' ).directive( 'vgraphCandlestick',
-	['DrawCandlestick', 'DrawFill', 'ComponentElement',
-	function( DrawCandlestick, DrawFill, ComponentElement ){
-		'use strict';
+var DrawCandlestick = require('../draw/Candlestick.js'),
+	ComponentElement = require('../component/Element.js');
 
+require('angular').module( 'vgraph' ).directive( 'vgraphCandlestick',
+	[
+	function(){
 		return {
 			scope: {
 				config: '=vgraphCandlestick'
@@ -19,7 +20,7 @@ angular.module( 'vgraph' ).directive( 'vgraphCandlestick',
 				element.setElement( el );
 
 				scope.$watch('config', function( config ){
-					var cfg = chart.compileReference( config );
+					var cfg = chart.getReference( config );
 
 					if ( cfg ){
 						className = 'candlestick ';
@@ -33,7 +34,7 @@ angular.module( 'vgraph' ).directive( 'vgraphCandlestick',
 
 						el.setAttribute( 'class', className );
 
-						cfg.$view.registerComponent(element);
+						cfg.$ops.$view.registerComponent(element);
 					}
 				});
 				

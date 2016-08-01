@@ -1,8 +1,10 @@
-angular.module( 'vgraph' ).directive( 'vgraphLine',
-	['DrawLine', 'DrawFill', 'ComponentElement',
-	function( DrawLine, DrawFill, ComponentElement ){
-		'use strict';
+var DrawLine = require('../draw/Line.js'),
+	DrawFill = require('../draw/Fill.js'),
+	ComponentElement = require('../component/Element.js');
 
+require('angular').module( 'vgraph' ).directive( 'vgraphLine',
+	[
+	function(){
 		return {
 			scope: {
 				config: '=vgraphLine',
@@ -21,11 +23,11 @@ angular.module( 'vgraph' ).directive( 'vgraphLine',
 
 				scope.$watch('config', function( config ){
 					var pair,
-						cfg = chart.compileReference( config );
+						cfg = chart.getReference( config );
 
 					if ( cfg ){
 						if ( attrs.pair ){
-							pair = chart.compileReference( scope.pair );
+							pair = chart.getReference( scope.pair );
 							className = 'fill ';
 							element.setDrawer( new DrawFill(cfg,pair) );
 						}else{
@@ -40,11 +42,9 @@ angular.module( 'vgraph' ).directive( 'vgraphLine',
 						className += attrs.className || cfg.className;
 
 						el.setAttribute( 'class', className );
-
-						cfg.$view.registerComponent(element);
+						cfg.$ops.$view.registerComponent(element);
 					}
 				});
-				
 			}
 		};
 	}]

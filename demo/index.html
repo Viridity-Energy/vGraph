@@ -3,11 +3,6 @@
 <head>
 	<!-- TODO: interval and value, not x and y -->
 	<meta charset="utf-8">
-	<script src="bower_components/d3/d3.js"></script>
-	<script src="bower_components/jquery/dist/jquery.js"></script>
-	<script src="bower_components/angular/angular.js"></script>
-	<script src="vgraph.js"></script>
-
 	<link href="vgraph.css" rel="stylesheet" type="text/css" />
 </head>
 <body ng-app="vgraph">
@@ -445,6 +440,12 @@
 			<div ng-controller="ClassifyCtrl">
 				<div vgraph-page="page">
 					<div vgraph-chart="graph">
+						<div vgraph-highlight="highlight">
+							{{highlight}}
+						</div>
+						<div vgraph-highlight="highlight">
+							{{highlight.default['2_isLow']}}:{{highlight.default['4_isLow']}}
+						</div>
 						<svg xmlns="http://www.w3.org/2000/svg"  version="1.1">
 							<g vgraph-axis="'left'"
 								tick-length="4" tick-padding="-2"
@@ -462,6 +463,8 @@
 							<g vgraph-bar="config[3]"></g>
 
 							<g vgraph-loading="Loading Data"></g>
+
+							<g vgraph-interact></g>
 						</svg>
 					</div>
 				</div>
@@ -1237,7 +1240,7 @@
 									ng-attr-x="{{ content.width / 2 }}" 
 									ng-attr-y="{{ content.height / 2 }}"
 									style="text-anchor: middle;"
-									>{{content.data.display}}</text><g></cell>
+									>{{content.data.display}}</text></cell>
 								<x-heading><text
 									ng-attr-x="{{ content.width / 2 }}"
 									ng-attr-y="{{ content.height / 2 }}"
@@ -1257,8 +1260,7 @@
 		</section>
 	</article>
 
-	<script src="index.js"></script>
-
+	<script src="demo.js"></script>
 </body>
 
 </html>

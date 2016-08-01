@@ -1,8 +1,9 @@
+var d3 = require('d3'),
+	angular = require('angular');
+
 angular.module( 'vgraph' ).directive( 'vgraphTarget',
 	[
 	function(){
-		'use strict';
-
 		return {
 			require : ['^vgraphChart'],
 			scope : {
@@ -32,23 +33,24 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
 						if ( attrs.noDots === undefined ){
 							angular.forEach( configs, function( cfg ){
 								var node,
-									view = cfg.$view,
+									view = cfg.$ops.$view,
 									datum = point[cfg.view],
+									nodeName = 'tn_'+cfg.name,
 									className = cfg.className,
-									value = cfg.getValue(datum);
+									value = cfg.$ops.getValue(datum);
 								
 								if ( value !== undefined && value !== null ){
-									node = $dots.selectAll( 'circle.point.'+cfg.name );
+									node = $dots.selectAll( 'circle.point.'+nodeName );
 									if ( !node[0].length ){
 										node = $dots.append( 'circle' )
-											.attr( 'class', 'point '+className+' '+cfg.classExtend+' '+cfg.name );
+											.attr( 'class', 'point '+className+' '+cfg.classExtend+' '+nodeName );
 									}
 
 									node.attr( 'cx', datum.$x - curX )
 										.attr( 'cy', view.y.scale(value) )
 										.attr( 'r', $scope.$eval( attrs.pointRadius ) || 3 );
 								}else{
-									$dots.selectAll( 'circle.point.'+cfg.name ).remove();
+									$dots.selectAll( 'circle.point.'+nodeName ).remove();
 								}
 							});
 						}

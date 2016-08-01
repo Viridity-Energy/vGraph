@@ -1,8 +1,6 @@
-angular.module( 'vgraph' ).directive( 'vgraphPublish',
+require('angular').module( 'vgraph' ).directive( 'vgraphPublish',
 	[
 	function(){
-		'use strict';
-
 		return {
 			require: ['^vgraphChart'],
 			scope: true,

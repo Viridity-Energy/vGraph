@@ -1,8 +1,9 @@
-angular.module( 'vgraph' ).directive( 'vgraphChart',
-	[ 'ComponentChart',
-	function( ComponentChart ){
-		'use strict';
+var d3 = require('d3'),
+	ComponentChart = require('../component/Chart.js');
 
+require('angular').module( 'vgraph' ).directive( 'vgraphChart',
+	[
+	function(){
 		function resize( box ){
 			if ( box.$mat && box.inner.width ){
 				// this isn't the bed way to do it, but since I'm already planning on fixing stuff up, I'm leaving it

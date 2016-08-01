@@ -1,8 +1,9 @@
-angular.module( 'vgraph' ).directive( 'vgraphPie',
-	[ 'DrawPie', 'ComponentElement',
-	function( DrawPie, ComponentElement ) {
-		'use strict';
+var DrawPie = require('../draw/Pie.js'),
+	ComponentElement = require('../component/Element.js');
 
+require('angular').module( 'vgraph' ).directive( 'vgraphPie',
+	[
+	function() {
 		return {
 			scope : {
 				config: '=vgraphPie',
@@ -32,7 +33,7 @@ angular.module( 'vgraph' ).directive( 'vgraphPie',
 				box.$on( 'resize', calcArea );
 
 				scope.$watch('config', function( config ){
-					var cfg = chart.compileReference( config );
+					var cfg = chart.getReference( config );
 
 					if ( cfg ){
 						element.setDrawer( new DrawPie(cfg,scope.buckets,area) );
@@ -45,7 +46,7 @@ angular.module( 'vgraph' ).directive( 'vgraphPie',
 
 						el.setAttribute( 'class', className );
 
-						cfg.$view.registerComponent(element);
+						cfg.$ops.$view.registerComponent(element);
 					}
 				});
 			}

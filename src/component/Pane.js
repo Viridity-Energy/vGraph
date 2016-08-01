@@ -1,106 +1,102 @@
-angular.module( 'vgraph' ).factory( 'ComponentPane',
-	['DataList',
-	function ( DataList ) {
-		'use strict';
+var DataList = require('../data/List.js');
 
-		function ComponentPane( fitToPane, xObj, yObj ){
-			this.x = xObj;
-			this.y = yObj;
+class Pane{
+	constructor( fitToPane, xObj, yObj ){
+		this.x = xObj;
+		this.y = yObj;
 
-			if ( fitToPane === true ){
-				this.fitToPane = true;
-			}else if ( fitToPane ){
-				this.snapTo = new DataList(function(a){ return a; });
-				this.snapTo.absorb( fitToPane );
-			}
-
-			this._pane = {};
-			this._bounds = {};
-			
-			if ( !xObj ){
-				xObj = {};
-			}
-
-			if ( !yObj ){
-				yObj = {};
-			}
-
-			this.setBounds( {min:xObj.min,max:xObj.max}, {min:yObj.min,max:yObj.max} );
+		if ( fitToPane === true ){
+			this.fitToPane = true;
+		}else if ( fitToPane ){
+			this.snapTo = new DataList(function(a){ return a; });
+			this.snapTo.absorb( fitToPane );
 		}
 
-		ComponentPane.prototype.setBounds = function( x, y ){
-			this._bounds.x = x;
-			this._bounds.y = y;
+		this._pane = {};
+		this._bounds = {};
+		
+		if ( !xObj ){
+			xObj = {};
+		}
 
-			return this;
-		};
+		if ( !yObj ){
+			yObj = {};
+		}
 
-		ComponentPane.prototype.setPane = function( x, y ){
-			this._pane.x = x;
-			this._pane.y = y;
+		this.setBounds( {min:xObj.min,max:xObj.max}, {min:yObj.min,max:yObj.max} );
+	}
 
-			return this;
-		};
+	setBounds( x, y ){
+		this._bounds.x = x;
+		this._bounds.y = y;
 
-		ComponentPane.prototype.filter = function( dataManager, offset ){
-			var $min,
-				$max,
-				change,
-				filtered,
-				minInterval,
-				maxInterval,
-				x = this.x,
-				data = dataManager.data;
+		return this;
+	}
 
-			if ( data.length ){
-				dataManager.clean();
-				
-				$min = this._bounds.x.min !== undefined ? this._bounds.x.min : data.$minIndex;
-				$max = this._bounds.x.max !== undefined ? this._bounds.x.max : data.$maxIndex;
+	setPane( x, y ){
+		this._pane.x = x;
+		this._pane.y = y;
 
-				x.$min = $min;
-				x.$max = $max;
+		return this;
+	}
 
-				if ( this._pane.x && this._pane.x.max ){
-					change = this._pane.x;
-				   
-				   	minInterval = $min + change.min * ($max - $min);
-					maxInterval = $min + change.max * ($max - $min);
-				   	
-				   	if ( this.snapTo ){
-				   		minInterval = this.snapTo.closest( minInterval );
-				   		maxInterval = this.snapTo.closest( maxInterval );
-				   	}
-				}else{
-					minInterval = $min;
-					maxInterval = $max;
+	filter( dataManager, offset ){
+		var $min,
+			$max,
+			change,
+			filtered,
+			minInterval,
+			maxInterval,
+			x = this.x,
+			data = dataManager.data;
+
+		if ( data.length ){
+			dataManager.clean();
+			
+			$min = this._bounds.x.min !== undefined ? this._bounds.x.min : data.$minIndex;
+			$max = this._bounds.x.max !== undefined ? this._bounds.x.max : data.$maxIndex;
+
+			x.$min = $min;
+			x.$max = $max;
+
+			if ( this._pane.x && this._pane.x.max ){
+				change = this._pane.x;
+			   
+			   	minInterval = $min + change.min * ($max - $min);
+				maxInterval = $min + change.max * ($max - $min);
+			   	
+			   	if ( this.snapTo ){
+			   		minInterval = this.snapTo.closest( minInterval );
+			   		maxInterval = this.snapTo.closest( maxInterval );
+			   	}
+			}else{
+				minInterval = $min;
+				maxInterval = $max;
+			}
+			
+			offset.$left = minInterval;
+			offset.left = (minInterval - $min) / ($max - $min);
+			offset.$right = maxInterval;
+			offset.right = (maxInterval - $min) / ($max - $min);
+
+			// calculate the filtered points
+			filtered = data.$slice( minInterval, maxInterval );
+
+			if ( this.fitToPane && data.length > 1 ){
+				if ( minInterval > data.$minIndex ){
+					filtered.$add( minInterval, dataManager.$makePoint(minInterval), true );
 				}
-				
-				offset.$left = minInterval;
-				offset.left = (minInterval - $min) / ($max - $min);
-				offset.$right = maxInterval;
-				offset.right = (maxInterval - $min) / ($max - $min);
 
-				// calculate the filtered points
-				filtered = data.$slice( minInterval, maxInterval );
-
-				if ( this.fitToPane && data.length > 1 ){
-					//console.log( minInterval, maxInterval, data.$minIndex, data.$maxIndex );
-					if ( minInterval > data.$minIndex ){
-						filtered.$add( minInterval, dataManager.$makePoint(minInterval), true );
-					}
-
-					if ( maxInterval < data.$maxIndex ){
-						filtered.$add( maxInterval, dataManager.$makePoint(maxInterval) );
-					}
+				if ( maxInterval < data.$maxIndex ){
+					filtered.$add( maxInterval, dataManager.$makePoint(maxInterval) );
 				}
-
-				filtered.$sort();
 			}
 
-			return filtered;
-		};
+			filtered.$sort();
+		}
 
-		return ComponentPane;
-	}]
-);
+		return filtered;
+	}
+}
+
+module.exports = Pane;

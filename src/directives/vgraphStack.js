@@ -1,8 +1,8 @@
-angular.module( 'vgraph' ).directive( 'vgraphStack',
-	[ '$compile', 'ComponentElement', 'StatCalculations',
-	function( $compile, ComponentElement, StatCalculations ) {
-		'use strict';
+var StatCalculations =  require('../stats.js');
 
+require('angular').module( 'vgraph' ).directive( 'vgraphStack',
+	[
+	function() {
 		return {
 			require : ['^vgraphChart'],
 			scope : {

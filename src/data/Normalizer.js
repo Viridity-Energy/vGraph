@@ -1,94 +1,88 @@
-angular.module( 'vgraph' ).factory( 'DataNormalizer',
-	['DataCollection', 
-	function ( DataCollection ) {
-		'use strict';
+var uid = 1,
+	Linear = require('./Linear.js');
 
-		var uid = 1;
+class Normalizer extends Linear {
+	constructor( grouper ){
+		super();
 
-		function DataNormalizer( grouper ){
-			this.$modelUid = uid++;
-			
-			this.$grouper = grouper;
-			
-			DataCollection.call( this );
+		this.$modelUid = uid++;
+		
+		this.$grouper = grouper;
 
-			this._finalizeProperties = function( datum ){
-				datum.$x = datum.$x / datum.$count;
-			};
+		this._finalizeProperties = function( datum ){
+			datum.$x = datum.$x / datum.$count;
+		};
+	}
+
+	addPropertyFinalize( fn ){
+		var mfn = this._finalizeProperties;
+		this._finalizeProperties = function( datum ){
+			mfn( datum );
+			fn( datum );
+		};
+	}
+
+	$latestNode( field ){
+		var i = this.length - 1,
+			datum;
+
+		while( i ){
+			datum = this[i];
+			if ( this.isValid(datum[field]) ){
+				return datum;
+			}
+
+			i--;
+		}
+	}
+
+	$reindex( collection, reindex ){
+		var i, c,
+			node,
+			index,
+			datum,
+			oldIndex,
+			newIndex,
+			grouper = this.$grouper;
+
+		this.$reset();
+
+		collection.$sort();
+		for( i = 0, c = collection.length; i < c; i++ ){
+			datum = collection[i];
+			oldIndex = datum._$index;
+			newIndex = reindex( datum._$index );
+			index = grouper( newIndex, oldIndex );
+
+			if ( index !== undefined ){
+				node = this.$addNode( index, datum );
+
+				if ( node.$minIndex === undefined ){
+					node.$x = newIndex;
+					node.$minIndex = oldIndex;
+					node.$xMin = newIndex;
+					node.$maxIndex = oldIndex;
+					node.$xMax = newIndex;
+					node.$count = 1;
+				}else{
+					node.$x += newIndex;
+					node.$maxIndex = oldIndex;
+					node.$xMax = newIndex;
+					node.$count++;
+				}
+			}
 		}
 
-		DataNormalizer.prototype = new DataCollection();
-		
-		DataNormalizer.prototype.addPropertyFinalize = function( fn ){
-			var mfn = this._finalizeProperties;
-			this._finalizeProperties = function( datum ){
-				mfn( datum );
-				fn( datum );
-			};
-		};
+		for( i = 0, c = this.length; i < c; i++ ){
+			datum = this[i];
 
-		DataNormalizer.prototype.$latestNode = function( field ){
-			var i = this.length - 1,
-				datum;
+			datum.$avgIndex = (datum.$minIndex+datum.$maxIndex) / 2;
+			this._finalizeProperties( datum );
+		}
 
-			while( i ){
-				datum = this[i];
-				if ( DataCollection.isValid(datum[field]) ){
-					return datum;
-				}
+		this.$stats = Object.create(collection.$stats);
+		this.$parent = collection;
+	}
+}
 
-				i--;
-			}
-		};
-
-		DataNormalizer.prototype.$reindex = function( collection, reindex ){
-			var i, c,
-				node,
-				index,
-				datum,
-				oldIndex,
-				newIndex,
-				grouper = this.$grouper;
-
-			this.$reset();
-
-			collection.$sort();
-			for( i = 0, c = collection.length; i < c; i++ ){
-				datum = collection[i];
-				oldIndex = datum._$index;
-				newIndex = reindex( datum._$index );
-				index = grouper( newIndex, oldIndex );
-
-				if ( index !== undefined ){
-					node = this.$addNode( index, datum );
-
-					if ( node.$minIndex === undefined ){
-						node.$x = newIndex;
-						node.$minIndex = oldIndex;
-						node.$xMin = newIndex;
-						node.$maxIndex = oldIndex;
-						node.$xMax = newIndex;
-						node.$count = 1;
-					}else{
-						node.$x += newIndex;
-						node.$maxIndex = oldIndex;
-						node.$xMax = newIndex;
-						node.$count++;
-					}
-				}
-			}
-
-			for( i = 0, c = this.length; i < c; i++ ){
-				datum = this[i];
-
-				datum.$avgIndex = (datum.$minIndex+datum.$maxIndex) / 2;
-				this._finalizeProperties( datum );
-			}
-
-			this.$stats = Object.create(collection.$stats);
-			this.$parent = collection;
-		};
-
-		return DataNormalizer;
-	}]
-);
+module.exports = Normalizer;

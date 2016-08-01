@@ -1,8 +1,8 @@
-angular.module( 'vgraph' ).directive( 'vgraphIndicator',
+var d3 = require('d3');
+
+require('angular').module( 'vgraph' ).directive( 'vgraphIndicator',
 	[
 	function(){
-		'use strict';
-
 		return {
 			require : ['^vgraphChart'],
 			scope : {
@@ -64,9 +64,9 @@ angular.module( 'vgraph' ).directive( 'vgraphIndicator',
 				graph.registerComponent({
 					finalize : function(){
 						var x, y,
-							view = cfg.$view,
+							view = cfg.$ops.$view,
 							d = view.getLeading(),
-							v = cfg.getValue(d);
+							v = cfg.$ops.getValue(d);
 
 						if ( v && view.isLeading() ){
 							x = d.$x;

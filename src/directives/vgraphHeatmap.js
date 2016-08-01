@@ -1,8 +1,9 @@
-angular.module( 'vgraph' ).directive( 'vgraphHeatmap',
-	[ '$compile', 'DrawHeatmap', 'ComponentElement',
-	function( $compile, DrawHeatmap, ComponentElement ) {
-		'use strict';
+var DrawHeatmap =  require('../draw/Heatmap.js'),
+	ComponentElement = require('../component/Element.js');
 
+require('angular').module( 'vgraph' ).directive( 'vgraphHeatmap',
+	[ '$compile',
+	function( $compile ) {
 		return {
 			scope : {
 				config: '=vgraphHeatmap',
@@ -66,7 +67,7 @@ angular.module( 'vgraph' ).directive( 'vgraphHeatmap',
 				};
 
 				scope.$watch('config', function( config ){
-					var cfg = chart.compileReference( config );
+					var cfg = chart.getReference( config );
 
 					if ( cfg ){
 						drawer = new DrawHeatmap(
@@ -86,7 +87,7 @@ angular.module( 'vgraph' ).directive( 'vgraphHeatmap',
 
 						el.setAttribute( 'class', className );
 
-						cfg.$view.registerComponent(element);
+						cfg.$ops.$view.registerComponent(element);
 					}
 				});
 			}

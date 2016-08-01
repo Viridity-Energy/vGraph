@@ -1,3 +1,4 @@
+var d3 = require('d3');
 
 	/*
 	- ticks
@@ -6,11 +7,9 @@
 	- label collisions
 	*/
 
-angular.module( 'vgraph' ).directive( 'vgraphAxis',
+require('angular').module( 'vgraph' ).directive( 'vgraphAxis',
 	[
 	function() {
-		'use strict';
-
 		function collides( p, b ){ // point and boundry
 			return !(
 				p.bottom < b.top ||

@@ -1,69 +1,64 @@
-angular.module( 'vgraph' ).factory( 'DataBucketer',
-	[
-	function () {
-		'use strict';
+var Collection = require('bmoor-data').Collection;
 
-		function DataBucketer( hasher, bucketFactory ){
-			this._hasher = hasher;
-			this._factory = bucketFactory || function(){ return []; };
+class Bucketer extends Collection {
+	constructor( hasher, bucketFactory ){
+		super();
+		
+		this._hasher = hasher;
+		this._factory = bucketFactory || function(){ return []; };
 
-			this.$reset();
+		this.$reset();
+	}
+
+	push( datum ){
+		var bucket = this._insert(datum);
+
+		if ( bucket ){
+			Array.prototype.push.call( this, bucket );
 		}
+	}
 
-		DataBucketer.prototype = [];
+	unshift( datum ){
+		var bucket = this._insert(datum);
 
-		DataBucketer.prototype.push = function( datum ){
-			var bucket = this._insert(datum);
+		if ( bucket ){
+			Array.prototype.unshift.call( this, bucket );
+		}
+	}
 
-			if ( bucket ){
-				Array.prototype.push.call( this, bucket );
-			}
-		};
+	_insert( datum ){
+		var needNew = false,
+			index = this._hasher( datum ),
+			match = this._$index[ index ];
 
-		DataBucketer.prototype.unshift = function( datum ){
-			var bucket = this._insert(datum);
+		if ( !match ){
+			needNew = true;
 
-			if ( bucket ){
-				Array.prototype.unshift.call( this, bucket );
-			}
-		};
+			match = this._factory( index );
+			this._$index[ index ] = match;
+			this._$indexs.push( index );
 
-		DataBucketer.prototype._insert = function( datum ){
-			var needNew = false,
-				index = this._hasher( datum ),
-				match = this._$index[ index ];
+			match.push( datum );
 
-			if ( !match ){
-				needNew = true;
+			return match;
+		}else{
+			match.push( datum );
+		}
+	}
 
-				match = this._factory( index );
-				this._$index[ index ] = match;
-				this._$indexs.push( index );
+	$reset(){
+		this.length = 0;
+		this._$index = {};
+		this._$indexs = [];
+	}
 
-				match.push( datum );
+	$getIndexs(){
+		return this._$indexs;
+	}
 
-				return match;
-			}else{
-				match.push( datum );
-			}
-		};
-
-		// TODO : for now I am not worrying about removing
-
-		DataBucketer.prototype.$reset = function(){
-			this.length = 0;
-			this._$index = {};
-			this._$indexs = [];
-		};
-
-		DataBucketer.prototype.$getIndexs = function(){
-			return this._$indexs;
-		};
-
-		DataBucketer.prototype.$getBucket = function( index ){
-			return this._$index[ index ];
-		};
-
-		return DataBucketer;
-	}]
-);
+	$getBucket( index ){
+		return this._$index[ index ];
+	}
+}
+		
+module.exports = Bucketer;

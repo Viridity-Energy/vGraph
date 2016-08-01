@@ -1,8 +1,9 @@
-angular.module( 'vgraph' ).directive( 'vgraphBar',
-	[ 'DrawBar', 'ComponentElement',
-	function( DrawBar, ComponentElement ) {
-		'use strict';
+var DrawBar = require('../draw/Bar.js'),
+	ComponentElement = require('../component/Element.js');
 
+require('angular').module( 'vgraph' ).directive( 'vgraphBar',
+	[
+	function() {
 		return {
 			scope : {
 				config: '=vgraphBar',
@@ -20,8 +21,8 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
 				element.setElement( el );
 
 				scope.$watch('config', function( config ){
-					var cfg = chart.compileReference( config ),
-						pair = chart.compileReference( scope.pair );
+					var cfg = chart.getReference( config ),
+						pair = chart.getReference( scope.pair );
 
 					if ( cfg ){
 						element.setDrawer( new DrawBar(cfg,pair,attrs.width) );
@@ -34,7 +35,7 @@ angular.module( 'vgraph' ).directive( 'vgraphBar',
 
 						el.setAttribute( 'class', className );
 
-						cfg.$view.registerComponent(element);
+						cfg.$ops.$view.registerComponent(element);
 					}
 				});	
 			}

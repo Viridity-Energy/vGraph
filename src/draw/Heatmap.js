@@ -1,220 +1,218 @@
-angular.module( 'vgraph' ).factory( 'DrawHeatmap', 
-	[ 'DataBucketer',
-	function( DataBucketer ){
-		'use strict';
+var DataBucketer = require('../data/Bucketer.js');
+
+class Heatmap{
 		
-		function DrawHeatmap( reference, area, templates, indexs, buckets ){
-			var t,
-				bucketer;
+	constructor( reference, area, templates, indexs, buckets ){
+		var t,
+			bucketer;
 
-			this.area = area;
-			this.templates = templates;
-			this.references = [reference];
-			
-			if ( !buckets ){
-				t = Object.keys(indexs);
-				buckets = {
-					x: t[0],
-					y: t[1]
-				};
-			}
+		this.area = area;
+		this.templates = templates;
+		this.references = [reference];
+		
+		if ( !buckets ){
+			t = Object.keys(indexs);
+			buckets = {
+				x: t[0],
+				y: t[1]
+			};
+		}
 
-			this.bucketer = bucketer = new DataBucketer( indexs[buckets.x], function(){
-				return new DataBucketer( indexs[buckets.y] );
+		this.bucketer = bucketer = new DataBucketer( indexs[buckets.x], function(){
+			return new DataBucketer( indexs[buckets.y] );
+		});
+	}
+
+	getReferences(){
+		return this.references;
+	}
+
+	parse( keys ){
+		var xPos,
+			yPos,
+			xSize,
+			ySize,
+			xCount,
+			yCount,
+			xLabels,
+			yLabels,
+			ref = this.references[0],
+			sets = [],
+			grid = [],
+			area = this.area,
+			bucketer = this.bucketer;
+
+		bucketer.$reset();
+		
+		keys.forEach(function( key ){
+			bucketer.push( ref.$ops.$getNode(key) ); // { bucket, value }
+		});
+
+		if ( !this.labels ){
+			this.labels = {};
+		}
+
+		if ( this.labels.x ){
+			xLabels = this.labels.x;
+		}else{
+			xLabels = {};
+			bucketer.$getIndexs().forEach(function( label ){
+				xLabels[label] = label;
 			});
 		}
 
-		DrawHeatmap.prototype.getReferences = function(){
-			return this.references;
-		};
+		if ( this.labels.y ){
+			yLabels = this.labels.y;
+		}else{
+			yLabels = {};
+			bucketer.forEach(function( bucket ){
+				bucket.$getIndexs().forEach(function( label ){
+					yLabels[label] = label;
+				});
+			});
+		}
 
-		DrawHeatmap.prototype.parse = function( keys ){
-			var xPos,
-				yPos,
-				xSize,
-				ySize,
-				xCount,
-				yCount,
-				xLabels,
-				yLabels,
-				ref = this.references[0],
-				sets = [],
-				grid = [],
-				area = this.area,
-				bucketer = this.bucketer;
+		xCount = Object.keys(xLabels).length + 1;
+		yCount = Object.keys(yLabels).length + 1;
 
-			bucketer.$reset();
-			
-			keys.forEach(function( key ){
-				bucketer.push( ref.$getNode(key) ); // { bucket, value }
+		xSize = (area.x2-area.x1) / xCount;
+		ySize = (area.y2-area.y1) / yCount;
+
+		xPos = area.x1+xSize;
+		Object.keys(xLabels).forEach(function( key ){
+			var xNext = xPos + xSize;
+
+			sets.push({
+				type: 'x',
+				x1: xPos,
+				x2: xNext,
+				y1: area.y1,
+				y2: area.y1+ySize,
+				width: xSize,
+				height: ySize,
+				text: xLabels[key]
 			});
 
-			if ( !this.labels ){
-				this.labels = {};
-			}
+			xPos = xNext;
+		});
 
-			if ( this.labels.x ){
-				xLabels = this.labels.x;
-			}else{
-				xLabels = {};
-				bucketer.$getIndexs().forEach(function( label ){
-					xLabels[label] = label;
-				});
-			}
+		yPos = area.y1+ySize;
+		Object.keys(yLabels).forEach(function( key ){
+			var yNext = yPos + ySize;
 
-			if ( this.labels.y ){
-				yLabels = this.labels.y;
-			}else{
-				yLabels = {};
-				bucketer.forEach(function( bucket ){
-					bucket.$getIndexs().forEach(function( label ){
-						yLabels[label] = label;
-					});
-				});
-			}
+			sets.push({
+				type: 'y',
+				x1: area.x1,
+				x2: area.x1+xSize,
+				y1: yPos,
+				y2: yNext,
+				width: xSize,
+				height: ySize,
+				text: yLabels[key]
+			});
 
-			xCount = Object.keys(xLabels).length + 1;
-			yCount = Object.keys(yLabels).length + 1;
+			yPos = yNext;
+		});
 
-			xSize = (area.x2-area.x1) / xCount;
-			ySize = (area.y2-area.y1) / yCount;
+		xPos = area.x1+xSize;
+		Object.keys(xLabels).forEach(function( x ){
+			var col = [],
+				xNext = xPos + xSize;
 
-			xPos = area.x1+xSize;
-			Object.keys(xLabels).forEach(function( key ){
-				var xNext = xPos + xSize;
+			grid.push( col );
+			yPos = area.y1 + ySize;
+
+			Object.keys(yLabels).forEach(function( y ){
+				var yNext = yPos + ySize,
+					data = bucketer.$getBucket(x).$getBucket(y);
+
+				col.push( data );
 
 				sets.push({
-					type: 'x',
+					type: 'cell',
 					x1: xPos,
 					x2: xNext,
-					y1: area.y1,
-					y2: area.y1+ySize,
-					width: xSize,
-					height: ySize,
-					text: xLabels[key]
-				});
-
-				xPos = xNext;
-			});
-
-			yPos = area.y1+ySize;
-			Object.keys(yLabels).forEach(function( key ){
-				var yNext = yPos + ySize;
-
-				sets.push({
-					type: 'y',
-					x1: area.x1,
-					x2: area.x1+xSize,
 					y1: yPos,
 					y2: yNext,
+					data: data,
 					width: xSize,
-					height: ySize,
-					text: yLabels[key]
+					height: ySize
 				});
 
 				yPos = yNext;
 			});
 
-			xPos = area.x1+xSize;
-			Object.keys(xLabels).forEach(function( x ){
-				var col = [],
-					xNext = xPos + xSize;
+			xPos = xNext;
+		});
 
-				grid.push( col );
-				yPos = area.y1 + ySize;
+		sets.$grid = grid;
 
-				Object.keys(yLabels).forEach(function( y ){
-					var yNext = yPos + ySize,
-						data = bucketer.$getBucket(x).$getBucket(y);
+		this.dataSets = sets;
+	}
 
-					col.push( data );
+	getLimits(){
+		return null;
+	}
 
-					sets.push({
-						type: 'cell',
-						x1: xPos,
-						x2: xNext,
-						y1: yPos,
-						y2: yNext,
-						data: data,
-						width: xSize,
-						height: ySize
-					});
+	closeSet(){}
 
-					yPos = yNext;
-				});
+	makePath( boxInfo ){
+		if ( boxInfo ){
+			return 'M' + 
+				(boxInfo.x1+','+boxInfo.y1) + 'L' +
+				(boxInfo.x2+','+boxInfo.y1) + 'L' +
+				(boxInfo.x2+','+boxInfo.y2) + 'L' +
+				(boxInfo.x1+','+boxInfo.y2) + 'Z';
+		}
+	}
 
-				xPos = xNext;
-			});
+	/*
+	'<text '+
+	//'ng-attr-x="{{ width / 2 }}" ng-attr-y="{{ height / 2 }}"'+
+    'style="text-anchor: middle;"'+
+    '>{{ text }}</text>'
+	*/
+	makeElement( boxInfo ){
+		var template,
+			className = '';
 
-			sets.$grid = grid;
-
-			this.dataSets = sets;
-		};
-
-		DrawHeatmap.prototype.getLimits = function(){
-			return null;
-		};
-
-		DrawHeatmap.prototype.closeSet = function(){};
-
-		DrawHeatmap.prototype.makePath = function( boxInfo ){
-			if ( boxInfo ){
-				return 'M' + 
-					(boxInfo.x1+','+boxInfo.y1) + 'L' +
-					(boxInfo.x2+','+boxInfo.y1) + 'L' +
-					(boxInfo.x2+','+boxInfo.y2) + 'L' +
-					(boxInfo.x1+','+boxInfo.y2) + 'Z';
+		if ( boxInfo ){
+			if ( boxInfo.$classify ){
+				className = Object.keys(boxInfo.$classify).join(' ');
 			}
-		};
 
-		/*
-		'<text '+
-		//'ng-attr-x="{{ width / 2 }}" ng-attr-y="{{ height / 2 }}"'+
-        'style="text-anchor: middle;"'+
-        '>{{ text }}</text>'
-		*/
-		DrawHeatmap.prototype.makeElement = function( boxInfo ){
-			var template,
-				className = '';
+			if ( boxInfo.$className ){
+				className += ' '+boxInfo.$className;
+			}
 
-			if ( boxInfo ){
-				if ( boxInfo.$classify ){
-					className = Object.keys(boxInfo.$classify).join(' ');
-				}
-
-				if ( boxInfo.$className ){
-					className += ' '+boxInfo.$className;
-				}
-
-				if ( boxInfo.type === 'cell' ){
-					template = this.templates.cell;
-					className += ' bucket';
+			if ( boxInfo.type === 'cell' ){
+				template = this.templates.cell;
+				className += ' bucket';
+			}else{
+				if ( boxInfo.type === 'x' ){
+					template = this.templates.xHeading;
 				}else{
-					if ( boxInfo.type === 'x' ){
-						template = this.templates.xHeading;
-					}else{
-						template = this.templates.yHeading;
-					}
-					className += ' heading axis-'+boxInfo.type;
+					template = this.templates.yHeading;
 				}
-
-				return '<g class="'+className+'"'+
-					' transform="translate('+boxInfo.x1+','+boxInfo.y1+')"'+
-					'>'+
-						'<rect x="0" y="0'+
-							( boxInfo.$color ? '" style="fill:'+boxInfo.$color : '' )+
-							'" width="'+(boxInfo.x2 - boxInfo.x1)+
-							'" height="'+(boxInfo.y2 - boxInfo.y1)+
-						'"/>'+
-						template+
-					'</g>';
+				className += ' heading axis-'+boxInfo.type;
 			}
-		};
-		
-		DrawHeatmap.prototype.getHitbox = function( dataSet ){
-			return dataSet;
-		};
-		
-		return DrawHeatmap;
-	}]
-);
+
+			return '<g class="'+className+'"'+
+				' transform="translate('+boxInfo.x1+','+boxInfo.y1+')"'+
+				'>'+
+					'<rect x="0" y="0'+
+						( boxInfo.$color ? '" style="fill:'+boxInfo.$color : '' )+
+						'" width="'+(boxInfo.x2 - boxInfo.x1)+
+						'" height="'+(boxInfo.y2 - boxInfo.y1)+
+					'"/>'+
+					template+
+				'</g>';
+		}
+	}
+	
+	getHitbox( dataSet ){
+		return dataSet;
+	}
+}
+
+module.exports = Heatmap;
