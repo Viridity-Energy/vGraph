@@ -54,15 +54,15 @@ angular.module( 'vgraph' ).directive( 'vgraphLeading',
 							points = [];
 
 						angular.forEach( configs, function( cfg ){
-							var model = cfg.$view.normalizer,
+							var model = cfg.$ops.$view.normalizer,
 								datum = model.$latestNode( cfg.field ),
-								value = cfg.getValue(datum);
+								value = cfg.$ops.getValue(datum);
 
-							if ( datum && cfg.$view.isLeading() ){
+							if ( datum && cfg.$ops.$view.isLeading() ){
 								points.push({
 									el : elements[cfg.name],
 									x : datum.$x,
-									y : cfg.$view.y.scale( value )
+									y : cfg.$ops.$view.y.scale( value )
 								});
 							}else{
 								elements[cfg.name].attr( 'visibility','hidden' );

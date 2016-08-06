@@ -72,12 +72,12 @@ class Bar extends DrawLinear {
 			y2,
 			t,
 			width,
-			node = this.top.$getNode(index);
+			node = this.top.$ops.$getNode(index);
 
-		y1 = this.top.getValue(node);
+		y1 = this.top.$ops.getValue(node);
 		
 		if ( this.bottom !== this.top ){
-			y2 = this.bottom.$getValue(index);
+			y2 = this.bottom.$ops.$getValue(index);
 		}else{
 			y2 = '-'; // this.bottom.$view.viewport.minValue;
 		}
@@ -94,7 +94,7 @@ class Bar extends DrawLinear {
 
 			t = {
 				$classify: this.top.classify ? 
-					this.top.classify(node,this.bottom.$getNode(index)) : 
+					this.top.classify(node,this.bottom.$ops.$getNode(index)) : 
 					null,
 				x1: min < node.$xMin ? min : node.$xMin,
 				x2: max > node.$xMax ? node.$xMax : max,
@@ -128,8 +128,8 @@ class Bar extends DrawLinear {
 	}
 
 	closeSet( set ){
-		var top = this.top.$view,
-			bottom = this.bottom.$view,
+		var top = this.top.$ops.$view,
+			bottom = this.bottom.$ops.$view,
 			y1 = set.y1 === '+' ? top.viewport.maxValue : set.y1,
 			y2 = set.y2 === '-' ? bottom.viewport.minValue : set.y2;
 

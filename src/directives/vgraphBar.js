@@ -21,8 +21,8 @@ require('angular').module( 'vgraph' ).directive( 'vgraphBar',
 				element.setElement( el );
 
 				scope.$watch('config', function( config ){
-					var cfg = chart.compileReference( config ),
-						pair = chart.compileReference( scope.pair );
+					var cfg = chart.getReference( config ),
+						pair = chart.getReference( scope.pair );
 
 					if ( cfg ){
 						element.setDrawer( new DrawBar(cfg,pair,attrs.width) );
@@ -35,7 +35,7 @@ require('angular').module( 'vgraph' ).directive( 'vgraphBar',
 
 						el.setAttribute( 'class', className );
 
-						cfg.$view.registerComponent(element);
+						cfg.$ops.$view.registerComponent(element);
 					}
 				});	
 			}

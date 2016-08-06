@@ -10,10 +10,10 @@ require('angular').module( 'vgraph' ).directive( 'vgraphCompare',
 			},
 			require : ['^vgraphChart'],
 			link : function( scope, $el, attrs, requirements ){
-				var unsubscribe,
+				var ref1,
+					ref2,
+					unsubscribe,
 					graph = requirements[0],
-					ref1 = graph.getReference( scope.config1 ),
-					ref2 = graph.getReference( scope.config2 ),
 					element = ComponentElement.svgCompile( 
 						'<g><path vgraph-line="config1" pair="config2" class-name="'+
 							(attrs.className||'')+
@@ -26,10 +26,10 @@ require('angular').module( 'vgraph' ).directive( 'vgraphCompare',
 				unsubscribe = graph.$on( 'focus-point', function( point ){
 					var p1 = point[ref1.view],
 						p2 = point[ref2.view],
-						view1 = ref1.$view,
-						view2 = ref2.$view,
-						v1 = ref1.getValue(p1),
-						v2 = ref2.getValue(p2);
+						view1 = ref1.$ops.$view,
+						view2 = ref2.$ops.$view,
+						v1 = ref1.$ops.getValue(p1),
+						v2 = ref2.$ops.getValue(p2);
 
 					point[ attrs.reference || 'compare' ] = {
 						value: Math.abs( v1 - v2 ),
@@ -39,6 +39,14 @@ require('angular').module( 'vgraph' ).directive( 'vgraphCompare',
 				});
 
 				scope.$on('$destroy', unsubscribe );
+
+				scope.$watch('config1', function( cfg ){
+					ref1 = graph.getReference( cfg );
+				});
+
+				scope.$watch('config2', function( cfg ){
+					ref2 = graph.getReference( cfg );
+				});
 			}
 		};
 	} ]

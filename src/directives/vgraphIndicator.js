@@ -64,9 +64,9 @@ require('angular').module( 'vgraph' ).directive( 'vgraphIndicator',
 				graph.registerComponent({
 					finalize : function(){
 						var x, y,
-							view = cfg.$view,
+							view = cfg.$ops.$view,
 							d = view.getLeading(),
-							v = cfg.getValue(d);
+							v = cfg.$ops.getValue(d);
 
 						if ( v && view.isLeading() ){
 							x = d.$x;

@@ -37,7 +37,7 @@ require('angular').module( 'vgraph' ).directive( 'vgraphIcon',
 				element.setElement( el );
 
 				scope.$watch('config', function( config ){
-					var cfg = chart.compileReference( config );
+					var cfg = chart.getReference( config );
 					
 					if ( cfg ){
 						element.setDrawer( new DrawIcon(cfg,box,content) );

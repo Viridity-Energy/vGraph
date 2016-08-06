@@ -43,6 +43,8 @@ function parseSettings( settings, old ){
 	return old;
 }
 
+// references are used so data values can be passed in for classify to work, if
+// using a custom getValue function, you will also need to pass in requirements
 function loadRefrence( ref, normalizer ){
 	// set up standard requests for references
 	if ( ref.requirements ){
@@ -70,7 +72,7 @@ class View {
 		this.$vgvid = id++;
 
 		this.components = [];
-		this.references = [];
+		this.references = {};
 	}
 
 	static parseSettingsX( settings, old ){
@@ -318,7 +320,7 @@ class View {
 				if ( this.adjustSettings ){
 					this.adjustSettings(
 						this.x,
-						this.filtered.$maxIndex - this.filtered.$minIndex,
+						this.viewport.maxInterval - this.viewport.minInterval,
 						this.y,
 						max - min
 					);
@@ -352,11 +354,28 @@ class View {
 	}
 
 	getPoint( pos ){
+		var point,
+			references = this.references;
+
 		if ( this.normalizer ){
-			return this.normalizer.$getClosest(pos,'$x');
+			point = Object.create( this.normalizer.$getClosest(pos,'$x') );
+
+			Object.keys(references).forEach(function(key){
+				var ref = references[key];
+
+				if ( ref.highlights ){
+					Object.keys(ref.highlights).forEach(function(k){
+						point[k] = ref.highlights[k]( point );
+					});
+				}
+
+				point[ ref.name ] = ref.$ops.getValue( point );
+			});
 		}else{
 			console.log( 'unconfigured', this );
 		}
+
+		return point;
 	}
 }
 

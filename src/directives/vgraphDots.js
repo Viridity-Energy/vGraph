@@ -20,7 +20,7 @@ require('angular').module( 'vgraph' ).directive( 'vgraphDots',
 				element.setElement( el );
 
 				scope.$watch('config', function( config ){
-					var cfg = chart.compileReference( config );
+					var cfg = chart.getReference( config );
 					
 					if ( cfg ){
 						element.setDrawer( new DrawDots(cfg,attrs.radius?parseInt(attrs.Radius,10):5) );
@@ -34,7 +34,7 @@ require('angular').module( 'vgraph' ).directive( 'vgraphDots',
 
 						el.setAttribute( 'class', className );
 
-						cfg.$view.registerComponent(element);
+						cfg.$ops.$view.registerComponent(element);
 					}
 				});
 			}

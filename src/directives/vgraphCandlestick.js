@@ -20,7 +20,7 @@ require('angular').module( 'vgraph' ).directive( 'vgraphCandlestick',
 				element.setElement( el );
 
 				scope.$watch('config', function( config ){
-					var cfg = chart.compileReference( config );
+					var cfg = chart.getReference( config );
 
 					if ( cfg ){
 						className = 'candlestick ';
@@ -34,7 +34,7 @@ require('angular').module( 'vgraph' ).directive( 'vgraphCandlestick',
 
 						el.setAttribute( 'class', className );
 
-						cfg.$view.registerComponent(element);
+						cfg.$ops.$view.registerComponent(element);
 					}
 				});
 				

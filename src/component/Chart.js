@@ -36,12 +36,27 @@ var angular = require('angular'),
 	domHelper = require('../lib/DomHelper.js'),
 	makeEventing = require('../lib/Eventing.js'),
 	ComponentBox = require('./Box.js'),
-	ComponentView = require('./View.js');
+	ComponentView = require('./View.js'),
+	ComponentReference = require('./Reference.js');
 
 var ids = 1,
-	cfgUid = 1,
 	schedule = new Scheduler();
 	
+function configureClassname( obj ){
+	var t,
+		className = obj.className,
+		classExtend = obj.classExtend || '';
+
+	t = className.indexOf(' ');
+	if ( t !== -1 ){
+		classExtend += ' ' + className.substring( t, -1 );
+		className = className.substring( 0, t );
+	}
+
+	obj.className = className;
+	obj.classExtend = classExtend;
+}
+
 function normalizeY( views ){
 	var min, max;
 
@@ -189,153 +204,46 @@ class Chart{
 		var ref,
 			name;
 
-		if ( angular.isString(refDef) ){
-			name = refDef;
+		if ( !refDef ){
+			return null;
 		}else if ( refDef.name ){
 			name = refDef.name;
+		}else if ( angular.isString(refDef) ){
+			return this.references[refDef];
 		}else{
 			throw new Error('a reference without a name is not valid');
 		}
 
 		ref = this.references[name];
 
-		if ( !ref ){
-			ref = {
-				$uid: cfgUid++,
-				name: name,
-				className: refDef.className || 'node-'+name
-			};
-			this.references[name] = ref;
-		}
-
-		return ref;
-	}
-
-	compileReference( refDef ){
-		var t,
-			ref,
-			field;
-
-		if ( typeof(refDef) !== 'object' ){
-			return null;
-		}
-
-		ref = this.getReference( refDef );
-
-		if ( refDef.field === undefined ){
-			ref.field = ref.name;
+		if ( ref ){
+			return ref;
 		}else{
-			ref.field = refDef.field;
-		}
-		
-		if ( refDef.pointAs ){
-			ref.pointAs = refDef.pointAs;
-		}
-
-		field = ref.field;
-		ref.$reset = function(){
-			field = ref.field;
-		};
-
-		ref.setField = function( f ){
-			field = f;
-		};
-
-		ref.getField = function(){
-			return field;
-		};
-
-		if ( refDef.getValue === undefined ){
-			ref.getValue = function( d ){
-				if ( d ){
-					return d[ field ];
-				}
-			};
-		}else if ( refDef.getValue ){
-			ref.getValue = function( d ){
-				return refDef.getValue( d, this.$view.normalizer.$stats );
-			};
-		}
-
-		// undefined allow lax definining, and simplicity for one view sake.
-		// null will mean no view editing
-		if ( refDef.view === undefined ){
-			refDef.view = Chart.defaultView;
-		}else if ( refDef.view ){
-			refDef.view = refDef.view;
-		}
-
-		if ( refDef.view ){
-			ref.view = refDef.view;
-			ref.$view = this.getView( refDef.view );
-			ref.$getNode = function( index ){
-				return this.$view.normalizer.$getNode(index);
-			};
-			ref.$getClosest = function( index ){
-				return this.$view.normalizer.$getClosest(index,'$x');
-			};
-			ref.$getValue = function( index ){
-				var t = this.$view.normalizer.$getNode(index);
-
-				if ( t ){
-					return this.getValue(t);
-				}
-			};
-			ref.$eachNode = function( fn ){
-				this.$view.normalizer.$sort().forEach( fn );
-			};
-			ref.$getIndexs = function(){
-				return this.$view.normalizer.$getIndexs();
-			};
-		} else if ( refDef.$getValue ){
-			ref.$getValue = refDef.$getValue;
-		} else if ( !ref.$getValue ) {
-			throw new Error('drawer reference requires view or $getValue');
-		}
-
-		// use to tell if a point is still valid
-		// TODO : carry over to Line, Dots
-		if ( refDef.isValid ){
-			ref.isValid = refDef.isValid;
-		}
-
-		// className is the primary css class, but not neccisarily unique
-		t = refDef.className.indexOf(' ');
-		if ( t !== -1 ){
-			if ( refDef.classExtend ){
-				refDef.classExtend += ' ' + refDef.className.substring( t, -1 );
-			}else{
-				refDef.classExtend = refDef.className.substring( t, -1 );
+			if ( !refDef.field ){
+				refDef.field = refDef.name;
 			}
 
-			ref.className = refDef.className.substring( 0, t );
-		}
+			if ( refDef.view === undefined ){
+				refDef.view = Chart.defaultView;
+			}
 
-		// used in elements to allow external classes be defined
-		if ( refDef.classExtend ){
-			ref.classExtend = refDef.classExtend;
-		}else{
-			ref.classExtend = '';
-		}
+			if ( !refDef.className ){
+				refDef.className = 'node-'+name;
+			}
 
-		// these are used to load in data from DataManager
-		if ( refDef.requirements ){
-			ref.requirements = refDef.requirements;
-		}
+			refDef = Object.create( refDef );
 
-		if ( refDef.normalizer ){
-			ref.normalizer = refDef.normalizer;
-		}
+			configureClassname( refDef );
 
-		if ( refDef.classify ){
-			ref.classify = refDef.classify;
-		}
+			ref = new ComponentReference( refDef );
+			ref.setView( this.getView(refDef.view) );
 
-		if ( refDef.mergePoint ){
-			ref.mergePoint = refDef.mergePoint;
-		}
+			refDef.$ops = ref;
 
-		return ref;
+			this.references[name] = refDef;
+
+			return refDef;
+		}
 	}
 
 	// Fired to render the chart and all of its child elements
@@ -613,8 +521,7 @@ class Chart{
 	highlightOn( pos ){
 		var sum = 0,
 			count = 0,
-			points = {},
-			references = this.references;
+			points = {};
 
 		angular.forEach( this.views, function( view, viewName ){
 			var point,
@@ -637,15 +544,6 @@ class Chart{
 
 		points.$pos = sum / count;
 		points.pos = pos;
-
-		// if you want something like the stacked value to show up in highlight, use pointAs
-		Object.keys(this.references).forEach(function(key){
-			var ref = references[key];
-			
-			if ( ref.pointAs ){
-				points[ref.view][ref.pointAs] =  ref.getValue( ref.$getClosest(pos.x) );
-			}
-		});
 
 		this.$trigger( 'focus-point', points );
 		this.$trigger( 'highlight', points );
@@ -681,7 +579,7 @@ class Chart{
 
 			ref.$link = getReference( ref.reference );
 			ref.$view = ref.$link.$view;
-			t = ref.$view.getBounds();
+			t = ref.$ops.$view.getBounds();
 			ref.$bounds = t;
 
 			if ( diff ){
@@ -713,7 +611,7 @@ class Chart{
 			addColumn(content);
 
 			for( i = min; i <= max; i += interval ){
-				t = ref.$view.manager.data.$getNode( i );
+				t = ref.$ops.$view.manager.data.$getNode( i );
 				if ( t ){
 					// TODO : why did I do this?
 					t = t[ ref.field ? ref.field : ref.reference ];

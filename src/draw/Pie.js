@@ -100,9 +100,9 @@ class Pie {
 		});
 
 		this.getPoint = function( index ){
-			var node = reference.$getNode( index );
+			var node = reference.$ops.$getNode( index );
 
-			return fn( node, reference.getValue(node) );
+			return fn( node, reference.$ops.getValue(node) );
 		};
 	}
 

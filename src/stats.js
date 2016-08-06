@@ -2,7 +2,7 @@ function createNames( config, prefix ){
 	var arr = [];
 
 	config.forEach(function(cfg){
-		arr.push( '$'+prefix+'$'+cfg.getField() );
+		arr.push( '$'+prefix+'$'+cfg.$ops.getField() );
 	}); 
 
 	return arr;
@@ -14,7 +14,7 @@ module.exports = {
 		var i, c;
 
 		for( i = 0, c = config.length; i < c; i++ ){
-			config[i].$reset();
+			config[i].$ops.$resetField();
 		}
 	},
 	$getFields: function( config ){
@@ -22,7 +22,7 @@ module.exports = {
 			fields = [];
 
 		for( i = 0, c = config.length; i < c; i++ ){
-			fields.push( config[i].getField() );
+			fields.push( config[i].$ops.getField() );
 		}
 
 		return fields;
@@ -31,7 +31,7 @@ module.exports = {
 		var i, c;
 
 		for( i = 0, c = config.length; i < c; i++ ){
-			config[i].setField( calcedFields[i] );
+			config[i].$ops.setField( calcedFields[i] );
 		}
 	},
 	/*
@@ -91,12 +91,12 @@ module.exports = {
 			seen = {};
 		
 		if ( cfg.length === 1 ){
-			indexs = cfg[0].$getIndexs();
+			indexs = cfg[0].$ops.$getIndexs();
 		}else{
 			indexs = [];
 
 			cfg.forEach(function( ref ){
-				indexs = indexs.concat( ref.$getIndexs() );
+				indexs = indexs.concat( ref.$ops.$getIndexs() );
 			});
 
 			indexs = indexs.filter(function(x) {
@@ -129,8 +129,8 @@ module.exports = {
 
 			for( j = 0; j < co; j++ ){
 				cfg = config[j];
-				datum = cfg.$getNode(dex);
-				v = cfg.getValue(datum) || 0;
+				datum = cfg.$ops.$getNode(dex);
+				v = cfg.$ops.getValue(datum) || 0;
 
 				sum += v;
 

@@ -33,11 +33,11 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
 						if ( attrs.noDots === undefined ){
 							angular.forEach( configs, function( cfg ){
 								var node,
-									view = cfg.$view,
+									view = cfg.$ops.$view,
 									datum = point[cfg.view],
 									nodeName = 'tn_'+cfg.name,
 									className = cfg.className,
-									value = cfg.getValue(datum);
+									value = cfg.$ops.getValue(datum);
 								
 								if ( value !== undefined && value !== null ){
 									node = $dots.selectAll( 'circle.point.'+nodeName );

@@ -229,8 +229,13 @@ class Linear extends List{
 			node = this[i];
 		}
 
-		filtered.$minIndex = filtered[0]._$index;
-		filtered.$maxIndex = filtered[filtered.length-1]._$index;
+		if ( filtered.length ){
+			filtered.$minIndex = filtered[0]._$index;
+			filtered.$maxIndex = filtered[filtered.length-1]._$index;
+		}else{
+			filtered.$minIndex = filtered.$maxIndex = 0;
+		}
+		
 		filtered.$dirty = false;
 
 		filtered.$stats = Object.create( this.$stats );

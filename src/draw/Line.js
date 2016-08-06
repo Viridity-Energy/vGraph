@@ -43,12 +43,12 @@ class Line extends DrawLinear{
 	}
 
 	getPoint( index ){
-		var node = this.ref.$getNode(index);
+		var node = this.ref.$ops.$getNode(index);
 		
 		return {
 			$classify: this.ref.classify ? this.ref.classify(node) : null,
 			x: node.$x,
-			y: this.ref.getValue(node)
+			y: this.ref.$ops.getValue(node)
 		};
 	}
 
@@ -105,7 +105,7 @@ class Line extends DrawLinear{
 		if ( set.length ){
 			for( i = 0, c = set.length; i < c; i++ ){
 				point = set[i];
-				res.push( point.x + ',' + this.ref.$view.y.scale(point.y) );
+				res.push( point.x + ',' + this.ref.$ops.$view.y.scale(point.y) );
 			}
 
 			return 'M' + res.join('L');
@@ -114,7 +114,7 @@ class Line extends DrawLinear{
 
 	makeElement( set ){
 		var className = '';
-
+		
 		if ( set.length ){
 			if ( set.$classify ){
 				className = Object.keys(set.$classify).join(' ');

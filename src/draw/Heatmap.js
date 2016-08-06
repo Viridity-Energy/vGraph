@@ -45,7 +45,7 @@ class Heatmap{
 		bucketer.$reset();
 		
 		keys.forEach(function( key ){
-			bucketer.push( ref.$getNode(key) ); // { bucket, value }
+			bucketer.push( ref.$ops.$getNode(key) ); // { bucket, value }
 		});
 
 		if ( !this.labels ){

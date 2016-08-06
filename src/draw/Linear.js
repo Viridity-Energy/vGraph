@@ -62,8 +62,11 @@ class Linear{
 					set.$classify = {};
 				}
 
+				// TODO : this should be made so you can turn it on or off
 				Object.keys(parsed.$classify).forEach(function( c ){
-					set.$classify[c] = true;
+					if ( parsed.$classify[c] ){
+						set.$classify[c] = true;
+					}
 				});
 			}
 		}
@@ -107,9 +110,9 @@ class Linear{
 			max;
 
 		this.references.forEach(function( ref ){
-			if ( ref.getValue ){
-				ref.$eachNode(function(node){
-					var v = +ref.getValue(node);
+			if ( ref.$ops.getValue ){
+				ref.$ops.$eachNode(function(node){
+					var v = +ref.$ops.getValue(node);
 					if ( v || v === 0 ){
 						if ( min === undefined ){
 							min = v;

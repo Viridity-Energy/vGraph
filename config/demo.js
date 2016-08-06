@@ -127,6 +127,11 @@ angular.module( 'vgraph' ).controller( 'ClassifyCtrl', [
 							'low-value': true
 						};
 					}
+				},
+				highlights: {
+					'2_isLow': function( node ){
+						return node.someLine2 < node.someLine3
+					}
 				}
 			},
 			ref3 = {
@@ -145,6 +150,11 @@ angular.module( 'vgraph' ).controller( 'ClassifyCtrl', [
 						return {
 							'low-value': true
 						};
+					}
+				},
+				highlights: {
+					'4_isLow': function( node ){
+						return node.someLine4 < node.someLine3
 					}
 				}
 			},
@@ -1418,15 +1428,15 @@ angular.module( 'vgraph' ).controller( 'ExportCtrl',
 			adjustSettings: function( x ){
 				x.tick = {
 					interval: d3.time.minutes,
-                    step: 30
+					step: 30
 				};
 			},
 			x : {
 				min: -5,
 				max: 25,
 				scale : function(){
-                    return d3.time.scale.utc();
-                },
+					return d3.time.scale.utc();
+				},
 				format: function( x ){
 					var date = new Date(x),
 						h = date.getHours(),
@@ -1444,8 +1454,8 @@ angular.module( 'vgraph' ).controller( 'ExportCtrl',
 				},
 				tick: {
 					interval: d3.time.hours,
-                    step: 1
-                }
+					step: 1
+				}
 			},
 			y : {
 				padding : 0.05,
@@ -2072,15 +2082,15 @@ angular.module( 'vgraph' ).controller( 'HeatmapCtrl',
 			}
 
 			colorScale = d3.scale.linear()
-                .domain( [min,max] )
-                .range( ['#FF0000','#00FF00'] );
+				.domain( [min,max] )
+				.range( ['#FF0000','#00FF00'] );
 
-        	for( i = 0, c = dataSets.length; i < c; i++ ){
-        		datum = dataSets[i];
-        		if ( datum.data ){
-        			datum.$color = colorScale(datum.data.value);
-        		}
-        	}
+			for( i = 0, c = dataSets.length; i < c; i++ ){
+				datum = dataSets[i];
+				if ( datum.data ){
+					datum.$color = colorScale(datum.data.value);
+				}
+			}
 		};
 
 		function makeData(){

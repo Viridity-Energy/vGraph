@@ -11,7 +11,7 @@ class Candlestick extends DrawLinear{
 		// this overrides normalizer settings, this this is best way?
 		ref.normalizer = {
 			map: function( n, o ){
-				var field = ref.getField(),
+				var field = ref.$ops.getField(),
 					min = '$min'+field,
 					max = '$max'+field,
 					counter = '$'+field,
@@ -47,8 +47,8 @@ class Candlestick extends DrawLinear{
 
 	getPoint( index ){
 		var ref = this.ref,
-			node = ref.$getNode(index),
-			field = ref.getField();
+			node = ref.$ops.$getNode(index),
+			field = ref.$ops.getField();
 		
 		return {
 			$classify: this.ref.classify ? this.ref.classify(node) : null,
@@ -95,7 +95,7 @@ class Candlestick extends DrawLinear{
 	}
 
 	closeSet( set ){
-		var scale = this.ref.$view.y.scale;
+		var scale = this.ref.$ops.$view.y.scale;
 
 		set.y = scale(set.y);
 		set.min = scale(set.min);

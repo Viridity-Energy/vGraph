@@ -11,11 +11,11 @@ class Box extends DrawBar {
 	getPoint( index ){
 		var t,
 			value,
-			node = this.top.$getNode(index);
+			node = this.top.$ops.$getNode(index);
 
 		if ( this.top.isValid(node) ){
-			if ( this.top.getValue ){
-				value = this.top.getValue(node);
+			if ( this.top.$ops.getValue ){
+				value = this.top.$ops.getValue(node);
 				t = {
 					x1: node.$x,
 					x2: node.$x,

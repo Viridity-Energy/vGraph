@@ -3,39 +3,59 @@ var d3 = require('d3');
 require('angular').module( 'vgraph' ).directive( 'vgraphTooltip',
 	[
 	function(){
+		// build this from a reference config
 		function makeByConfig( graph, cfg ){
 			var ref = graph.getReference(cfg);
 
 			return {
 				formatter: function( point ){
-					return ref.getValue( point[ref.view] );
+					return ref.$ops.getValue( point[ref.view] );
 				},
 				xParse: function( point ){
 					return point[ref.view].$x;
 				},
 				yParse: function( point ){
-					return ref.$view.y.scale( ref.getValue(point[ref.view]) );
+					return ref.$ops.$view.y.scale( ref.$ops.getValue(point[ref.view]) );
 				}
 			};
 		}
 		
-		function makeConfig( graph, $scope, $attrs ){
-			var cfg = $scope.config;
+		function makeByReference( ref, cfg ){
+			var format = cfg.formatter ?
+					function( point ){ 
+						return cfg.formatter( point[ref], point );
+					} : 
+					function( point ){
+						return point[ref].value;
+					},
+				x = cfg.xParse ? 
+					function( point ){
+						return cfg.xParse( point[ref], point );
+					} :
+					function( point ){
+						return point[ref].x;
+					},
+				y = cfg.yParse ? 
+					function( point ){
+						return cfg.yParse( point[ref], point );
+					} :
+					function( point ){
+						return point[ref].y;
+					};
 
+			return {
+				formatter: format,
+				xParse: x,
+				yParse: y
+			};
+		}
+
+		function makeConfig( graph, cfg, $attrs ){
 			if ( $attrs.reference ){
-				return {
-					formatter: function( point ){
-						return point[$attrs.reference].value;
-					},
-					xParse: function( point ){
-						return point[$attrs.reference].x;
-					},
-					yParse: function( point ){
-						return point[$attrs.reference].y;
-					}
-				};
+				return makeByReference( $attrs.reference, cfg );
 			}else if ( !cfg.formatter ){
-				return makeByConfig(graph,cfg);
+				// this much be a reference config object passed in
+				return makeByConfig( graph, cfg );
 			}else{
 				return cfg;
 			}
@@ -65,8 +85,8 @@ require('angular').module( 'vgraph' ).directive( 'vgraphTooltip',
 			}
 			*/
 			link : function( scope, el, attrs, requirements ){
-				var graph = requirements[0],
-					cfg = makeConfig( graph, scope, attrs ),
+				var cfg,
+					graph = requirements[0],
 					xOffset = parseInt(attrs.offsetX) || 0,
 					yOffset = parseInt(attrs.offsetY) || 0,
 					$el = d3.select( el[0] )
@@ -110,6 +130,10 @@ require('angular').module( 'vgraph' ).directive( 'vgraphTooltip',
 					}else{
 						$el.style( 'visibility', 'hidden' );
 					}
+				});
+
+				scope.$watch('config', function( config ){
+					cfg = makeConfig( graph, config, attrs );
 				});
 			}
 		};

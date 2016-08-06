@@ -23,11 +23,11 @@ require('angular').module( 'vgraph' ).directive( 'vgraphLine',
 
 				scope.$watch('config', function( config ){
 					var pair,
-						cfg = chart.compileReference( config );
+						cfg = chart.getReference( config );
 
 					if ( cfg ){
 						if ( attrs.pair ){
-							pair = chart.compileReference( scope.pair );
+							pair = chart.getReference( scope.pair );
 							className = 'fill ';
 							element.setDrawer( new DrawFill(cfg,pair) );
 						}else{
@@ -42,11 +42,9 @@ require('angular').module( 'vgraph' ).directive( 'vgraphLine',
 						className += attrs.className || cfg.className;
 
 						el.setAttribute( 'class', className );
-
-						cfg.$view.registerComponent(element);
+						cfg.$ops.$view.registerComponent(element);
 					}
 				});
-				
 			}
 		};
 	}]

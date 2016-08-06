@@ -17,12 +17,12 @@ class Fill extends DrawLinear{
 	getPoint( index ){
 		var y1,
 			y2,
-			node = this.top.$getNode(index);
+			node = this.top.$ops.$getNode(index);
 
-		y1 = this.top.getValue(node);
+		y1 = this.top.$ops.getValue(node);
 		
 		if ( this.references.length === 2 ){
-			y2 = this.bottom.$getValue( index );
+			y2 = this.bottom.$ops.$getValue( index );
 		}else{
 			y2 = '-';
 		}
@@ -30,7 +30,7 @@ class Fill extends DrawLinear{
 		if ( isNumeric(y1) && isNumeric(y2) ){
 			return {
 				$classify: this.top.classify ? 
-					this.top.classify(node,this.bottom.$getNode(index)) : 
+					this.top.classify(node,this.bottom.$ops.$getNode(index)) : 
 					null,
 				x: node.$x,
 				y1: y1,
@@ -79,8 +79,8 @@ class Fill extends DrawLinear{
 			y1,
 			y2,
 			point,
-			top = this.top.$view,
-			bottom = this.bottom.$view,
+			top = this.top.$ops.$view,
+			bottom = this.bottom.$ops.$view,
 			line1 = [],
 			line2 = [];
 

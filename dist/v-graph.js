@@ -59,10 +59,10 @@ var vGraph =
 
 	module.exports = {
 		calculations: __webpack_require__(32),
-		component: __webpack_require__(69),
-		data: __webpack_require__(70),
-		draw: __webpack_require__(72),
-		lib: __webpack_require__(73),
+		component: __webpack_require__(70),
+		data: __webpack_require__(71),
+		draw: __webpack_require__(73),
+		lib: __webpack_require__(74),
 		stats: __webpack_require__(12)
 	};
 
@@ -80,28 +80,28 @@ var vGraph =
 	__webpack_require__(13);
 	__webpack_require__(15);
 	__webpack_require__(17);
-	__webpack_require__(33);
 	__webpack_require__(34);
-	__webpack_require__(36);
-	__webpack_require__(39);
+	__webpack_require__(35);
+	__webpack_require__(37);
 	__webpack_require__(40);
-	__webpack_require__(43);
+	__webpack_require__(41);
 	__webpack_require__(44);
-	__webpack_require__(46);
+	__webpack_require__(45);
 	__webpack_require__(47);
 	__webpack_require__(48);
 	__webpack_require__(49);
 	__webpack_require__(50);
-	__webpack_require__(53);
+	__webpack_require__(51);
 	__webpack_require__(54);
 	__webpack_require__(55);
-	__webpack_require__(61);
-	__webpack_require__(63);
+	__webpack_require__(56);
+	__webpack_require__(62);
 	__webpack_require__(64);
 	__webpack_require__(65);
 	__webpack_require__(66);
 	__webpack_require__(67);
 	__webpack_require__(68);
+	__webpack_require__(69);
 
 /***/ },
 /* 3 */
@@ -718,8 +718,8 @@ var vGraph =
 				element.setElement(el);
 
 				scope.$watch('config', function (config) {
-					var cfg = chart.compileReference(config),
-					    pair = chart.compileReference(scope.pair);
+					var cfg = chart.getReference(config),
+					    pair = chart.getReference(scope.pair);
 
 					if (cfg) {
 						element.setDrawer(new DrawBar(cfg, pair, attrs.width));
@@ -732,7 +732,7 @@ var vGraph =
 
 						el.setAttribute('class', className);
 
-						cfg.$view.registerComponent(element);
+						cfg.$ops.$view.registerComponent(element);
 					}
 				});
 			}
@@ -836,12 +836,12 @@ var vGraph =
 				    y2,
 				    t,
 				    width,
-				    node = this.top.$getNode(index);
+				    node = this.top.$ops.$getNode(index);
 
-				y1 = this.top.getValue(node);
+				y1 = this.top.$ops.getValue(node);
 
 				if (this.bottom !== this.top) {
-					y2 = this.bottom.$getValue(index);
+					y2 = this.bottom.$ops.$getValue(index);
 				} else {
 					y2 = '-'; // this.bottom.$view.viewport.minValue;
 				}
@@ -857,7 +857,7 @@ var vGraph =
 					max = node.$x + width;
 
 					t = {
-						$classify: this.top.classify ? this.top.classify(node, this.bottom.$getNode(index)) : null,
+						$classify: this.top.classify ? this.top.classify(node, this.bottom.$ops.$getNode(index)) : null,
 						x1: min < node.$xMin ? min : node.$xMin,
 						x2: max > node.$xMax ? node.$xMax : max,
 						y1: y1,
@@ -892,8 +892,8 @@ var vGraph =
 		}, {
 			key: 'closeSet',
 			value: function closeSet(set) {
-				var top = this.top.$view,
-				    bottom = this.bottom.$view,
+				var top = this.top.$ops.$view,
+				    bottom = this.bottom.$ops.$view,
 				    y1 = set.y1 === '+' ? top.viewport.maxValue : set.y1,
 				    y2 = set.y2 === '-' ? bottom.viewport.minValue : set.y2;
 
@@ -1021,8 +1021,11 @@ var vGraph =
 							set.$classify = {};
 						}
 
+						// TODO : this should be made so you can turn it on or off
 						Object.keys(parsed.$classify).forEach(function (c) {
-							set.$classify[c] = true;
+							if (parsed.$classify[c]) {
+								set.$classify[c] = true;
+							}
 						});
 					}
 				}
@@ -1067,9 +1070,9 @@ var vGraph =
 				var min, max;
 
 				this.references.forEach(function (ref) {
-					if (ref.getValue) {
-						ref.$eachNode(function (node) {
-							var v = +ref.getValue(node);
+					if (ref.$ops.getValue) {
+						ref.$ops.$eachNode(function (node) {
+							var v = +ref.$ops.getValue(node);
 							if (v || v === 0) {
 								if (min === undefined) {
 									min = v;
@@ -1260,7 +1263,7 @@ var vGraph =
 		var arr = [];
 
 		config.forEach(function (cfg) {
-			arr.push('$' + prefix + '$' + cfg.getField());
+			arr.push('$' + prefix + '$' + cfg.$ops.getField());
 		});
 
 		return arr;
@@ -1272,7 +1275,7 @@ var vGraph =
 			var i, c;
 
 			for (i = 0, c = config.length; i < c; i++) {
-				config[i].$reset();
+				config[i].$ops.$resetField();
 			}
 		},
 		$getFields: function $getFields(config) {
@@ -1281,7 +1284,7 @@ var vGraph =
 			    fields = [];
 
 			for (i = 0, c = config.length; i < c; i++) {
-				fields.push(config[i].getField());
+				fields.push(config[i].$ops.getField());
 			}
 
 			return fields;
@@ -1290,7 +1293,7 @@ var vGraph =
 			var i, c;
 
 			for (i = 0, c = config.length; i < c; i++) {
-				config[i].setField(calcedFields[i]);
+				config[i].$ops.setField(calcedFields[i]);
 			}
 		},
 		/*
@@ -1340,12 +1343,12 @@ var vGraph =
 			    seen = {};
 
 			if (cfg.length === 1) {
-				indexs = cfg[0].$getIndexs();
+				indexs = cfg[0].$ops.$getIndexs();
 			} else {
 				indexs = [];
 
 				cfg.forEach(function (ref) {
-					indexs = indexs.concat(ref.$getIndexs());
+					indexs = indexs.concat(ref.$ops.$getIndexs());
 				});
 
 				indexs = indexs.filter(function (x) {
@@ -1380,8 +1383,8 @@ var vGraph =
 
 				for (j = 0; j < co; j++) {
 					cfg = config[j];
-					datum = cfg.$getNode(dex);
-					v = cfg.getValue(datum) || 0;
+					datum = cfg.$ops.$getNode(dex);
+					v = cfg.$ops.getValue(datum) || 0;
 
 					sum += v;
 
@@ -1426,7 +1429,7 @@ var vGraph =
 				element.setElement(el);
 
 				scope.$watch('config', function (config) {
-					var cfg = chart.compileReference(config);
+					var cfg = chart.getReference(config);
 
 					if (cfg) {
 						element.setDrawer(new DrawBox(cfg));
@@ -1439,7 +1442,7 @@ var vGraph =
 
 						el.setAttribute('class', className);
 
-						cfg.$view.registerComponent(element);
+						cfg.$ops.$view.registerComponent(element);
 					}
 				});
 			}
@@ -1480,11 +1483,11 @@ var vGraph =
 			value: function getPoint(index) {
 				var t,
 				    value,
-				    node = this.top.$getNode(index);
+				    node = this.top.$ops.$getNode(index);
 
 				if (this.top.isValid(node)) {
-					if (this.top.getValue) {
-						value = this.top.getValue(node);
+					if (this.top.$ops.getValue) {
+						value = this.top.$ops.getValue(node);
 						t = {
 							x1: node.$x,
 							x2: node.$x,
@@ -1548,7 +1551,7 @@ var vGraph =
 				element.setElement(el);
 
 				scope.$watch('config', function (config) {
-					var cfg = chart.compileReference(config);
+					var cfg = chart.getReference(config);
 
 					if (cfg) {
 						className = 'candlestick ';
@@ -1562,7 +1565,7 @@ var vGraph =
 
 						el.setAttribute('class', className);
 
-						cfg.$view.registerComponent(element);
+						cfg.$ops.$view.registerComponent(element);
 					}
 				});
 			}
@@ -1601,7 +1604,7 @@ var vGraph =
 			// this overrides normalizer settings, this this is best way?
 			ref.normalizer = {
 				map: function map(n, o) {
-					var field = ref.getField(),
+					var field = ref.$ops.getField(),
 					    min = '$min' + field,
 					    max = '$max' + field,
 					    counter = '$' + field,
@@ -1641,8 +1644,8 @@ var vGraph =
 			key: 'getPoint',
 			value: function getPoint(index) {
 				var ref = this.ref,
-				    node = ref.$getNode(index),
-				    field = ref.getField();
+				    node = ref.$ops.$getNode(index),
+				    field = ref.$ops.getField();
 
 				return {
 					$classify: this.ref.classify ? this.ref.classify(node) : null,
@@ -1691,7 +1694,7 @@ var vGraph =
 		}, {
 			key: 'closeSet',
 			value: function closeSet(set) {
-				var scale = this.ref.$view.y.scale;
+				var scale = this.ref.$ops.$view.y.scale;
 
 				set.y = scale(set.y);
 				set.min = scale(set.min);
@@ -1813,8 +1816,6 @@ var vGraph =
 
 	'use strict';
 
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
-
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -1857,11 +1858,26 @@ var vGraph =
 	    domHelper = __webpack_require__(21),
 	    makeEventing = __webpack_require__(22),
 	    ComponentBox = __webpack_require__(23),
-	    ComponentView = __webpack_require__(25);
+	    ComponentView = __webpack_require__(25),
+	    ComponentReference = __webpack_require__(33);
 
 	var ids = 1,
-	    cfgUid = 1,
 	    schedule = new Scheduler();
+
+	function configureClassname(obj) {
+		var t,
+		    className = obj.className,
+		    classExtend = obj.classExtend || '';
+
+		t = className.indexOf(' ');
+		if (t !== -1) {
+			classExtend += ' ' + className.substring(t, -1);
+			className = className.substring(0, t);
+		}
+
+		obj.className = className;
+		obj.classExtend = classExtend;
+	}
 
 	function normalizeY(views) {
 		var min, max;
@@ -2015,152 +2031,46 @@ var vGraph =
 			value: function getReference(refDef) {
 				var ref, name;
 
-				if (angular.isString(refDef)) {
-					name = refDef;
+				if (!refDef) {
+					return null;
 				} else if (refDef.name) {
 					name = refDef.name;
+				} else if (angular.isString(refDef)) {
+					return this.references[refDef];
 				} else {
 					throw new Error('a reference without a name is not valid');
 				}
 
 				ref = this.references[name];
 
-				if (!ref) {
-					ref = {
-						$uid: cfgUid++,
-						name: name,
-						className: refDef.className || 'node-' + name
-					};
-					this.references[name] = ref;
-				}
-
-				return ref;
-			}
-		}, {
-			key: 'compileReference',
-			value: function compileReference(refDef) {
-				var t, ref, field;
-
-				if ((typeof refDef === 'undefined' ? 'undefined' : _typeof(refDef)) !== 'object') {
-					return null;
-				}
-
-				ref = this.getReference(refDef);
-
-				if (refDef.field === undefined) {
-					ref.field = ref.name;
+				if (ref) {
+					return ref;
 				} else {
-					ref.field = refDef.field;
-				}
-
-				if (refDef.pointAs) {
-					ref.pointAs = refDef.pointAs;
-				}
-
-				field = ref.field;
-				ref.$reset = function () {
-					field = ref.field;
-				};
-
-				ref.setField = function (f) {
-					field = f;
-				};
-
-				ref.getField = function () {
-					return field;
-				};
-
-				if (refDef.getValue === undefined) {
-					ref.getValue = function (d) {
-						if (d) {
-							return d[field];
-						}
-					};
-				} else if (refDef.getValue) {
-					ref.getValue = function (d) {
-						return refDef.getValue(d, this.$view.normalizer.$stats);
-					};
-				}
-
-				// undefined allow lax definining, and simplicity for one view sake.
-				// null will mean no view editing
-				if (refDef.view === undefined) {
-					refDef.view = Chart.defaultView;
-				} else if (refDef.view) {
-					refDef.view = refDef.view;
-				}
-
-				if (refDef.view) {
-					ref.view = refDef.view;
-					ref.$view = this.getView(refDef.view);
-					ref.$getNode = function (index) {
-						return this.$view.normalizer.$getNode(index);
-					};
-					ref.$getClosest = function (index) {
-						return this.$view.normalizer.$getClosest(index, '$x');
-					};
-					ref.$getValue = function (index) {
-						var t = this.$view.normalizer.$getNode(index);
-
-						if (t) {
-							return this.getValue(t);
-						}
-					};
-					ref.$eachNode = function (fn) {
-						this.$view.normalizer.$sort().forEach(fn);
-					};
-					ref.$getIndexs = function () {
-						return this.$view.normalizer.$getIndexs();
-					};
-				} else if (refDef.$getValue) {
-					ref.$getValue = refDef.$getValue;
-				} else if (!ref.$getValue) {
-					throw new Error('drawer reference requires view or $getValue');
-				}
-
-				// use to tell if a point is still valid
-				// TODO : carry over to Line, Dots
-				if (refDef.isValid) {
-					ref.isValid = refDef.isValid;
-				}
-
-				// className is the primary css class, but not neccisarily unique
-				t = refDef.className.indexOf(' ');
-				if (t !== -1) {
-					if (refDef.classExtend) {
-						refDef.classExtend += ' ' + refDef.className.substring(t, -1);
-					} else {
-						refDef.classExtend = refDef.className.substring(t, -1);
+					if (!refDef.field) {
+						refDef.field = refDef.name;
 					}
 
-					ref.className = refDef.className.substring(0, t);
-				}
+					if (refDef.view === undefined) {
+						refDef.view = Chart.defaultView;
+					}
 
-				// used in elements to allow external classes be defined
-				if (refDef.classExtend) {
-					ref.classExtend = refDef.classExtend;
-				} else {
-					ref.classExtend = '';
-				}
+					if (!refDef.className) {
+						refDef.className = 'node-' + name;
+					}
 
-				// these are used to load in data from DataManager
-				if (refDef.requirements) {
-					ref.requirements = refDef.requirements;
-				}
+					refDef = Object.create(refDef);
 
-				if (refDef.normalizer) {
-					ref.normalizer = refDef.normalizer;
-				}
+					configureClassname(refDef);
 
-				if (refDef.classify) {
-					ref.classify = refDef.classify;
-				}
+					ref = new ComponentReference(refDef);
+					ref.setView(this.getView(refDef.view));
 
-				if (refDef.mergePoint) {
-					ref.mergePoint = refDef.mergePoint;
-				}
+					refDef.$ops = ref;
 
-				return ref;
+					this.references[name] = refDef;
+
+					return refDef;
+				}
 			}
 
 			// Fired to render the chart and all of its child elements
@@ -2438,8 +2348,7 @@ var vGraph =
 			value: function highlightOn(pos) {
 				var sum = 0,
 				    count = 0,
-				    points = {},
-				    references = this.references;
+				    points = {};
 
 				angular.forEach(this.views, function (view, viewName) {
 					var point, p;
@@ -2461,15 +2370,6 @@ var vGraph =
 
 				points.$pos = sum / count;
 				points.pos = pos;
-
-				// if you want something like the stacked value to show up in highlight, use pointAs
-				Object.keys(this.references).forEach(function (key) {
-					var ref = references[key];
-
-					if (ref.pointAs) {
-						points[ref.view][ref.pointAs] = ref.getValue(ref.$getClosest(pos.x));
-					}
-				});
 
 				this.$trigger('focus-point', points);
 				this.$trigger('highlight', points);
@@ -2510,7 +2410,7 @@ var vGraph =
 
 					ref.$link = getReference(ref.reference);
 					ref.$view = ref.$link.$view;
-					t = ref.$view.getBounds();
+					t = ref.$ops.$view.getBounds();
 					ref.$bounds = t;
 
 					if (diff) {
@@ -2542,7 +2442,7 @@ var vGraph =
 					addColumn(content);
 
 					for (i = min; i <= max; i += interval) {
-						t = ref.$view.manager.data.$getNode(i);
+						t = ref.$ops.$view.manager.data.$getNode(i);
 						if (t) {
 							// TODO : why did I do this?
 							t = t[ref.field ? ref.field : ref.reference];
@@ -3240,6 +3140,8 @@ var vGraph =
 		return old;
 	}
 
+	// references are used so data values can be passed in for classify to work, if
+	// using a custom getValue function, you will also need to pass in requirements
 	function loadRefrence(ref, normalizer) {
 		// set up standard requests for references
 		if (ref.requirements) {
@@ -3269,7 +3171,7 @@ var vGraph =
 			this.$vgvid = id++;
 
 			this.components = [];
-			this.references = [];
+			this.references = {};
 		}
 
 		_createClass(View, [{
@@ -3483,7 +3385,7 @@ var vGraph =
 						this.setViewportValues(min, max);
 
 						if (this.adjustSettings) {
-							this.adjustSettings(this.x, this.filtered.$maxIndex - this.filtered.$minIndex, this.y, max - min);
+							this.adjustSettings(this.x, this.viewport.maxInterval - this.viewport.minInterval, this.y, max - min);
 						}
 					}
 				}
@@ -3518,11 +3420,28 @@ var vGraph =
 		}, {
 			key: 'getPoint',
 			value: function getPoint(pos) {
+				var point,
+				    references = this.references;
+
 				if (this.normalizer) {
-					return this.normalizer.$getClosest(pos, '$x');
+					point = Object.create(this.normalizer.$getClosest(pos, '$x'));
+
+					Object.keys(references).forEach(function (key) {
+						var ref = references[key];
+
+						if (ref.highlights) {
+							Object.keys(ref.highlights).forEach(function (k) {
+								point[k] = ref.highlights[k](point);
+							});
+						}
+
+						point[ref.name] = ref.$ops.getValue(point);
+					});
 				} else {
 					console.log('unconfigured', this);
 				}
+
+				return point;
 			}
 		}], [{
 			key: 'parseSettingsX',
@@ -4248,8 +4167,13 @@ var vGraph =
 					node = this[i];
 				}
 
-				filtered.$minIndex = filtered[0]._$index;
-				filtered.$maxIndex = filtered[filtered.length - 1]._$index;
+				if (filtered.length) {
+					filtered.$minIndex = filtered[0]._$index;
+					filtered.$maxIndex = filtered[filtered.length - 1]._$index;
+				} else {
+					filtered.$minIndex = filtered.$maxIndex = 0;
+				}
+
 				filtered.$dirty = false;
 
 				filtered.$stats = Object.create(this.$stats);
@@ -4411,6 +4335,104 @@ var vGraph =
 
 /***/ },
 /* 33 */
+/***/ function(module, exports) {
+
+	'use strict';
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var Reference = function () {
+		function Reference(root) {
+			_classCallCheck(this, Reference);
+
+			this.$getRoot = function () {
+				return root;
+			};
+
+			if (root.getValue) {
+				this.getValue = function (d) {
+					return root.getValue(d, this.$view.normalizer.$stats);
+				};
+			} else if (root.getValue === undefined) {
+				this.getValue = function (d) {
+					if (d) {
+						return d[this.field];
+					}
+				};
+			}
+
+			if (root.$getValue) {
+				this.$getValue = root.$getValue;
+			}
+
+			this.$resetField();
+		}
+
+		_createClass(Reference, [{
+			key: '$resetField',
+			value: function $resetField() {
+				this.field = this.$getRoot().field;
+			}
+		}, {
+			key: 'setField',
+			value: function setField(field) {
+				this.field = field;
+			}
+		}, {
+			key: 'getField',
+			value: function getField() {
+				return this.field;
+			}
+		}, {
+			key: 'setView',
+			value: function setView(viewComp) {
+				this.$view = viewComp;
+			}
+		}, {
+			key: '$getNode',
+			value: function $getNode(index) {
+				return this.$view.normalizer.$getNode(index);
+			}
+		}, {
+			key: '$getValue',
+			value: function $getValue(index) {
+				var t = this.$getNode(index);
+
+				if (t) {
+					return this.getValue(t);
+				}
+			}
+		}, {
+			key: '$getClosest',
+			value: function $getClosest(index) {
+				return this.$view.normalizer.$getClosest(index, '$x');
+			}
+		}, {
+			key: '$getClosestValue',
+			value: function $getClosestValue(index) {
+				return this.getValue(this.$getClosest(index));
+			}
+		}, {
+			key: '$eachNode',
+			value: function $eachNode(fn) {
+				this.$view.normalizer.$sort().forEach(fn);
+			}
+		}, {
+			key: '$getIndexs',
+			value: function $getIndexs() {
+				return this.$view.normalizer.$getIndexs();
+			}
+		}]);
+
+		return Reference;
+	}();
+
+	module.exports = Reference;
+
+/***/ },
+/* 34 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -4425,10 +4447,10 @@ var vGraph =
 			},
 			require: ['^vgraphChart'],
 			link: function link(scope, $el, attrs, requirements) {
-				var unsubscribe,
+				var ref1,
+				    ref2,
+				    unsubscribe,
 				    graph = requirements[0],
-				    ref1 = graph.getReference(scope.config1),
-				    ref2 = graph.getReference(scope.config2),
 				    element = ComponentElement.svgCompile('<g><path vgraph-line="config1" pair="config2" class-name="' + (attrs.className || '') + '"></path></g>')[0];
 
 				$el[0].appendChild(element);
@@ -4437,10 +4459,10 @@ var vGraph =
 				unsubscribe = graph.$on('focus-point', function (point) {
 					var p1 = point[ref1.view],
 					    p2 = point[ref2.view],
-					    view1 = ref1.$view,
-					    view2 = ref2.$view,
-					    v1 = ref1.getValue(p1),
-					    v2 = ref2.getValue(p2);
+					    view1 = ref1.$ops.$view,
+					    view2 = ref2.$ops.$view,
+					    v1 = ref1.$ops.getValue(p1),
+					    v2 = ref2.$ops.getValue(p2);
 
 					point[attrs.reference || 'compare'] = {
 						value: Math.abs(v1 - v2),
@@ -4450,17 +4472,25 @@ var vGraph =
 				});
 
 				scope.$on('$destroy', unsubscribe);
+
+				scope.$watch('config1', function (cfg) {
+					ref1 = graph.getReference(cfg);
+				});
+
+				scope.$watch('config2', function (cfg) {
+					ref2 = graph.getReference(cfg);
+				});
 			}
 		};
 	}]);
 
 /***/ },
-/* 34 */
+/* 35 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawDots = __webpack_require__(35),
+	var DrawDots = __webpack_require__(36),
 	    ComponentElement = __webpack_require__(11);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphDots', [function () {
@@ -4480,7 +4510,7 @@ var vGraph =
 				element.setElement(el);
 
 				scope.$watch('config', function (config) {
-					var cfg = chart.compileReference(config);
+					var cfg = chart.getReference(config);
 
 					if (cfg) {
 						element.setDrawer(new DrawDots(cfg, attrs.radius ? parseInt(attrs.Radius, 10) : 5));
@@ -4494,7 +4524,7 @@ var vGraph =
 
 						el.setAttribute('class', className);
 
-						cfg.$view.registerComponent(element);
+						cfg.$ops.$view.registerComponent(element);
 					}
 				});
 			}
@@ -4502,7 +4532,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 35 */
+/* 36 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -4538,8 +4568,8 @@ var vGraph =
 		}, {
 			key: 'getPoint',
 			value: function getPoint(index) {
-				var node = this.ref.$getNode(index),
-				    value = this.ref.getValue(node);
+				var node = this.ref.$ops.$getNode(index),
+				    value = this.ref.$ops.getValue(node);
 
 				if (value || value === 0) {
 					return {
@@ -4560,7 +4590,7 @@ var vGraph =
 		}, {
 			key: 'closeSet',
 			value: function closeSet(set) {
-				set.y = this.ref.$view.y.scale(set.y);
+				set.y = this.ref.$ops.$view.y.scale(set.y);
 			}
 		}, {
 			key: 'makePath',
@@ -4608,12 +4638,12 @@ var vGraph =
 	module.exports = Dots;
 
 /***/ },
-/* 36 */
+/* 37 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var makeBlob = __webpack_require__(37);
+	var makeBlob = __webpack_require__(38);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphExport', [function () {
 		return {
@@ -4656,12 +4686,12 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 37 */
+/* 38 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var svgColorize = __webpack_require__(38);
+	var svgColorize = __webpack_require__(39);
 
 	function formatArray(arr) {
 		return arr.map(function (row) {
@@ -4713,7 +4743,7 @@ var vGraph =
 	};
 
 /***/ },
-/* 38 */
+/* 39 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -4757,7 +4787,7 @@ var vGraph =
 	module.exports = colorize;
 
 /***/ },
-/* 39 */
+/* 40 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -4843,12 +4873,12 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 40 */
+/* 41 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawHeatmap = __webpack_require__(41),
+	var DrawHeatmap = __webpack_require__(42),
 	    ComponentElement = __webpack_require__(11);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphHeatmap', ['$compile', function ($compile) {
@@ -4915,7 +4945,7 @@ var vGraph =
 				};
 
 				scope.$watch('config', function (config) {
-					var cfg = chart.compileReference(config);
+					var cfg = chart.getReference(config);
 
 					if (cfg) {
 						drawer = new DrawHeatmap(cfg, area, templates, scope.indexs);
@@ -4930,7 +4960,7 @@ var vGraph =
 
 						el.setAttribute('class', className);
 
-						cfg.$view.registerComponent(element);
+						cfg.$ops.$view.registerComponent(element);
 					}
 				});
 			}
@@ -4938,7 +4968,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 41 */
+/* 42 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -4947,7 +4977,7 @@ var vGraph =
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var DataBucketer = __webpack_require__(42);
+	var DataBucketer = __webpack_require__(43);
 
 	var Heatmap = function () {
 		function Heatmap(reference, area, templates, indexs, buckets) {
@@ -4997,7 +5027,7 @@ var vGraph =
 				bucketer.$reset();
 
 				keys.forEach(function (key) {
-					bucketer.push(ref.$getNode(key)); // { bucket, value }
+					bucketer.push(ref.$ops.$getNode(key)); // { bucket, value }
 				});
 
 				if (!this.labels) {
@@ -5167,7 +5197,7 @@ var vGraph =
 	module.exports = Heatmap;
 
 /***/ },
-/* 42 */
+/* 43 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -5263,7 +5293,7 @@ var vGraph =
 	module.exports = Bucketer;
 
 /***/ },
-/* 43 */
+/* 44 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -5282,13 +5312,13 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 44 */
+/* 45 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	var d3 = __webpack_require__(7),
-	    DrawIcon = __webpack_require__(45),
+	    DrawIcon = __webpack_require__(46),
 	    ComponentElement = __webpack_require__(11);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphIcon', [function () {
@@ -5324,7 +5354,7 @@ var vGraph =
 				element.setElement(el);
 
 				scope.$watch('config', function (config) {
-					var cfg = chart.compileReference(config);
+					var cfg = chart.getReference(config);
 
 					if (cfg) {
 						element.setDrawer(new DrawIcon(cfg, box, content));
@@ -5377,7 +5407,7 @@ var vGraph =
 	*/
 
 /***/ },
-/* 45 */
+/* 46 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -5425,7 +5455,7 @@ var vGraph =
 	module.exports = Icon;
 
 /***/ },
-/* 46 */
+/* 47 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -5482,9 +5512,9 @@ var vGraph =
 					finalize: function finalize() {
 						var x,
 						    y,
-						    view = cfg.$view,
+						    view = cfg.$ops.$view,
 						    d = view.getLeading(),
-						    v = cfg.getValue(d);
+						    v = cfg.$ops.getValue(d);
 
 						if (v && view.isLeading()) {
 							x = d.$x;
@@ -5505,7 +5535,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 47 */
+/* 48 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -5597,7 +5627,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 48 */
+/* 49 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -5645,7 +5675,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 49 */
+/* 50 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -5701,15 +5731,15 @@ var vGraph =
 						    points = [];
 
 						angular.forEach(configs, function (cfg) {
-							var model = cfg.$view.normalizer,
+							var model = cfg.$ops.$view.normalizer,
 							    datum = model.$latestNode(cfg.field),
-							    value = cfg.getValue(datum);
+							    value = cfg.$ops.getValue(datum);
 
-							if (datum && cfg.$view.isLeading()) {
+							if (datum && cfg.$ops.$view.isLeading()) {
 								points.push({
 									el: elements[cfg.name],
 									x: datum.$x,
-									y: cfg.$view.y.scale(value)
+									y: cfg.$ops.$view.y.scale(value)
 								});
 							} else {
 								elements[cfg.name].attr('visibility', 'hidden');
@@ -5744,13 +5774,13 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 50 */
+/* 51 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawLine = __webpack_require__(51),
-	    DrawFill = __webpack_require__(52),
+	var DrawLine = __webpack_require__(52),
+	    DrawFill = __webpack_require__(53),
 	    ComponentElement = __webpack_require__(11);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphLine', [function () {
@@ -5772,11 +5802,11 @@ var vGraph =
 
 				scope.$watch('config', function (config) {
 					var pair,
-					    cfg = chart.compileReference(config);
+					    cfg = chart.getReference(config);
 
 					if (cfg) {
 						if (attrs.pair) {
-							pair = chart.compileReference(scope.pair);
+							pair = chart.getReference(scope.pair);
 							className = 'fill ';
 							element.setDrawer(new DrawFill(cfg, pair));
 						} else {
@@ -5791,8 +5821,7 @@ var vGraph =
 						className += attrs.className || cfg.className;
 
 						el.setAttribute('class', className);
-
-						cfg.$view.registerComponent(element);
+						cfg.$ops.$view.registerComponent(element);
 					}
 				});
 			}
@@ -5800,7 +5829,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 51 */
+/* 52 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -5860,12 +5889,12 @@ var vGraph =
 		_createClass(Line, [{
 			key: 'getPoint',
 			value: function getPoint(index) {
-				var node = this.ref.$getNode(index);
+				var node = this.ref.$ops.$getNode(index);
 
 				return {
 					$classify: this.ref.classify ? this.ref.classify(node) : null,
 					x: node.$x,
-					y: this.ref.getValue(node)
+					y: this.ref.$ops.getValue(node)
 				};
 			}
 		}, {
@@ -5928,7 +5957,7 @@ var vGraph =
 				if (set.length) {
 					for (i = 0, c = set.length; i < c; i++) {
 						point = set[i];
-						res.push(point.x + ',' + this.ref.$view.y.scale(point.y));
+						res.push(point.x + ',' + this.ref.$ops.$view.y.scale(point.y));
 					}
 
 					return 'M' + res.join('L');
@@ -5955,7 +5984,7 @@ var vGraph =
 	module.exports = Line;
 
 /***/ },
-/* 52 */
+/* 53 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -5994,19 +6023,19 @@ var vGraph =
 			value: function getPoint(index) {
 				var y1,
 				    y2,
-				    node = this.top.$getNode(index);
+				    node = this.top.$ops.$getNode(index);
 
-				y1 = this.top.getValue(node);
+				y1 = this.top.$ops.getValue(node);
 
 				if (this.references.length === 2) {
-					y2 = this.bottom.$getValue(index);
+					y2 = this.bottom.$ops.$getValue(index);
 				} else {
 					y2 = '-';
 				}
 
 				if (isNumeric(y1) && isNumeric(y2)) {
 					return {
-						$classify: this.top.classify ? this.top.classify(node, this.bottom.$getNode(index)) : null,
+						$classify: this.top.classify ? this.top.classify(node, this.bottom.$ops.$getNode(index)) : null,
 						x: node.$x,
 						y1: y1,
 						y2: y2
@@ -6057,8 +6086,8 @@ var vGraph =
 				    y1,
 				    y2,
 				    point,
-				    top = this.top.$view,
-				    bottom = this.bottom.$view,
+				    top = this.top.$ops.$view,
+				    bottom = this.bottom.$ops.$view,
 				    line1 = [],
 				    line2 = [];
 
@@ -6097,7 +6126,7 @@ var vGraph =
 	module.exports = Fill;
 
 /***/ },
-/* 53 */
+/* 54 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -6209,7 +6238,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 54 */
+/* 55 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -6262,12 +6291,12 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 55 */
+/* 56 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var ComponentPage = __webpack_require__(56);
+	var ComponentPage = __webpack_require__(57);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphPage', [function () {
 		return {
@@ -6288,7 +6317,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 56 */
+/* 57 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -6299,10 +6328,10 @@ var vGraph =
 
 	var uid = 1,
 	    angular = __webpack_require__(4),
-	    DataFeed = __webpack_require__(57),
-	    DataLoader = __webpack_require__(58),
-	    DataManager = __webpack_require__(59),
-	    ComponentZoom = __webpack_require__(60);
+	    DataFeed = __webpack_require__(58),
+	    DataLoader = __webpack_require__(59),
+	    DataManager = __webpack_require__(60),
+	    ComponentZoom = __webpack_require__(61);
 
 	var Page = function () {
 		function Page() {
@@ -6478,7 +6507,7 @@ var vGraph =
 	module.exports = Page;
 
 /***/ },
-/* 57 */
+/* 58 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -6622,7 +6651,7 @@ var vGraph =
 	module.exports = Feed;
 
 /***/ },
-/* 58 */
+/* 59 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -6838,7 +6867,7 @@ var vGraph =
 	module.exports = Loader;
 
 /***/ },
-/* 59 */
+/* 60 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -7065,7 +7094,7 @@ var vGraph =
 	module.exports = Manager;
 
 /***/ },
-/* 60 */
+/* 61 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -7124,12 +7153,12 @@ var vGraph =
 	module.exports = Zoom;
 
 /***/ },
-/* 61 */
+/* 62 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawPie = __webpack_require__(62),
+	var DrawPie = __webpack_require__(63),
 	    ComponentElement = __webpack_require__(11);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphPie', [function () {
@@ -7161,7 +7190,7 @@ var vGraph =
 				box.$on('resize', calcArea);
 
 				scope.$watch('config', function (config) {
-					var cfg = chart.compileReference(config);
+					var cfg = chart.getReference(config);
 
 					if (cfg) {
 						element.setDrawer(new DrawPie(cfg, scope.buckets, area));
@@ -7174,7 +7203,7 @@ var vGraph =
 
 						el.setAttribute('class', className);
 
-						cfg.$view.registerComponent(element);
+						cfg.$ops.$view.registerComponent(element);
 					}
 				});
 			}
@@ -7182,7 +7211,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 62 */
+/* 63 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -7292,9 +7321,9 @@ var vGraph =
 			});
 
 			this.getPoint = function (index) {
-				var node = reference.$getNode(index);
+				var node = reference.$ops.$getNode(index);
 
-				return fn(node, reference.getValue(node));
+				return fn(node, reference.$ops.getValue(node));
 			};
 		}
 
@@ -7451,7 +7480,7 @@ var vGraph =
 	module.exports = Pie;
 
 /***/ },
-/* 63 */
+/* 64 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -7474,7 +7503,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 64 */
+/* 65 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -7543,7 +7572,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 65 */
+/* 66 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -7577,7 +7606,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 66 */
+/* 67 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -7610,11 +7639,11 @@ var vGraph =
 						if (attrs.noDots === undefined) {
 							angular.forEach(configs, function (cfg) {
 								var node,
-								    view = cfg.$view,
+								    view = cfg.$ops.$view,
 								    datum = point[cfg.view],
 								    nodeName = 'tn_' + cfg.name,
 								    className = cfg.className,
-								    value = cfg.getValue(datum);
+								    value = cfg.$ops.getValue(datum);
 
 								if (value !== undefined && value !== null) {
 									node = $dots.selectAll('circle.point.' + nodeName);
@@ -7658,7 +7687,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 67 */
+/* 68 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -7666,38 +7695,52 @@ var vGraph =
 	var d3 = __webpack_require__(7);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphTooltip', [function () {
+		// build this from a reference config
 		function makeByConfig(graph, cfg) {
 			var ref = graph.getReference(cfg);
 
 			return {
 				formatter: function formatter(point) {
-					return ref.getValue(point[ref.view]);
+					return ref.$ops.getValue(point[ref.view]);
 				},
 				xParse: function xParse(point) {
 					return point[ref.view].$x;
 				},
 				yParse: function yParse(point) {
-					return ref.$view.y.scale(ref.getValue(point[ref.view]));
+					return ref.$ops.$view.y.scale(ref.$ops.getValue(point[ref.view]));
 				}
 			};
 		}
 
-		function makeConfig(graph, $scope, $attrs) {
-			var cfg = $scope.config;
+		function makeByReference(ref, cfg) {
+			var format = cfg.formatter ? function (point) {
+				return cfg.formatter(point[ref], point);
+			} : function (point) {
+				return point[ref].value;
+			},
+			    x = cfg.xParse ? function (point) {
+				return cfg.xParse(point[ref], point);
+			} : function (point) {
+				return point[ref].x;
+			},
+			    y = cfg.yParse ? function (point) {
+				return cfg.yParse(point[ref], point);
+			} : function (point) {
+				return point[ref].y;
+			};
 
+			return {
+				formatter: format,
+				xParse: x,
+				yParse: y
+			};
+		}
+
+		function makeConfig(graph, cfg, $attrs) {
 			if ($attrs.reference) {
-				return {
-					formatter: function formatter(point) {
-						return point[$attrs.reference].value;
-					},
-					xParse: function xParse(point) {
-						return point[$attrs.reference].x;
-					},
-					yParse: function yParse(point) {
-						return point[$attrs.reference].y;
-					}
-				};
+				return makeByReference($attrs.reference, cfg);
 			} else if (!cfg.formatter) {
+				// this much be a reference config object passed in
 				return makeByConfig(graph, cfg);
 			} else {
 				return cfg;
@@ -7728,8 +7771,8 @@ var vGraph =
 	  }
 	  */
 			link: function link(scope, el, attrs, requirements) {
-				var graph = requirements[0],
-				    cfg = makeConfig(graph, scope, attrs),
+				var cfg,
+				    graph = requirements[0],
 				    xOffset = parseInt(attrs.offsetX) || 0,
 				    yOffset = parseInt(attrs.offsetY) || 0,
 				    $el = d3.select(el[0]).attr('class', 'tooltip'),
@@ -7765,12 +7808,16 @@ var vGraph =
 						$el.style('visibility', 'hidden');
 					}
 				});
+
+				scope.$watch('config', function (config) {
+					cfg = makeConfig(graph, config, attrs);
+				});
 			}
 		};
 	}]);
 
 /***/ },
-/* 68 */
+/* 69 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -7945,7 +7992,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 69 */
+/* 70 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -7954,31 +8001,31 @@ var vGraph =
 		Box: __webpack_require__(23),
 		Chart: __webpack_require__(18),
 		Element: __webpack_require__(11),
-		Page: __webpack_require__(56),
+		Page: __webpack_require__(57),
 		Pane: __webpack_require__(26),
 		View: __webpack_require__(25),
-		Zoom: __webpack_require__(60)
+		Zoom: __webpack_require__(61)
 	};
 
 /***/ },
-/* 70 */
+/* 71 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = {
-		Bucketer: __webpack_require__(42),
-		Feed: __webpack_require__(57),
-		Hasher: __webpack_require__(71),
+		Bucketer: __webpack_require__(43),
+		Feed: __webpack_require__(58),
+		Hasher: __webpack_require__(72),
 		List: __webpack_require__(27),
 		Linear: __webpack_require__(31),
-		Loader: __webpack_require__(58),
-		Manager: __webpack_require__(59),
+		Loader: __webpack_require__(59),
+		Manager: __webpack_require__(60),
 		Normalizer: __webpack_require__(30)
 	};
 
 /***/ },
-/* 71 */
+/* 72 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -8012,7 +8059,7 @@ var vGraph =
 	};
 
 /***/ },
-/* 72 */
+/* 73 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -8021,17 +8068,17 @@ var vGraph =
 		Bar: __webpack_require__(9),
 		Box: __webpack_require__(14),
 		Candlestick: __webpack_require__(16),
-		Dots: __webpack_require__(35),
-		Fill: __webpack_require__(52),
-		Heatmap: __webpack_require__(41),
-		Icon: __webpack_require__(45),
-		Line: __webpack_require__(51),
+		Dots: __webpack_require__(36),
+		Fill: __webpack_require__(53),
+		Heatmap: __webpack_require__(42),
+		Icon: __webpack_require__(46),
+		Line: __webpack_require__(52),
 		Linear: __webpack_require__(10),
-		Pie: __webpack_require__(62)
+		Pie: __webpack_require__(63)
 	};
 
 /***/ },
-/* 73 */
+/* 74 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -8040,9 +8087,9 @@ var vGraph =
 		DomHelper: __webpack_require__(21),
 		Eventing: __webpack_require__(22),
 		Hitbox: __webpack_require__(19),
-		makeBlob: __webpack_require__(37),
+		makeBlob: __webpack_require__(38),
 		Scheduler: __webpack_require__(20),
-		svgColorize: __webpack_require__(38)
+		svgColorize: __webpack_require__(39)
 	};
 
 /***/ }

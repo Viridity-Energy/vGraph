@@ -13,8 +13,8 @@ class Dots extends DrawLinear{
 	}
 
 	getPoint( index ){
-		var node = this.ref.$getNode(index),
-			value = this.ref.getValue(node);
+		var node = this.ref.$ops.$getNode(index),
+			value = this.ref.$ops.getValue(node);
 
 		if ( value || value === 0 ){
 			return {
@@ -33,7 +33,7 @@ class Dots extends DrawLinear{
 	}
 
 	closeSet( set ){
-		set.y = this.ref.$view.y.scale(set.y);
+		set.y = this.ref.$ops.$view.y.scale(set.y);
 	}
 
 	makePath( set ){
