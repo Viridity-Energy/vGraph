@@ -57,7 +57,7 @@ class Linear{
 				set
 			);
 
-			if ( state !== 1 && parsed.$classify ){
+			if ( state === -1 && parsed.$classify ){
 				if ( !set.$classify ){
 					set.$classify = {};
 				}
@@ -92,7 +92,7 @@ class Linear{
 
 				set = this.makeSet();
 
-				if ( state ){ // state === 1
+				if ( state ){ // state === 1, so merge it with the new set
 					mergePoint();
 				}
 			}
@@ -112,7 +112,7 @@ class Linear{
 		this.references.forEach(function( ref ){
 			if ( ref.$ops.getValue ){
 				ref.$ops.$eachNode(function(node){
-					var v = +ref.$ops.getValue(node);
+					var v = ref.$ops.getValue(node);
 					if ( v || v === 0 ){
 						if ( min === undefined ){
 							min = v;
