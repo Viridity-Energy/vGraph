@@ -1,5 +1,6 @@
 var Collection = require('bmoor-data').Collection;
 
+// TODO : use bmoor-data's hasher here, or better use HashedCollection
 class Bucketer extends Collection {
 	constructor( hasher, bucketFactory ){
 		super();
@@ -37,13 +38,11 @@ class Bucketer extends Collection {
 			match = this._factory( index );
 			this._$index[ index ] = match;
 			this._$indexs.push( index );
-
-			match.push( datum );
-
-			return match;
-		}else{
-			match.push( datum );
 		}
+
+		match.push( datum );
+
+		return match;
 	}
 
 	$reset(){

@@ -85,10 +85,8 @@ module.exports = {
 	},
 	*/
 	getIndexs: function ( cfg ){
-		// Need to calculate the indexs of the data.  Multiple references might have different views
-		// TOOD : this is most likely suboptimal, I'd like to improve
-		var indexs,
-			seen = {};
+		var last,
+			indexs;
 		
 		if ( cfg.length === 1 ){
 			indexs = cfg[0].$ops.$getIndexs();
@@ -99,13 +97,16 @@ module.exports = {
 				indexs = indexs.concat( ref.$ops.$getIndexs() );
 			});
 
-			indexs = indexs.filter(function(x) {
-				if ( seen[x] ){
-					return;
-				}
-				seen[x] = true;
-				return x;
-			});
+			indexs = indexs
+				.sort(function(a,b){ 
+					return a-b;
+				})
+				.filter(function(x) {
+					if ( last !== x ){
+						last = x;
+						return x;
+					}
+				});
 		}
 		
 		return indexs;

@@ -709,7 +709,6 @@
 							{{ point.compare }} | {{ getX(point) }} :: {{ getY(point) }}
 						</span>
 						<svg>
-
 							<g vgraph-compare config1="config[0]" config2="config[1]" reference="compare"></g>
 							<g ng-repeat="cfg in config" vgraph-line="cfg"></g>
 							
@@ -729,8 +728,41 @@
 					<div vgraph-chart="graph">
 						<pre vgraph-highlight="point">{{ point }}</pre>
 						<svg>
+							<g vgraph-axis="'left'" view="firstView"
+								tick-length="4" tick-padding="-2"></g>
+							<g vgraph-axis="'bottom'" view="firstView"
+								tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+							<g vgraph-axis="'right'" view="secondView"
+								tick-length="4" tick-padding="-2"></g>
+							<g vgraph-axis="'top'" view="secondView"
+								tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+
 							<g vgraph-compare config1="config[0]" config2="config[1]" reference="compare"></g>
 							<g ng-repeat="cfg in config" vgraph-line="cfg"></g>
+							
+							<g vgraph-target="config" point-radius="5"></g>
+							<g vgraph-tooltip="config" reference="compare"></g>
+
+							<g vgraph-interact="highlight"></g>
+						</svg>
+					<div>
+				</div>
+				<div vgraph-page="page">
+					<div vgraph-chart="graph">
+						<pre vgraph-highlight="point">{{ point }}</pre>
+						<svg>
+							<g vgraph-axis="'left'" view="firstView"
+								tick-length="4" tick-padding="-2"></g>
+							<g vgraph-axis="'bottom'" view="firstView"
+								tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+							<g vgraph-axis="'right'" view="secondView"
+								tick-length="4" tick-padding="-2"></g>
+							<g vgraph-axis="'top'" view="secondView"
+								tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+
+							<g vgraph-compare config1="config[1]" config2="config[0]" reference="compare"></g>
+							<g vgraph-line="config[1]"></g>
+							<g vgraph-line="config[0]"></g>
 							
 							<g vgraph-target="config" point-radius="5"></g>
 							<g vgraph-tooltip="config" reference="compare"></g>

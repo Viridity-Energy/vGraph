@@ -288,6 +288,13 @@ class View {
 					this.calculations.$init( this.normalizer );
 					this.calculations( this.normalizer );
 				}
+
+				this.components.forEach(function( component ){
+					component.$cache = null;
+					component.$built = false;
+					component.$proced = false;
+					component.$finalized = false;
+				});
 			}
 		}
 	}
@@ -300,20 +307,22 @@ class View {
 			this.components.forEach(function( component ){
 				var t;
 
-				if ( component.parse ){
-					t = component.parse();
-					if ( t ){
-						if ( (t.min || t.min === 0) && (!min && min !== 0 || min > t.min) ){
-							min = t.min;
-						}
+				if ( !component.$cache && component.parse ){
+					component.$cache = component.parse();
+				}
 
-						if ( (t.max || t.max === 0) && (!max && max !== 0 || max < t.max) ){
-							max = t.max;
-						}
+				t = component.$cache;
+				if ( t ){
+					if ( (t.min || t.min === 0) && (!min && min !== 0 || min > t.min) ){
+						min = t.min;
+					}
+
+					if ( (t.max || t.max === 0) && (!max && max !== 0 || max < t.max) ){
+						max = t.max;
 					}
 				}
 			});
-
+			
 			if ( min !== undefined ){
 				this.setViewportValues( min, max );	
 
@@ -331,24 +340,27 @@ class View {
 
 	build(){
 		this.components.forEach(function( component ){
-			if ( component.build ){
+			if ( component.build && !component.$built ){
 				component.build();
+				component.$built = true;
 			}
 		});
 	}
 
 	process(){
 		this.components.forEach(function( component ){
-			if ( component.process ){
+			if ( component.process && !component.$proced ){
 				component.process();
+				component.$proced = true;
 			}
 		});
 	}
 
 	finalize(){
 		this.components.forEach(function( component ){
-			if ( component.finalize ){
+			if ( component.finalize && !component.$finalized ){
 				component.finalize();
+				component.$finalized = true;
 			}
 		});
 	}

@@ -755,18 +755,18 @@ angular.module( 'vgraph' ).controller( 'Compare2Ctrl',
 				scale: function(){ return d3.scale.linear(); }
 			},
 			views: {
-				first: {
+				firstView: {
 					manager: 'first',
 					x: {
-						min: -100,
-						max: 2100
+						min: -10,
+						max: 210
 					}
 				},
-				second: {
+				secondView: {
 					manager: 'second',
 					x: {
-						min: 1900,
-						max: 4100
+						min: 1990,
+						max: 2210
 					}
 				}
 			}
@@ -808,23 +808,27 @@ angular.module( 'vgraph' ).controller( 'Compare2Ctrl',
 
 		// x is the interval, y is the function pulling the value
 		$scope.config = [
-			{ name : 'y1', field:'y', view:'first', className : 'red' },
-			{ name : 'y2', field:'y', view:'second', className : 'blue' }
+			{ name : 'y1', field:'y', view:'firstView', className : 'red' },
+			{ name : 'y2', field:'y', view:'secondView', className : 'blue' }
 		];
 
 		var min = -1,
 			max = 1
 
-		for( var i = 0, c = 2000; i < c; i++ ){
-			data1.push({
-				x : i,
-				y : data1[data1.length-1].y + Math.random() * (max - min) + min
-			});
+		for( var i = 0, c = 200; i < c; i++ ){
+			if ( i < 190 ){
+				data1.push({
+					x : i,
+					y : data1[data1.length-1].y + Math.random() * (max - min) + min
+				});
+			}
 
-			data2.push({
-				x : i + 2000,
-				y : data2[data2.length-1].y + Math.random() * (max - min) + min
-			});
+			if ( i % 2 ){
+				data2.push({
+					x : i + 2000,
+					y : ( i > 50 && i < 100 ) ? 0 : data2[data2.length-1].y + Math.random() * (max - min) + min
+				});
+			}
 		}
 	}]
 );

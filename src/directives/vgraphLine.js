@@ -30,6 +30,7 @@ require('angular').module( 'vgraph' ).directive( 'vgraphLine',
 							pair = chart.getReference( scope.pair );
 							className = 'fill ';
 							element.setDrawer( new DrawFill(cfg,pair) );
+							pair.$ops.$view.registerComponent( element );
 						}else{
 							className = 'line ';
 							element.setDrawer( new DrawLine(cfg) );
@@ -42,7 +43,8 @@ require('angular').module( 'vgraph' ).directive( 'vgraphLine',
 						className += attrs.className || cfg.className;
 
 						el.setAttribute( 'class', className );
-						cfg.$ops.$view.registerComponent(element);
+
+						cfg.$ops.$view.registerComponent( element );
 					}
 				});
 			}

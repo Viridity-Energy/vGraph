@@ -262,13 +262,13 @@ class Chart{
 				view.normalize();
 			});
 
-			// generate data limits for all views
 			angular.forEach( this.components, function( component ){
 				if ( component.parse ){
 					component.parse();
 				}
 			});
 
+			// generate data limits for all views
 			angular.forEach( this.views, function( view, name ){
 				currentView = name;
 				view.parse();
@@ -436,6 +436,7 @@ class Chart{
 			settings = this.settings,
 			viewModel = this.getView( viewName );
 		
+		viewModel.$name = viewName;
 		viewModel.configure(
 			viewSettings,
 			settings,

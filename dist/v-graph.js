@@ -1337,10 +1337,7 @@ var vGraph =
 	 },
 	 */
 		getIndexs: function getIndexs(cfg) {
-			// Need to calculate the indexs of the data.  Multiple references might have different views
-			// TOOD : this is most likely suboptimal, I'd like to improve
-			var indexs,
-			    seen = {};
+			var last, indexs;
 
 			if (cfg.length === 1) {
 				indexs = cfg[0].$ops.$getIndexs();
@@ -1351,12 +1348,13 @@ var vGraph =
 					indexs = indexs.concat(ref.$ops.$getIndexs());
 				});
 
-				indexs = indexs.filter(function (x) {
-					if (seen[x]) {
-						return;
+				indexs = indexs.sort(function (a, b) {
+					return a - b;
+				}).filter(function (x) {
+					if (last !== x) {
+						last = x;
+						return x;
 					}
-					seen[x] = true;
-					return x;
 				});
 			}
 
@@ -2093,13 +2091,13 @@ var vGraph =
 						view.normalize();
 					});
 
-					// generate data limits for all views
 					angular.forEach(this.components, function (component) {
 						if (component.parse) {
 							component.parse();
 						}
 					});
 
+					// generate data limits for all views
 					angular.forEach(this.views, function (view, name) {
 						currentView = name;
 						view.parse();
@@ -2268,6 +2266,7 @@ var vGraph =
 				    settings = this.settings,
 				    viewModel = this.getView(viewName);
 
+				viewModel.$name = viewName;
 				viewModel.configure(viewSettings, settings, this.box, this.page, this.zoom);
 
 				viewModel.$name = viewName;
@@ -3355,6 +3354,13 @@ var vGraph =
 							this.calculations.$init(this.normalizer);
 							this.calculations(this.normalizer);
 						}
+
+						this.components.forEach(function (component) {
+							component.$cache = null;
+							component.$built = false;
+							component.$proced = false;
+							component.$finalized = false;
+						});
 					}
 				}
 			}
@@ -3367,16 +3373,18 @@ var vGraph =
 					this.components.forEach(function (component) {
 						var t;
 
-						if (component.parse) {
-							t = component.parse();
-							if (t) {
-								if ((t.min || t.min === 0) && (!min && min !== 0 || min > t.min)) {
-									min = t.min;
-								}
+						if (!component.$cache && component.parse) {
+							component.$cache = component.parse();
+						}
 
-								if ((t.max || t.max === 0) && (!max && max !== 0 || max < t.max)) {
-									max = t.max;
-								}
+						t = component.$cache;
+						if (t) {
+							if ((t.min || t.min === 0) && (!min && min !== 0 || min > t.min)) {
+								min = t.min;
+							}
+
+							if ((t.max || t.max === 0) && (!max && max !== 0 || max < t.max)) {
+								max = t.max;
 							}
 						}
 					});
@@ -3394,8 +3402,9 @@ var vGraph =
 			key: 'build',
 			value: function build() {
 				this.components.forEach(function (component) {
-					if (component.build) {
+					if (component.build && !component.$built) {
 						component.build();
+						component.$built = true;
 					}
 				});
 			}
@@ -3403,8 +3412,9 @@ var vGraph =
 			key: 'process',
 			value: function process() {
 				this.components.forEach(function (component) {
-					if (component.process) {
+					if (component.process && !component.$proced) {
 						component.process();
+						component.$proced = true;
 					}
 				});
 			}
@@ -3412,8 +3422,9 @@ var vGraph =
 			key: 'finalize',
 			value: function finalize() {
 				this.components.forEach(function (component) {
-					if (component.finalize) {
+					if (component.finalize && !component.$finalized) {
 						component.finalize();
+						component.$finalized = true;
 					}
 				});
 			}
@@ -5212,6 +5223,8 @@ var vGraph =
 
 	var Collection = __webpack_require__(29).Collection;
 
+	// TODO : use bmoor-data's hasher here, or better use HashedCollection
+
 	var Bucketer = function (_Collection) {
 		_inherits(Bucketer, _Collection);
 
@@ -5260,13 +5273,11 @@ var vGraph =
 					match = this._factory(index);
 					this._$index[index] = match;
 					this._$indexs.push(index);
-
-					match.push(datum);
-
-					return match;
-				} else {
-					match.push(datum);
 				}
+
+				match.push(datum);
+
+				return match;
 			}
 		}, {
 			key: '$reset',
@@ -5809,6 +5820,7 @@ var vGraph =
 							pair = chart.getReference(scope.pair);
 							className = 'fill ';
 							element.setDrawer(new DrawFill(cfg, pair));
+							pair.$ops.$view.registerComponent(element);
 						} else {
 							className = 'line ';
 							element.setDrawer(new DrawLine(cfg));
@@ -5821,6 +5833,7 @@ var vGraph =
 						className += attrs.className || cfg.className;
 
 						el.setAttribute('class', className);
+
 						cfg.$ops.$view.registerComponent(element);
 					}
 				});
@@ -6023,20 +6036,23 @@ var vGraph =
 			value: function getPoint(index) {
 				var y1,
 				    y2,
-				    node = this.top.$ops.$getNode(index);
+				    top = this.top.$ops,
+				    bop = this.bottom.$ops,
+				    tn = top.$getNode(index),
+				    bn = bop.$getNode(index);
 
-				y1 = this.top.$ops.getValue(node);
+				y1 = top.getValue(tn);
 
 				if (this.references.length === 2) {
-					y2 = this.bottom.$ops.$getValue(index);
+					y2 = bop.getValue(bn);
 				} else {
 					y2 = '-';
 				}
 
-				if (isNumeric(y1) && isNumeric(y2)) {
+				if (isNumeric(y1) || isNumeric(y2)) {
 					return {
-						$classify: this.top.classify ? this.top.classify(node, this.bottom.$ops.$getNode(index)) : null,
-						x: node.$x,
+						$classify: this.top.classify ? this.top.classify(tn, bn) : null,
+						x: tn ? tn.$x : bn.$x,
 						y1: y1,
 						y2: y2
 					};
@@ -6047,28 +6063,11 @@ var vGraph =
 			value: function mergePoint(parsed, set) {
 				var x = parsed.x,
 				    y1 = parsed.y1,
-				    y2 = parsed.y2,
-				    last = set[set.length - 1];
+				    y2 = parsed.y2;
 
-				if (isNumeric(y1) && isNumeric(y2)) {
-					set.push({
-						x: x,
-						y1: y1,
-						y2: y2
-					});
-
-					return -1;
-				} else if (!last || y1 === null || y2 === null) {
+				if (y1 === null || y2 === null) {
 					return 0;
 				} else {
-					if (y1 === undefined) {
-						y1 = last.y1;
-					}
-
-					if (y2 === undefined && last) {
-						y2 = last.y2;
-					}
-
 					set.push({
 						x: x,
 						y1: y1,
@@ -6095,11 +6094,15 @@ var vGraph =
 					for (i = 0, c = set.length; i < c; i++) {
 						point = set[i];
 
-						y1 = point.y1 === '+' ? top.viewport.maxValue : point.y1;
-						y2 = point.y2 === '-' ? bottom.viewport.minValue : point.y2;
+						if (point.y1 || point.y1 === 0) {
+							y1 = point.y1 === '+' ? top.viewport.maxValue : point.y1;
+							line1.push(point.x + ',' + top.y.scale(y1));
+						}
 
-						line1.push(point.x + ',' + top.y.scale(y1));
-						line2.unshift(point.x + ',' + bottom.y.scale(y2));
+						if (point.y2 || point.y2 === 0) {
+							y2 = point.y2 === '-' ? bottom.viewport.minValue : point.y2;
+							line2.unshift(point.x + ',' + bottom.y.scale(y2));
+						}
 					}
 
 					return 'M' + line1.join('L') + 'L' + line2.join('L') + 'Z';

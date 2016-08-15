@@ -17,22 +17,24 @@ class Fill extends DrawLinear{
 	getPoint( index ){
 		var y1,
 			y2,
-			node = this.top.$ops.$getNode(index);
+			top = this.top.$ops,
+			bop = this.bottom.$ops,
+			tn = top.$getNode(index),
+			bn = bop.$getNode(index);
 
-		y1 = this.top.$ops.getValue(node);
+		y1 = top.getValue(tn);
 		
 		if ( this.references.length === 2 ){
-			y2 = this.bottom.$ops.$getValue( index );
+			y2 = bop.getValue(bn);
 		}else{
 			y2 = '-';
 		}
 
-		if ( isNumeric(y1) && isNumeric(y2) ){
+		if ( isNumeric(y1) || isNumeric(y2) ){
 			return {
 				$classify: this.top.classify ? 
-					this.top.classify(node,this.bottom.$ops.$getNode(index)) : 
-					null,
-				x: node.$x,
+					this.top.classify(tn,bn) : null,
+				x: tn ? tn.$x : bn.$x,
 				y1: y1,
 				y2: y2
 			};
@@ -42,28 +44,11 @@ class Fill extends DrawLinear{
 	mergePoint( parsed, set ){
 		var x = parsed.x,
 			y1 = parsed.y1,
-			y2 = parsed.y2,
-			last = set[set.length-1];
-
-		if ( isNumeric(y1) && isNumeric(y2) ){
-			set.push({
-				x: x,
-				y1: y1,
-				y2: y2
-			});
-
-			return -1;
-		} else if ( !last || y1 === null || y2 === null ){
+			y2 = parsed.y2;
+		
+		if ( y1 === null || y2 === null ){
 			return 0;
 		} else {
-			if ( y1 === undefined ){
-				y1 = last.y1;
-			}
-
-			if ( y2 === undefined && last ){
-				y2 = last.y2;
-			}
-
 			set.push({
 				x: x,
 				y1: y1,
@@ -83,16 +68,20 @@ class Fill extends DrawLinear{
 			bottom = this.bottom.$ops.$view,
 			line1 = [],
 			line2 = [];
-
+		
 		if ( set.length ){
 			for( i = 0, c = set.length; i < c; i++ ){
 				point = set[i];
 				
-				y1 = point.y1 === '+' ? top.viewport.maxValue : point.y1;
-				y2 = point.y2 === '-' ? bottom.viewport.minValue : point.y2;
+				if ( point.y1 || point.y1 === 0 ){
+					y1 = point.y1 === '+' ? top.viewport.maxValue : point.y1;
+					line1.push( point.x+','+top.y.scale(y1) );
+				}
 
-				line1.push( point.x+','+top.y.scale(y1) );
-				line2.unshift( point.x+','+bottom.y.scale(y2) );
+				if ( point.y2 || point.y2 === 0 ){
+					y2 = point.y2 === '-' ? bottom.viewport.minValue : point.y2;
+					line2.unshift( point.x+','+bottom.y.scale(y2) );
+				}
 			}
 
 			return 'M' + line1.join('L') + 'L' + line2.join('L') + 'Z';

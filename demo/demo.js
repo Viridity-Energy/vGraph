@@ -779,18 +779,18 @@
 				}
 			},
 			views: {
-				first: {
+				firstView: {
 					manager: 'first',
 					x: {
-						min: -100,
-						max: 2100
+						min: -10,
+						max: 210
 					}
 				},
-				second: {
+				secondView: {
 					manager: 'second',
 					x: {
-						min: 1900,
-						max: 4100
+						min: 1990,
+						max: 2210
 					}
 				}
 			}
@@ -831,21 +831,25 @@
 		};
 
 		// x is the interval, y is the function pulling the value
-		$scope.config = [{ name: 'y1', field: 'y', view: 'first', className: 'red' }, { name: 'y2', field: 'y', view: 'second', className: 'blue' }];
+		$scope.config = [{ name: 'y1', field: 'y', view: 'firstView', className: 'red' }, { name: 'y2', field: 'y', view: 'secondView', className: 'blue' }];
 
 		var min = -1,
 		    max = 1;
 
-		for (var i = 0, c = 2000; i < c; i++) {
-			data1.push({
-				x: i,
-				y: data1[data1.length - 1].y + Math.random() * (max - min) + min
-			});
+		for (var i = 0, c = 200; i < c; i++) {
+			if (i < 190) {
+				data1.push({
+					x: i,
+					y: data1[data1.length - 1].y + Math.random() * (max - min) + min
+				});
+			}
 
-			data2.push({
-				x: i + 2000,
-				y: data2[data2.length - 1].y + Math.random() * (max - min) + min
-			});
+			if (i % 2) {
+				data2.push({
+					x: i + 2000,
+					y: i > 50 && i < 100 ? 0 : data2[data2.length - 1].y + Math.random() * (max - min) + min
+				});
+			}
 		}
 	}]);
 
@@ -20105,10 +20109,7 @@
 	 },
 	 */
 		getIndexs: function getIndexs(cfg) {
-			// Need to calculate the indexs of the data.  Multiple references might have different views
-			// TOOD : this is most likely suboptimal, I'd like to improve
-			var indexs,
-			    seen = {};
+			var last, indexs;
 
 			if (cfg.length === 1) {
 				indexs = cfg[0].$ops.$getIndexs();
@@ -20119,12 +20120,13 @@
 					indexs = indexs.concat(ref.$ops.$getIndexs());
 				});
 
-				indexs = indexs.filter(function (x) {
-					if (seen[x]) {
-						return;
+				indexs = indexs.sort(function (a, b) {
+					return a - b;
+				}).filter(function (x) {
+					if (last !== x) {
+						last = x;
+						return x;
 					}
-					seen[x] = true;
-					return x;
 				});
 			}
 
@@ -20861,13 +20863,13 @@
 						view.normalize();
 					});
 
-					// generate data limits for all views
 					angular.forEach(this.components, function (component) {
 						if (component.parse) {
 							component.parse();
 						}
 					});
 
+					// generate data limits for all views
 					angular.forEach(this.views, function (view, name) {
 						currentView = name;
 						view.parse();
@@ -21036,6 +21038,7 @@
 				    settings = this.settings,
 				    viewModel = this.getView(viewName);
 
+				viewModel.$name = viewName;
 				viewModel.configure(viewSettings, settings, this.box, this.page, this.zoom);
 
 				viewModel.$name = viewName;
@@ -23760,6 +23763,13 @@
 							this.calculations.$init(this.normalizer);
 							this.calculations(this.normalizer);
 						}
+
+						this.components.forEach(function (component) {
+							component.$cache = null;
+							component.$built = false;
+							component.$proced = false;
+							component.$finalized = false;
+						});
 					}
 				}
 			}
@@ -23772,16 +23782,18 @@
 					this.components.forEach(function (component) {
 						var t;
 
-						if (component.parse) {
-							t = component.parse();
-							if (t) {
-								if ((t.min || t.min === 0) && (!min && min !== 0 || min > t.min)) {
-									min = t.min;
-								}
+						if (!component.$cache && component.parse) {
+							component.$cache = component.parse();
+						}
 
-								if ((t.max || t.max === 0) && (!max && max !== 0 || max < t.max)) {
-									max = t.max;
-								}
+						t = component.$cache;
+						if (t) {
+							if ((t.min || t.min === 0) && (!min && min !== 0 || min > t.min)) {
+								min = t.min;
+							}
+
+							if ((t.max || t.max === 0) && (!max && max !== 0 || max < t.max)) {
+								max = t.max;
 							}
 						}
 					});
@@ -23799,8 +23811,9 @@
 			key: 'build',
 			value: function build() {
 				this.components.forEach(function (component) {
-					if (component.build) {
+					if (component.build && !component.$built) {
 						component.build();
+						component.$built = true;
 					}
 				});
 			}
@@ -23808,8 +23821,9 @@
 			key: 'process',
 			value: function process() {
 				this.components.forEach(function (component) {
-					if (component.process) {
+					if (component.process && !component.$proced) {
 						component.process();
+						component.$proced = true;
 					}
 				});
 			}
@@ -23817,8 +23831,9 @@
 			key: 'finalize',
 			value: function finalize() {
 				this.components.forEach(function (component) {
-					if (component.finalize) {
+					if (component.finalize && !component.$finalized) {
 						component.finalize();
+						component.$finalized = true;
 					}
 				});
 			}
@@ -30470,6 +30485,8 @@
 
 	var Collection = __webpack_require__(44).Collection;
 
+	// TODO : use bmoor-data's hasher here, or better use HashedCollection
+
 	var Bucketer = function (_Collection) {
 		_inherits(Bucketer, _Collection);
 
@@ -30518,13 +30535,11 @@
 					match = this._factory(index);
 					this._$index[index] = match;
 					this._$indexs.push(index);
-
-					match.push(datum);
-
-					return match;
-				} else {
-					match.push(datum);
 				}
+
+				match.push(datum);
+
+				return match;
 			}
 		}, {
 			key: '$reset',
@@ -31067,6 +31082,7 @@
 							pair = chart.getReference(scope.pair);
 							className = 'fill ';
 							element.setDrawer(new DrawFill(cfg, pair));
+							pair.$ops.$view.registerComponent(element);
 						} else {
 							className = 'line ';
 							element.setDrawer(new DrawLine(cfg));
@@ -31079,6 +31095,7 @@
 						className += attrs.className || cfg.className;
 
 						el.setAttribute('class', className);
+
 						cfg.$ops.$view.registerComponent(element);
 					}
 				});
@@ -31281,20 +31298,23 @@
 			value: function getPoint(index) {
 				var y1,
 				    y2,
-				    node = this.top.$ops.$getNode(index);
+				    top = this.top.$ops,
+				    bop = this.bottom.$ops,
+				    tn = top.$getNode(index),
+				    bn = bop.$getNode(index);
 
-				y1 = this.top.$ops.getValue(node);
+				y1 = top.getValue(tn);
 
 				if (this.references.length === 2) {
-					y2 = this.bottom.$ops.$getValue(index);
+					y2 = bop.getValue(bn);
 				} else {
 					y2 = '-';
 				}
 
-				if (isNumeric(y1) && isNumeric(y2)) {
+				if (isNumeric(y1) || isNumeric(y2)) {
 					return {
-						$classify: this.top.classify ? this.top.classify(node, this.bottom.$ops.$getNode(index)) : null,
-						x: node.$x,
+						$classify: this.top.classify ? this.top.classify(tn, bn) : null,
+						x: tn ? tn.$x : bn.$x,
 						y1: y1,
 						y2: y2
 					};
@@ -31305,28 +31325,11 @@
 			value: function mergePoint(parsed, set) {
 				var x = parsed.x,
 				    y1 = parsed.y1,
-				    y2 = parsed.y2,
-				    last = set[set.length - 1];
+				    y2 = parsed.y2;
 
-				if (isNumeric(y1) && isNumeric(y2)) {
-					set.push({
-						x: x,
-						y1: y1,
-						y2: y2
-					});
-
-					return -1;
-				} else if (!last || y1 === null || y2 === null) {
+				if (y1 === null || y2 === null) {
 					return 0;
 				} else {
-					if (y1 === undefined) {
-						y1 = last.y1;
-					}
-
-					if (y2 === undefined && last) {
-						y2 = last.y2;
-					}
-
 					set.push({
 						x: x,
 						y1: y1,
@@ -31353,11 +31356,15 @@
 					for (i = 0, c = set.length; i < c; i++) {
 						point = set[i];
 
-						y1 = point.y1 === '+' ? top.viewport.maxValue : point.y1;
-						y2 = point.y2 === '-' ? bottom.viewport.minValue : point.y2;
+						if (point.y1 || point.y1 === 0) {
+							y1 = point.y1 === '+' ? top.viewport.maxValue : point.y1;
+							line1.push(point.x + ',' + top.y.scale(y1));
+						}
 
-						line1.push(point.x + ',' + top.y.scale(y1));
-						line2.unshift(point.x + ',' + bottom.y.scale(y2));
+						if (point.y2 || point.y2 === 0) {
+							y2 = point.y2 === '-' ? bottom.viewport.minValue : point.y2;
+							line2.unshift(point.x + ',' + bottom.y.scale(y2));
+						}
 					}
 
 					return 'M' + line1.join('L') + 'L' + line2.join('L') + 'Z';
