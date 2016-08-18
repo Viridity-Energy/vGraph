@@ -45,7 +45,7 @@ function parseSettings( settings, old ){
 
 // references are used so data values can be passed in for classify to work, if
 // using a custom getValue function, you will also need to pass in requirements
-function loadRefrence( ref, normalizer ){
+function loadReference( ref, normalizer ){
 	// set up standard requests for references
 	if ( ref.requirements ){
 		// need to copy over multiple values
@@ -163,7 +163,7 @@ class View {
 
 		// load in all the references, tieing them in with the normalizer
 		refNames.forEach(function( name ){
-			loadRefrence( refs[name], normalizer );
+			loadReference( refs[name], normalizer );
 		});
 
 		this.adjustSettings = settings.adjustSettings||chartSettings.adjustSettings;
@@ -192,11 +192,11 @@ class View {
 
 		if ( component.references ){
 			component.references.forEach(function( ref ){
-				if ( !refs[ref.name] ){
-					refs[ref.name] = ref;
+				if ( !refs[ref.id] ){
+					refs[ref.id] = ref;
 
 					if ( normalizer ){
-						loadRefrence( ref, normalizer );
+						loadReference( ref, normalizer );
 					}
 				}
 			});

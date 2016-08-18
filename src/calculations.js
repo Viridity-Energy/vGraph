@@ -61,6 +61,8 @@ function makeExtremeTest( compare ){
 	};
 }
 
+// TODO : revisit this, doesn't look optimal
+// TODO : a way to do feed level stats and view level stats
 module.exports = {
 	compile: function( calculations ){
 		var fn,

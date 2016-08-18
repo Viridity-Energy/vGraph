@@ -35,7 +35,7 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
 								var node,
 									view = cfg.$ops.$view,
 									datum = point[cfg.view],
-									nodeName = 'tn_'+cfg.name,
+									nodeName = 'tn_'+cfg.id,
 									className = cfg.className,
 									value = cfg.$ops.getValue(datum);
 								

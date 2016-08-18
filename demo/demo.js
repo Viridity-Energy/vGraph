@@ -19788,7 +19788,7 @@
 				function mergePoint() {
 					state = dis.mergePoint(parsed, set);
 
-					if (state !== 1 && parsed.$classify) {
+					if (state === -1 && parsed.$classify) {
 						if (!set.$classify) {
 							set.$classify = {};
 						}
@@ -19824,7 +19824,7 @@
 						set = this.makeSet();
 
 						if (state) {
-							// state === 1
+							// state === 1, so merge it with the new set
 							mergePoint();
 						}
 					}
@@ -19844,7 +19844,7 @@
 				this.references.forEach(function (ref) {
 					if (ref.$ops.getValue) {
 						ref.$ops.$eachNode(function (node) {
-							var v = +ref.$ops.getValue(node);
+							var v = ref.$ops.getValue(node);
 							if (v || v === 0) {
 								if (min === undefined) {
 									min = v;
@@ -20799,7 +20799,7 @@
 		}, {
 			key: 'getReference',
 			value: function getReference(refDef) {
-				var ref, name;
+				var id, ref, name;
 
 				if (!refDef) {
 					return null;
@@ -20811,11 +20811,14 @@
 					throw new Error('a reference without a name is not valid');
 				}
 
-				ref = this.references[name];
+				id = refDef.id || name;
+				ref = this.references[refDef.id || name];
 
 				if (ref) {
 					return ref;
 				} else {
+					refDef.id = id;
+
 					if (!refDef.field) {
 						refDef.field = refDef.name;
 					}
@@ -23550,7 +23553,7 @@
 
 	// references are used so data values can be passed in for classify to work, if
 	// using a custom getValue function, you will also need to pass in requirements
-	function loadRefrence(ref, normalizer) {
+	function loadReference(ref, normalizer) {
 		// set up standard requests for references
 		if (ref.requirements) {
 			// need to copy over multiple values
@@ -23643,7 +23646,7 @@
 
 				// load in all the references, tieing them in with the normalizer
 				refNames.forEach(function (name) {
-					loadRefrence(refs[name], normalizer);
+					loadReference(refs[name], normalizer);
 				});
 
 				this.adjustSettings = settings.adjustSettings || chartSettings.adjustSettings;
@@ -23673,11 +23676,11 @@
 
 				if (component.references) {
 					component.references.forEach(function (ref) {
-						if (!refs[ref.name]) {
-							refs[ref.name] = ref;
+						if (!refs[ref.id]) {
+							refs[ref.id] = ref;
 
 							if (normalizer) {
-								loadRefrence(ref, normalizer);
+								loadReference(ref, normalizer);
 							}
 						}
 					});
@@ -29098,9 +29101,9 @@
 				var i = this.length - 1,
 				    datum;
 
-				while (i) {
+				while (i !== -1) {
 					datum = this[i];
-					if (this.isValid(datum[field])) {
+					if (datum && this.isValid(datum[field])) {
 						return datum;
 					}
 
@@ -29531,6 +29534,8 @@
 		};
 	}
 
+	// TODO : revisit this, doesn't look optimal
+	// TODO : a way to do feed level stats and view level stats
 	module.exports = {
 		compile: function compile(calculations) {
 			var fn, prep, calc, reset, finalize;
@@ -29726,32 +29731,47 @@
 				    graph = requirements[0],
 				    element = ComponentElement.svgCompile('<g><path vgraph-line="config1" pair="config2" class-name="' + (attrs.className || '') + '"></path></g>')[0];
 
-				$el[0].appendChild(element);
-				$compile(element)(scope);
+				function subscribe() {
+					if (ref1 && ref2 && !unsubscribe) {
+						$el[0].appendChild(element);
+						$compile(element)(scope);
 
-				unsubscribe = graph.$on('focus-point', function (point) {
-					var p1 = point[ref1.view],
-					    p2 = point[ref2.view],
-					    view1 = ref1.$ops.$view,
-					    view2 = ref2.$ops.$view,
-					    v1 = ref1.$ops.getValue(p1),
-					    v2 = ref2.$ops.getValue(p2);
+						unsubscribe = graph.$on('focus-point', function (point) {
+							var t,
+							    p1 = point[ref1.view],
+							    p2 = point[ref2.view],
+							    view1 = ref1.$ops.$view,
+							    view2 = ref2.$ops.$view,
+							    v1 = ref1.$ops.getValue(p1),
+							    v2 = ref2.$ops.getValue(p2);
 
-					point[attrs.reference || 'compare'] = {
-						value: Math.abs(v1 - v2),
-						y: (view1.y.scale(v1) + view2.y.scale(v2)) / 2,
-						x: (p1.$x + p2.$x) / 2
-					};
-				});
+							if ((v1 || v1 === 0) && (v2 || v2 === 0)) {
+								t = {
+									value: Math.abs(v1 - v2),
+									y: (view1.y.scale(v1) + view2.y.scale(v2)) / 2,
+									x: (p1.$x + p2.$x) / 2
+								};
+							} else {
+								t = {
+									x: (p1.$x + p2.$x) / 2
+								};
+							}
+
+							point[attrs.reference || 'compare'] = t;
+						});
+					}
+				}
 
 				scope.$on('$destroy', unsubscribe);
 
 				scope.$watch('config1', function (cfg) {
 					ref1 = graph.getReference(cfg);
+					subscribe();
 				});
 
 				scope.$watch('config2', function (cfg) {
 					ref2 = graph.getReference(cfg);
+					subscribe();
 				});
 			}
 		};
@@ -30981,7 +31001,7 @@
 							cfg = chart.getReference(config[i]);
 							configs.push(cfg);
 
-							elements[cfg.name] = $el.append('line').attr('class', 'line ' + cfg.className);
+							elements[cfg.id] = $el.append('line').attr('class', 'line ' + cfg.className);
 						}
 					}
 				}
@@ -31010,12 +31030,12 @@
 
 							if (datum && cfg.$ops.$view.isLeading()) {
 								points.push({
-									el: elements[cfg.name],
+									el: elements[cfg.id],
 									x: datum.$x,
 									y: cfg.$ops.$view.y.scale(value)
 								});
 							} else {
-								elements[cfg.name].attr('visibility', 'hidden');
+								elements[cfg.id].attr('visibility', 'hidden');
 								isValid = false;
 							}
 						});
@@ -32906,7 +32926,7 @@
 								var node,
 								    view = cfg.$ops.$view,
 								    datum = point[cfg.view],
-								    nodeName = 'tn_' + cfg.name,
+								    nodeName = 'tn_' + cfg.id,
 								    className = cfg.className,
 								    value = cfg.$ops.getValue(datum);
 

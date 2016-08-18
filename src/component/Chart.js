@@ -201,7 +201,8 @@ class Chart{
 	}
 
 	getReference( refDef ){
-		var ref,
+		var id,
+			ref,
 			name;
 
 		if ( !refDef ){
@@ -214,11 +215,14 @@ class Chart{
 			throw new Error('a reference without a name is not valid');
 		}
 
-		ref = this.references[name];
+		id = refDef.id || name;
+		ref = this.references[refDef.id||name];
 
 		if ( ref ){
 			return ref;
 		}else{
+			refDef.id = id;
+			
 			if ( !refDef.field ){
 				refDef.field = refDef.name;
 			}

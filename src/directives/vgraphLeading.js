@@ -29,7 +29,7 @@ angular.module( 'vgraph' ).directive( 'vgraphLeading',
 							cfg = chart.getReference(config[i]);
 							configs.push( cfg );
 
-							elements[ cfg.name ] = $el.append('line').attr( 'class', 'line '+cfg.className );
+							elements[ cfg.id ] = $el.append('line').attr( 'class', 'line '+cfg.className );
 						}
 					}
 				}
@@ -60,12 +60,12 @@ angular.module( 'vgraph' ).directive( 'vgraphLeading',
 
 							if ( datum && cfg.$ops.$view.isLeading() ){
 								points.push({
-									el : elements[cfg.name],
+									el : elements[cfg.id],
 									x : datum.$x,
 									y : cfg.$ops.$view.y.scale( value )
 								});
 							}else{
-								elements[cfg.name].attr( 'visibility','hidden' );
+								elements[cfg.id].attr( 'visibility','hidden' );
 								isValid = false;
 							}
 						});

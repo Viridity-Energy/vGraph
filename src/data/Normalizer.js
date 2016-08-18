@@ -26,9 +26,9 @@ class Normalizer extends Linear {
 		var i = this.length - 1,
 			datum;
 
-		while( i ){
+		while( i !== -1 ){
 			datum = this[i];
-			if ( this.isValid(datum[field]) ){
+			if ( datum && this.isValid(datum[field]) ){
 				return datum;
 			}
 
