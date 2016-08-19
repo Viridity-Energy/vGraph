@@ -61,6 +61,7 @@ function _makeReader( category, old ){
 		return function( classified ){
 			var v = classified[category],
 				t = old(classified);
+
 			if ( v ){
 				if ( t ){
 					return t+' '+v;
@@ -85,7 +86,13 @@ function makeReader( def ){
 		res = _makeReader( category, res );
 	});
 
-	return res;
+	return function( classified ){
+		if ( classified ){
+			return res(classified);
+		}else{
+			return '';
+		}
+	};
 }
 
 class Classifier{

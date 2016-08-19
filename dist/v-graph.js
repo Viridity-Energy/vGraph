@@ -4343,8 +4343,7 @@ var vGraph =
 	function stackFunc(old, fn) {
 		if (!fn) {
 			return old;
-		}
-		if (!old) {
+		} else if (!old) {
 			return fn;
 		} else {
 			return function (node) {
@@ -5197,7 +5196,8 @@ var vGraph =
 				    sets = [],
 				    grid = [],
 				    area = this.area,
-				    bucketer = this.bucketer;
+				    bucketer = this.bucketer,
+				    classifier = this.classifier;
 
 				bucketer.$reset();
 
@@ -5300,9 +5300,11 @@ var vGraph =
 							height: ySize
 						};
 
-						if (this.classifier) {
-							t.classified = this.classifier.parse(data, ref.$ops.getStats());
+						if (classifier) {
+							t.classified = classifier.parse(data, ref.$ops.getStats());
 						}
+
+						sets.push(t);
 
 						yPos = yNext;
 					});
@@ -5971,7 +5973,9 @@ var vGraph =
 			require: ['^vgraphChart', 'vgraphLine'],
 			controller: ComponentElement,
 			link: function link(scope, $el, attrs, requirements) {
-				var className,
+				var cfg,
+				    pair,
+				    className,
 				    el = $el[0],
 				    chart = requirements[0],
 				    element = requirements[1];
@@ -5979,13 +5983,13 @@ var vGraph =
 				element.setChart(chart);
 				element.setElement(el);
 
-				scope.$watch('config', function (config) {
-					var pair,
-					    cfg = chart.getReference(config);
+				function build() {
+					if (attrs.pair && !pair) {
+						return;
+					}
 
 					if (cfg) {
 						if (attrs.pair) {
-							pair = chart.getReference(scope.pair);
 							className = 'fill ';
 							element.setDrawer(new DrawFill(cfg, pair));
 							pair.$ops.$view.registerComponent(element);
@@ -6004,6 +6008,18 @@ var vGraph =
 
 						cfg.$ops.$view.registerComponent(element);
 					}
+				}
+
+				if (attrs.pair) {
+					scope.$watch('pair', function (p) {
+						pair = chart.getReference(p);
+						build();
+					});
+				}
+
+				scope.$watch('config', function (c) {
+					cfg = chart.getReference(c);
+					build();
 				});
 			}
 		};

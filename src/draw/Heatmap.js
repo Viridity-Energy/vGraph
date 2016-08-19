@@ -47,7 +47,8 @@ class Heatmap{
 			sets = [],
 			grid = [],
 			area = this.area,
-			bucketer = this.bucketer;
+			bucketer = this.bucketer,
+			classifier = this.classifier;
 
 		bucketer.$reset();
 		
@@ -150,13 +151,15 @@ class Heatmap{
 					height: ySize
 				};
 
-				if ( this.classifier ){
-					t.classified = this.classifier.parse( 
+				if ( classifier ){
+					t.classified = classifier.parse( 
 						data,
 						ref.$ops.getStats()
 					);
 				}
 
+				sets.push( t );
+				
 				yPos = yNext;
 			});
 

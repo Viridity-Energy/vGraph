@@ -13,7 +13,9 @@ require('angular').module( 'vgraph' ).directive( 'vgraphLine',
 			require : ['^vgraphChart','vgraphLine'],
 			controller: ComponentElement,
 			link : function( scope, $el, attrs, requirements ){
-				var className,
+				var cfg,
+					pair,
+					className,
 					el = $el[0],
 					chart = requirements[0],
 					element = requirements[1];
@@ -21,13 +23,13 @@ require('angular').module( 'vgraph' ).directive( 'vgraphLine',
 				element.setChart( chart );
 				element.setElement( el );
 
-				scope.$watch('config', function( config ){
-					var pair,
-						cfg = chart.getReference( config );
+				function build(){
+					if ( attrs.pair && !pair ){
+						return;
+					}
 
 					if ( cfg ){
 						if ( attrs.pair ){
-							pair = chart.getReference( scope.pair );
 							className = 'fill ';
 							element.setDrawer( new DrawFill(cfg,pair) );
 							pair.$ops.$view.registerComponent( element );
@@ -46,6 +48,18 @@ require('angular').module( 'vgraph' ).directive( 'vgraphLine',
 
 						cfg.$ops.$view.registerComponent( element );
 					}
+				}
+
+				if ( attrs.pair ){
+					scope.$watch('pair', function( p ){
+						pair = chart.getReference( p );
+						build();
+					});
+				}
+
+				scope.$watch('config', function( c ){
+					cfg = chart.getReference( c );
+					build();
 				});
 			}
 		};

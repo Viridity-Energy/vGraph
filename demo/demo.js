@@ -136,43 +136,26 @@
 		var ref1 = {
 			name: 'someLine1',
 			className: 'red',
-			classify: function classify(node) {
-				if (node.someLine1 > node.someLine3) {
-					return {
-						'high-value': true
-					};
-				} else if (node.someLine1 < node.someLine3) {
-					return {
-						'low-value': true
-					};
-				}
-			},
-			mergePoint: function mergePoint(parsed, set, old) {
-				if (set.$classify && parsed.$classify) {
-					if (set.$classify['high-value'] && parsed.$classify['low-value']) {
-						return 1;
-					} else if (set.$classify['low-value'] && parsed.$classify['high-value']) {
-						return 1;
+			classify: {
+				'position': function position(node) {
+					if (node.someLine1 > node.someLine3) {
+						return 'high-value';
+					} else if (node.someLine1 < node.someLine3) {
+						return 'low-value';
 					}
 				}
-
-				return old.call(this, parsed, set);
 			}
 		},
 		    ref2 = {
 			name: 'someLine2',
 			className: 'blue',
-			classify: function classify(node) {
-				if (node.someLine2 > node.someLine3) {
-					console.log('high-value');
-					return {
-						'high-value': true
-					};
-				} else if (node.someLine2 < node.someLine3) {
-					console.log('low-value');
-					return {
-						'low-value': true
-					};
+			classify: {
+				'position': function position(node) {
+					if (node.someLine2 > node.someLine3) {
+						return 'high-value';
+					} else if (node.someLine2 < node.someLine3) {
+						return 'low-value';
+					}
 				}
 			},
 			highlights: {
@@ -188,15 +171,13 @@
 		    ref4 = {
 			name: 'someLine4',
 			className: 'orange',
-			classify: function classify(node) {
-				if (node.someLine4 > node.someLine3) {
-					return {
-						'high-value': true
-					};
-				} else if (node.someLine4 < node.someLine3) {
-					return {
-						'low-value': true
-					};
+			classify: {
+				'position': function position(node) {
+					if (node.someLine4 > node.someLine3) {
+						return 'high-value';
+					} else if (node.someLine4 < node.someLine3) {
+						return 'low-value';
+					}
 				}
 			},
 			highlights: {
@@ -205,7 +186,7 @@
 				}
 			}
 		},
-		    data = [{ x: 0, y1: 20, y2: 25, y3: 23, y4: 19 }];
+		    data = [{ x: 0, y1: 20, y2: 25, y3: 40, y4: 19 }];
 
 		$scope.graph = {
 			x: {
@@ -242,23 +223,37 @@
 
 		$scope.config = [ref1, ref2, ref3, ref4];
 
+		var passed = false;
 		for (var i = 0, c = 100; i < c; i++) {
-			var counter = 0;
-			var min = -0.5,
+			var t,
+			    counter = 0,
+			    min = -0.5,
 			    max = 0.5,
+			    t3 = Math.random() * 4,
 			    t1 = Math.random() * (max - min) + min,
 			    t2 = Math.random() * (max - min) + min,
-			    t3 = Math.random() * 4 - 2,
-			    // max: 2, min: 2
-			t4 = Math.random() * (max - min) + min;
+			    t4 = Math.random() * (max - min) + min;
 
-			data.push({
+			t = {
 				x: data.length,
 				y1: data[data.length - 1].y1 + t1,
 				y2: data[data.length - 1].y2 + t2,
-				y3: data[data.length - 1].y3 + t3,
 				y4: data[data.length - 1].y4 + t4
-			});
+			};
+
+			if (!passed) {
+				t.y3 = data[data.length - 1].y3 - t3;
+				if (t.y3 < -10) {
+					passed = true;
+				}
+			} else {
+				t.y3 = data[data.length - 1].y3 + t3;
+				if (t.y3 > 40) {
+					passed = false;
+				}
+			}
+
+			data.push(t);
 		}
 	}]);
 
@@ -1624,6 +1619,7 @@
 			zoom: 'zoomable',
 			views: {
 				'default': {
+					// view level calculations
 					calculations: [vGraph.calculations.maximum(4, function (d) {
 						return d.someLine1;
 					}, 'max'), vGraph.calculations.percentile(25, function (d) {
@@ -1635,7 +1631,7 @@
 				chart.$on('render', function () {
 					startHook();
 				});
-				chart.$on('done', function () {
+				chart.$on('rendered', function () {
 					stopHook();
 				});
 			}
@@ -1663,6 +1659,10 @@
 		$scope.page = {
 			managers: {
 				'default': {
+					// whole data level calculations, the mins might not come through since
+					// due to normalization rules, a min variable might be copied over, but the value of a
+					// later point is used.
+					// TODO : look into optimizing how points are normalized.  Smaller data sets aren't as apparent
 					calculations: [vGraph.calculations.minimum(4, function (d) {
 						return d.someLine1;
 					}, 'min'), vGraph.calculations.percentile(50, function (d) {
@@ -1684,34 +1684,29 @@
 		$scope.config = [{
 			name: 'someLine1',
 			className: 'red',
-			requirements: ['someLine1', 'min'],
-			classify: function classify(node) {
-				var t = {};
+			requirements: ['someLine1', 'min'], // this is needed so 
+			classify: {
+				'is': function is(node, stats) {
+					if (node.min) {
+						return 'low-value';
+					}
 
-				if (node.min) {
-					t['low-value'] = true;
+					if (node.max) {
+						return 'high-value';
+					}
 				}
-
-				if (node.max) {
-					t['high-value'] = true;
-				}
-
-				return t;
 			}
-
 		}, {
 			name: 'median',
-			field: null,
-			pointeAs: 'median',
 			className: 'green',
+			requirements: null,
 			getValue: function getValue(d, stats) {
 				return stats.median;
 			}
 		}, {
 			name: 'perc25',
-			field: null,
-			pointeAs: 'perc25',
 			className: 'blue',
+			requirements: null,
 			getValue: function getValue(d, stats) {
 				return stats.perc25;
 			}
@@ -1723,10 +1718,12 @@
 		startHook = function startHook() {
 			startTime = +new Date();
 			$scope.loadTime = startTime - beginTime;
+			console.log('load time', $scope.loadTime);
 		};
 
 		stopHook = function stopHook() {
 			$scope.runTime = +new Date() - startTime;
+			console.log('run time', $scope.runTime);
 		};
 
 		for (var i = 0, c = 200000; i < c; i++) {
@@ -29621,8 +29618,7 @@
 	function stackFunc(old, fn) {
 		if (!fn) {
 			return old;
-		}
-		if (!old) {
+		} else if (!old) {
 			return fn;
 		} else {
 			return function (node) {
@@ -30475,7 +30471,8 @@
 				    sets = [],
 				    grid = [],
 				    area = this.area,
-				    bucketer = this.bucketer;
+				    bucketer = this.bucketer,
+				    classifier = this.classifier;
 
 				bucketer.$reset();
 
@@ -30578,9 +30575,11 @@
 							height: ySize
 						};
 
-						if (this.classifier) {
-							t.classified = this.classifier.parse(data, ref.$ops.getStats());
+						if (classifier) {
+							t.classified = classifier.parse(data, ref.$ops.getStats());
 						}
+
+						sets.push(t);
 
 						yPos = yNext;
 					});
@@ -31249,7 +31248,9 @@
 			require: ['^vgraphChart', 'vgraphLine'],
 			controller: ComponentElement,
 			link: function link(scope, $el, attrs, requirements) {
-				var className,
+				var cfg,
+				    pair,
+				    className,
 				    el = $el[0],
 				    chart = requirements[0],
 				    element = requirements[1];
@@ -31257,13 +31258,13 @@
 				element.setChart(chart);
 				element.setElement(el);
 
-				scope.$watch('config', function (config) {
-					var pair,
-					    cfg = chart.getReference(config);
+				function build() {
+					if (attrs.pair && !pair) {
+						return;
+					}
 
 					if (cfg) {
 						if (attrs.pair) {
-							pair = chart.getReference(scope.pair);
 							className = 'fill ';
 							element.setDrawer(new DrawFill(cfg, pair));
 							pair.$ops.$view.registerComponent(element);
@@ -31282,6 +31283,18 @@
 
 						cfg.$ops.$view.registerComponent(element);
 					}
+				}
+
+				if (attrs.pair) {
+					scope.$watch('pair', function (p) {
+						pair = chart.getReference(p);
+						build();
+					});
+				}
+
+				scope.$watch('config', function (c) {
+					cfg = chart.getReference(c);
+					build();
 				});
 			}
 		};
