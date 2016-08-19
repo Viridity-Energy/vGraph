@@ -560,7 +560,7 @@
 							tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
 
 						<g vgraph-stack="config">
-							<path ng-repeat="cfg in config" vgraph-line="cfg" pair="config[$index-1]"></path>
+							<path ng-repeat="cfg in config" vgraph-line="cfg" pair="config[$index-1]||'-'"></path>
 						</g>
 
 						<g vgraph-target="config" point-radius="3"></g>

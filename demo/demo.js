@@ -19985,6 +19985,7 @@
 			return function (classified) {
 				var v = classified[category],
 				    t = old(classified);
+
 				if (v) {
 					if (t) {
 						return t + ' ' + v;
@@ -20009,7 +20010,13 @@
 			res = _makeReader(category, res);
 		});
 
-		return res;
+		return function (classified) {
+			if (classified) {
+				return res(classified);
+			} else {
+				return '';
+			}
+		};
 	}
 
 	var Classifier = function Classifier(def) {
@@ -31259,7 +31266,7 @@
 				element.setElement(el);
 
 				function build() {
-					if (attrs.pair && !pair) {
+					if (pair === null) {
 						return;
 					}
 
@@ -31267,7 +31274,9 @@
 						if (attrs.pair) {
 							className = 'fill ';
 							element.setDrawer(new DrawFill(cfg, pair));
-							pair.$ops.$view.registerComponent(element);
+							if (pair) {
+								pair.$ops.$view.registerComponent(element);
+							}
 						} else {
 							className = 'line ';
 							element.setDrawer(new DrawLine(cfg));
@@ -31287,14 +31296,22 @@
 
 				if (attrs.pair) {
 					scope.$watch('pair', function (p) {
-						pair = chart.getReference(p);
-						build();
+						if (p) {
+							pair = chart.getReference(p) || null;
+							if (!pair && p === '-') {
+								pair = undefined;
+							}
+
+							build();
+						}
 					});
 				}
 
 				scope.$watch('config', function (c) {
-					cfg = chart.getReference(c);
-					build();
+					if (c) {
+						cfg = chart.getReference(c);
+						build();
+					}
 				});
 			}
 		};

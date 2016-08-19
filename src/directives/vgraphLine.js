@@ -24,7 +24,7 @@ require('angular').module( 'vgraph' ).directive( 'vgraphLine',
 				element.setElement( el );
 
 				function build(){
-					if ( attrs.pair && !pair ){
+					if ( pair === null ){
 						return;
 					}
 
@@ -32,7 +32,9 @@ require('angular').module( 'vgraph' ).directive( 'vgraphLine',
 						if ( attrs.pair ){
 							className = 'fill ';
 							element.setDrawer( new DrawFill(cfg,pair) );
-							pair.$ops.$view.registerComponent( element );
+							if ( pair ){
+								pair.$ops.$view.registerComponent( element );
+							}
 						}else{
 							className = 'line ';
 							element.setDrawer( new DrawLine(cfg) );
@@ -52,14 +54,22 @@ require('angular').module( 'vgraph' ).directive( 'vgraphLine',
 
 				if ( attrs.pair ){
 					scope.$watch('pair', function( p ){
-						pair = chart.getReference( p );
-						build();
+						if ( p ){
+							pair = chart.getReference( p )||null;
+							if ( !pair && p === '-' ){
+								pair = undefined;
+							}
+
+							build();
+						}
 					});
 				}
 
 				scope.$watch('config', function( c ){
-					cfg = chart.getReference( c );
-					build();
+					if ( c ){
+						cfg = chart.getReference( c );
+						build();
+					}
 				});
 			}
 		};
