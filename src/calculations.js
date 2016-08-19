@@ -1,8 +1,7 @@
 function stackFunc( old, fn ){
 	if ( !fn ){
 		return old;
-	}
-	if ( !old ){
+	}else if ( !old ){
 		return fn;
 	}else{
 		return function( node ){
@@ -85,7 +84,7 @@ module.exports = {
 
 		fn = function viewCalculator( collection ){
 			var i, c;
-
+			
 			if ( calc ){
 				for( i = 0, c = collection.length; i < c; i++ ){
 					calc( collection[i] );

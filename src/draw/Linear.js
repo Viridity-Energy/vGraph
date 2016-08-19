@@ -1,3 +1,5 @@
+var Classifier = require('../lib/Classifier.js');
+
 class Linear{
 	// TODO : bmoor
 	static isNumeric( v ){
@@ -6,11 +8,20 @@ class Linear{
 
 	constructor(){
 		var i, c,
+			ref,
 			t = [];
 
 		for( i = 0, c = arguments.length; i < c; i++ ){
-			if ( arguments[i] ){
-				t.push( arguments[i] );
+			ref = arguments[i];
+			if ( ref ){
+				t.push( ref );
+
+				// TODO : how do I merge classifications?
+				if ( ref.classify ){
+					this.classifier = new Classifier( ref.classify );
+				}else if ( ref.classifier ){
+					this.classifier = ref.classifier;
+				}
 			}
 		}
 
@@ -26,15 +37,14 @@ class Linear{
 		return [];
 	}
 
-	// DrawLinear.prototype.getPoint
+	getPoint(){
+		// TODO : create a more generic pattern, overridden everywhere for now
+	}
 
 	// merging set, returning true means to end the set, returning false means to continue it
 	mergePoint( parsed, set ){
 		if ( parsed ){
 			set.push( set );
-			return false;
-		}else{
-			return true;
 		}
 	}
 
@@ -45,55 +55,53 @@ class Linear{
 	parse( keys ){
 		var i, c,
 			raw,
-			parsed,
 			state,
+			parsed,
 			dis = this,
 			set = this.makeSet(),
 			sets = [];
 
-		function mergePoint(){
-			state = dis.mergePoint( 
-				parsed,
-				set
-			);
-
-			if ( state === -1 && parsed.$classify ){
-				if ( !set.$classify ){
-					set.$classify = {};
-				}
-
-				// TODO : this should be made so you can turn it on or off
-				Object.keys(parsed.$classify).forEach(function( c ){
-					if ( parsed.$classify[c] ){
-						set.$classify[c] = true;
-					}
-				});
+		// I need to start on the end, and find the last valid point.  Go until there
+		/* states
+			1: create new set, merge
+			0: create new set, do no merge
+			-1: carry on
+		*/
+		function closeSet(){
+			if ( dis.isValidSet(set) ){
+				sets.push( set );
 			}
+
+			set = dis.makeSet();
 		}
 
-		// I need to start on the end, and find the last valid point.  Go until there
 		for( i = 0, c = keys.length; i < c; i++ ){
+			state = 0;
 			raw = keys[i];
 			parsed = this.getPoint(raw);
 			
 			if ( parsed ){
-				// -1 : added to old set, continue set
-				// 0 : create new set
-				// 1 : create new set, add parsed to that
-				mergePoint();
-			} else {
-				state = 0;
-			} 
-
-			if ( state > -1 ){
-				if ( this.isValidSet(set) ){
-					sets.push( set );
+				if ( parsed.classified ){
+					if ( set.classified ){
+						if ( !this.classifier.isEqual(set.classified,parsed.classified) ){
+							closeSet();
+						}
+					}
+						
+					set.classified = parsed.classified;
 				}
 
-				set = this.makeSet();
+			
+				state = this.mergePoint( parsed, set ); 
 
-				if ( state ){ // state === 1, so merge it with the new set
-					mergePoint();
+				if ( state !== -1 ){
+					closeSet();
+
+					set.classified = parsed.classified;
+
+					if ( state ){ // state === 1, so merge it with the new set
+						this.mergePoint( parsed, set ); // don't care about return
+					}
 				}
 			}
 		}
@@ -111,7 +119,7 @@ class Linear{
 
 		this.references.forEach(function( ref ){
 			if ( ref.$ops.getValue ){
-				ref.$ops.$eachNode(function(node){
+				ref.$ops.eachNode(function(node){
 					var v = ref.$ops.getValue(node);
 					if ( v || v === 0 ){
 						if ( min === undefined ){

@@ -32,8 +32,6 @@ class Fill extends DrawLinear{
 
 		if ( isNumeric(y1) || isNumeric(y2) ){
 			return {
-				$classify: this.top.classify ? 
-					this.top.classify(tn,bn) : null,
 				x: tn ? tn.$x : bn.$x,
 				y1: y1,
 				y2: y2
@@ -59,7 +57,7 @@ class Fill extends DrawLinear{
 		}
 	}
 
-	makePath( set ){
+	makePath( dataSet ){
 		var i, c,
 			y1,
 			y2,
@@ -69,9 +67,9 @@ class Fill extends DrawLinear{
 			line1 = [],
 			line2 = [];
 		
-		if ( set.length ){
-			for( i = 0, c = set.length; i < c; i++ ){
-				point = set[i];
+		if ( dataSet.length ){
+			for( i = 0, c = dataSet.length; i < c; i++ ){
+				point = dataSet[i];
 				
 				if ( point.y1 || point.y1 === 0 ){
 					y1 = point.y1 === '+' ? top.viewport.maxValue : point.y1;
@@ -88,16 +86,16 @@ class Fill extends DrawLinear{
 		}
 	}
 
-	makeElement( set ){
+	makeElement( dataSet ){
 		var className = '';
 
-		if ( set.length ){
-			if ( set.$classify ){
-				className = Object.keys(set.$classify).join(' ');
+		if ( dataSet.length ){
+			if ( this.classifier ){
+				className = this.classifier.getClasses(dataSet.classified);
 			}
 
 			return '<path class="'+ className +
-				'" d="'+this.makePath(set)+
+				'" d="'+this.makePath(dataSet)+
 				'"></path>';
 		}
 	}

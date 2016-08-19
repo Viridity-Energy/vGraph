@@ -1,14 +1,15 @@
-var DataBucketer = require('../data/Bucketer.js');
+var DataBucketer = require('../data/Bucketer.js'),
+	Classifier = require('../lib/Classifier.js');
 
 class Heatmap{
 		
-	constructor( reference, area, templates, indexs, buckets ){
+	constructor( ref, area, templates, indexs, buckets ){
 		var t,
 			bucketer;
 
 		this.area = area;
 		this.templates = templates;
-		this.references = [reference];
+		this.references = [ref];
 		
 		if ( !buckets ){
 			t = Object.keys(indexs);
@@ -16,6 +17,12 @@ class Heatmap{
 				x: t[0],
 				y: t[1]
 			};
+		}
+
+		if ( ref.classify ){
+			this.classifier = new Classifier( ref.classify );
+		}else if ( ref.classifier ){
+			this.classifier = ref.classifier;
 		}
 
 		this.bucketer = bucketer = new DataBucketer( indexs[buckets.x], function(){
@@ -78,6 +85,7 @@ class Heatmap{
 		xSize = (area.x2-area.x1) / xCount;
 		ySize = (area.y2-area.y1) / yCount;
 
+		// compute the x labels
 		xPos = area.x1+xSize;
 		Object.keys(xLabels).forEach(function( key ){
 			var xNext = xPos + xSize;
@@ -96,6 +104,7 @@ class Heatmap{
 			xPos = xNext;
 		});
 
+		// compute the y labels
 		yPos = area.y1+ySize;
 		Object.keys(yLabels).forEach(function( key ){
 			var yNext = yPos + ySize;
@@ -114,6 +123,7 @@ class Heatmap{
 			yPos = yNext;
 		});
 
+		// compute the data cells
 		xPos = area.x1+xSize;
 		Object.keys(xLabels).forEach(function( x ){
 			var col = [],
@@ -123,12 +133,13 @@ class Heatmap{
 			yPos = area.y1 + ySize;
 
 			Object.keys(yLabels).forEach(function( y ){
-				var yNext = yPos + ySize,
+				var t,
+					yNext = yPos + ySize,
 					data = bucketer.$getBucket(x).$getBucket(y);
 
 				col.push( data );
 
-				sets.push({
+				t = {
 					type: 'cell',
 					x1: xPos,
 					x2: xNext,
@@ -137,7 +148,14 @@ class Heatmap{
 					data: data,
 					width: xSize,
 					height: ySize
-				});
+				};
+
+				if ( this.classifier ){
+					t.classified = this.classifier.parse( 
+						data,
+						ref.$ops.getStats()
+					);
+				}
 
 				yPos = yNext;
 			});
@@ -156,13 +174,13 @@ class Heatmap{
 
 	closeSet(){}
 
-	makePath( boxInfo ){
-		if ( boxInfo ){
+	makePath( dataSet ){
+		if ( dataSet ){
 			return 'M' + 
-				(boxInfo.x1+','+boxInfo.y1) + 'L' +
-				(boxInfo.x2+','+boxInfo.y1) + 'L' +
-				(boxInfo.x2+','+boxInfo.y2) + 'L' +
-				(boxInfo.x1+','+boxInfo.y2) + 'Z';
+				(dataSet.x1+','+dataSet.y1) + 'L' +
+				(dataSet.x2+','+dataSet.y1) + 'L' +
+				(dataSet.x2+','+dataSet.y2) + 'L' +
+				(dataSet.x1+','+dataSet.y2) + 'Z';
 		}
 	}
 
@@ -172,38 +190,34 @@ class Heatmap{
     'style="text-anchor: middle;"'+
     '>{{ text }}</text>'
 	*/
-	makeElement( boxInfo ){
+	makeElement( dataSet ){
 		var template,
 			className = '';
 
-		if ( boxInfo ){
-			if ( boxInfo.$classify ){
-				className = Object.keys(boxInfo.$classify).join(' ');
+		if ( dataSet ){
+			if ( this.classifier ){
+				className = this.classifier.getClasses(dataSet.classified);
 			}
 
-			if ( boxInfo.$className ){
-				className += ' '+boxInfo.$className;
-			}
-
-			if ( boxInfo.type === 'cell' ){
+			if ( dataSet.type === 'cell' ){
 				template = this.templates.cell;
 				className += ' bucket';
 			}else{
-				if ( boxInfo.type === 'x' ){
+				if ( dataSet.type === 'x' ){
 					template = this.templates.xHeading;
 				}else{
 					template = this.templates.yHeading;
 				}
-				className += ' heading axis-'+boxInfo.type;
+				className += ' heading axis-'+dataSet.type;
 			}
 
 			return '<g class="'+className+'"'+
-				' transform="translate('+boxInfo.x1+','+boxInfo.y1+')"'+
+				' transform="translate('+dataSet.x1+','+dataSet.y1+')"'+
 				'>'+
 					'<rect x="0" y="0'+
-						( boxInfo.$color ? '" style="fill:'+boxInfo.$color : '' )+
-						'" width="'+(boxInfo.x2 - boxInfo.x1)+
-						'" height="'+(boxInfo.y2 - boxInfo.y1)+
+						( dataSet.$color ? '" style="fill:'+dataSet.$color : '' )+
+						'" width="'+(dataSet.x2 - dataSet.x1)+
+						'" height="'+(dataSet.y2 - dataSet.y1)+
 					'"/>'+
 					template+
 				'</g>';

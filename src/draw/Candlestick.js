@@ -46,12 +46,14 @@ class Candlestick extends DrawLinear{
 	}
 
 	getPoint( index ){
-		var ref = this.ref,
-			node = ref.$ops.$getNode(index),
-			field = ref.$ops.getField();
+		var ops = this.ref.$ops,
+			node = ops.$getNode(index),
+			field = ops.getField();
 		
 		return {
-			$classify: this.ref.classify ? this.ref.classify(node) : null,
+			classified: this.classifier ? 
+				this.classifier.parse( node, ops.getStats() ) : 
+				null,
 			x: node.$x,
 			y: node['$'+field],
 			min: node['$min'+field],
@@ -102,26 +104,26 @@ class Candlestick extends DrawLinear{
 		set.max = scale(set.max);
 	}
 
-	makePath( set ){
-		if ( set.x ){
+	makePath( dataSet ){
+		if ( dataSet.x ){
 			return 'M'+
-				set.x + ',' + set.max + 'L' +
-				set.x + ',' + set.min + 'M' +
-				(set.x-2) + ',' + set.y + 'L' +
-				(set.x+2) + ',' + set.y;
+				dataSet.x + ',' + dataSet.max + 'L' +
+				dataSet.x + ',' + dataSet.min + 'M' +
+				(dataSet.x-2) + ',' + dataSet.y + 'L' +
+				(dataSet.x+2) + ',' + dataSet.y;
 		}
 	}
 
-	makeElement( set ){
+	makeElement( dataSet ){
 		var className = '';
 
-		if ( set.x ){
-			if ( set.$classify ){
-				className = Object.keys(set.$classify).join(' ');
+		if ( dataSet.x ){
+			if ( this.classifier ){
+				className = this.classifier.getClasses(dataSet.classified);
 			}
 
 			return '<path class="'+ className +
-				'" d="'+this.makePath(set)+
+				'" d="'+this.makePath(dataSet)+
 				'"></path>';
 		}
 	}

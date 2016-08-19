@@ -29,7 +29,11 @@ class Linear extends List{
 
 		if ( !this._copyProperties ){
 			this._copyProperties = function( n, o ){
-				o[name] = n[name];
+				var v = n[name];
+
+				if ( v !== undefined ){
+					o[name] = v;
+				}
 			};
 			this._hasValue = function( d ){
 				return this.isValid( d[name] );
@@ -37,7 +41,12 @@ class Linear extends List{
 		}else{
 			cfn = this._copyProperties;
 			this._copyProperties = function( n, o ){
-				o[name] = n[name];
+				var v = n[name];
+
+				if ( v !== undefined ){
+					o[name] = v;
+				}
+
 				cfn( n, o );
 			};
 
@@ -46,7 +55,7 @@ class Linear extends List{
 				if ( this.isValid(d[name]) ){
 					return true;
 				}else{
-					return vfn.call( this, d);
+					return vfn.call( this, d );
 				}
 			};
 		}

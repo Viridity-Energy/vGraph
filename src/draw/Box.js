@@ -31,9 +31,9 @@ class Box extends DrawBar {
 				};
 			}
 
-			t.$classify = this.top.classify ? 
-				this.top.classify(node) : 
-				null;
+			if ( this.classifier ){
+				t.classified = this.classifier.parse(node);
+			}
 
 			return t;
 		}

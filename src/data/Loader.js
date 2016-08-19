@@ -113,11 +113,18 @@ class Loader{
 		
 		// readings : readFrom => mapTo
 		// we flatten the data, so readers can be complex, but write to one property
-		Object.keys(cfg.readings).forEach(function( readFrom ){
-			var old = reader,
-				getter = makeGetter( readFrom ),
-				writeTo = cfg.readings[ readFrom ];
+		Object.keys(cfg.readings).forEach(function( writeTo ){
+			var getter,
+				old = reader,
+				readFrom = cfg.readings[ writeTo ];
 			
+			// TODO : do I want to make then all { to : from }
+			if ( typeof(readFrom) === 'function' ){
+				getter = readFrom;
+			}else{
+				getter = makeGetter( readFrom );
+			}
+
 			if ( old ){
 				reader = function( interval, feedData, dm ){
 					var value = getter(feedData);

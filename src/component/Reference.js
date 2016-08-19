@@ -17,14 +17,10 @@ class Reference {
 			};
 		}
 
-		if ( root.$getValue ){
-			this.$getValue = root.$getValue;
-		}
-
-		this.$resetField();
+		this.resetField();
 	}
 
-	$resetField(){
+	resetField(){
 		this.field = this.$getRoot().field;
 	}
 
@@ -40,18 +36,19 @@ class Reference {
 		this.$view = viewComp;
 	}
 
+	eachNode( fn ){
+		this.$view.normalizer.$sort().forEach( fn );
+	}
+
+	getStats(){
+		return this.$view.normalizer.$stats;
+	}
+
+	// TODO : I really should remove the $ from all of these...
 	$getNode( index ){
 		return this.$view.normalizer.$getNode(index);
 	}
 	
-	$getValue( index ){
-		var t = this.$getNode(index);
-
-		if ( t ){
-			return this.getValue(t);
-		}
-	}
-
 	$getClosest( index ){
 		return this.$view.normalizer.$getClosest(index,'$x');
 	}
@@ -60,12 +57,16 @@ class Reference {
 		return this.getValue( this.$getClosest(index) );
 	}
 
-	$eachNode( fn ){
-		this.$view.normalizer.$sort().forEach( fn );
-	}
-
 	$getIndexs(){
 		return this.$view.normalizer.$getIndexs();
+	}
+
+	$getValue( index ){
+		var t = this.$getNode(index);
+
+		if ( t ){
+			return this.getValue(t);
+		}
 	}
 }
 

@@ -49,10 +49,18 @@ angular.module( 'vgraph' ).controller( 'FloodCtrl',
 			src: data,
 			interval: 'x',
 			readings:{
-				'y1': 'someLine1',
-				'y2': 'someLine2',
-				'y3': 'someLine3',
-				'y4': 'someLine4'
+				'someLine1': function( d ){
+					return d.y1;
+				},
+				'someLine2': function( d ){
+					return d.y2;
+				},
+				'someLine3': function( d ){
+					return d.y3;
+				},
+				'someLine4': function( d ){
+					return d.y4;
+				}
 			}
 		}];
 
@@ -89,43 +97,26 @@ angular.module( 'vgraph' ).controller( 'ClassifyCtrl', [
 		var ref1 = {
 				name: 'someLine1',
 				className: 'red',
-				classify: function( node ){
-					if ( node.someLine1 > node.someLine3 ){
-						return {
-							'high-value': true
-						};
-					}else if ( node.someLine1 < node.someLine3 ){
-						return {
-							'low-value': true
-						};
-					}
-				},
-				mergePoint: function( parsed, set, old ){
-					if ( set.$classify && parsed.$classify ){
-						if( set.$classify['high-value'] &&
-							parsed.$classify['low-value'] ){
-							return 1;
-						}else if( set.$classify['low-value'] &&
-							parsed.$classify['high-value'] ){
-							return 1;
+				classify: {
+					'position': function( node ){
+						if ( node.someLine1 > node.someLine3 ){
+							return 'high-value';
+						}else if ( node.someLine1 < node.someLine3 ){
+							return 'low-value';
 						}
 					}
-
-					return old.call( this, parsed, set );
 				}
 			},
 			ref2 = {
 				name: 'someLine2',
 				className: 'blue',
-				classify: function( node ){
-					if ( node.someLine2 > node.someLine3 ){
-						return {
-							'high-value': true
-						};
-					}else if ( node.someLine2 < node.someLine3 ){
-						return {
-							'low-value': true
-						};
+				classify: {
+					'position': function( node ){
+						if ( node.someLine2 > node.someLine3 ){
+							return 'high-value';
+						}else if ( node.someLine2 < node.someLine3 ){
+							return 'low-value';
+						}
 					}
 				},
 				highlights: {
@@ -141,15 +132,13 @@ angular.module( 'vgraph' ).controller( 'ClassifyCtrl', [
 			ref4 = {
 				name: 'someLine4',
 				className: 'orange',
-				classify: function( node ){
-					if ( node.someLine4 > node.someLine3 ){
-						return {
-							'high-value': true
-						};
-					}else if ( node.someLine4 < node.someLine3 ){
-						return {
-							'low-value': true
-						};
+				classify: {
+					'position': function( node ){
+						if ( node.someLine4 > node.someLine3 ){
+							return 'high-value';
+						}else if ( node.someLine4 < node.someLine3 ){
+							return 'low-value';
+						}
 					}
 				},
 				highlights: {
@@ -158,7 +147,7 @@ angular.module( 'vgraph' ).controller( 'ClassifyCtrl', [
 					}
 				}
 			},
-			data = [ {x : 0, y1 : 20, y2 : 25, y3 : 23, y4 : 19}  ];
+			data = [ {x : 0, y1 : 20, y2 : 25, y3 : 40, y4 : 19}  ];
 
 		$scope.graph = {
 			x : {
@@ -180,10 +169,10 @@ angular.module( 'vgraph' ).controller( 'ClassifyCtrl', [
 			interval: 'x',
 			massage: function( x ){ return x+5; },
 			readings:{
-				'y1': 'someLine1',
-				'y2': 'someLine2',
-				'y3': 'someLine3',
-				'y4': 'someLine4'
+				'someLine1': 'y1',
+				'someLine2': 'y2',
+				'someLine3': 'y3',
+				'someLine4': 'y4'
 			}
 		}];
 
@@ -194,22 +183,37 @@ angular.module( 'vgraph' ).controller( 'ClassifyCtrl', [
 			ref4
 		];
 
+		var passed = false;
 		for( var i = 0, c = 100; i < c; i++ ){
-			var counter = 0;
-			var min = -0.5,
+			var t,
+				counter = 0,
+				min = -0.5,
 				max = 0.5,
+				t3 = Math.random() * (4),
 				t1 = Math.random() * (max - min) + min,
 				t2 = Math.random() * (max - min) + min,
-				t3 = Math.random() * (4) - 2, // max: 2, min: 2
 				t4 = Math.random() * (max - min) + min;
 
-			data.push({
+			t = {
 				x : data.length,
 				y1 : data[data.length-1].y1 + t1,
 				y2 : data[data.length-1].y2 + t2,
-				y3 : data[data.length-1].y3 + t3,
 				y4 : data[data.length-1].y4 + t4
-			});
+			};
+
+			if ( !passed ){
+				t.y3 = data[data.length-1].y3 - t3;
+				if ( t.y3 < -10 ){
+					passed = true;
+				}
+			}else{
+				t.y3 = data[data.length-1].y3 + t3;
+				if ( t.y3 > 40 ){
+					passed = false;
+				}
+			}
+
+			data.push( t );
 		}
 	}]
 );
@@ -321,10 +325,10 @@ angular.module( 'vgraph' ).controller( 'ResizeCtrl', [
 			src: data,
 			interval: 'x',
 			readings:{
-				'y_line_1': 'y1',
-				'y_line_2': 'y2',
-				'y_line_3': 'y3',
-				'y_line_4': 'y4' 
+				'y1': 'y_line_1',
+				'y2': 'y_line_2',
+				'y3': 'y_line_3',
+				'y4': 'y_line_4' 
 			}
 		}];
 
@@ -385,10 +389,10 @@ angular.module( 'vgraph' ).controller( 'LoadingCtrl',
 			src: data,
 			interval: 'x',
 			readings:{
-				'y1': 'someLine1',
-				'y2': 'someLine2',
-				'y3': 'someLine3',
-				'y4': 'someLine4'
+				'someLine1': 'y1',
+				'someLine2': 'y2',
+				'someLine3': 'y3',
+				'someLine4': 'y4' 
 			}
 		}];
 
@@ -691,10 +695,10 @@ angular.module( 'vgraph' ).controller( 'CompareCtrl',
 			src: data,
 			interval: 'x',
 			readings:{
-				'input1': 'y1',
-				'input2': 'y2',
-				'input3': 'y3',
-				'input4': 'y4' 
+				'y1': 'input1',
+				'y2': 'input2',
+				'y3': 'input3',
+				'y4': 'input4'
 			}
 		}];
 
@@ -873,14 +877,14 @@ angular.module( 'vgraph' ).controller( 'MultiAxisCtrl',
 			manager: 'first',
 			interval: 'x',
 			readings:{
-				'y1': 'y-1'
+				'y-1': 'y1' 
 			}
 		},{
 			src: data,
 			manager: 'second',
 			interval: 'x2',
 			readings:{
-				'y2': 'y-2'
+				'y-2': 'y2' 
 			}
 		}];
 
@@ -956,14 +960,14 @@ angular.module( 'vgraph' ).controller( 'MultiIntervalCtrl',
 				manager: 'first',
 				interval: 'x1',
 				readings:{
-					'y1': 'y-1'
+					'y-1': 'y1' 
 				}
 			},{
 				src: data2,
 				manager: 'second',
 				interval: 'x2',
 				readings:{
-					'y2': 'y-2'
+					'y-2': 'y2' 
 				}
 			}]
 		};
@@ -1125,38 +1129,42 @@ angular.module( 'vgraph' ).controller( 'LeadingCtrl',
 				src: data,
 				interval: 'x',
 				readings:{
-					'y1': 'someLine1',
-					'y2': 'someLine2',
-					'y3': 'someLine3',
-					'y4': 'someLine4' 
+					'someLine1': 'y1',
+					'someLine2': 'y2',
+					'someLine3': 'y3',
+					'someLine4': 'y4'  
 				}
 			},{
 				src: data,
 				manager: 'eins',
 				interval: 'x',
 				readings:{
-					'y1': 'someLine1'
+					'someLine1': 'y1' 
 				}
 			},{
 				src: data,
 				manager: 'zwei',
 				interval: 'x',
 				readings:{
-					'y2': 'someLine2'
+					'someLine2': 'y2' 
 				}
 			},{
 				src: data,
 				manager: 'fier',
 				interval: 'x',
 				readings:{
-					'y3': 'someLine3'
+					'someLine3': function( d ){
+						return d.y3;
+					} 
 				}
 			},{
 				src: data,
 				manager: 'sieben',
 				interval: 'x',
 				readings:{
-					'y4': 'someLine4'
+					'someLine4': function( d ){
+						return d.y4;
+					}
 				}
 			}]
 		};
@@ -1283,7 +1291,7 @@ angular.module( 'vgraph' ).controller( 'BoxCtrl',
 			src: data,
 			interval: 'x',
 			readings:{
-				'y1': 'someLine1'
+				'someLine1': 'y1'
 			}
 		}];
 
@@ -1331,7 +1339,7 @@ angular.module( 'vgraph' ).controller( 'IconCtrl',
 			src: data,
 			interval: 'x',
 			readings:{
-				'y1': 'someLine1'
+				'someLine1': 'y1' 
 			}
 		}];
 
@@ -1505,28 +1513,28 @@ angular.module( 'vgraph' ).controller( 'ExportCtrl',
 			interval: 'x',
 			manager: 'first',
 			readings:{
-				'y': 'someLine1'
+				'someLine1': 'y' 
 			}
 		},{
 			src: data2,
 			interval: 'x',
 			manager: 'second',
 			readings:{
-				'y': 'someLine2'
+				'someLine2': 'y'
 			}
 		},{
 			src: data3,
 			interval: 'x',
 			manager: 'third',
 			readings:{
-				'y': 'someLine3'
+				'someLine3': 'y' 
 			}
 		},{
 			src: data4,
 			interval: 'x',
 			manager: 'fourth',
 			readings:{
-				'y': 'someLine4'
+				'someLine4': 'y' 
 			}
 		}];
 
@@ -1610,6 +1618,7 @@ angular.module( 'vgraph' ).controller( 'StatsCtrl',
 			zoom: 'zoomable',
 			views: {
 				'default': {
+					// view level calculations
 					calculations: [
 						vGraph.calculations.maximum( 4, function(d){ return d.someLine1; }, 'max' ),
 						vGraph.calculations.percentile( 25, function( d ){ return d.someLine1; }, 'perc25' )
@@ -1620,7 +1629,7 @@ angular.module( 'vgraph' ).controller( 'StatsCtrl',
 				chart.$on('render', function(){
 					startHook();
 				});
-				chart.$on('done', function(){
+				chart.$on('rendered', function(){
 					stopHook();
 				});
 			}
@@ -1644,6 +1653,10 @@ angular.module( 'vgraph' ).controller( 'StatsCtrl',
 		$scope.page = {
 			managers: {
 				'default': {
+					// whole data level calculations, the mins might not come through since
+					// due to normalization rules, a min variable might be copied over, but the value of a
+					// later point is used.
+					// TODO : look into optimizing how points are normalized.  Smaller data sets aren't as apparent
 					calculations: [
 						vGraph.calculations.minimum( 4, function(d){ return d.someLine1; }, 'min' ),
 						vGraph.calculations.percentile( 50, function( d ){ return d.someLine1; }, 'median' )
@@ -1654,7 +1667,9 @@ angular.module( 'vgraph' ).controller( 'StatsCtrl',
 				src: data,
 				interval: 'x',
 				readings:{
-					'y1': 'someLine1'
+					'someLine1': function( d ){
+						return d.y1;
+					} 
 				}
 			}]
 		};
@@ -1663,36 +1678,31 @@ angular.module( 'vgraph' ).controller( 'StatsCtrl',
 			{
 				name: 'someLine1',
 				className: 'red',
-				requirements: ['someLine1','min'],
-				classify: function( node ){
-					var t = {};
+				requirements: ['someLine1','min'], // this is needed so 
+				classify: {
+					'is': function( node, stats ){
+						if ( node.min ){
+							return 'low-value';
+						}
 
-					if ( node.min ){
-						t['low-value'] = true;
+						if ( node.max ){
+							return 'high-value';
+						}
 					}
-
-					if ( node.max ){
-						t['high-value'] = true;
-					}
-
-					return t;
-				},
-				
+				}
 			},
 			{
 				name: 'median',
-				field: null,
-				pointeAs: 'median',
 				className: 'green',
+				requirements: null,
 				getValue: function( d, stats ){
 					return stats.median;
 				}
 			},
 			{
 				name: 'perc25',
-				field: null,
-				pointeAs: 'perc25',
 				className: 'blue',
+				requirements: null,
 				getValue: function( d, stats ){
 					return stats.perc25;
 				}
@@ -1705,10 +1715,12 @@ angular.module( 'vgraph' ).controller( 'StatsCtrl',
 		startHook = function(){
 			startTime = +(new Date());
 			$scope.loadTime = startTime - beginTime;
+			console.log( 'load time', $scope.loadTime );
 		};
 
 		stopHook = function(){
 			$scope.runTime = +(new Date()) - startTime;
+			console.log( 'run time', $scope.runTime );
 		};
 
 		for( var i = 0, c = 200000; i < c; i++ ){
@@ -1746,13 +1758,13 @@ angular.module( 'vgraph' ).controller( 'ExternalCtrl',
 			src: json,
 			interval: 'interval',
 			readings:{
-				'value': 'y1'
+				'y1': 'value'
 			}
 		},{
 			src: csv,
 			interval: 'interval',
 			readings:{
-				'value': 'y2'
+				'y1': 'value'
 			}
 		}];
 

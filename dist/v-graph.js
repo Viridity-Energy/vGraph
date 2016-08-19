@@ -58,12 +58,12 @@ var vGraph =
 	__webpack_require__(2);
 
 	module.exports = {
-		calculations: __webpack_require__(32),
-		component: __webpack_require__(70),
-		data: __webpack_require__(71),
-		draw: __webpack_require__(73),
-		lib: __webpack_require__(74),
-		stats: __webpack_require__(12)
+		calculations: __webpack_require__(33),
+		component: __webpack_require__(71),
+		data: __webpack_require__(72),
+		draw: __webpack_require__(74),
+		lib: __webpack_require__(75),
+		stats: __webpack_require__(13)
 	};
 
 /***/ },
@@ -77,31 +77,31 @@ var vGraph =
 
 	__webpack_require__(6);
 	__webpack_require__(8);
-	__webpack_require__(13);
-	__webpack_require__(15);
-	__webpack_require__(17);
-	__webpack_require__(34);
+	__webpack_require__(14);
+	__webpack_require__(16);
+	__webpack_require__(18);
 	__webpack_require__(35);
-	__webpack_require__(37);
-	__webpack_require__(40);
+	__webpack_require__(36);
+	__webpack_require__(38);
 	__webpack_require__(41);
-	__webpack_require__(44);
+	__webpack_require__(42);
 	__webpack_require__(45);
-	__webpack_require__(47);
+	__webpack_require__(46);
 	__webpack_require__(48);
 	__webpack_require__(49);
 	__webpack_require__(50);
 	__webpack_require__(51);
-	__webpack_require__(54);
+	__webpack_require__(52);
 	__webpack_require__(55);
 	__webpack_require__(56);
-	__webpack_require__(62);
-	__webpack_require__(64);
+	__webpack_require__(57);
+	__webpack_require__(63);
 	__webpack_require__(65);
 	__webpack_require__(66);
 	__webpack_require__(67);
 	__webpack_require__(68);
 	__webpack_require__(69);
+	__webpack_require__(70);
 
 /***/ },
 /* 3 */
@@ -698,7 +698,7 @@ var vGraph =
 	'use strict';
 
 	var DrawBar = __webpack_require__(9),
-	    ComponentElement = __webpack_require__(11);
+	    ComponentElement = __webpack_require__(12);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphBar', [function () {
 		return {
@@ -836,12 +836,14 @@ var vGraph =
 				    y2,
 				    t,
 				    width,
-				    node = this.top.$ops.$getNode(index);
+				    top = this.top.$ops,
+				    node = top.$getNode(index),
+				    bottom = this.bottom.$ops;
 
-				y1 = this.top.$ops.getValue(node);
+				y1 = top.getValue(node);
 
 				if (this.bottom !== this.top) {
-					y2 = this.bottom.$ops.$getValue(index);
+					y2 = bottom.$getValue(index);
 				} else {
 					y2 = '-'; // this.bottom.$view.viewport.minValue;
 				}
@@ -857,7 +859,7 @@ var vGraph =
 					max = node.$x + width;
 
 					t = {
-						$classify: this.top.classify ? this.top.classify(node, this.bottom.$ops.$getNode(index)) : null,
+						classified: this.classifier ? this.classifier.parse(node, top.getStats()) : null,
 						x1: min < node.$xMin ? min : node.$xMin,
 						x2: max > node.$xMax ? node.$xMax : max,
 						y1: y1,
@@ -913,8 +915,8 @@ var vGraph =
 				var className = '';
 
 				if (dataSet) {
-					if (dataSet.$classify) {
-						className = Object.keys(dataSet.$classify).join(' ');
+					if (this.classifier && dataSet.classified) {
+						className = this.classifier.getClasses(dataSet.classified);
 					}
 
 					return '<rect class="' + className + '" x="' + dataSet.x1 + '" y="' + dataSet.y1 + '" width="' + (dataSet.x2 - dataSet.x1) + '" height="' + (dataSet.y2 - dataSet.y1) + '"/>';
@@ -934,13 +936,15 @@ var vGraph =
 
 /***/ },
 /* 10 */
-/***/ function(module, exports) {
+/***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var Classifier = __webpack_require__(11);
 
 	var Linear = function () {
 		_createClass(Linear, null, [{
@@ -957,11 +961,20 @@ var vGraph =
 
 			var i,
 			    c,
+			    ref,
 			    t = [];
 
 			for (i = 0, c = arguments.length; i < c; i++) {
-				if (arguments[i]) {
-					t.push(arguments[i]);
+				ref = arguments[i];
+				if (ref) {
+					t.push(ref);
+
+					// TODO : how do I merge classifications?
+					if (ref.classify) {
+						this.classifier = new Classifier(ref.classify);
+					} else if (ref.classifier) {
+						this.classifier = ref.classifier;
+					}
 				}
 			}
 
@@ -981,8 +994,11 @@ var vGraph =
 			value: function makeSet() {
 				return [];
 			}
+		}, {
+			key: 'getPoint',
+			value: function getPoint() {}
+			// TODO : create a more generic pattern, overridden everywhere for now
 
-			// DrawLinear.prototype.getPoint
 
 			// merging set, returning true means to end the set, returning false means to continue it
 
@@ -991,9 +1007,6 @@ var vGraph =
 			value: function mergePoint(parsed, set) {
 				if (parsed) {
 					set.push(set);
-					return false;
-				} else {
-					return true;
 				}
 			}
 		}, {
@@ -1007,53 +1020,53 @@ var vGraph =
 				var i,
 				    c,
 				    raw,
-				    parsed,
 				    state,
+				    parsed,
 				    dis = this,
 				    set = this.makeSet(),
 				    sets = [];
 
-				function mergePoint() {
-					state = dis.mergePoint(parsed, set);
-
-					if (state === -1 && parsed.$classify) {
-						if (!set.$classify) {
-							set.$classify = {};
-						}
-
-						// TODO : this should be made so you can turn it on or off
-						Object.keys(parsed.$classify).forEach(function (c) {
-							if (parsed.$classify[c]) {
-								set.$classify[c] = true;
-							}
-						});
+				// I need to start on the end, and find the last valid point.  Go until there
+				/* states
+	   	1: create new set, merge
+	   	0: create new set, do no merge
+	   	-1: carry on
+	   */
+				function closeSet() {
+					if (dis.isValidSet(set)) {
+						sets.push(set);
 					}
+
+					set = dis.makeSet();
 				}
 
-				// I need to start on the end, and find the last valid point.  Go until there
 				for (i = 0, c = keys.length; i < c; i++) {
+					state = 0;
 					raw = keys[i];
 					parsed = this.getPoint(raw);
 
 					if (parsed) {
-						// -1 : added to old set, continue set
-						// 0 : create new set
-						// 1 : create new set, add parsed to that
-						mergePoint();
-					} else {
-						state = 0;
-					}
+						if (parsed.classified) {
+							if (set.classified) {
+								if (!this.classifier.isEqual(set.classified, parsed.classified)) {
+									closeSet();
+								}
+							}
 
-					if (state > -1) {
-						if (this.isValidSet(set)) {
-							sets.push(set);
+							set.classified = parsed.classified;
 						}
 
-						set = this.makeSet();
+						state = this.mergePoint(parsed, set);
 
-						if (state) {
-							// state === 1, so merge it with the new set
-							mergePoint();
+						if (state !== -1) {
+							closeSet();
+
+							set.classified = parsed.classified;
+
+							if (state) {
+								// state === 1, so merge it with the new set
+								this.mergePoint(parsed, set); // don't care about return
+							}
 						}
 					}
 				}
@@ -1071,7 +1084,7 @@ var vGraph =
 
 				this.references.forEach(function (ref) {
 					if (ref.$ops.getValue) {
-						ref.$ops.$eachNode(function (node) {
+						ref.$ops.eachNode(function (node) {
 							var v = ref.$ops.getValue(node);
 							if (v || v === 0) {
 								if (min === undefined) {
@@ -1118,6 +1131,114 @@ var vGraph =
 
 /***/ },
 /* 11 */
+/***/ function(module, exports) {
+
+	'use strict';
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _makeClassifier(category, fn, old) {
+		if (old) {
+			return function (datum, stats) {
+				var t = old(datum, stats),
+				    v = fn(datum, stats);
+
+				t[category] = v;
+
+				return t;
+			};
+		} else {
+			return function (datum, stats) {
+				var t = {},
+				    v = fn(datum, stats);
+
+				t[category] = v;
+
+				return t;
+			};
+		}
+	}
+
+	function makeClassifier(def) {
+		var res;
+
+		Object.keys(def).forEach(function (category) {
+			res = _makeClassifier(category, def[category], res);
+		});
+
+		return res;
+	}
+
+	function _makeValidator(category, old) {
+		if (old) {
+			return function (n, o) {
+				if (n[category] === o[category]) {
+					return old(n, o);
+				} else {
+					return false;
+				}
+			};
+		} else {
+			return function (n, o) {
+				return n[category] === o[category];
+			};
+		}
+	}
+
+	function makeValidator(def) {
+		var res;
+
+		Object.keys(def).forEach(function (category) {
+			res = _makeValidator(category, res);
+		});
+
+		return res;
+	}
+
+	function _makeReader(category, old) {
+		if (old) {
+			return function (classified) {
+				var v = classified[category],
+				    t = old(classified);
+				if (v) {
+					if (t) {
+						return t + ' ' + v;
+					} else {
+						return v;
+					}
+				} else {
+					return t;
+				}
+			};
+		} else {
+			return function (classified) {
+				return classified[category] || '';
+			};
+		}
+	}
+
+	function makeReader(def) {
+		var res;
+
+		Object.keys(def).forEach(function (category) {
+			res = _makeReader(category, res);
+		});
+
+		return res;
+	}
+
+	var Classifier = function Classifier(def) {
+		_classCallCheck(this, Classifier);
+
+		this.parse = makeClassifier(def);
+		this.isEqual = makeValidator(def);
+		this.getClasses = makeReader(def);
+	};
+
+	module.exports = Classifier;
+
+/***/ },
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1126,7 +1247,7 @@ var vGraph =
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var StatCalculations = __webpack_require__(12);
+	var StatCalculations = __webpack_require__(13);
 
 	function appendChildren(element, dataSets, children) {
 		var i,
@@ -1254,7 +1375,7 @@ var vGraph =
 	module.exports = Element;
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -1275,7 +1396,7 @@ var vGraph =
 			var i, c;
 
 			for (i = 0, c = config.length; i < c; i++) {
-				config[i].$ops.$resetField();
+				config[i].$ops.resetField();
 			}
 		},
 		$getFields: function $getFields(config) {
@@ -1397,13 +1518,13 @@ var vGraph =
 	};
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawBox = __webpack_require__(14),
-	    ComponentElement = __webpack_require__(11);
+	var DrawBox = __webpack_require__(15),
+	    ComponentElement = __webpack_require__(12);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphBox', [function () {
 		return {
@@ -1448,7 +1569,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 14 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1501,7 +1622,9 @@ var vGraph =
 						};
 					}
 
-					t.$classify = this.top.classify ? this.top.classify(node) : null;
+					if (this.classifier) {
+						t.classified = this.classifier.parse(node);
+					}
 
 					return t;
 				}
@@ -1524,13 +1647,13 @@ var vGraph =
 	module.exports = Box;
 
 /***/ },
-/* 15 */
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawCandlestick = __webpack_require__(16),
-	    ComponentElement = __webpack_require__(11);
+	var DrawCandlestick = __webpack_require__(17),
+	    ComponentElement = __webpack_require__(12);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphCandlestick', [function () {
 		return {
@@ -1571,7 +1694,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 16 */
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1641,12 +1764,12 @@ var vGraph =
 		}, {
 			key: 'getPoint',
 			value: function getPoint(index) {
-				var ref = this.ref,
-				    node = ref.$ops.$getNode(index),
-				    field = ref.$ops.getField();
+				var ops = this.ref.$ops,
+				    node = ops.$getNode(index),
+				    field = ops.getField();
 
 				return {
-					$classify: this.ref.classify ? this.ref.classify(node) : null,
+					classified: this.classifier ? this.classifier.parse(node, ops.getStats()) : null,
 					x: node.$x,
 					y: node['$' + field],
 					min: node['$min' + field],
@@ -1700,22 +1823,22 @@ var vGraph =
 			}
 		}, {
 			key: 'makePath',
-			value: function makePath(set) {
-				if (set.x) {
-					return 'M' + set.x + ',' + set.max + 'L' + set.x + ',' + set.min + 'M' + (set.x - 2) + ',' + set.y + 'L' + (set.x + 2) + ',' + set.y;
+			value: function makePath(dataSet) {
+				if (dataSet.x) {
+					return 'M' + dataSet.x + ',' + dataSet.max + 'L' + dataSet.x + ',' + dataSet.min + 'M' + (dataSet.x - 2) + ',' + dataSet.y + 'L' + (dataSet.x + 2) + ',' + dataSet.y;
 				}
 			}
 		}, {
 			key: 'makeElement',
-			value: function makeElement(set) {
+			value: function makeElement(dataSet) {
 				var className = '';
 
-				if (set.x) {
-					if (set.$classify) {
-						className = Object.keys(set.$classify).join(' ');
+				if (dataSet.x) {
+					if (this.classifier) {
+						className = this.classifier.getClasses(dataSet.classified);
 					}
 
-					return '<path class="' + className + '" d="' + this.makePath(set) + '"></path>';
+					return '<path class="' + className + '" d="' + this.makePath(dataSet) + '"></path>';
 				}
 			}
 		}, {
@@ -1736,13 +1859,13 @@ var vGraph =
 	module.exports = Candlestick;
 
 /***/ },
-/* 17 */
+/* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	var d3 = __webpack_require__(7),
-	    ComponentChart = __webpack_require__(18);
+	    ComponentChart = __webpack_require__(19);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphChart', [function () {
 		function resize(box) {
@@ -1809,7 +1932,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 18 */
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1851,13 +1974,13 @@ var vGraph =
 		manager: the manager to lock the view onto
 	**/
 	var angular = __webpack_require__(4),
-	    Hitbox = __webpack_require__(19),
-	    Scheduler = __webpack_require__(20),
-	    domHelper = __webpack_require__(21),
-	    makeEventing = __webpack_require__(22),
-	    ComponentBox = __webpack_require__(23),
-	    ComponentView = __webpack_require__(25),
-	    ComponentReference = __webpack_require__(33);
+	    Hitbox = __webpack_require__(20),
+	    Scheduler = __webpack_require__(21),
+	    domHelper = __webpack_require__(22),
+	    makeEventing = __webpack_require__(23),
+	    ComponentBox = __webpack_require__(24),
+	    ComponentView = __webpack_require__(26),
+	    ComponentReference = __webpack_require__(34);
 
 	var ids = 1,
 	    schedule = new Scheduler();
@@ -2474,7 +2597,7 @@ var vGraph =
 	module.exports = Chart;
 
 /***/ },
-/* 19 */
+/* 20 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -2646,7 +2769,7 @@ var vGraph =
 	module.exports = Hitbox;
 
 /***/ },
-/* 20 */
+/* 21 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -2801,7 +2924,7 @@ var vGraph =
 	module.exports = Scheduler;
 
 /***/ },
-/* 21 */
+/* 22 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -2867,7 +2990,7 @@ var vGraph =
 	};
 
 /***/ },
-/* 22 */
+/* 23 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -2925,7 +3048,7 @@ var vGraph =
 	};
 
 /***/ },
-/* 23 */
+/* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -2934,8 +3057,8 @@ var vGraph =
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var makeEventing = __webpack_require__(22),
-	    jQuery = __webpack_require__(24);
+	var makeEventing = __webpack_require__(23),
+	    jQuery = __webpack_require__(25);
 
 	function merge(nVal, oVal) {
 		return nVal !== undefined ? parseInt(nVal) : oVal;
@@ -3080,13 +3203,13 @@ var vGraph =
 	module.exports = Box;
 
 /***/ },
-/* 24 */
+/* 25 */
 /***/ function(module, exports) {
 
 	module.exports = jQuery;
 
 /***/ },
-/* 25 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -3096,9 +3219,9 @@ var vGraph =
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var id = 1,
-	    ComponentPane = __webpack_require__(26),
-	    DataNormalizer = __webpack_require__(30),
-	    calculationsCompile = __webpack_require__(32).compile;
+	    ComponentPane = __webpack_require__(27),
+	    DataNormalizer = __webpack_require__(31),
+	    calculationsCompile = __webpack_require__(33).compile;
 
 	function parseSettings(settings, old) {
 		if (!old) {
@@ -3497,7 +3620,7 @@ var vGraph =
 	module.exports = View;
 
 /***/ },
-/* 26 */
+/* 27 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -3506,7 +3629,7 @@ var vGraph =
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var DataList = __webpack_require__(27);
+	var DataList = __webpack_require__(28);
 
 	var Pane = function () {
 		function Pane(fitToPane, xObj, yObj) {
@@ -3621,7 +3744,7 @@ var vGraph =
 	module.exports = Pane;
 
 /***/ },
-/* 27 */
+/* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -3634,8 +3757,8 @@ var vGraph =
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var _bisect = __webpack_require__(28).array.bisect,
-	    Collection = __webpack_require__(29).Collection,
+	var _bisect = __webpack_require__(29).array.bisect,
+	    Collection = __webpack_require__(30).Collection,
 	    cachedPush = Array.prototype.push,
 	    cachedSort = Array.prototype.sort;
 
@@ -3778,19 +3901,19 @@ var vGraph =
 	module.exports = List;
 
 /***/ },
-/* 28 */
+/* 29 */
 /***/ function(module, exports) {
 
 	module.exports = bmoor;
 
 /***/ },
-/* 29 */
+/* 30 */
 /***/ function(module, exports) {
 
 	module.exports = bmoorData;
 
 /***/ },
-/* 30 */
+/* 31 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -3804,7 +3927,7 @@ var vGraph =
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 	var uid = 1,
-	    Linear = __webpack_require__(31);
+	    Linear = __webpack_require__(32);
 
 	var Normalizer = function (_Linear) {
 		_inherits(Normalizer, _Linear);
@@ -3906,7 +4029,7 @@ var vGraph =
 	module.exports = Normalizer;
 
 /***/ },
-/* 31 */
+/* 32 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -3921,7 +4044,7 @@ var vGraph =
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var List = __webpack_require__(27);
+	var List = __webpack_require__(28);
 
 	var Linear = function (_List) {
 		_inherits(Linear, _List);
@@ -3967,7 +4090,11 @@ var vGraph =
 
 				if (!this._copyProperties) {
 					this._copyProperties = function (n, o) {
-						o[name] = n[name];
+						var v = n[name];
+
+						if (v !== undefined) {
+							o[name] = v;
+						}
 					};
 					this._hasValue = function (d) {
 						return this.isValid(d[name]);
@@ -3975,7 +4102,12 @@ var vGraph =
 				} else {
 					cfn = this._copyProperties;
 					this._copyProperties = function (n, o) {
-						o[name] = n[name];
+						var v = n[name];
+
+						if (v !== undefined) {
+							o[name] = v;
+						}
+
 						cfn(n, o);
 					};
 
@@ -4203,7 +4335,7 @@ var vGraph =
 	module.exports = Linear;
 
 /***/ },
-/* 32 */
+/* 33 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -4350,7 +4482,7 @@ var vGraph =
 	};
 
 /***/ },
-/* 33 */
+/* 34 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -4379,16 +4511,12 @@ var vGraph =
 				};
 			}
 
-			if (root.$getValue) {
-				this.$getValue = root.$getValue;
-			}
-
-			this.$resetField();
+			this.resetField();
 		}
 
 		_createClass(Reference, [{
-			key: '$resetField',
-			value: function $resetField() {
+			key: 'resetField',
+			value: function resetField() {
 				this.field = this.$getRoot().field;
 			}
 		}, {
@@ -4407,18 +4535,22 @@ var vGraph =
 				this.$view = viewComp;
 			}
 		}, {
+			key: 'eachNode',
+			value: function eachNode(fn) {
+				this.$view.normalizer.$sort().forEach(fn);
+			}
+		}, {
+			key: 'getStats',
+			value: function getStats() {
+				return this.$view.normalizer.$stats;
+			}
+
+			// TODO : I really should remove the $ from all of these...
+
+		}, {
 			key: '$getNode',
 			value: function $getNode(index) {
 				return this.$view.normalizer.$getNode(index);
-			}
-		}, {
-			key: '$getValue',
-			value: function $getValue(index) {
-				var t = this.$getNode(index);
-
-				if (t) {
-					return this.getValue(t);
-				}
 			}
 		}, {
 			key: '$getClosest',
@@ -4431,14 +4563,18 @@ var vGraph =
 				return this.getValue(this.$getClosest(index));
 			}
 		}, {
-			key: '$eachNode',
-			value: function $eachNode(fn) {
-				this.$view.normalizer.$sort().forEach(fn);
-			}
-		}, {
 			key: '$getIndexs',
 			value: function $getIndexs() {
 				return this.$view.normalizer.$getIndexs();
+			}
+		}, {
+			key: '$getValue',
+			value: function $getValue(index) {
+				var t = this.$getNode(index);
+
+				if (t) {
+					return this.getValue(t);
+				}
 			}
 		}]);
 
@@ -4448,12 +4584,12 @@ var vGraph =
 	module.exports = Reference;
 
 /***/ },
-/* 34 */
+/* 35 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var ComponentElement = __webpack_require__(11);
+	var ComponentElement = __webpack_require__(12);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphCompare', ['$compile', function ($compile) {
 		return {
@@ -4516,13 +4652,13 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 35 */
+/* 36 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawDots = __webpack_require__(36),
-	    ComponentElement = __webpack_require__(11);
+	var DrawDots = __webpack_require__(37),
+	    ComponentElement = __webpack_require__(12);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphDots', [function () {
 		return {
@@ -4563,7 +4699,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 36 */
+/* 37 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -4599,12 +4735,13 @@ var vGraph =
 		}, {
 			key: 'getPoint',
 			value: function getPoint(index) {
-				var node = this.ref.$ops.$getNode(index),
-				    value = this.ref.$ops.getValue(node);
+				var ops = this.ref.$ops,
+				    node = ops.$getNode(index),
+				    value = ops.getValue(node);
 
 				if (value || value === 0) {
 					return {
-						$classify: this.ref.classify ? this.ref.classify(node) : null,
+						classified: this.classifier ? this.classifier.parse(node, ops.getStats()) : null,
 						x: node.$x,
 						y: value
 					};
@@ -4625,25 +4762,25 @@ var vGraph =
 			}
 		}, {
 			key: 'makePath',
-			value: function makePath(set) {
+			value: function makePath(dataSet) {
 				var radius = this.radius,
 				    r2 = radius * 2;
 
-				if (set.x !== undefined) {
-					return 'M' + set.x + ' ' + set.y + 'm -' + radius + ', 0' + 'a ' + radius + ',' + radius + ' 0 1,1 ' + r2 + ',0' + 'a ' + radius + ',' + radius + ' 0 1,1 -' + r2 + ',0';
+				if (dataSet.x !== undefined) {
+					return 'M' + dataSet.x + ' ' + dataSet.y + 'm -' + radius + ', 0' + 'a ' + radius + ',' + radius + ' 0 1,1 ' + r2 + ',0' + 'a ' + radius + ',' + radius + ' 0 1,1 -' + r2 + ',0';
 				}
 			}
 		}, {
 			key: 'makeElement',
-			value: function makeElement(set) {
+			value: function makeElement(dataSet) {
 				var className = '';
 
-				if (set.x !== undefined) {
-					if (set.$classify) {
-						className = Object.keys(set.$classify).join(' ');
+				if (dataSet.x !== undefined) {
+					if (this.classifier) {
+						className = this.classifier.getClasses(dataSet.classified);
 					}
 
-					return '<circle class="' + className + '" cx="' + set.x + '" cy="' + set.y + '" r="' + this.radius + '"/>';
+					return '<circle class="' + className + '" cx="' + dataSet.x + '" cy="' + dataSet.y + '" r="' + this.radius + '"/>';
 				}
 			}
 		}, {
@@ -4669,12 +4806,12 @@ var vGraph =
 	module.exports = Dots;
 
 /***/ },
-/* 37 */
+/* 38 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var makeBlob = __webpack_require__(38);
+	var makeBlob = __webpack_require__(39);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphExport', [function () {
 		return {
@@ -4717,12 +4854,12 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 38 */
+/* 39 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var svgColorize = __webpack_require__(39);
+	var svgColorize = __webpack_require__(40);
 
 	function formatArray(arr) {
 		return arr.map(function (row) {
@@ -4774,7 +4911,7 @@ var vGraph =
 	};
 
 /***/ },
-/* 39 */
+/* 40 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -4818,7 +4955,7 @@ var vGraph =
 	module.exports = colorize;
 
 /***/ },
-/* 40 */
+/* 41 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -4904,13 +5041,13 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 41 */
+/* 42 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawHeatmap = __webpack_require__(42),
-	    ComponentElement = __webpack_require__(11);
+	var DrawHeatmap = __webpack_require__(43),
+	    ComponentElement = __webpack_require__(12);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphHeatmap', ['$compile', function ($compile) {
 		return {
@@ -4999,7 +5136,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 42 */
+/* 43 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -5008,17 +5145,18 @@ var vGraph =
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var DataBucketer = __webpack_require__(43);
+	var DataBucketer = __webpack_require__(44),
+	    Classifier = __webpack_require__(11);
 
 	var Heatmap = function () {
-		function Heatmap(reference, area, templates, indexs, buckets) {
+		function Heatmap(ref, area, templates, indexs, buckets) {
 			_classCallCheck(this, Heatmap);
 
 			var t, bucketer;
 
 			this.area = area;
 			this.templates = templates;
-			this.references = [reference];
+			this.references = [ref];
 
 			if (!buckets) {
 				t = Object.keys(indexs);
@@ -5026,6 +5164,12 @@ var vGraph =
 					x: t[0],
 					y: t[1]
 				};
+			}
+
+			if (ref.classify) {
+				this.classifier = new Classifier(ref.classify);
+			} else if (ref.classifier) {
+				this.classifier = ref.classifier;
 			}
 
 			this.bucketer = bucketer = new DataBucketer(indexs[buckets.x], function () {
@@ -5091,6 +5235,7 @@ var vGraph =
 				xSize = (area.x2 - area.x1) / xCount;
 				ySize = (area.y2 - area.y1) / yCount;
 
+				// compute the x labels
 				xPos = area.x1 + xSize;
 				Object.keys(xLabels).forEach(function (key) {
 					var xNext = xPos + xSize;
@@ -5109,6 +5254,7 @@ var vGraph =
 					xPos = xNext;
 				});
 
+				// compute the y labels
 				yPos = area.y1 + ySize;
 				Object.keys(yLabels).forEach(function (key) {
 					var yNext = yPos + ySize;
@@ -5127,6 +5273,7 @@ var vGraph =
 					yPos = yNext;
 				});
 
+				// compute the data cells
 				xPos = area.x1 + xSize;
 				Object.keys(xLabels).forEach(function (x) {
 					var col = [],
@@ -5136,12 +5283,13 @@ var vGraph =
 					yPos = area.y1 + ySize;
 
 					Object.keys(yLabels).forEach(function (y) {
-						var yNext = yPos + ySize,
+						var t,
+						    yNext = yPos + ySize,
 						    data = bucketer.$getBucket(x).$getBucket(y);
 
 						col.push(data);
 
-						sets.push({
+						t = {
 							type: 'cell',
 							x1: xPos,
 							x2: xNext,
@@ -5150,7 +5298,11 @@ var vGraph =
 							data: data,
 							width: xSize,
 							height: ySize
-						});
+						};
+
+						if (this.classifier) {
+							t.classified = this.classifier.parse(data, ref.$ops.getStats());
+						}
 
 						yPos = yNext;
 					});
@@ -5172,9 +5324,9 @@ var vGraph =
 			value: function closeSet() {}
 		}, {
 			key: 'makePath',
-			value: function makePath(boxInfo) {
-				if (boxInfo) {
-					return 'M' + (boxInfo.x1 + ',' + boxInfo.y1) + 'L' + (boxInfo.x2 + ',' + boxInfo.y1) + 'L' + (boxInfo.x2 + ',' + boxInfo.y2) + 'L' + (boxInfo.x1 + ',' + boxInfo.y2) + 'Z';
+			value: function makePath(dataSet) {
+				if (dataSet) {
+					return 'M' + (dataSet.x1 + ',' + dataSet.y1) + 'L' + (dataSet.x2 + ',' + dataSet.y1) + 'L' + (dataSet.x2 + ',' + dataSet.y2) + 'L' + (dataSet.x1 + ',' + dataSet.y2) + 'Z';
 				}
 			}
 
@@ -5187,32 +5339,28 @@ var vGraph =
 
 		}, {
 			key: 'makeElement',
-			value: function makeElement(boxInfo) {
+			value: function makeElement(dataSet) {
 				var template,
 				    className = '';
 
-				if (boxInfo) {
-					if (boxInfo.$classify) {
-						className = Object.keys(boxInfo.$classify).join(' ');
+				if (dataSet) {
+					if (this.classifier) {
+						className = this.classifier.getClasses(dataSet.classified);
 					}
 
-					if (boxInfo.$className) {
-						className += ' ' + boxInfo.$className;
-					}
-
-					if (boxInfo.type === 'cell') {
+					if (dataSet.type === 'cell') {
 						template = this.templates.cell;
 						className += ' bucket';
 					} else {
-						if (boxInfo.type === 'x') {
+						if (dataSet.type === 'x') {
 							template = this.templates.xHeading;
 						} else {
 							template = this.templates.yHeading;
 						}
-						className += ' heading axis-' + boxInfo.type;
+						className += ' heading axis-' + dataSet.type;
 					}
 
-					return '<g class="' + className + '"' + ' transform="translate(' + boxInfo.x1 + ',' + boxInfo.y1 + ')"' + '>' + '<rect x="0" y="0' + (boxInfo.$color ? '" style="fill:' + boxInfo.$color : '') + '" width="' + (boxInfo.x2 - boxInfo.x1) + '" height="' + (boxInfo.y2 - boxInfo.y1) + '"/>' + template + '</g>';
+					return '<g class="' + className + '"' + ' transform="translate(' + dataSet.x1 + ',' + dataSet.y1 + ')"' + '>' + '<rect x="0" y="0' + (dataSet.$color ? '" style="fill:' + dataSet.$color : '') + '" width="' + (dataSet.x2 - dataSet.x1) + '" height="' + (dataSet.y2 - dataSet.y1) + '"/>' + template + '</g>';
 				}
 			}
 		}, {
@@ -5228,7 +5376,7 @@ var vGraph =
 	module.exports = Heatmap;
 
 /***/ },
-/* 43 */
+/* 44 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -5241,7 +5389,7 @@ var vGraph =
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var Collection = __webpack_require__(29).Collection;
+	var Collection = __webpack_require__(30).Collection;
 
 	// TODO : use bmoor-data's hasher here, or better use HashedCollection
 
@@ -5324,7 +5472,7 @@ var vGraph =
 	module.exports = Bucketer;
 
 /***/ },
-/* 44 */
+/* 45 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -5343,14 +5491,14 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 45 */
+/* 46 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	var d3 = __webpack_require__(7),
-	    DrawIcon = __webpack_require__(46),
-	    ComponentElement = __webpack_require__(11);
+	    DrawIcon = __webpack_require__(47),
+	    ComponentElement = __webpack_require__(12);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphIcon', [function () {
 		return {
@@ -5438,7 +5586,7 @@ var vGraph =
 	*/
 
 /***/ },
-/* 46 */
+/* 47 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -5451,7 +5599,7 @@ var vGraph =
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var DrawBox = __webpack_require__(14);
+	var DrawBox = __webpack_require__(15);
 
 	var Icon = function (_DrawBox) {
 		_inherits(Icon, _DrawBox);
@@ -5486,7 +5634,7 @@ var vGraph =
 	module.exports = Icon;
 
 /***/ },
-/* 47 */
+/* 48 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -5566,7 +5714,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 48 */
+/* 49 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -5658,7 +5806,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 49 */
+/* 50 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -5706,7 +5854,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 50 */
+/* 51 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -5805,14 +5953,14 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 51 */
+/* 52 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawLine = __webpack_require__(52),
-	    DrawFill = __webpack_require__(53),
-	    ComponentElement = __webpack_require__(11);
+	var DrawLine = __webpack_require__(53),
+	    DrawFill = __webpack_require__(54),
+	    ComponentElement = __webpack_require__(12);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphLine', [function () {
 		return {
@@ -5862,7 +6010,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 52 */
+/* 53 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -5907,15 +6055,7 @@ var vGraph =
 
 			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Line).call(this, ref));
 
-			var oldMerge = _this.mergePoint;
-
 			_this.ref = ref;
-
-			if (ref.mergePoint) {
-				_this.mergePoint = function (parsed, set) {
-					return ref.mergePoint.call(this, parsed, set, oldMerge);
-				};
-			}
 			return _this;
 		}
 
@@ -5925,7 +6065,7 @@ var vGraph =
 				var node = this.ref.$ops.$getNode(index);
 
 				return {
-					$classify: this.ref.classify ? this.ref.classify(node) : null,
+					classified: this.classifier ? this.classifier.parse(node, this.ref.$ops.getStats()) : null,
 					x: node.$x,
 					y: this.ref.$ops.getValue(node)
 				};
@@ -5981,15 +6121,15 @@ var vGraph =
 			}
 		}, {
 			key: 'makePath',
-			value: function makePath(set) {
+			value: function makePath(dataSet) {
 				var i,
 				    c,
 				    point,
 				    res = [];
 
-				if (set.length) {
-					for (i = 0, c = set.length; i < c; i++) {
-						point = set[i];
+				if (dataSet.length) {
+					for (i = 0, c = dataSet.length; i < c; i++) {
+						point = dataSet[i];
 						res.push(point.x + ',' + this.ref.$ops.$view.y.scale(point.y));
 					}
 
@@ -5998,15 +6138,15 @@ var vGraph =
 			}
 		}, {
 			key: 'makeElement',
-			value: function makeElement(set) {
+			value: function makeElement(dataSet) {
 				var className = '';
 
-				if (set.length) {
-					if (set.$classify) {
-						className = Object.keys(set.$classify).join(' ');
+				if (dataSet.length) {
+					if (this.classifier) {
+						className = this.classifier.getClasses(dataSet.classified);
 					}
 
-					return '<path class="' + className + '" d="' + this.makePath(set) + '"></path>';
+					return '<path class="' + className + '" d="' + this.makePath(dataSet) + '"></path>';
 				}
 			}
 		}]);
@@ -6017,7 +6157,7 @@ var vGraph =
 	module.exports = Line;
 
 /***/ },
-/* 53 */
+/* 54 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -6071,7 +6211,6 @@ var vGraph =
 
 				if (isNumeric(y1) || isNumeric(y2)) {
 					return {
-						$classify: this.top.classify ? this.top.classify(tn, bn) : null,
 						x: tn ? tn.$x : bn.$x,
 						y1: y1,
 						y2: y2
@@ -6099,7 +6238,7 @@ var vGraph =
 			}
 		}, {
 			key: 'makePath',
-			value: function makePath(set) {
+			value: function makePath(dataSet) {
 				var i,
 				    c,
 				    y1,
@@ -6110,9 +6249,9 @@ var vGraph =
 				    line1 = [],
 				    line2 = [];
 
-				if (set.length) {
-					for (i = 0, c = set.length; i < c; i++) {
-						point = set[i];
+				if (dataSet.length) {
+					for (i = 0, c = dataSet.length; i < c; i++) {
+						point = dataSet[i];
 
 						if (point.y1 || point.y1 === 0) {
 							y1 = point.y1 === '+' ? top.viewport.maxValue : point.y1;
@@ -6130,15 +6269,15 @@ var vGraph =
 			}
 		}, {
 			key: 'makeElement',
-			value: function makeElement(set) {
+			value: function makeElement(dataSet) {
 				var className = '';
 
-				if (set.length) {
-					if (set.$classify) {
-						className = Object.keys(set.$classify).join(' ');
+				if (dataSet.length) {
+					if (this.classifier) {
+						className = this.classifier.getClasses(dataSet.classified);
 					}
 
-					return '<path class="' + className + '" d="' + this.makePath(set) + '"></path>';
+					return '<path class="' + className + '" d="' + this.makePath(dataSet) + '"></path>';
 				}
 			}
 		}]);
@@ -6149,7 +6288,7 @@ var vGraph =
 	module.exports = Fill;
 
 /***/ },
-/* 54 */
+/* 55 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -6261,7 +6400,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 55 */
+/* 56 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -6314,12 +6453,12 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 56 */
+/* 57 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var ComponentPage = __webpack_require__(57);
+	var ComponentPage = __webpack_require__(58);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphPage', [function () {
 		return {
@@ -6340,7 +6479,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 57 */
+/* 58 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -6351,10 +6490,10 @@ var vGraph =
 
 	var uid = 1,
 	    angular = __webpack_require__(4),
-	    DataFeed = __webpack_require__(58),
-	    DataLoader = __webpack_require__(59),
-	    DataManager = __webpack_require__(60),
-	    ComponentZoom = __webpack_require__(61);
+	    DataFeed = __webpack_require__(59),
+	    DataLoader = __webpack_require__(60),
+	    DataManager = __webpack_require__(61),
+	    ComponentZoom = __webpack_require__(62);
 
 	var Page = function () {
 		function Page() {
@@ -6530,7 +6669,7 @@ var vGraph =
 	module.exports = Page;
 
 /***/ },
-/* 58 */
+/* 59 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -6669,12 +6808,12 @@ var vGraph =
 		return Feed;
 	}();
 
-	__webpack_require__(22)(Feed.prototype);
+	__webpack_require__(23)(Feed.prototype);
 
 	module.exports = Feed;
 
 /***/ },
-/* 59 */
+/* 60 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -6797,10 +6936,17 @@ var vGraph =
 
 				// readings : readFrom => mapTo
 				// we flatten the data, so readers can be complex, but write to one property
-				Object.keys(cfg.readings).forEach(function (readFrom) {
-					var old = reader,
-					    getter = makeGetter(readFrom),
-					    writeTo = cfg.readings[readFrom];
+				Object.keys(cfg.readings).forEach(function (writeTo) {
+					var getter,
+					    old = reader,
+					    readFrom = cfg.readings[writeTo];
+
+					// TODO : do I want to make then all { to : from }
+					if (typeof readFrom === 'function') {
+						getter = readFrom;
+					} else {
+						getter = makeGetter(readFrom);
+					}
 
 					if (old) {
 						reader = function reader(interval, feedData, dm) {
@@ -6890,7 +7036,7 @@ var vGraph =
 	module.exports = Loader;
 
 /***/ },
-/* 60 */
+/* 61 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -6900,8 +7046,8 @@ var vGraph =
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var uid = 1,
-	    Linear = __webpack_require__(31),
-	    calculationsCompile = __webpack_require__(32).compile;
+	    Linear = __webpack_require__(32),
+	    calculationsCompile = __webpack_require__(33).compile;
 
 	function regulator(min, max, func, context) {
 		var args, nextTime, limitTime;
@@ -7117,7 +7263,7 @@ var vGraph =
 	module.exports = Manager;
 
 /***/ },
-/* 61 */
+/* 62 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -7126,7 +7272,7 @@ var vGraph =
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var makeEventing = __webpack_require__(22);
+	var makeEventing = __webpack_require__(23);
 
 	var Zoom = function () {
 		function Zoom() {
@@ -7176,13 +7322,13 @@ var vGraph =
 	module.exports = Zoom;
 
 /***/ },
-/* 62 */
+/* 63 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawPie = __webpack_require__(63),
-	    ComponentElement = __webpack_require__(11);
+	var DrawPie = __webpack_require__(64),
+	    ComponentElement = __webpack_require__(12);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphPie', [function () {
 		return {
@@ -7234,7 +7380,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 63 */
+/* 64 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -7503,7 +7649,7 @@ var vGraph =
 	module.exports = Pie;
 
 /***/ },
-/* 64 */
+/* 65 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -7526,12 +7672,12 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 65 */
+/* 66 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var StatCalculations = __webpack_require__(12);
+	var StatCalculations = __webpack_require__(13);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphStack', [function () {
 		return {
@@ -7595,7 +7741,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 66 */
+/* 67 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -7629,7 +7775,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 67 */
+/* 68 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -7710,7 +7856,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 68 */
+/* 69 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -7840,7 +7986,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 69 */
+/* 70 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -8015,40 +8161,40 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 70 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	module.exports = {
-		Box: __webpack_require__(23),
-		Chart: __webpack_require__(18),
-		Element: __webpack_require__(11),
-		Page: __webpack_require__(57),
-		Pane: __webpack_require__(26),
-		View: __webpack_require__(25),
-		Zoom: __webpack_require__(61)
-	};
-
-/***/ },
 /* 71 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = {
-		Bucketer: __webpack_require__(43),
-		Feed: __webpack_require__(58),
-		Hasher: __webpack_require__(72),
-		List: __webpack_require__(27),
-		Linear: __webpack_require__(31),
-		Loader: __webpack_require__(59),
-		Manager: __webpack_require__(60),
-		Normalizer: __webpack_require__(30)
+		Box: __webpack_require__(24),
+		Chart: __webpack_require__(19),
+		Element: __webpack_require__(12),
+		Page: __webpack_require__(58),
+		Pane: __webpack_require__(27),
+		View: __webpack_require__(26),
+		Zoom: __webpack_require__(62)
 	};
 
 /***/ },
 /* 72 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	module.exports = {
+		Bucketer: __webpack_require__(44),
+		Feed: __webpack_require__(59),
+		Hasher: __webpack_require__(73),
+		List: __webpack_require__(28),
+		Linear: __webpack_require__(32),
+		Loader: __webpack_require__(60),
+		Manager: __webpack_require__(61),
+		Normalizer: __webpack_require__(31)
+	};
+
+/***/ },
+/* 73 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -8082,37 +8228,37 @@ var vGraph =
 	};
 
 /***/ },
-/* 73 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	module.exports = {
-		Bar: __webpack_require__(9),
-		Box: __webpack_require__(14),
-		Candlestick: __webpack_require__(16),
-		Dots: __webpack_require__(36),
-		Fill: __webpack_require__(53),
-		Heatmap: __webpack_require__(42),
-		Icon: __webpack_require__(46),
-		Line: __webpack_require__(52),
-		Linear: __webpack_require__(10),
-		Pie: __webpack_require__(63)
-	};
-
-/***/ },
 /* 74 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = {
-		DomHelper: __webpack_require__(21),
-		Eventing: __webpack_require__(22),
-		Hitbox: __webpack_require__(19),
-		makeBlob: __webpack_require__(38),
-		Scheduler: __webpack_require__(20),
-		svgColorize: __webpack_require__(39)
+		Bar: __webpack_require__(9),
+		Box: __webpack_require__(15),
+		Candlestick: __webpack_require__(17),
+		Dots: __webpack_require__(37),
+		Fill: __webpack_require__(54),
+		Heatmap: __webpack_require__(43),
+		Icon: __webpack_require__(47),
+		Line: __webpack_require__(53),
+		Linear: __webpack_require__(10),
+		Pie: __webpack_require__(64)
+	};
+
+/***/ },
+/* 75 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	module.exports = {
+		DomHelper: __webpack_require__(22),
+		Eventing: __webpack_require__(23),
+		Hitbox: __webpack_require__(20),
+		makeBlob: __webpack_require__(39),
+		Scheduler: __webpack_require__(21),
+		svgColorize: __webpack_require__(40)
 	};
 
 /***/ }

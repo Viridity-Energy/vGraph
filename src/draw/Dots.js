@@ -13,12 +13,15 @@ class Dots extends DrawLinear{
 	}
 
 	getPoint( index ){
-		var node = this.ref.$ops.$getNode(index),
-			value = this.ref.$ops.getValue(node);
+		var ops = this.ref.$ops,
+			node = ops.$getNode(index),
+			value = ops.getValue(node);
 
 		if ( value || value === 0 ){
 			return {
-				$classify: this.ref.classify ? this.ref.classify(node) : null,
+				classified: this.classifier ? 
+					this.classifier.parse( node, ops.getStats() ) : 
+					null,
 				x: node.$x,
 				y: value 
 			};
@@ -36,29 +39,29 @@ class Dots extends DrawLinear{
 		set.y = this.ref.$ops.$view.y.scale(set.y);
 	}
 
-	makePath( set ){
+	makePath( dataSet ){
 		var radius = this.radius,
 			r2 = radius*2;
 
-		if ( set.x !== undefined ){
-			return 'M' + set.x+' '+set.y+
+		if ( dataSet.x !== undefined ){
+			return 'M' + dataSet.x+' '+dataSet.y+
 				'm -'+radius+', 0'+
 				'a '+radius+','+radius+' 0 1,1 '+r2+',0'+
 				'a '+radius+','+radius+' 0 1,1 -'+r2+',0';
 		}
 	}
 
-	makeElement( set ){
+	makeElement( dataSet ){
 		var className = '';
 
-		if ( set.x !== undefined ){
-			if ( set.$classify ){
-				className = Object.keys(set.$classify).join(' ');
+		if ( dataSet.x !== undefined ){
+			if ( this.classifier ){
+				className = this.classifier.getClasses(dataSet.classified);
 			}
 
 			return '<circle class="'+className+
-				'" cx="'+set.x+
-				'" cy="'+set.y+
+				'" cx="'+dataSet.x+
+				'" cy="'+dataSet.y+
 				'" r="'+this.radius+'"/>';
 		}
 	}

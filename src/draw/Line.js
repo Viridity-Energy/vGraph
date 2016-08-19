@@ -26,29 +26,18 @@ class Line extends DrawLinear{
 	constructor( ref ){
 		super( ref );
 
-		var oldMerge = this.mergePoint;
-
 		this.ref = ref;
-
-		if ( ref.mergePoint ){
-			this.mergePoint = function( parsed, set ){
-				return ref.mergePoint.call( 
-					this,
-					parsed,
-					set,
-					oldMerge
-				);
-			};
-		}
 	}
 
 	getPoint( index ){
 		var node = this.ref.$ops.$getNode(index);
 		
 		return {
-			$classify: this.ref.classify ? this.ref.classify(node) : null,
+			classified: this.classifier ? 
+				this.classifier.parse( node, this.ref.$ops.getStats() ) : 
+				null,
 			x: node.$x,
-			y: this.ref.$ops.getValue(node)
+			y: this.ref.$ops.getValue( node )
 		};
 	}
 
@@ -97,14 +86,14 @@ class Line extends DrawLinear{
 		return set;
 	}
 
-	makePath( set ){
+	makePath( dataSet ){
 		var i, c,
 			point,
 			res = [];
 
-		if ( set.length ){
-			for( i = 0, c = set.length; i < c; i++ ){
-				point = set[i];
+		if ( dataSet.length ){
+			for( i = 0, c = dataSet.length; i < c; i++ ){
+				point = dataSet[i];
 				res.push( point.x + ',' + this.ref.$ops.$view.y.scale(point.y) );
 			}
 
@@ -112,16 +101,16 @@ class Line extends DrawLinear{
 		}
 	}
 
-	makeElement( set ){
+	makeElement( dataSet ){
 		var className = '';
 		
-		if ( set.length ){
-			if ( set.$classify ){
-				className = Object.keys(set.$classify).join(' ');
+		if ( dataSet.length ){
+			if ( this.classifier ){
+				className = this.classifier.getClasses(dataSet.classified);
 			}
 
 			return '<path class="'+ className +
-				'" d="'+this.makePath(set)+
+				'" d="'+this.makePath(dataSet)+
 				'"></path>';
 		}
 	}

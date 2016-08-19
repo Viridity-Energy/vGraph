@@ -14,7 +14,7 @@ module.exports = {
 		var i, c;
 
 		for( i = 0, c = config.length; i < c; i++ ){
-			config[i].$ops.$resetField();
+			config[i].$ops.resetField();
 		}
 	},
 	$getFields: function( config ){
