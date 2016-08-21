@@ -43,12 +43,39 @@ function calcBar( x1, x2, y1, y2, box ){
 	return box;
 }
 
+function applyWidth( dataSet, width ){
+	var x1 = dataSet.x1,
+		x2 = dataSet.x2,
+		center = (x1+x2) / 2;
+
+	dataSet.x1 = center - width;
+	dataSet.x2 = center + width;
+}
+
+function validateDataset( dataSet, settings ){
+	var width;
+
+	if ( settings.width ){
+		applyWidth( dataSet, settings.width / 2 );
+	}else{
+		width = dataSet.x2 - dataSet.x1;
+
+		if ( settings.maxWidth && width > settings.maxWidth ){
+			applyWidth( dataSet, settings.maxWidth / 2 );
+		}else if ( settings.minWidth && width < settings.minWidth ){
+			applyWidth( dataSet, settings.minWidth / 2 );
+		}else if ( width < 1 ){
+			applyWidth( dataSet, 0.5 );
+		}
+	}
+}
+
 class Bar extends DrawLinear {
-	constructor( top, bottom, width ){
+	constructor( top, bottom, settings ){
 		super( top, bottom );
 
-		this.width = width;
 		this.top = top;
+		this.settings = settings || {};
 
 		if ( bottom ){
 			this.bottom = bottom;
@@ -66,12 +93,9 @@ class Bar extends DrawLinear {
 	}
 
 	getPoint( index ){
-		var min,
-			max,
-			y1,
+		var y1,
 			y2,
 			t,
-			width,
 			top = this.top.$ops,
 			node = top.$getNode(index),
 			bottom = this.bottom.$ops;
@@ -84,22 +108,12 @@ class Bar extends DrawLinear {
 			y2 = '-'; // this.bottom.$view.viewport.minValue;
 		}
 
-		if ( this.width ){
-			width = parseInt( this.width, 10 ) / 2;
-		}else{
-			width = 3;
-		}
-
 		if ( isNumeric(y1) && isNumeric(y2) && y1 !== y2 ){
-			min = node.$x - width;
-			max = node.$x + width;
-
 			t = {
 				classified: this.classifier ? 
 					this.classifier.parse( node, top.getStats() ) : 
 					null,
-				x1: min < node.$xMin ? min : node.$xMin,
-				x2: max > node.$xMax ? node.$xMax : max,
+				x: node.$x,
 				y1: y1,
 				y2: y2
 			};
@@ -109,8 +123,7 @@ class Bar extends DrawLinear {
 	}
 
 	mergePoint( parsed, set ){
-		var x1 = parsed.x1,
-			x2 = parsed.x2,
+		var x = parsed.x,
 			y1 = parsed.y1,
 			y2 = parsed.y2;
 
@@ -123,7 +136,7 @@ class Bar extends DrawLinear {
 				y2 = set.y2;
 			}
 
-			calcBar( x1, x2, y1, y2, set );
+			calcBar( x, x, y1, y2, set );
 		}
 			
 		return 0;
@@ -137,6 +150,8 @@ class Bar extends DrawLinear {
 
 		set.y1 = top.y.scale(y1);
 		set.y2 = bottom.y.scale(y2);
+
+		validateDataset( set, this.settings );
 	}
 
 	makePath( dataSet ){
@@ -156,12 +171,14 @@ class Bar extends DrawLinear {
 			if ( this.classifier && dataSet.classified ){
 				className = this.classifier.getClasses(dataSet.classified);
 			}
-			
-			return '<rect class="'+className+
+
+			var t = '<rect class="'+className+
 				'" x="'+dataSet.x1+
 				'" y="'+dataSet.y1+
 				'" width="'+(dataSet.x2 - dataSet.x1)+
 				'" height="'+(dataSet.y2 - dataSet.y1)+'"/>';
+			
+			return t;
 		}
 	}
 	

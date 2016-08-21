@@ -370,7 +370,59 @@
 							axis-label="woot"
 							tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
 
-						<path vgraph-bar="config[0]" reference="bar"></path>
+						<path vgraph-bar="config[0]" reference="bar" width="3"></path>
+
+						<g vgraph-target="[config[0]]" point-radius="10"></g>
+						<g vgraph-tooltip="config[0]"></g>
+
+						<g vgraph-interact></g>
+					</svg>
+				</section>
+
+				<section vgraph-chart="graph">
+					<div vgraph-highlight="point">
+						{{point.default.someLine1}}:{{point.default._$index}}
+					</div>
+					<svg>
+						<g vgraph-axis="'left'"
+							axis-label="'foo'"
+							label-offset="50"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'right'"
+							axis-label="'bar'"
+							label-offset="40"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'bottom'"
+							axis-label="woot"
+							tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+
+						<g vgraph-bar="config[0]" reference="bar" min-width="5"></g>
+
+						<g vgraph-target="[config[0]]" point-radius="10"></g>
+						<g vgraph-tooltip="config[0]"></g>
+
+						<g vgraph-interact></g>
+					</svg>
+				</section>
+
+				<section vgraph-chart="graph">
+					<div vgraph-highlight="point">
+						{{point.default.someLine1}}:{{point.default._$index}}
+					</div>
+					<svg>
+						<g vgraph-axis="'left'"
+							axis-label="'foo'"
+							label-offset="50"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'right'"
+							axis-label="'bar'"
+							label-offset="40"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'bottom'"
+							axis-label="woot"
+							tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+
+						<g vgraph-bar="config[0]" reference="bar" max-width="10"></g>
 
 						<g vgraph-target="[config[0]]" point-radius="10"></g>
 						<g vgraph-tooltip="config[0]"></g>
@@ -1008,6 +1060,70 @@
 							<circle cx="10" cy="10" r="5" stroke="black" stroke-width="3" fill="red" />
 						</g>
 						<g vgraph-icon="config[2]">
+							<text fill="red">Hi There</text>
+						</g>
+							
+						<g vgraph-target="[config[0]]" point-radius="4"></g>
+
+						<g vgraph-interact></g>
+					</svg>
+				</section>
+
+				<section vgraph-chart="graph">
+					<div vgraph-highlight="point">
+						{{point.default.someLine1}} : {{point.default._$index}}
+					</div>
+					<svg>
+						<g vgraph-axis="'left'"
+							axis-label="'foo'"
+							label-offset="50"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'right'"
+							axis-label="'bar'"
+							label-offset="40"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'bottom'"
+							axis-label="woot"
+							tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+
+						<path vgraph-line="config[0]"></path>
+
+						<g vgraph-icon="config[1]" separate="true">
+							<circle cx="10" cy="10" r="5" stroke="black" stroke-width="3" fill="red" />
+						</g>
+						<g vgraph-icon="config[2]" top="-30">
+							<text fill="red">Hi There</text>
+						</g>
+							
+						<g vgraph-target="[config[0]]" point-radius="4"></g>
+
+						<g vgraph-interact></g>
+					</svg>
+				</section>
+
+				<section vgraph-chart="graph">
+					<div vgraph-highlight="point">
+						{{point.default.someLine1}} : {{point.default._$index}}
+					</div>
+					<svg>
+						<g vgraph-axis="'left'"
+							axis-label="'foo'"
+							label-offset="50"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'right'"
+							axis-label="'bar'"
+							label-offset="40"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'bottom'"
+							axis-label="woot"
+							tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+
+						<path vgraph-line="config[0]"></path>
+
+						<g vgraph-icon="config[1]" left="30">
+							<circle cx="10" cy="10" r="5" stroke="black" stroke-width="3" fill="red" />
+						</g>
+						<g vgraph-icon="config[2]" top="30">
 							<text fill="red">Hi There</text>
 						</g>
 							

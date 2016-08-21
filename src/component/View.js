@@ -381,7 +381,9 @@ class View {
 					});
 				}
 
-				point[ ref.name ] = ref.$ops.getValue( point );
+				if ( ref.$ops.getValue ){
+					point[ ref.name ] = ref.$ops.getValue( point );
+				}
 			});
 		}else{
 			console.log( 'unconfigured', this );

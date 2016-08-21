@@ -1,8 +1,8 @@
 var DrawBox = require('./Box.js');
 
 class Icon extends DrawBox{
-	constructor( ref, box, template ){
-		super( ref );
+	constructor( ref, box, template, settings ){
+		super( ref, settings );
 		
 		this.box = box;
 		this.template = template;
@@ -12,11 +12,22 @@ class Icon extends DrawBox{
 		var x, y;
 		
 		if ( boxInfo ){
-			x = (boxInfo.x1 + boxInfo.x2 - this.box.width ) / 2; // v / 2 - width / 2 
-			y = (boxInfo.y1 + boxInfo.y2 - this.box.height ) / 2;
-
-			return '<g transform="translate('+x+','+y+')">' + this.template + '</g>';
+			// v / 2 - width / 2 
+			x = (boxInfo.x1 + boxInfo.x2 - this.box.width ) / 2 - 
+				( this.settings.left || 0 ); 
+			y = (boxInfo.y1 + boxInfo.y2 - this.box.height ) / 2 -
+				( this.settings.top || 0 );
+			
+			return '<g transform="translate('+x+','+y+')"'+
+				( this.settings.className ? ' class="'+this.settings.className+'"' : '' )+
+				'>' + this.template + '</g>';
 		}
+	}
+
+	mergePoint( parsed, set ){
+		var t = super.mergePoint( parsed, set );
+		
+		return this.settings.separate ? 0 : t;
 	}
 }
 

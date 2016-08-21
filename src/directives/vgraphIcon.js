@@ -40,7 +40,12 @@ require('angular').module( 'vgraph' ).directive( 'vgraphIcon',
 					var cfg = chart.getReference( config );
 					
 					if ( cfg ){
-						element.setDrawer( new DrawIcon(cfg,box,content) );
+						element.setDrawer( new DrawIcon(cfg,box,content,{
+							separate: attrs.separate,
+							top: parseInt( attrs.top, 10 ),
+							left: parseInt( attrs.left, 10 ),
+							className: el.getAttribute( 'class' )
+						}) );
 
 						if ( cfg.classExtend ){
 							className += cfg.classExtend + ' ';
@@ -50,7 +55,7 @@ require('angular').module( 'vgraph' ).directive( 'vgraphIcon',
 
 						el.setAttribute( 'class', className );
 
-						cfg.$view.registerComponent(element);
+						cfg.$ops.$view.registerComponent(element);
 					}
 				});
 			}

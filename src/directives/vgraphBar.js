@@ -25,7 +25,11 @@ require('angular').module( 'vgraph' ).directive( 'vgraphBar',
 						pair = chart.getReference( scope.pair );
 
 					if ( cfg ){
-						element.setDrawer( new DrawBar(cfg,pair,attrs.width) );
+						element.setDrawer( new DrawBar(cfg,pair,{
+							width: parseInt(attrs.width,10),
+							maxWidth: parseInt(attrs.maxWidth,10),
+							minWidth: parseInt(attrs.minWidth,10)
+						}) );
 
 						if ( cfg.classExtend ){
 							className += cfg.classExtend + ' ';

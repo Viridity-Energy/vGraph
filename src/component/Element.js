@@ -93,34 +93,36 @@ class Element {
 		var drawer = this.drawer,
 			dataSets = drawer.dataSets;
 
-		if ( this.publish ){
-			this.chart.$trigger( 'publish:'+this.publish, dataSets );
-		}
+		if ( dataSets ){
+			if ( this.publish ){
+				this.chart.$trigger( 'publish:'+this.publish, dataSets );
+			}
 
-		dataSets.forEach(function( dataSet ){
-			drawer.closeSet( dataSet );
-		});
+			dataSets.forEach(function( dataSet ){
+				drawer.closeSet( dataSet );
+			});
 
-		// dataSets will be the content, preParsed, used to make the data
-		if ( this.element.tagName === 'g' ){
-			appendChildren(
-				this,
-				dataSets,
-				Element.svgCompile(
-					make(
-						dataSets,
-						drawer.makeElement.bind( drawer ) 
+			// dataSets will be the content, preParsed, used to make the data
+			if ( this.element.tagName === 'g' ){
+				appendChildren(
+					this,
+					dataSets,
+					Element.svgCompile(
+						make(
+							dataSets,
+							drawer.makeElement.bind( drawer ) 
+						).join('')
+					)
+				);
+			}else{
+				this.element.setAttribute(
+					'd',
+					make( 
+						dataSets, 
+						drawer.makePath.bind( drawer ) 
 					).join('')
-				)
-			);
-		}else{
-			this.element.setAttribute(
-				'd',
-				make( 
-					dataSets, 
-					drawer.makePath.bind( drawer ) 
-				).join('')
-			);
+				);
+			}
 		}
 	}
 

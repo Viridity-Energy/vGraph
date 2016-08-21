@@ -1368,7 +1368,7 @@
 				return d.someLine1;
 			},
 			isValid: function isValid(d) {
-				return d.$minIndex === 60;
+				return d.$minIndex > 60 && d.$minIndex < 70;
 			}
 		}, {
 			name: 'greenIcon',
@@ -19507,7 +19507,11 @@
 					    pair = chart.getReference(scope.pair);
 
 					if (cfg) {
-						element.setDrawer(new DrawBar(cfg, pair, attrs.width));
+						element.setDrawer(new DrawBar(cfg, pair, {
+							width: parseInt(attrs.width, 10),
+							maxWidth: parseInt(attrs.maxWidth, 10),
+							minWidth: parseInt(attrs.minWidth, 10)
+						}));
 
 						if (cfg.classExtend) {
 							className += cfg.classExtend + ' ';
@@ -19583,16 +19587,43 @@
 		return box;
 	}
 
+	function applyWidth(dataSet, width) {
+		var x1 = dataSet.x1,
+		    x2 = dataSet.x2,
+		    center = (x1 + x2) / 2;
+
+		dataSet.x1 = center - width;
+		dataSet.x2 = center + width;
+	}
+
+	function validateDataset(dataSet, settings) {
+		var width;
+
+		if (settings.width) {
+			applyWidth(dataSet, settings.width / 2);
+		} else {
+			width = dataSet.x2 - dataSet.x1;
+
+			if (settings.maxWidth && width > settings.maxWidth) {
+				applyWidth(dataSet, settings.maxWidth / 2);
+			} else if (settings.minWidth && width < settings.minWidth) {
+				applyWidth(dataSet, settings.minWidth / 2);
+			} else if (width < 1) {
+				applyWidth(dataSet, 0.5);
+			}
+		}
+	}
+
 	var Bar = function (_DrawLinear) {
 		_inherits(Bar, _DrawLinear);
 
-		function Bar(top, bottom, width) {
+		function Bar(top, bottom, settings) {
 			_classCallCheck(this, Bar);
 
 			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Bar).call(this, top, bottom));
 
-			_this.width = width;
 			_this.top = top;
+			_this.settings = settings || {};
 
 			if (bottom) {
 				_this.bottom = bottom;
@@ -19615,12 +19646,9 @@
 		}, {
 			key: 'getPoint',
 			value: function getPoint(index) {
-				var min,
-				    max,
-				    y1,
+				var y1,
 				    y2,
 				    t,
-				    width,
 				    top = this.top.$ops,
 				    node = top.$getNode(index),
 				    bottom = this.bottom.$ops;
@@ -19633,20 +19661,10 @@
 					y2 = '-'; // this.bottom.$view.viewport.minValue;
 				}
 
-				if (this.width) {
-					width = parseInt(this.width, 10) / 2;
-				} else {
-					width = 3;
-				}
-
 				if (isNumeric(y1) && isNumeric(y2) && y1 !== y2) {
-					min = node.$x - width;
-					max = node.$x + width;
-
 					t = {
 						classified: this.classifier ? this.classifier.parse(node, top.getStats()) : null,
-						x1: min < node.$xMin ? min : node.$xMin,
-						x2: max > node.$xMax ? node.$xMax : max,
+						x: node.$x,
 						y1: y1,
 						y2: y2
 					};
@@ -19657,8 +19675,7 @@
 		}, {
 			key: 'mergePoint',
 			value: function mergePoint(parsed, set) {
-				var x1 = parsed.x1,
-				    x2 = parsed.x2,
+				var x = parsed.x,
 				    y1 = parsed.y1,
 				    y2 = parsed.y2;
 
@@ -19671,7 +19688,7 @@
 						y2 = set.y2;
 					}
 
-					calcBar(x1, x2, y1, y2, set);
+					calcBar(x, x, y1, y2, set);
 				}
 
 				return 0;
@@ -19686,6 +19703,8 @@
 
 				set.y1 = top.y.scale(y1);
 				set.y2 = bottom.y.scale(y2);
+
+				validateDataset(set, this.settings);
 			}
 		}, {
 			key: 'makePath',
@@ -19704,7 +19723,9 @@
 						className = this.classifier.getClasses(dataSet.classified);
 					}
 
-					return '<rect class="' + className + '" x="' + dataSet.x1 + '" y="' + dataSet.y1 + '" width="' + (dataSet.x2 - dataSet.x1) + '" height="' + (dataSet.y2 - dataSet.y1) + '"/>';
+					var t = '<rect class="' + className + '" x="' + dataSet.x1 + '" y="' + dataSet.y1 + '" width="' + (dataSet.x2 - dataSet.x1) + '" height="' + (dataSet.y2 - dataSet.y1) + '"/>';
+
+					return t;
 				}
 			}
 		}, {
@@ -20139,19 +20160,21 @@
 				var drawer = this.drawer,
 				    dataSets = drawer.dataSets;
 
-				if (this.publish) {
-					this.chart.$trigger('publish:' + this.publish, dataSets);
-				}
+				if (dataSets) {
+					if (this.publish) {
+						this.chart.$trigger('publish:' + this.publish, dataSets);
+					}
 
-				dataSets.forEach(function (dataSet) {
-					drawer.closeSet(dataSet);
-				});
+					dataSets.forEach(function (dataSet) {
+						drawer.closeSet(dataSet);
+					});
 
-				// dataSets will be the content, preParsed, used to make the data
-				if (this.element.tagName === 'g') {
-					appendChildren(this, dataSets, Element.svgCompile(make(dataSets, drawer.makeElement.bind(drawer)).join('')));
-				} else {
-					this.element.setAttribute('d', make(dataSets, drawer.makePath.bind(drawer)).join(''));
+					// dataSets will be the content, preParsed, used to make the data
+					if (this.element.tagName === 'g') {
+						appendChildren(this, dataSets, Element.svgCompile(make(dataSets, drawer.makeElement.bind(drawer)).join('')));
+					} else {
+						this.element.setAttribute('d', make(dataSets, drawer.makePath.bind(drawer)).join(''));
+					}
 				}
 			}
 		}, {
@@ -20368,6 +20391,8 @@
 
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+	var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
@@ -20379,14 +20404,10 @@
 	var Box = function (_DrawBar) {
 		_inherits(Box, _DrawBar);
 
-		function Box(ref) {
+		function Box(ref, settings) {
 			_classCallCheck(this, Box);
 
-			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Box).call(this, ref));
-
-			_this.top = ref;
-			_this.bottom = ref;
-			return _this;
+			return _possibleConstructorReturn(this, Object.getPrototypeOf(Box).call(this, ref, ref, settings));
 		}
 
 		_createClass(Box, [{
@@ -20400,15 +20421,13 @@
 					if (this.top.$ops.getValue) {
 						value = this.top.$ops.getValue(node);
 						t = {
-							x1: node.$x,
-							x2: node.$x,
+							x: node.$x,
 							y1: value,
 							y2: value
 						};
 					} else {
 						t = {
-							x1: node.$x,
-							x2: node.$x,
+							x: node.$x,
 							y1: '+',
 							y2: '-'
 						};
@@ -20425,7 +20444,7 @@
 			key: 'mergePoint',
 			value: function mergePoint(parsed, set) {
 				if ((parsed.y1 || parsed.y1 === 0) && (parsed.y2 || parsed.y2 === 0)) {
-					DrawBar.prototype.mergePoint.call(this, parsed, set);
+					_get(Object.getPrototypeOf(Box.prototype), 'mergePoint', this).call(this, parsed, set);
 					return -1;
 				} else {
 					return 0;
@@ -24001,7 +24020,9 @@
 							});
 						}
 
-						point[ref.name] = ref.$ops.getValue(point);
+						if (ref.$ops.getValue) {
+							point[ref.name] = ref.$ops.getValue(point);
+						}
 					});
 				} else {
 					console.log('unconfigured', this);
@@ -30820,7 +30841,12 @@
 					var cfg = chart.getReference(config);
 
 					if (cfg) {
-						element.setDrawer(new DrawIcon(cfg, box, content));
+						element.setDrawer(new DrawIcon(cfg, box, content, {
+							separate: attrs.separate,
+							top: parseInt(attrs.top, 10),
+							left: parseInt(attrs.left, 10),
+							className: el.getAttribute('class')
+						}));
 
 						if (cfg.classExtend) {
 							className += cfg.classExtend + ' ';
@@ -30830,7 +30856,7 @@
 
 						el.setAttribute('class', className);
 
-						cfg.$view.registerComponent(element);
+						cfg.$ops.$view.registerComponent(element);
 					}
 				});
 			}
@@ -30877,6 +30903,8 @@
 
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+	var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
@@ -30888,10 +30916,10 @@
 	var Icon = function (_DrawBox) {
 		_inherits(Icon, _DrawBox);
 
-		function Icon(ref, box, template) {
+		function Icon(ref, box, template, settings) {
 			_classCallCheck(this, Icon);
 
-			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Icon).call(this, ref));
+			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Icon).call(this, ref, settings));
 
 			_this.box = box;
 			_this.template = template;
@@ -30904,11 +30932,19 @@
 				var x, y;
 
 				if (boxInfo) {
-					x = (boxInfo.x1 + boxInfo.x2 - this.box.width) / 2; // v / 2 - width / 2 
-					y = (boxInfo.y1 + boxInfo.y2 - this.box.height) / 2;
+					// v / 2 - width / 2 
+					x = (boxInfo.x1 + boxInfo.x2 - this.box.width) / 2 - (this.settings.left || 0);
+					y = (boxInfo.y1 + boxInfo.y2 - this.box.height) / 2 - (this.settings.top || 0);
 
-					return '<g transform="translate(' + x + ',' + y + ')">' + this.template + '</g>';
+					return '<g transform="translate(' + x + ',' + y + ')"' + (this.settings.className ? ' class="' + this.settings.className + '"' : '') + '>' + this.template + '</g>';
 				}
+			}
+		}, {
+			key: 'mergePoint',
+			value: function mergePoint(parsed, set) {
+				var t = _get(Object.getPrototypeOf(Icon.prototype), 'mergePoint', this).call(this, parsed, set);
+
+				return this.settings.separate ? 0 : t;
 			}
 		}]);
 
@@ -33174,19 +33210,24 @@
 	__webpack_require__(2).module('vgraph').directive('vgraphTooltip', [function () {
 		// build this from a reference config
 		function makeByConfig(graph, cfg) {
-			var ref = graph.getReference(cfg);
-
-			return {
-				formatter: function formatter(point) {
-					return ref.$ops.getValue(point[ref.view]);
-				},
-				xParse: function xParse(point) {
-					return point[ref.view].$x;
-				},
-				yParse: function yParse(point) {
-					return ref.$ops.$view.y.scale(ref.$ops.getValue(point[ref.view]));
-				}
+			var ref = graph.getReference(cfg),
+			    format = cfg.format ? function (point) {
+				return cfg.format(ref.$ops.getValue(point[ref.view]), point);
+			} : function (point) {
+				return ref.$ops.getValue(point[ref.view]);
+			},
+			    x = cfg.xParse ? function (point) {
+				return cfg.xParse(point[ref.view].$x, point);
+			} : function (point) {
+				return point[ref.view].$x;
+			},
+			    y = cfg.yParse ? function (point) {
+				return cfg.yParse(ref.$ops.$view.y.scale(ref.$ops.getValue(point[ref.view])), point);
+			} : function (point) {
+				return ref.$ops.$view.y.scale(ref.$ops.getValue(point[ref.view]));
 			};
+
+			return { formatter: format, xParse: x, yParse: y };
 		}
 
 		function makeByReference(ref, cfg) {
@@ -33206,11 +33247,7 @@
 				return point[ref].y;
 			};
 
-			return {
-				formatter: format,
-				xParse: x,
-				yParse: y
-			};
+			return { formatter: format, xParse: x, yParse: y };
 		}
 
 		function makeConfig(graph, cfg, $attrs) {

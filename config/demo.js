@@ -1355,7 +1355,7 @@ angular.module( 'vgraph' ).controller( 'IconCtrl',
 					return d.someLine1;
 				},
 				isValid: function( d ){
-					return d.$minIndex === 60;
+					return d.$minIndex > 60 && d.$minIndex < 70;
 				}
 			},
 			{

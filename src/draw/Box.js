@@ -1,11 +1,8 @@
 var DrawBar = require('./Bar.js');
 
 class Box extends DrawBar {
-	constructor( ref ){
-		super( ref );
-
-		this.top = ref;
-		this.bottom = ref;
+	constructor( ref, settings ){
+		super( ref, ref, settings );
 	}
 
 	getPoint( index ){
@@ -17,15 +14,13 @@ class Box extends DrawBar {
 			if ( this.top.$ops.getValue ){
 				value = this.top.$ops.getValue(node);
 				t = {
-					x1: node.$x,
-					x2: node.$x,
+					x: node.$x,
 					y1: value,
 					y2: value
 				};
 			}else{
 				t = {
-					x1: node.$x,
-					x2: node.$x,
+					x: node.$x,
 					y1: '+',
 					y2: '-'
 				};
@@ -41,7 +36,7 @@ class Box extends DrawBar {
 
 	mergePoint( parsed, set ){
 		if ( (parsed.y1 || parsed.y1 === 0) && (parsed.y2 || parsed.y2 === 0) ){
-			DrawBar.prototype.mergePoint.call( this, parsed, set );
+			super.mergePoint( parsed, set );
 			return -1;
 		}else{
 			return 0;

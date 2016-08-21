@@ -5,19 +5,33 @@ require('angular').module( 'vgraph' ).directive( 'vgraphTooltip',
 	function(){
 		// build this from a reference config
 		function makeByConfig( graph, cfg ){
-			var ref = graph.getReference(cfg);
+			var ref = graph.getReference(cfg),
+				format = cfg.format ?
+					function( point ){
+						return cfg.format( ref.$ops.getValue(point[ref.view]), point );
+					} :
+					function( point ){
+						return ref.$ops.getValue( point[ref.view] );
+					},
+				x = cfg.xParse ?
+					function( point ){
+						return cfg.xParse( point[ref.view].$x, point );
+					} :
+					function( point ){
+						return point[ref.view].$x;
+					},
+				y = cfg.yParse ?
+					function( point ){
+						return cfg.yParse(
+							ref.$ops.$view.y.scale( ref.$ops.getValue(point[ref.view]) ),
+							point
+						);
+					} :
+					function( point ){
+						return ref.$ops.$view.y.scale( ref.$ops.getValue(point[ref.view]) );
+					};
 
-			return {
-				formatter: function( point ){
-					return ref.$ops.getValue( point[ref.view] );
-				},
-				xParse: function( point ){
-					return point[ref.view].$x;
-				},
-				yParse: function( point ){
-					return ref.$ops.$view.y.scale( ref.$ops.getValue(point[ref.view]) );
-				}
-			};
+			return { formatter: format, xParse: x, yParse: y };
 		}
 		
 		function makeByReference( ref, cfg ){
@@ -43,11 +57,7 @@ require('angular').module( 'vgraph' ).directive( 'vgraphTooltip',
 						return point[ref].y;
 					};
 
-			return {
-				formatter: format,
-				xParse: x,
-				yParse: y
-			};
+			return { formatter: format, xParse: x, yParse: y };
 		}
 
 		function makeConfig( graph, cfg, $attrs ){
