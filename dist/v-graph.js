@@ -714,19 +714,16 @@ var vGraph =
 				    element = requirements[1],
 				    className = 'bar ';
 
-				element.setChart(chart);
-				element.setElement(el);
-
 				scope.$watch('config', function (config) {
 					var cfg = chart.getReference(config),
 					    pair = chart.getReference(scope.pair);
 
 					if (cfg) {
-						element.setDrawer(new DrawBar(cfg, pair, {
+						element.configure(chart, new DrawBar(cfg, pair, {
 							width: parseInt(attrs.width, 10),
 							maxWidth: parseInt(attrs.maxWidth, 10),
 							minWidth: parseInt(attrs.minWidth, 10)
-						}));
+						}), el, attrs.name);
 
 						if (cfg.classExtend) {
 							className += cfg.classExtend + ' ';
@@ -1277,11 +1274,11 @@ var vGraph =
 
 	var StatCalculations = __webpack_require__(13);
 
-	function appendChildren(element, dataSets, children) {
+	function appendChildren(self, dataSets, children) {
 		var i,
 		    child,
 		    dataSet,
-		    root = element.element;
+		    root = self.element;
 
 		root.innerHTML = '';
 
@@ -1289,14 +1286,14 @@ var vGraph =
 			dataSet = dataSets[i];
 			child = children[i];
 
-			if (element.drawer.getHitbox) {
-				element.chart.addHitbox(element.drawer.getHitbox(dataSet), child);
+			if (self.drawer.getHitbox) {
+				self.chart.addHitbox(self.drawer.getHitbox(dataSet), child);
 			}
 
 			root.appendChild(child);
 
-			if (element.onAppend) {
-				element.onAppend(child, dataSet);
+			if (self.onAppend) {
+				self.onAppend(child, dataSet);
 			}
 		}
 	}
@@ -1332,23 +1329,16 @@ var vGraph =
 		}
 
 		_createClass(Element, [{
-			key: 'setChart',
-			value: function setChart(chart, publish) {
-				this.chart = chart;
-				this.publish = publish;
-			}
-		}, {
-			key: 'setElement',
-			value: function setElement(domNode) {
-				this.element = domNode;
-			}
-		}, {
-			key: 'setDrawer',
-			value: function setDrawer(drawer) {
+			key: 'configure',
+			value: function configure(chart, drawer, domNode, name, publish) {
 				var refs = [],
 				    references = drawer.getReferences();
 
+				this.chart = chart;
+				this.publish = publish;
+				this.element = domNode;
 				this.drawer = drawer;
+				this.references = refs;
 
 				references.forEach(function (ref) {
 					if (!ref) {
@@ -1358,7 +1348,11 @@ var vGraph =
 					refs.push(ref);
 				});
 
-				this.references = refs;
+				if (name && drawer.getJson) {
+					chart.registerFeed(name, function () {
+						return drawer.getJson();
+					});
+				}
 			}
 		}, {
 			key: 'parse',
@@ -1372,6 +1366,7 @@ var vGraph =
 		}, {
 			key: 'build',
 			value: function build() {
+				// TODO: this is probably better to be moved to a root drawer class
 				var drawer = this.drawer,
 				    dataSets = drawer.dataSets;
 
@@ -1391,11 +1386,6 @@ var vGraph =
 						this.element.setAttribute('d', make(dataSets, drawer.makePath.bind(drawer)).join(''));
 					}
 				}
-			}
-		}, {
-			key: 'register',
-			value: function register() {
-				// hook for registering data -> elements
 			}
 		}]);
 
@@ -1574,14 +1564,11 @@ var vGraph =
 				element = requirements[1],
 				    className = 'box ';
 
-				element.setChart(chart);
-				element.setElement(el);
-
 				scope.$watch('config', function (config) {
 					var cfg = chart.getReference(config);
 
 					if (cfg) {
-						element.setDrawer(new DrawBox(cfg));
+						element.configure(chart, new DrawBox(cfg), el, attrs.name);
 
 						if (cfg.classExtend) {
 							className += cfg.classExtend + ' ';
@@ -1694,15 +1681,12 @@ var vGraph =
 				    chart = requirements[0],
 				    element = requirements[1];
 
-				element.setChart(chart);
-				element.setElement(el);
-
 				scope.$watch('config', function (config) {
 					var cfg = chart.getReference(config);
 
 					if (cfg) {
 						className = 'candlestick ';
-						element.setDrawer(new DrawCandlestick(cfg));
+						element.configure(chart, new DrawCandlestick(cfg), el, attrs.name);
 
 						if (cfg.classExtend) {
 							className += cfg.classExtend + ' ';
@@ -2189,7 +2173,7 @@ var vGraph =
 				}
 
 				id = refDef.id || name;
-				ref = this.references[refDef.id || name];
+				ref = this.references[id];
 
 				if (ref) {
 					return ref;
@@ -2217,7 +2201,7 @@ var vGraph =
 
 					refDef.$ops = ref;
 
-					this.references[name] = refDef;
+					this.references[id] = refDef;
 
 					return refDef;
 				}
@@ -2423,11 +2407,11 @@ var vGraph =
 
 				viewModel.$name = viewName;
 
-				viewModel.manager.register(function () {
+				viewModel.dataManager.register(function () {
 					dis.needsRender(viewModel, 300);
 				});
 
-				viewModel.manager.onError(function (error) {
+				viewModel.dataManager.onError(function (error) {
 					dis.error(error);
 				});
 			}
@@ -2458,6 +2442,7 @@ var vGraph =
 		}, {
 			key: 'addHitbox',
 			value: function addHitbox(info, element) {
+				// TODO: I think I'd rather push this down to the elements themselves?
 				info.$element = element;
 				// to override default hit box, pass in info{ intersect, intersectX, intersectY }, look at Hitbox
 				this.hitbox.add(info);
@@ -2545,24 +2530,43 @@ var vGraph =
 	  */
 
 		}, {
+			key: 'registerFeed',
+			value: function registerFeed(name, fn) {
+				if (!this.feeds) {
+					this.feeds = {};
+				}
+
+				this.feeds[name] = fn;
+			}
+		}, {
+			key: 'getFeed',
+			value: function getFeed(name) {
+				if (this.feeds && this.feeds[name]) {
+					return this.feeds[name]();
+				}
+			}
+		}, {
 			key: 'export',
 			value: function _export(config) {
 				var diff,
 				    cells,
+				    maxRow,
 				    content,
 				    interval,
 				    headers = config.map(function (m) {
 					return m.title;
 				}),
+				    references = [],
 				    getReference = this.getReference.bind(this);
 
-				config.forEach(function (ref) {
-					var t;
+				config.forEach(function (cfg) {
+					var ref = getReference(cfg.reference),
+					    t = ref.$ops.$view.getBounds();
 
-					ref.$link = getReference(ref.reference);
-					ref.$view = ref.$link.$view;
-					t = ref.$ops.$view.getBounds();
-					ref.$bounds = t;
+					ref.$ops.resetField();
+					references.push(ref);
+
+					cfg.$bounds = t;
 
 					if (diff) {
 						if (diff < t.max - t.min) {
@@ -2578,36 +2582,47 @@ var vGraph =
 					}
 				});
 
-				cells = Math.ceil(diff / interval);
+				cells = Math.ceil(diff / interval) + 1;
 				content = makeArray(cells);
 
-				config.forEach(function (ref) {
+				config.forEach(function (cfg, index) {
 					var i,
 					    t,
 					    pos,
-					    min = ref.$bounds.min,
+					    row,
+					    min = cfg.$bounds.min,
 					    max = min + diff,
-					    interval = ref.$bounds.interval;
+					    ref = references[index],
+					    maxCell = cells - 1,
+					    interval = cfg.$bounds.interval;
 
 					pos = content[0].length;
 					addColumn(content);
 
 					for (i = min; i <= max; i += interval) {
-						t = ref.$ops.$view.manager.data.$getNode(i);
+						t = ref.$ops.$view.dataManager.data.$getNode(i);
 						if (t) {
-							// TODO : why did I do this?
-							t = t[ref.field ? ref.field : ref.reference];
+							t = cfg.field ? t[cfg.field] : ref.$ops.getValue(t);
 
-							if (ref.format) {
-								t = ref.format(t);
+							if (cfg.format) {
+								t = cfg.format(t);
 							}
 
-							content[Math.floor((i - min) / (max - min) * cells + 0.5)][pos] = t;
+							row = Math.floor((i - min) / (max - min) * maxCell + 0.5);
+							if (!maxRow || maxRow < row) {
+								maxRow = row;
+							}
+
+							content[row][pos] = t;
 						}
 					}
 				});
 
 				content.unshift(headers);
+
+				if (maxRow + 1 !== content.length) {
+					content.splice(maxRow + 1);
+				}
 
 				return content;
 			}
@@ -3334,7 +3349,7 @@ var vGraph =
 				    diff,
 				    last,
 				    interval,
-				    data = this.manager.data;
+				    data = this.dataManager.data;
 
 				data.$sort();
 
@@ -3375,7 +3390,7 @@ var vGraph =
 				View.parseSettingsY(settings.y, this.y);
 
 				this.box = box;
-				this.manager = page.getManager(settings.manager);
+				this.dataManager = page.getManager(settings.manager);
 				this.normalizer = normalizer = settings.normalizer || new DataNormalizer(function (index) {
 					return Math.round(index);
 				});
@@ -3429,18 +3444,12 @@ var vGraph =
 		}, {
 			key: 'isReady',
 			value: function isReady() {
-				return this.manager && this.manager.ready;
+				return this.dataManager && this.dataManager.ready;
 			}
 		}, {
 			key: 'hasData',
 			value: function hasData() {
-				return this.isReady() && this.manager.data.length;
-			}
-		}, {
-			key: '_sample',
-			value: function _sample() {
-				this.offset = {};
-				this.filtered = this.pane.filter(this.manager, this.offset);
+				return this.isReady() && this.dataManager.data.length;
 			}
 
 			// true when the filtered data contains the leading edge of data
@@ -3488,10 +3497,16 @@ var vGraph =
 				this.x.scale.domain([min, max]).range([box.inner.left, box.inner.right]);
 			}
 		}, {
+			key: '_sample',
+			value: function _sample() {
+				this.offset = {};
+				this.filtered = this.pane.filter(this.dataManager, this.offset);
+			}
+		}, {
 			key: 'normalize',
 			value: function normalize() {
-				if (this.manager) {
-					this._sample();
+				if (this.dataManager) {
+					this._sample(); // defines offset
 
 					if (this.filtered) {
 						if (!this.viewport) {
@@ -3689,6 +3704,9 @@ var vGraph =
 			this.setBounds({ min: xObj.min, max: xObj.max }, { min: yObj.min, max: yObj.max });
 		}
 
+		// the global bounds of the data set
+
+
 		_createClass(Pane, [{
 			key: 'setBounds',
 			value: function setBounds(x, y) {
@@ -3697,6 +3715,9 @@ var vGraph =
 
 				return this;
 			}
+
+			// the internal bounds of the dataset, expressed in percentage
+
 		}, {
 			key: 'setPane',
 			value: function setPane(x, y) {
@@ -3720,6 +3741,7 @@ var vGraph =
 				if (data.length) {
 					dataManager.clean();
 
+					// try to use globally defined bounds, fail to data set bounds
 					$min = this._bounds.x.min !== undefined ? this._bounds.x.min : data.$minIndex;
 					$max = this._bounds.x.max !== undefined ? this._bounds.x.max : data.$maxIndex;
 
@@ -4700,14 +4722,11 @@ var vGraph =
 				    chart = requirements[0],
 				    element = requirements[1];
 
-				element.setChart(chart);
-				element.setElement(el);
-
 				scope.$watch('config', function (config) {
 					var cfg = chart.getReference(config);
 
 					if (cfg) {
-						element.setDrawer(new DrawDots(cfg, attrs.radius ? parseInt(attrs.Radius, 10) : 5));
+						element.configure(chart, new DrawDots(cfg, attrs.radius ? parseInt(attrs.Radius, 10) : 5), el, attrs.name);
 
 						className = 'point ';
 						if (cfg.classExtend) {
@@ -4840,17 +4859,19 @@ var vGraph =
 
 	var makeBlob = __webpack_require__(39);
 
-	__webpack_require__(4).module('vgraph').directive('vgraphExport', [function () {
+	__webpack_require__(4).module('vgraph').directive('vgraphExport', ['$q', function ($q) {
 		return {
-			require: ['^vgraphChart'],
+			require: ['^vgraphPage', '^?vgraphChart'],
 			scope: {
 				labels: '=?labels',
 				exports: '=vgraphExport',
 				options: '=?options',
 				selected: '=?selected'
 			},
-			template: '<select ng-model="selected" ng-options="opt as (labels[opt] || opt) for opt in options"></select>' + '<a ng-click="process( exports[selected] )"><span>Export</span></a>',
+			template: '<select ng-disabled="processing" ng-model="selected"' + ' ng-options="opt as (labels[opt] || opt) for opt in options"></select>' + '<a ng-click="!disabled && process( exports[selected] )"><span>Export</span></a>',
 			link: function link($scope, el, attrs, requirements) {
+				var page = requirements[0];
+
 				if (!$scope.options) {
 					$scope.options = Object.keys($scope.exports);
 				}
@@ -4860,21 +4881,25 @@ var vGraph =
 				}
 
 				$scope.process = function (fn) {
-					var t = fn(requirements[0]),
-					    // { data, name, charset }
-					blob = makeBlob(t),
-					    downloadLink = document.createElement('a');
+					$scope.processing = true;
 
-					downloadLink.setAttribute('href', window.URL.createObjectURL(blob));
-					downloadLink.setAttribute('download', t.name);
-					downloadLink.setAttribute('target', '_blank');
+					$q.resolve(fn(requirements[1] || page.getChart(attrs.chart))).then(function (content) {
+						var blob = makeBlob(content),
+						    downloadLink = document.createElement('a');
 
-					document.getElementsByTagName('body')[0].appendChild(downloadLink);
+						downloadLink.setAttribute('href', window.URL.createObjectURL(blob));
+						downloadLink.setAttribute('download', content.name);
+						downloadLink.setAttribute('target', '_blank');
 
-					setTimeout(function () {
-						downloadLink.click();
-						document.getElementsByTagName('body')[0].removeChild(downloadLink);
-					}, 5);
+						document.getElementsByTagName('body')[0].appendChild(downloadLink);
+
+						setTimeout(function () {
+							downloadLink.click();
+							document.getElementsByTagName('body')[0].removeChild(downloadLink);
+						}, 5);
+					})['finally'](function () {
+						$scope.processing = false;
+					}); // { data, name, charset }
 				};
 			}
 		};
@@ -4944,9 +4969,9 @@ var vGraph =
 	'use strict';
 
 	var tagWatch = {
-		'path': ['fill', 'stroke', 'stroke-width'],
+		'path': ['fill', 'stroke', 'stroke-width', 'stroke-dasharray'],
 		'rect': ['fill', 'stroke', 'opacity'],
-		'line': ['stroke', 'stroke-width'],
+		'line': ['stroke', 'stroke-width', 'stroke-dasharray'],
 		'text': ['text-anchor', 'font-size', 'color', 'font-family'],
 		'circle': ['fill', 'stroke']
 	};
@@ -5086,8 +5111,7 @@ var vGraph =
 			require: ['^vgraphChart', 'vgraphHeatmap'],
 			controller: ComponentElement,
 			link: function link(scope, $el, attrs, requirements) {
-				var drawer,
-				    el = $el[0],
+				var el = $el[0],
 				    area = {},
 				    chart = requirements[0],
 				    element = requirements[1],
@@ -5102,14 +5126,15 @@ var vGraph =
 
 				el.innerHTML = '';
 
-				element.setChart(chart, attrs.publish);
-				element.setElement(el);
-
 				function calcArea() {
 					area.x1 = box.inner.left;
 					area.x2 = box.inner.right;
 					area.y1 = box.inner.top;
 					area.y2 = box.inner.bottom;
+					area.labelLeft = box.left;
+					area.labelWidth = box.padding.left;
+					area.labelTop = box.top;
+					area.labelHeight = box.padding.top;
 				}
 
 				calcArea();
@@ -5143,9 +5168,7 @@ var vGraph =
 					var cfg = chart.getReference(config);
 
 					if (cfg) {
-						drawer = new DrawHeatmap(cfg, area, templates, scope.indexs);
-
-						element.setDrawer(drawer);
+						element.configure(chart, new DrawHeatmap(cfg, area, templates, scope.indexs), el, attrs.name, attrs.publish);
 
 						if (cfg.classExtend) {
 							className += cfg.classExtend + ' ';
@@ -5257,14 +5280,14 @@ var vGraph =
 					});
 				}
 
-				xCount = Object.keys(xLabels).length + 1;
-				yCount = Object.keys(yLabels).length + 1;
+				xCount = Object.keys(xLabels).length;
+				yCount = Object.keys(yLabels).length;
 
 				xSize = (area.x2 - area.x1) / xCount;
 				ySize = (area.y2 - area.y1) / yCount;
 
 				// compute the x labels
-				xPos = area.x1 + xSize;
+				xPos = area.x1;
 				Object.keys(xLabels).forEach(function (key) {
 					var xNext = xPos + xSize;
 
@@ -5272,10 +5295,10 @@ var vGraph =
 						type: 'x',
 						x1: xPos,
 						x2: xNext,
-						y1: area.y1,
-						y2: area.y1 + ySize,
+						y1: area.labelTop,
+						y2: area.y1,
 						width: xSize,
-						height: ySize,
+						height: area.labelHeight,
 						text: xLabels[key]
 					});
 
@@ -5283,17 +5306,17 @@ var vGraph =
 				});
 
 				// compute the y labels
-				yPos = area.y1 + ySize;
+				yPos = area.y1;
 				Object.keys(yLabels).forEach(function (key) {
 					var yNext = yPos + ySize;
 
 					sets.push({
 						type: 'y',
-						x1: area.x1,
-						x2: area.x1 + xSize,
+						x1: area.labelLeft,
+						x2: area.x1,
 						y1: yPos,
 						y2: yNext,
-						width: xSize,
+						width: area.labelWidth,
 						height: ySize,
 						text: yLabels[key]
 					});
@@ -5302,13 +5325,13 @@ var vGraph =
 				});
 
 				// compute the data cells
-				xPos = area.x1 + xSize;
+				xPos = area.x1;
 				Object.keys(xLabels).forEach(function (x) {
 					var col = [],
 					    xNext = xPos + xSize;
 
 					grid.push(col);
-					yPos = area.y1 + ySize;
+					yPos = area.y1;
 
 					Object.keys(yLabels).forEach(function (y) {
 						var t,
@@ -5341,6 +5364,9 @@ var vGraph =
 				});
 
 				sets.$grid = grid;
+
+				grid.$y = yLabels;
+				grid.$x = xLabels;
 
 				this.dataSets = sets;
 			}
@@ -5397,6 +5423,12 @@ var vGraph =
 			key: 'getHitbox',
 			value: function getHitbox(dataSet) {
 				return dataSet;
+			}
+		}, {
+			key: 'getJson',
+			value: function getJson() {
+				console.log(this.dataSets);
+				return this.dataSets.$grid;
 			}
 		}]);
 
@@ -5509,13 +5541,23 @@ var vGraph =
 
 	__webpack_require__(4).module('vgraph').directive('vgraphHighlight', [function () {
 		return {
-			require: ['^vgraphChart'],
+			require: ['^vgraphPage', '^?vgraphChart'],
 			scope: true,
 			link: function link($scope, el, attrs, requirements) {
-				requirements[0].$on('highlight', function (point) {
-					$scope[attrs.vgraphHighlight] = point;
-					$scope.$digest();
-				});
+				var page = requirements[0];
+
+				function manageChart(chart) {
+					chart.$on('highlight', function (point) {
+						$scope[attrs.vgraphHighlight] = point;
+						$scope.$digest();
+					});
+				}
+
+				if (requirements[1]) {
+					manageChart(requirements[1]);
+				} else {
+					page.requireChart(attrs.chart, manageChart);
+				}
 			}
 		};
 	}]);
@@ -5559,19 +5601,16 @@ var vGraph =
 
 				el.innerHTML = '';
 
-				element.setChart(chart);
-				element.setElement(el);
-
 				scope.$watch('config', function (config) {
 					var cfg = chart.getReference(config);
 
 					if (cfg) {
-						element.setDrawer(new DrawIcon(cfg, box, content, {
+						element.configure(chart, new DrawIcon(cfg, box, content, {
 							separate: attrs.separate,
 							top: parseInt(attrs.top, 10),
 							left: parseInt(attrs.left, 10),
 							className: el.getAttribute('class')
-						}));
+						}), el, attrs.name);
 
 						if (cfg.classExtend) {
 							className += cfg.classExtend + ' ';
@@ -6023,9 +6062,6 @@ var vGraph =
 				    chart = requirements[0],
 				    element = requirements[1];
 
-				element.setChart(chart);
-				element.setElement(el);
-
 				function build() {
 					if (pair === null) {
 						return;
@@ -6034,13 +6070,13 @@ var vGraph =
 					if (cfg) {
 						if (attrs.pair) {
 							className = 'fill ';
-							element.setDrawer(new DrawFill(cfg, pair));
+							element.configure(chart, new DrawFill(cfg, pair), el, attrs.name);
 							if (pair) {
 								pair.$ops.$view.registerComponent(element);
 							}
 						} else {
 							className = 'line ';
-							element.setDrawer(new DrawLine(cfg));
+							element.configure(chart, new DrawLine(cfg), el, attrs.name);
 						}
 
 						if (cfg.classExtend) {
@@ -6580,7 +6616,7 @@ var vGraph =
 				var zooms = this.zooms,
 				    feeds = this.feed,
 				    loaders = this.loaders,
-				    managers = this.managers;
+				    managers = this.dataManagers;
 
 				Object.keys(zooms).forEach(function (zoom) {
 					zooms[zoom].reset();
@@ -6608,7 +6644,7 @@ var vGraph =
 						managers[manager].$destroy();
 					});
 				}
-				this.managers = {};
+				this.dataManagers = {};
 			}
 		}, {
 			key: 'configure',
@@ -6695,11 +6731,11 @@ var vGraph =
 			key: 'getManager',
 			value: function getManager(managerName) {
 				var name = managerName || Page.defaultManager,
-				    manager = this.managers[name];
+				    manager = this.dataManagers[name];
 
 				if (!manager) {
 					manager = new DataManager();
-					this.managers[name] = manager;
+					this.dataManagers[name] = manager;
 				}
 
 				return manager;
@@ -6708,11 +6744,42 @@ var vGraph =
 			key: 'setChart',
 			value: function setChart(chartName, chart) {
 				this.charts[chartName] = chart;
+
+				if (this._waiting && this._waiting[chartName]) {
+					this._waiting[chartName].forEach(function (cb) {
+						cb(chart);
+					});
+				}
 			}
 		}, {
 			key: 'getChart',
 			value: function getChart(chartName) {
 				return this.charts[chartName];
+			}
+
+			// TODO : abstract this out to a one time bind in bmoor, similar to on/trigger
+			// require / fulfill
+
+		}, {
+			key: 'requireChart',
+			value: function requireChart(chartName, cb) {
+				var waiting,
+				    chart = this.charts[chartName];
+
+				if (chart) {
+					cb(chart);
+				} else {
+					if (!this._waiting) {
+						this._waiting = {};
+					}
+
+					waiting = this._waiting[chartName];
+					if (!waiting) {
+						waiting = this._waiting[chartName] = [];
+					}
+
+					waiting.push(cb);
+				}
 			}
 		}, {
 			key: 'getZoom',
@@ -7421,9 +7488,6 @@ var vGraph =
 					area.y = box.inner.top + box.inner.height / 2;
 				}
 
-				element.setChart(chart, attrs.publish);
-				element.setElement(el);
-
 				calcArea();
 				box.$on('resize', calcArea);
 
@@ -7431,7 +7495,7 @@ var vGraph =
 					var cfg = chart.getReference(config);
 
 					if (cfg) {
-						element.setDrawer(new DrawPie(cfg, scope.buckets, area));
+						element.configure(chart, new DrawPie(cfg, scope.buckets, area), el, attrs.name, attrs.publish);
 
 						if (cfg.classExtend) {
 							className += cfg.classExtend + ' ';
@@ -7725,17 +7789,26 @@ var vGraph =
 
 	__webpack_require__(4).module('vgraph').directive('vgraphPublish', [function () {
 		return {
-			require: ['^vgraphChart'],
+			require: ['^vgraphPage', '^?vgraphChart'],
 			scope: true,
 			link: function link($scope, el, attrs, requirements) {
-				var connections = $scope.$eval(attrs.vgraphPublish);
+				var page = requirements[0],
+				    content = $scope.$eval(attrs.vgraphPublish);
 
-				Object.keys(connections).forEach(function (key) {
-					requirements[0].$on('publish:' + key, function (point) {
-						$scope[connections[key]] = point;
-						$scope.$digest();
+				function manageChart(chart) {
+					Object.keys(content).forEach(function (key) {
+						chart.$on('publish:' + key, function (point) {
+							$scope[content[key]] = point;
+							$scope.$digest();
+						});
 					});
-				});
+				}
+
+				if (requirements[1]) {
+					manageChart(requirements[1]);
+				} else {
+					page.requireChart(attrs.chart, manageChart);
+				}
 			}
 		};
 	}]);
@@ -7817,28 +7890,36 @@ var vGraph =
 
 	__webpack_require__(4).module('vgraph').directive('vgraphStatus', [function () {
 		return {
-			require: ['^vgraphChart'],
+			require: ['^vgraphPage', '^?vgraphChart'],
 			scope: true,
 			link: function link($scope, el, attrs, requirements) {
-				var chart = requirements[0];
+				var page = requirements[0];
 
-				function pushUpdate() {
-					$scope[attrs.vgraphStatus] = {
-						message: chart.message,
-						loading: chart.loading,
-						pristine: chart.pristine
-					};
+				function manageChart(chart) {
+					function pushUpdate() {
+						$scope[attrs.vgraphStatus] = {
+							message: chart.message,
+							loading: chart.loading,
+							pristine: chart.pristine
+						};
 
-					if (!$scope.$$phase) {
-						$scope.$digest();
+						if (!$scope.$$phase) {
+							$scope.$digest();
+						}
 					}
+
+					chart.$subscribe({
+						'error': pushUpdate,
+						'success': pushUpdate,
+						'configured': pushUpdate
+					});
 				}
 
-				chart.$subscribe({
-					'error': pushUpdate,
-					'success': pushUpdate,
-					'configured': pushUpdate
-				});
+				if (requirements[1]) {
+					manageChart(requirements[1]);
+				} else {
+					page.requireChart(attrs.chart, manageChart);
+				}
 			}
 		};
 	}]);

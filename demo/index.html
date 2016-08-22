@@ -464,7 +464,12 @@
 			<h5>Loading</h5>
 			<div ng-controller="LoadingCtrl">
 				<div vgraph-page="page">
-					<section vgraph-chart="graph" interface="interface">
+					<span vgraph-status="chart" chart="test">
+						{{chart.loading ? 'loading' : 'not loading'}} : 
+						{{chart.pristine ? 'pristine' : 'dirty'}} : 
+						{{chart.message}} 
+					</span>
+					<section vgraph-chart="graph" interface="interface" name="test">
 						<span vgraph-status="chart">
 							{{chart.loading ? 'loading' : 'not loading'}} : 
 							{{chart.pristine ? 'pristine' : 'dirty'}} : 
@@ -1138,10 +1143,40 @@
 		<div ng-if="export" ng-controller="ExportCtrl">
 			<h5>export</h5>
 			<div vgraph-page="page">
+				<div vgraph-highlight="point" chart="test"
+					>{{point.firstView.someLine1}} : {{point.firstView._$index}}</div>
+				<section vgraph-chart="graph" name="test">
+					<svg>
+						<g vgraph-axis="'left'"
+							view="firstView"
+							axis-label="'foo'"
+							label-offset="50"
+							tick-length="4" tick-padding="-2"></g>
+						<g vgraph-axis="'top'"
+							view="fourthView"
+							axis-label="'bar'"
+							label-offset="40"
+							tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+						<g vgraph-axis="'bottom'"
+							view="firstView"
+							axis-label="woot"
+							tick-length="4" tick-padding="-2" tick-rotation="-45"></g>
+
+						<path vgraph-line="config[0]"></path>
+						<path vgraph-line="config[1]"></path>
+						<path vgraph-line="config[2]"></path>
+						<path vgraph-line="config[3]"></path>
+
+						<g vgraph-target="config" point-radius="4"></g>
+
+						<g vgraph-interact></g>
+					</svg>
+				</section>
+				<span vgraph-export="exports" chart="test  "></span>
+
 				<section vgraph-chart="graph">
-					<div vgraph-highlight="point">
-						{{point.default.someLine1}} : {{point.default._$index}}
-					</div>
+					<div vgraph-highlight="point"
+						>{{point.firstView.someLine1}} : {{point.firstView._$index}}</div>
 					<svg>
 						<g vgraph-axis="'left'"
 							view="firstView"
@@ -1169,6 +1204,38 @@
 					</svg>
 					<span vgraph-export="exports"></span>
 				</section>
+
+				<div vgraph-chart="heatmap">
+					<svg xmlns="http://www.w3.org/2000/svg"  version="1.1" class="heatmap">
+						<g vgraph-label x="left" y="middle">
+							<text text-anchor="middle" dy="1em" transform="rotate(-90)">10s</text>
+						</g>
+						<g vgraph-label x="center" y="top">
+							<text text-anchor="middle" dy="1em">100s</text>
+						</g>
+						<g vgraph-heatmap="config[0]" 
+							indexs="indexs" 
+							calculator="calculator"
+							name="heatmap">
+							<cell><text
+								ng-attr-x="{{ content.width / 2 }}" 
+								ng-attr-y="{{ content.height / 2 }}"
+								style="text-anchor: middle;"
+								>{{content.data.display}}</text></cell>
+							<x-heading><text
+								ng-attr-x="{{ content.width / 2 }}"
+								ng-attr-y="{{ content.height / 2 }}"
+								style="text-anchor: middle;"
+								>{{content.text}}</text></x-heading>
+							<y-heading><text
+								ng-attr-x="{{ content.width / 2 }}"
+								ng-attr-y="{{ content.height / 2 }}"
+								style="text-anchor: middle;"
+								>{{content.text}}</text></y-heading>
+						</g>
+					</svg>
+					<span vgraph-export="heatmapExports"></span>
+				</div>
 			</div>
 		</div>
 
@@ -1176,6 +1243,9 @@
 			<h5>Stats Data</h5>
 			<div ng-controller="StatsCtrl">
 				<div vgraph-page="page">
+					<div vgraph-publish="{default:'model'}" chart="primary"
+							>median:{{model.$stats.median}}
+								| 25th:{{model.$stats.perc25}}</div>
 					<div vgraph-chart="graph" name="primary">
 						<div vgraph-highlight="point" vgraph-publish="{default:'model'}"
 							>{{point}}
@@ -1377,10 +1447,10 @@
 					<div vgraph-chart="heatmap">
 						<div vgraph-publish="{focus:'content'}">{{content}}</div>
 						<svg xmlns="http://www.w3.org/2000/svg"  version="1.1" class="heatmap">
-							<g vgraph-label="padding" x="left" y="middle">
+							<g vgraph-label x="left" y="middle">
 								<text text-anchor="middle" dy="1em" transform="rotate(-90)">10s</text>
 							</g>
-							<g vgraph-label="padding" x="center" y="top">
+							<g vgraph-label x="center" y="top">
 								<text text-anchor="middle" dy="1em">100s</text>
 							</g>
 							<g vgraph-heatmap="ref" indexs="indexs" calculator="calculator" publish="heatmap">

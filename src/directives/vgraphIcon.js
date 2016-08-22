@@ -33,19 +33,21 @@ require('angular').module( 'vgraph' ).directive( 'vgraphIcon',
 
 				el.innerHTML = '';
 
-				element.setChart( chart );
-				element.setElement( el );
-
 				scope.$watch('config', function( config ){
 					var cfg = chart.getReference( config );
 					
 					if ( cfg ){
-						element.setDrawer( new DrawIcon(cfg,box,content,{
-							separate: attrs.separate,
-							top: parseInt( attrs.top, 10 ),
-							left: parseInt( attrs.left, 10 ),
-							className: el.getAttribute( 'class' )
-						}) );
+						element.configure(
+							chart,
+							new DrawIcon(cfg,box,content,{
+								separate: attrs.separate,
+								top: parseInt( attrs.top, 10 ),
+								left: parseInt( attrs.left, 10 ),
+								className: el.getAttribute( 'class' )
+							}),
+							el,
+							attrs.name
+						);
 
 						if ( cfg.classExtend ){
 							className += cfg.classExtend + ' ';

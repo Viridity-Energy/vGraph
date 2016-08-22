@@ -1,10 +1,10 @@
 var StatCalculations = require('../stats.js');
 
-function appendChildren( element, dataSets, children ){
+function appendChildren( self, dataSets, children ){
 	var i,
 		child,
 		dataSet,
-		root = element.element;
+		root = self.element;
 
 	root.innerHTML = '';
 	
@@ -12,17 +12,17 @@ function appendChildren( element, dataSets, children ){
 		dataSet = dataSets[i];
 		child = children[i];
 		
-		if ( element.drawer.getHitbox ){
-			element.chart.addHitbox(
-				element.drawer.getHitbox(dataSet),
+		if ( self.drawer.getHitbox ){
+			self.chart.addHitbox(
+				self.drawer.getHitbox(dataSet),
 				child
 			);
 		}
 		
 		root.appendChild( child );
 		
-		if ( element.onAppend ){
-			element.onAppend( child, dataSet );
+		if ( self.onAppend ){
+			self.onAppend( child, dataSet );
 		}
 	}
 }
@@ -55,20 +55,15 @@ class Element {
 		this.children = null;
 	}
 	
-	setChart( chart, publish ){
-		this.chart = chart;
-		this.publish = publish;
-	}
-
-	setElement( domNode ){
-		this.element = domNode;
-	}
-
-	setDrawer( drawer ){
+	configure( chart, drawer, domNode, name, publish ){
 		var refs = [],
 			references = drawer.getReferences();
 
+		this.chart = chart;
+		this.publish = publish;
+		this.element = domNode;
 		this.drawer = drawer;
+		this.references = refs;
 
 		references.forEach(function( ref ){
 			if ( !ref ){
@@ -78,7 +73,11 @@ class Element {
 			refs.push( ref );
 		});
 
-		this.references = refs;
+		if ( name && drawer.getJson ){
+			chart.registerFeed( name, function(){
+				return drawer.getJson();
+			});
+		}
 	}
 
 	parse(){
@@ -90,6 +89,7 @@ class Element {
 	}
 
 	build(){
+		// TODO: this is probably better to be moved to a root drawer class
 		var drawer = this.drawer,
 			dataSets = drawer.dataSets;
 
@@ -124,10 +124,6 @@ class Element {
 				);
 			}
 		}
-	}
-
-	register(){
-		// hook for registering data -> elements
 	}
 }
 

@@ -26,9 +26,6 @@ require('angular').module( 'vgraph' ).directive( 'vgraphPie',
 					area.y = box.inner.top + box.inner.height / 2;
 				}
 
-				element.setChart( chart, attrs.publish );
-				element.setElement( el );
-
 				calcArea();
 				box.$on( 'resize', calcArea );
 
@@ -36,7 +33,13 @@ require('angular').module( 'vgraph' ).directive( 'vgraphPie',
 					var cfg = chart.getReference( config );
 
 					if ( cfg ){
-						element.setDrawer( new DrawPie(cfg,scope.buckets,area) );
+						element.configure(
+							chart,
+							new DrawPie(cfg,scope.buckets,area),
+							el,
+							attrs.name,
+							attrs.publish
+						);
 
 						if ( cfg.classExtend ){
 							className += cfg.classExtend + ' ';

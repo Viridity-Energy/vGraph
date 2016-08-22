@@ -20,9 +20,6 @@ require('angular').module( 'vgraph' ).directive( 'vgraphLine',
 					chart = requirements[0],
 					element = requirements[1];
 
-				element.setChart( chart );
-				element.setElement( el );
-
 				function build(){
 					if ( pair === null ){
 						return;
@@ -31,13 +28,23 @@ require('angular').module( 'vgraph' ).directive( 'vgraphLine',
 					if ( cfg ){
 						if ( attrs.pair ){
 							className = 'fill ';
-							element.setDrawer( new DrawFill(cfg,pair) );
+							element.configure( 
+								chart,
+								new DrawFill(cfg,pair),
+								el,
+								attrs.name
+							);
 							if ( pair ){
 								pair.$ops.$view.registerComponent( element );
 							}
 						}else{
 							className = 'line ';
-							element.setDrawer( new DrawLine(cfg) );
+							element.configure(
+								chart,
+								new DrawLine(cfg),
+								el,
+								attrs.name
+							);
 						}
 
 						if ( cfg.classExtend ){

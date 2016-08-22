@@ -1,7 +1,7 @@
 var tagWatch = {
-	'path': ['fill','stroke','stroke-width'],
+	'path': ['fill','stroke','stroke-width','stroke-dasharray'],
 	'rect': ['fill','stroke','opacity'],
-	'line': ['stroke','stroke-width'],
+	'line': ['stroke','stroke-width','stroke-dasharray'],
 	'text': ['text-anchor','font-size','color','font-family'],
 	'circle': ['fill','stroke']
 };

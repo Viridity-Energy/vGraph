@@ -1,10 +1,10 @@
 var makeBlob = require('../lib/makeBlob.js');
 
 require('angular').module( 'vgraph' ).directive( 'vgraphExport',
-	[
-	function(){
+	[ '$q',
+	function( $q ){
 		return {
-			require : ['^vgraphChart'],
+			require : ['^vgraphPage','^?vgraphChart'],
 			scope: {
 				labels: '=?labels',
 				exports: '=vgraphExport',
@@ -12,9 +12,12 @@ require('angular').module( 'vgraph' ).directive( 'vgraphExport',
 				selected: '=?selected'
 			},
 			template: 
-				'<select ng-model="selected" ng-options="opt as (labels[opt] || opt) for opt in options"></select>'+
-				'<a ng-click="process( exports[selected] )"><span>Export</span></a>',
+				'<select ng-disabled="processing" ng-model="selected"'+
+					' ng-options="opt as (labels[opt] || opt) for opt in options"></select>'+
+				'<a ng-click="!disabled && process( exports[selected] )"><span>Export</span></a>',
 			link : function( $scope, el, attrs, requirements ){
+				var page = requirements[0];
+
 				if ( !$scope.options ){
 					$scope.options = Object.keys( $scope.exports );
 				}
@@ -24,20 +27,26 @@ require('angular').module( 'vgraph' ).directive( 'vgraphExport',
 				}
 
 				$scope.process = function( fn ){
-					var t = fn( requirements[0] ), // { data, name, charset }
-						blob = makeBlob( t ),
-						downloadLink = document.createElement('a');
+					$scope.processing = true;
 
-					downloadLink.setAttribute( 'href', window.URL.createObjectURL(blob) );
-					downloadLink.setAttribute( 'download', t.name );
-					downloadLink.setAttribute( 'target', '_blank' );
+					$q.resolve( fn(requirements[1]||page.getChart(attrs.chart)) )
+						.then(function( content ){
+							var blob = makeBlob( content ),
+								downloadLink = document.createElement('a');
 
-					document.getElementsByTagName('body')[0].appendChild(downloadLink);
+							downloadLink.setAttribute( 'href', window.URL.createObjectURL(blob) );
+							downloadLink.setAttribute( 'download', content.name );
+							downloadLink.setAttribute( 'target', '_blank' );
 
-					setTimeout(function () {
-						downloadLink.click();
-						document.getElementsByTagName('body')[0].removeChild(downloadLink);
-					}, 5);
+							document.getElementsByTagName('body')[0].appendChild(downloadLink);
+
+							setTimeout(function () {
+								downloadLink.click();
+								document.getElementsByTagName('body')[0].removeChild(downloadLink);
+							}, 5);
+						})['finally'](function(){
+							$scope.processing = false;
+						}); // { data, name, charset }
 				};
 			}
 		};

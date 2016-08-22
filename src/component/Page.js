@@ -17,7 +17,7 @@ class Page{
 		var zooms = this.zooms,
 			feeds = this.feed,
 			loaders = this.loaders,
-			managers = this.managers;
+			managers = this.dataManagers;
 
 		Object.keys(zooms).forEach(function( zoom ){
 			zooms[zoom].reset();
@@ -45,7 +45,7 @@ class Page{
 				managers[manager].$destroy();
 			});
 		}
-		this.managers = {};
+		this.dataManagers = {};
 	}
 
 	configure( settings ){
@@ -133,11 +133,11 @@ class Page{
 
 	getManager( managerName ){
 		var name = managerName || Page.defaultManager,
-			manager = this.managers[name];
+			manager = this.dataManagers[name];
 
 		if ( !manager ){
 			manager = new DataManager();
-			this.managers[name] = manager;
+			this.dataManagers[name] = manager;
 		}
 		
 		return manager;
@@ -145,10 +145,38 @@ class Page{
 
 	setChart( chartName, chart ){
 		this.charts[chartName] = chart;
+
+		if ( this._waiting && this._waiting[chartName] ){
+			this._waiting[chartName].forEach(function( cb ){
+				cb( chart );
+			});
+		}
 	}
 
 	getChart( chartName ){
 		return this.charts[chartName];
+	}
+
+	// TODO : abstract this out to a one time bind in bmoor, similar to on/trigger
+	// require / fulfill
+	requireChart( chartName, cb ){
+		var waiting,
+			chart = this.charts[chartName];
+		
+		if ( chart ){
+			cb( chart );
+		}else{
+			if ( !this._waiting ){
+				this._waiting = {}; 
+			}
+
+			waiting = this._waiting[chartName];
+			if ( !waiting ){
+				waiting = this._waiting[chartName] = [];
+			}
+
+			waiting.push(cb);
+		}
 	}
 
 	getZoom( zoomName ){

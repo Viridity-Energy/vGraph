@@ -111,7 +111,7 @@ class View {
 			diff,
 			last,
 			interval,
-			data = this.manager.data;
+			data = this.dataManager.data;
 
 		data.$sort();
 
@@ -151,7 +151,7 @@ class View {
 		View.parseSettingsY( settings.y, this.y );
 		
 		this.box = box;
-		this.manager = page.getManager( settings.manager );
+		this.dataManager = page.getManager( settings.manager );
 		this.normalizer = normalizer = settings.normalizer || 
 			new DataNormalizer(function(index){
 				return Math.round(index);
@@ -204,16 +204,11 @@ class View {
 	}
 
 	isReady(){
-		return this.manager && this.manager.ready;
+		return this.dataManager && this.dataManager.ready;
 	}
 
 	hasData(){
-		return this.isReady() && this.manager.data.length;
-	}
-
-	_sample(){
-		this.offset = {};
-		this.filtered = this.pane.filter( this.manager, this.offset );
+		return this.isReady() && this.dataManager.data.length;
 	}
 
 	// true when the filtered data contains the leading edge of data
@@ -271,9 +266,14 @@ class View {
 			]);
 	}
 
+	_sample(){
+		this.offset = {};
+		this.filtered = this.pane.filter( this.dataManager, this.offset );
+	}
+	
 	normalize(){
-		if ( this.manager ){
-			this._sample();
+		if ( this.dataManager ){
+			this._sample(); // defines offset
 			
 			if ( this.filtered ){
 				if ( !this.viewport ){

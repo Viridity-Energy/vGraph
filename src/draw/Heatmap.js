@@ -80,14 +80,14 @@ class Heatmap{
 			});
 		}
 
-		xCount = Object.keys(xLabels).length + 1;
-		yCount = Object.keys(yLabels).length + 1;
+		xCount = Object.keys(xLabels).length;
+		yCount = Object.keys(yLabels).length;
 
 		xSize = (area.x2-area.x1) / xCount;
 		ySize = (area.y2-area.y1) / yCount;
 
 		// compute the x labels
-		xPos = area.x1+xSize;
+		xPos = area.x1;
 		Object.keys(xLabels).forEach(function( key ){
 			var xNext = xPos + xSize;
 
@@ -95,10 +95,10 @@ class Heatmap{
 				type: 'x',
 				x1: xPos,
 				x2: xNext,
-				y1: area.y1,
-				y2: area.y1+ySize,
+				y1: area.labelTop,
+				y2: area.y1,
 				width: xSize,
-				height: ySize,
+				height: area.labelHeight,
 				text: xLabels[key]
 			});
 
@@ -106,17 +106,17 @@ class Heatmap{
 		});
 
 		// compute the y labels
-		yPos = area.y1+ySize;
+		yPos = area.y1;
 		Object.keys(yLabels).forEach(function( key ){
 			var yNext = yPos + ySize;
 
 			sets.push({
 				type: 'y',
-				x1: area.x1,
-				x2: area.x1+xSize,
+				x1: area.labelLeft,
+				x2: area.x1,
 				y1: yPos,
 				y2: yNext,
-				width: xSize,
+				width: area.labelWidth,
 				height: ySize,
 				text: yLabels[key]
 			});
@@ -125,13 +125,13 @@ class Heatmap{
 		});
 
 		// compute the data cells
-		xPos = area.x1+xSize;
+		xPos = area.x1;
 		Object.keys(xLabels).forEach(function( x ){
 			var col = [],
 				xNext = xPos + xSize;
 
 			grid.push( col );
-			yPos = area.y1 + ySize;
+			yPos = area.y1;
 
 			Object.keys(yLabels).forEach(function( y ){
 				var t,
@@ -167,6 +167,9 @@ class Heatmap{
 		});
 
 		sets.$grid = grid;
+
+		grid.$y = yLabels;
+		grid.$x = xLabels;
 
 		this.dataSets = sets;
 	}
@@ -229,6 +232,11 @@ class Heatmap{
 	
 	getHitbox( dataSet ){
 		return dataSet;
+	}
+
+	getJson(){
+		console.log( this.dataSets );
+		return this.dataSets.$grid;
 	}
 }
 

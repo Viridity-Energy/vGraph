@@ -26,6 +26,7 @@ class Pane{
 		this.setBounds( {min:xObj.min,max:xObj.max}, {min:yObj.min,max:yObj.max} );
 	}
 
+	// the global bounds of the data set
 	setBounds( x, y ){
 		this._bounds.x = x;
 		this._bounds.y = y;
@@ -33,6 +34,7 @@ class Pane{
 		return this;
 	}
 
+	// the internal bounds of the dataset, expressed in percentage
 	setPane( x, y ){
 		this._pane.x = x;
 		this._pane.y = y;
@@ -53,6 +55,7 @@ class Pane{
 		if ( data.length ){
 			dataManager.clean();
 			
+			// try to use globally defined bounds, fail to data set bounds
 			$min = this._bounds.x.min !== undefined ? this._bounds.x.min : data.$minIndex;
 			$max = this._bounds.x.max !== undefined ? this._bounds.x.max : data.$maxIndex;
 

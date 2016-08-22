@@ -216,7 +216,7 @@ class Chart{
 		}
 
 		id = refDef.id || name;
-		ref = this.references[refDef.id||name];
+		ref = this.references[id];
 
 		if ( ref ){
 			return ref;
@@ -244,7 +244,7 @@ class Chart{
 
 			refDef.$ops = ref;
 
-			this.references[name] = refDef;
+			this.references[id] = refDef;
 
 			return refDef;
 		}
@@ -451,11 +451,11 @@ class Chart{
 
 		viewModel.$name = viewName;
 
-		viewModel.manager.register(function(){
+		viewModel.dataManager.register(function(){
 			dis.needsRender(viewModel,300);
 		});
 
-		viewModel.manager.onError(function( error ){
+		viewModel.dataManager.onError(function( error ){
 			dis.error( error );
 		});
 	}
@@ -488,6 +488,7 @@ class Chart{
 	}
 
 	addHitbox( info, element ){
+		// TODO: I think I'd rather push this down to the elements themselves?
 		info.$element = element;
 		// to override default hit box, pass in info{ intersect, intersectX, intersectY }, look at Hitbox
 		this.hitbox.add( info );
@@ -571,21 +572,38 @@ class Chart{
 		}
 	*/
 
+	registerFeed( name, fn ){
+		if ( !this.feeds ){
+			this.feeds = {};
+		}
+
+		this.feeds[name] = fn;
+	}
+
+	getFeed( name ){
+		if ( this.feeds && this.feeds[name] ){
+			return this.feeds[name]();
+		}
+	}
+
 	export( config ){
 		var diff,
 			cells,
+			maxRow,
 			content,
 			interval,
 			headers = config.map(function(m){ return m.title; }),
+			references = [],
 			getReference = this.getReference.bind(this);
 
-		config.forEach(function( ref ){
-			var t;
+		config.forEach(function( cfg ){
+			var ref = getReference(cfg.reference),
+				t = ref.$ops.$view.getBounds();
 
-			ref.$link = getReference( ref.reference );
-			ref.$view = ref.$link.$view;
-			t = ref.$ops.$view.getBounds();
-			ref.$bounds = t;
+			ref.$ops.resetField();
+			references.push( ref );
+			
+			cfg.$bounds = t;
 
 			if ( diff ){
 				if ( diff < t.max - t.min ){
@@ -601,36 +619,47 @@ class Chart{
 			}
 		});
 
-		cells = Math.ceil( diff/interval );
+		cells = Math.ceil( diff/interval ) + 1;
 		content = makeArray( cells );
-
-		config.forEach(function( ref ){
+		
+		config.forEach(function( cfg, index ){
 			var i,
 				t,
 				pos,
-				min = ref.$bounds.min,
+				row,
+				min = cfg.$bounds.min,
 				max = min + diff,
-				interval = ref.$bounds.interval;
+				ref = references[index],
+				maxCell = cells - 1,
+				interval = cfg.$bounds.interval;
 
 			pos = content[0].length;
 			addColumn(content);
 
 			for( i = min; i <= max; i += interval ){
-				t = ref.$ops.$view.manager.data.$getNode( i );
+				t = ref.$ops.$view.dataManager.data.$getNode( i );
 				if ( t ){
-					// TODO : why did I do this?
-					t = t[ ref.field ? ref.field : ref.reference ];
+					t = cfg.field ? t[cfg.field] : ref.$ops.getValue( t );
 
-					if ( ref.format ){
-						t = ref.format( t );
+					if ( cfg.format ){
+						t = cfg.format( t );
 					}
 
-					content[ Math.floor((i-min)/(max-min)*cells+0.5) ][ pos ] = t;
+					row = Math.floor( (i-min)/(max-min) * maxCell + 0.5 );
+					if ( !maxRow || maxRow < row ){
+						maxRow = row;
+					}
+					
+					content[row][pos] = t;
 				}
 			}
 		});
 
 		content.unshift( headers );
+
+		if ( maxRow + 1 !== content.length ){
+			content.splice( maxRow+1 );
+		}
 
 		return content;
 	}

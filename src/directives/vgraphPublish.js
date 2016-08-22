@@ -2,17 +2,26 @@ require('angular').module( 'vgraph' ).directive( 'vgraphPublish',
 	[
 	function(){
 		return {
-			require: ['^vgraphChart'],
+			require: ['^vgraphPage','^?vgraphChart'],
 			scope: true,
 			link: function( $scope, el, attrs, requirements ){
-				var connections = $scope.$eval( attrs.vgraphPublish );
+				var page = requirements[0],
+					content = $scope.$eval( attrs.vgraphPublish );
 
-				Object.keys(connections).forEach(function(key){
-					requirements[0].$on('publish:'+key, function( point ){
-						$scope[ connections[key] ] = point;
-						$scope.$digest();
+				function manageChart( chart ){
+					Object.keys(content).forEach(function(key){
+						chart.$on('publish:'+key, function( point ){
+							$scope[ content[key] ] = point;
+							$scope.$digest();
+						});
 					});
-				});	
+				}
+
+				if ( requirements[1] ){
+					manageChart( requirements[1] );
+				}else{
+					page.requireChart( attrs.chart, manageChart );
+				}
 			}
 		};
 	} ]

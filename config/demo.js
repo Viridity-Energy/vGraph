@@ -1413,29 +1413,6 @@ angular.module( 'vgraph' ).controller( 'ExportCtrl',
 			data3 = [ {x : start, y : 20}  ],
 			data4 = [ {x : start+86400000, y : 20}  ];
 
-		$scope.exports = {
-			default: function( graph ){
-				var data = graph.export([
-					{ title: 'time 1', reference: 'someLine1', field: '_$index' },
-					{ title: 'field 1', reference: 'someLine1' },
-					{ title: 'field 2', reference: 'someLine2', format: function(v){ return (+v).toFixed(2) } },
-					{ title: 'field 3', reference: 'someLine3' },
-					{ title: 'time 4', reference: 'someLine4', field: '_$index' },
-					{ title: 'field 4', reference: 'someLine4' }
-				]);
-
-				return {
-					data: data,
-					name: 'someFile.csv'
-				};
-			},
-			content: function( graph ){
-				return {
-					data: graph.$svg,
-					name: 'someFile.svg'
-				};
-			}
-		};
 		$scope.graph = {
 			adjustSettings: function( x ){
 				x.tick = {
@@ -1480,28 +1457,28 @@ angular.module( 'vgraph' ).controller( 'ExportCtrl',
 				'firstView': {
 					x: {
 						min : start, 
-						max : stop
+						max : stop+400000
 					},
 					manager: 'first'
 				},
 				'secondView': {
 					x: {
 						min : start, 
-						max : stop
+						max : stop+400000
 					},
 					manager: 'second'
 				},
 				'thirdView': {
 					x: {
 						min : start, 
-						max : stop
+						max : stop+400000
 					},
 					manager: 'third'
 				},
 				'fourthView': {
 					x: {
 						min : start+86400000, 
-						max : stop+86400000
+						max : stop+86400000+400000
 					},
 					manager: 'fourth'
 				}
@@ -1545,6 +1522,181 @@ angular.module( 'vgraph' ).controller( 'ExportCtrl',
 			ref4
 		];
 
+		$scope.exports = {
+			default: function( graph ){
+				var data = graph.export([
+					{ title: 'time 1', reference: 'someLine1', field: '_$index' },
+					{ title: 'field 1', reference: 'someLine1' },
+					{ title: 'field 2', reference: 'someLine2', format: function(v){ return (+v).toFixed(2) } },
+					{ title: 'field 3', reference: 'someLine3' },
+					{ title: 'time 4', reference: 'someLine4', field: '_$index' },
+					{ title: 'field 4', reference: 'someLine4' }
+				]);
+
+				return {
+					data: data,
+					name: 'someFile.csv'
+				};
+			},
+			content: function( graph ){
+				return {
+					data: graph.$svg,
+					name: 'someFile.svg'
+				};
+			}
+		};
+		
+
+		$scope.heatmap = {
+			x: {
+				scale: function(){ return d3.scale.linear(); }
+			},
+			y: {
+				scale: function(){ return d3.scale.linear(); }
+			},
+			views: {
+				firstView: {
+					manager: 'first',
+					normalizer: new vGraph.data.Normalizer(function(index){
+						return index; // don't combine at all
+					})
+				}
+			}
+		};
+
+		$scope.heatmapExports = {
+			default: function( graph ){
+				var data = graph.export([
+					{ title: 'time 1', reference: 'someLine1', field: '_$index' },
+					{ title: 'field 1', reference: 'someLine1' }
+				]);
+
+				return {
+					data: data,
+					name: 'someFile.csv'
+				};
+			},
+			content: function( graph ){
+				return {
+					data: graph.$svg,
+					name: 'someFile.svg'
+				};
+			},
+			grid: function( graph ){
+				var i, c,
+					j, co,
+					row,
+					grid = graph.getFeed('heatmap');
+			
+				for( i = 0, c = grid.length; i < c; i++ ){
+					row = grid[i];
+					for( j = 0, co = row.length; j < co; j++ ){
+						row[j] = row[j].value;
+					}
+				}
+
+				return {
+					data: grid,
+					name: 'heatmap.csv'
+				};
+			}
+		};
+		
+		$scope.indexs = {
+			'100s': function( datum ){
+				return Math.round( new Date(datum.$avgIndex).getHours() );
+			},
+			'10s': function( datum ){
+				return Math.round( new Date(datum.$avgIndex).getMinutes() / 5 );
+			}
+		};
+
+		function calcSet( data ){
+			var i, c,
+				sum = 0;
+
+			if ( !data ){
+				return null;
+			}
+
+			for( i = 0, c = data.length; i < c; i++ ){
+				sum += data[i].someLine1;
+			}
+
+			return sum;
+		};
+
+		function calcColumn( column ){
+			var i, c,
+				datum,
+				value,
+				compare;
+
+			for( i = 0, c = column.length; i < c; i++ ){
+				datum = column[i];
+				value = calcSet( datum );
+
+				if ( value || value === 0 ){
+					datum.value = value;
+					datum.display = value.toFixed(2);
+
+					if ( !compare ){
+						compare = {
+							min: value,
+							max: value
+						};
+					}else if ( compare.min > value ){
+						compare.min = value;
+					}else if ( compare.max < value ){
+						compare.max = value;
+					}
+				}
+			}
+			
+			return compare;
+		};
+
+		$scope.calculator = function( dataSets ){
+			var i, c,
+				min,
+				max,
+				datum,
+				compare,
+				colorScale,
+				grid = dataSets.$grid;
+			
+			for( i = 0, c = grid.length; i < c; i++ ){
+				compare = calcColumn(grid[i]);
+
+				if ( compare ){
+					if ( min === undefined ){
+						min = compare.min;
+						max = compare.max;
+					}else{
+						if ( min > compare.min ){
+							min = compare.min;
+						}
+
+						if ( max < compare.max ){
+							max = compare.max;
+						}
+					}
+				}
+			}
+
+			colorScale = d3.scale.linear()
+				.domain( [min,max] )
+				.range( ['#FF0000','#00FF00'] );
+
+			for( i = 0, c = dataSets.length; i < c; i++ ){
+				datum = dataSets[i];
+				if ( datum.data ){
+					datum.$color = colorScale(datum.data.value);
+				}
+			}
+		};
+
+		//--- data generation
 		for( var i = start, c = stop; i < c; i += minute ){
 			var counter = 0;
 			var min = -1,

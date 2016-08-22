@@ -13,8 +13,7 @@ require('angular').module( 'vgraph' ).directive( 'vgraphHeatmap',
 			require : ['^vgraphChart','vgraphHeatmap'],
 			controller: ComponentElement,
 			link : function( scope, $el, attrs, requirements ){
-				var drawer,
-					el = $el[0],
+				var el = $el[0],
 					area = {},
 					chart = requirements[0],
 					element = requirements[1],
@@ -29,14 +28,15 @@ require('angular').module( 'vgraph' ).directive( 'vgraphHeatmap',
 
 				el.innerHTML = '';
 
-				element.setChart( chart, attrs.publish );
-				element.setElement( el );
-
 				function calcArea(){
 					area.x1 = box.inner.left;
 					area.x2 = box.inner.right;
 					area.y1 = box.inner.top;
 					area.y2 = box.inner.bottom;
+					area.labelLeft = box.left;
+					area.labelWidth = box.padding.left;
+					area.labelTop = box.top;
+					area.labelHeight = box.padding.top;
 				}
 
 				calcArea();
@@ -70,14 +70,18 @@ require('angular').module( 'vgraph' ).directive( 'vgraphHeatmap',
 					var cfg = chart.getReference( config );
 
 					if ( cfg ){
-						drawer = new DrawHeatmap(
-							cfg, 
-							area, 
-							templates, 
-							scope.indexs
+						element.configure(
+							chart, 
+							new DrawHeatmap(
+								cfg, 
+								area, 
+								templates, 
+								scope.indexs
+							),
+							el,
+							attrs.name,
+							attrs.publish
 						);
-
-						element.setDrawer( drawer );
 
 						if ( cfg.classExtend ){
 							className += cfg.classExtend + ' ';

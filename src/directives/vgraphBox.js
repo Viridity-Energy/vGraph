@@ -20,14 +20,16 @@ require('angular').module( 'vgraph' ).directive( 'vgraphBox',
 					element = requirements[1],
 					className = 'box ';
 
-				element.setChart( chart );
-				element.setElement( el );
-
 				scope.$watch('config', function( config ){
 					var cfg = chart.getReference( config );
 					
 					if ( cfg ){
-						element.setDrawer( new DrawBox(cfg) );
+						element.configure( 
+							chart,
+							new DrawBox(cfg),
+							el,
+							attrs.name
+						);
 
 						if ( cfg.classExtend ){
 							className += cfg.classExtend + ' ';

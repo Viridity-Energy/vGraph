@@ -16,15 +16,17 @@ require('angular').module( 'vgraph' ).directive( 'vgraphCandlestick',
 					chart = requirements[0],
 					element = requirements[1];
 
-				element.setChart( chart );
-				element.setElement( el );
-
 				scope.$watch('config', function( config ){
 					var cfg = chart.getReference( config );
 
 					if ( cfg ){
 						className = 'candlestick ';
-						element.setDrawer( new DrawCandlestick(cfg) );
+						element.configure(
+							chart,
+							new DrawCandlestick(cfg),
+							el,
+							attrs.name
+						);
 
 						if ( cfg.classExtend ){
 							className += cfg.classExtend + ' ';

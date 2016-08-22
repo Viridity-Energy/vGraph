@@ -17,19 +17,21 @@ require('angular').module( 'vgraph' ).directive( 'vgraphBar',
 					element = requirements[1],
 					className = 'bar ';
 
-				element.setChart( chart );
-				element.setElement( el );
-
 				scope.$watch('config', function( config ){
 					var cfg = chart.getReference( config ),
 						pair = chart.getReference( scope.pair );
 
 					if ( cfg ){
-						element.setDrawer( new DrawBar(cfg,pair,{
-							width: parseInt(attrs.width,10),
-							maxWidth: parseInt(attrs.maxWidth,10),
-							minWidth: parseInt(attrs.minWidth,10)
-						}) );
+						element.configure(
+							chart,
+							new DrawBar(cfg,pair,{
+								width: parseInt(attrs.width,10),
+								maxWidth: parseInt(attrs.maxWidth,10),
+								minWidth: parseInt(attrs.minWidth,10)
+							}),
+							el,
+							attrs.name
+						);
 
 						if ( cfg.classExtend ){
 							className += cfg.classExtend + ' ';
