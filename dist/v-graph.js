@@ -5427,7 +5427,6 @@ var vGraph =
 		}, {
 			key: 'getJson',
 			value: function getJson() {
-				console.log(this.dataSets);
 				return this.dataSets.$grid;
 			}
 		}]);
@@ -5969,9 +5968,11 @@ var vGraph =
 					if (config) {
 						for (i = 0, c = config.length; i < c; i++) {
 							cfg = chart.getReference(config[i]);
-							configs.push(cfg);
+							if (cfg) {
+								configs.push(cfg);
 
-							elements[cfg.id] = $el.append('line').attr('class', 'line ' + cfg.className);
+								elements[cfg.id] = $el.append('line').attr('class', 'line ' + cfg.className);
+							}
 						}
 					}
 				}

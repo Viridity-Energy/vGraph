@@ -27,9 +27,11 @@ angular.module( 'vgraph' ).directive( 'vgraphLeading',
 					if ( config ){
 						for( i = 0, c = config.length; i < c; i++ ){
 							cfg = chart.getReference(config[i]);
-							configs.push( cfg );
+							if ( cfg ){
+								configs.push( cfg );
 
-							elements[ cfg.id ] = $el.append('line').attr( 'class', 'line '+cfg.className );
+								elements[ cfg.id ] = $el.append('line').attr( 'class', 'line '+cfg.className );
+							}
 						}
 					}
 				}

@@ -26,7 +26,7 @@ class Feed {
 		};
 
 		data.$error = function( err ){
-			dis.$trigger( 'error', err );
+			dis.error( err );
 		};
 
 		data.$reset = function(){
@@ -49,6 +49,10 @@ class Feed {
 		for( i = 0, c = arr.length; i < c; i++ ){
 			this.data.push( arr[i] );
 		}
+	}
+
+	error( err ){
+		this.$trigger( 'error', err );
 	}
 
 	$onPush(){

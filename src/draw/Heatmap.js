@@ -235,7 +235,6 @@ class Heatmap{
 	}
 
 	getJson(){
-		console.log( this.dataSets );
 		return this.dataSets.$grid;
 	}
 }

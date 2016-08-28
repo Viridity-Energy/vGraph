@@ -592,65 +592,80 @@ class Chart{
 			maxRow,
 			content,
 			interval,
+			maxCell,
 			headers = config.map(function(m){ return m.title; }),
 			references = [],
 			getReference = this.getReference.bind(this);
 
 		config.forEach(function( cfg ){
-			var ref = getReference(cfg.reference),
+			var ref,
+				t;
+
+			if ( cfg.reference ){
+				ref = getReference(cfg.reference);
 				t = ref.$ops.$view.getBounds();
 
-			ref.$ops.resetField();
-			references.push( ref );
-			
-			cfg.$bounds = t;
+				ref.$ops.resetField();
+				cfg.$ref = ref;
+				
+				cfg.$bounds = t;
 
-			if ( diff ){
-				if ( diff < t.max - t.min ){
+				if ( diff ){
+					if ( diff < t.max - t.min ){
+						diff = t.max - t.min;
+					}
+
+					if ( interval > t.interval ){
+						interval = t.interval;
+					}
+				}else{
 					diff = t.max - t.min;
-				}
-
-				if ( interval > t.interval ){
 					interval = t.interval;
 				}
-			}else{
-				diff = t.max - t.min;
-				interval = t.interval;
 			}
 		});
 
-		cells = Math.ceil( diff/interval ) + 1;
+		maxCell = Math.ceil( diff/interval )
+		cells =  maxCell + 1;
 		content = makeArray( cells );
 		
 		config.forEach(function( cfg, index ){
 			var i,
 				t,
-				pos,
 				row,
-				min = cfg.$bounds.min,
-				max = min + diff,
-				ref = references[index],
-				maxCell = cells - 1,
-				interval = cfg.$bounds.interval;
+				min,
+				max,
+				inteval,
+				ref = cfg.$ref,
+				pos = content[0].length;
 
-			pos = content[0].length;
 			addColumn(content);
 
-			for( i = min; i <= max; i += interval ){
-				t = ref.$ops.$view.dataManager.data.$getNode( i );
-				if ( t ){
-					t = cfg.field ? t[cfg.field] : ref.$ops.getValue( t );
+			if ( cfg.$ref ){
+				min = cfg.$bounds.min,
+				max = min + diff,
+				interval = cfg.$bounds.interval;
 
-					if ( cfg.format ){
-						t = cfg.format( t );
-					}
+				for( i = min; i <= max; i += interval ){
+					t = ref.$ops.$view.dataManager.data.$getNode( i );
+					if ( t ){
+						t = cfg.field ? t[cfg.field] : ref.$ops.getValue( t );
 
-					row = Math.floor( (i-min)/(max-min) * maxCell + 0.5 );
-					if ( !maxRow || maxRow < row ){
-						maxRow = row;
+						if ( cfg.format ){
+							t = cfg.format( t );
+						}
+
+						row = Math.floor( (i-min)/(max-min) * maxCell + 0.5 );
+						if ( !maxRow || maxRow < row ){
+							maxRow = row;
+						}
+						
+						content[row][pos] = t;
 					}
-					
-					content[row][pos] = t;
+				}
+			}else if ( cfg.value ){
+				for ( i = content.length - 1; i != -1; i-- ){
+					content[i][pos] = cfg.value;
 				}
 			}
 		});
