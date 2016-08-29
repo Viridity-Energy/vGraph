@@ -1500,7 +1500,7 @@
 			<div ng-controller="SpiralCtrl">
 				<div vgraph-page="page">
 					<div vgraph-chart="spiral">
-						<div vgraph-publish="{focus:'content'}">{{content}}</div>
+						<div vgraph-highlight="content">{{content}}</div>
 						<svg xmlns="http://www.w3.org/2000/svg"  version="1.1" class="spiral">
 							<g vgraph-label x="left" y="middle">
 								<text text-anchor="middle" dy="1em" transform="rotate(-90)">10s</text>
@@ -1508,8 +1508,24 @@
 							<g vgraph-label x="center" y="top">
 								<text text-anchor="middle" dy="1em">100s</text>
 							</g>
-							<g vgraph-spiral="ref" index="index" 
-								publish="spiral"></g>
+							<g vgraph-spiral="ref" index="indexHour" 
+								name="spiral"></g>
+								
+							<g vgraph-interact></g>
+						</svg>
+					</div>
+					<div vgraph-chart="spiral">
+						<div vgraph-highlight="content">{{content}}</div>
+						<svg xmlns="http://www.w3.org/2000/svg"  version="1.1" class="spiral">
+							<g vgraph-label x="left" y="middle">
+								<text text-anchor="middle" dy="1em" transform="rotate(-90)">10s</text>
+							</g>
+							<g vgraph-label x="center" y="top">
+								<text text-anchor="middle" dy="1em">100s</text>
+							</g>
+							<g vgraph-spiral="ref" index="indexMin"
+								name="spiral"
+								step="3"></g>
 								
 							<g vgraph-interact></g>
 						</svg>

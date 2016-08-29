@@ -7,6 +7,7 @@ require('angular').module( 'vgraph' ).directive( 'vgraphSpiral',
 		return {
 			scope : {
 				config: '=vgraphSpiral',
+				labels: '=labels',
 				index: '=index'
 			},
 			require : ['^vgraphChart','vgraphSpiral'],
@@ -29,7 +30,11 @@ require('angular').module( 'vgraph' ).directive( 'vgraphSpiral',
 							new DrawSpiral(
 								cfg, 
 								box,
-								scope.index
+								scope.index,
+								scope.labels,
+								{
+									step: parseInt( attrs.step || cfg.step, 10 )
+								}
 							),
 							el,
 							attrs.name,

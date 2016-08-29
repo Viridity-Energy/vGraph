@@ -534,7 +534,7 @@ class Chart{
 				p;
 
 			if ( view.components.length ){
-				point = view.getPoint( pos.x );
+				point = view.getHighlight( pos );
 
 				if ( point ){
 					points[viewName] = point;

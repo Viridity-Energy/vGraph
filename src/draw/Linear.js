@@ -103,6 +103,9 @@ class Linear{
 						this.mergePoint( parsed, set ); // don't care about return
 					}
 				}
+			}else{
+				// we assume this is a end set, start new one condition
+				closeSet();
 			}
 		}
 

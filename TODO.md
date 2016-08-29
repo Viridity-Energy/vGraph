@@ -11,6 +11,7 @@
 * Different elements can be shared across
 * Each type will have its own axis
 	- linear axis becomes native
+* View should save it as elements not components
 
 ## Prolly not happening for a while
 * create editor (WYSIWYG graph editor)

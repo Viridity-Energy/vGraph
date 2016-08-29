@@ -1281,7 +1281,7 @@
 			className: 'green',
 			getValue: null,
 			isValid: function isValid(d) {
-				return d.$minIndex > 20 && d.$minIndex < 40;
+				return d.$minIndex > 20 && d.$minIndex < 30 || d.$minIndex > 40 && d.$minIndex < 50;
 			}
 		},
 		    data = [{ x: 0, y1: 20, y2: 25, y3: 30, y4: 40 }];
@@ -2322,8 +2322,12 @@
 			}
 		};
 
-		$scope.index = function (datum) {
-			return Math.round(datum.$avgIndex % 24);
+		$scope.indexHour = function (datum) {
+			return Math.round(datum.$avgIndex % 24); // every hour
+		};
+
+		$scope.indexMin = function (datum) {
+			return Math.round(datum.$avgIndex % (24 * 12)); // every 5 minutes
 		};
 
 		$scope.ref = { name: 'y', view: 'basic', className: 'red' };
@@ -2344,9 +2348,6 @@
 		}
 
 		makeData();
-		//$timeout( makeData, 1000 );
-
-		//$timeout( makeData, 6000 );
 	}]);
 
 /***/ },
@@ -20084,6 +20085,9 @@
 								this.mergePoint(parsed, set); // don't care about return
 							}
 						}
+					} else {
+						// we assume this is a end set, start new one condition
+						closeSet();
 					}
 				}
 
@@ -20332,6 +20336,7 @@
 				var refs = [],
 				    references = drawer.getReferences();
 
+				this.name = name;
 				this.chart = chart;
 				this.publish = publish;
 				this.element = domNode;
@@ -21500,7 +21505,7 @@
 					var point, p;
 
 					if (view.components.length) {
-						point = view.getPoint(pos.x);
+						point = view.getHighlight(pos);
 
 						if (point) {
 							points[viewName] = point;
@@ -24260,30 +24265,50 @@
 		}, {
 			key: 'getPoint',
 			value: function getPoint(pos) {
-				var point,
+				var point = Object.create(this.normalizer.$getClosest(pos, '$x')),
 				    references = this.references;
 
+				Object.keys(references).forEach(function (key) {
+					var ref = references[key];
+
+					if (ref.highlights) {
+						Object.keys(ref.highlights).forEach(function (k) {
+							point[k] = ref.highlights[k](point);
+						});
+					}
+
+					if (ref.$ops.getValue) {
+						point[ref.name] = ref.$ops.getValue(point);
+					}
+				});
+
+				return point;
+			}
+		}, {
+			key: 'getHighlight',
+			value: function getHighlight(pos) {
+				var point;
+
 				if (this.normalizer) {
-					point = Object.create(this.normalizer.$getClosest(pos, '$x'));
+					this.components.forEach(function (comp) {
+						if (comp.name && comp.drawer.getHighlight) {
+							if (!point) {
+								point = {};
+							}
 
-					Object.keys(references).forEach(function (key) {
-						var ref = references[key];
-
-						if (ref.highlights) {
-							Object.keys(ref.highlights).forEach(function (k) {
-								point[k] = ref.highlights[k](point);
-							});
-						}
-
-						if (ref.$ops.getValue) {
-							point[ref.name] = ref.$ops.getValue(point);
+							point[comp.name] = comp.drawer.getHighlight(pos);
 						}
 					});
+
+					if (point) {
+						return point;
+					} else {
+						// the default is linear data search
+						return this.getPoint(pos.x);
+					}
 				} else {
 					console.log('unconfigured', this);
 				}
-
-				return point;
 			}
 		}], [{
 			key: 'parseSettingsX',
@@ -33464,6 +33489,7 @@
 		return {
 			scope: {
 				config: '=vgraphSpiral',
+				labels: '=labels',
 				index: '=index'
 			},
 			require: ['^vgraphChart', 'vgraphSpiral'],
@@ -33481,7 +33507,9 @@
 					var cfg = chart.getReference(config);
 
 					if (cfg) {
-						element.configure(chart, new DrawSpiral(cfg, box, scope.index), el, attrs.name, attrs.publish);
+						element.configure(chart, new DrawSpiral(cfg, box, scope.index, scope.labels, {
+							step: parseInt(attrs.step || cfg.step, 10)
+						}), el, attrs.name, attrs.publish);
 
 						if (cfg.classExtend) {
 							className += cfg.classExtend + ' ';
@@ -33527,28 +33555,29 @@
 		};
 	}
 
-	function buildGrid(labels, area) {
-		var res = '',
+	function buildGrid(labels, area, step) {
+		var i = 0,
+		    res = '',
 		    tick = 3,
 		    padding = 4,
 		    keys = Object.keys(labels),
-		    step = 360 / keys.length,
 		    inner = area.inner,
 		    length = (inner.width < inner.height ? inner.width : inner.height) / 2 + tick,
 		    center = inner.center,
 		    middle = inner.middle;
 
 		keys.forEach(function (key) {
-			var info = labels[key],
-			    angle = info.angle,
-			    text = getCoords(center, middle, length + padding, angle),
-			    coord = getCoords(center, middle, length, angle),
-			    anchor = angle > 25 && angle < 155 ? 'start' : angle > 205 && angle < 295 ? 'end' : 'middle',
-			    baseline = angle > 125 && angle < 245 ? 'hanging' : angle > 45 && angle < 315 ? 'middle' : '';
+			if (i % step === 0) {
+				var info = labels[key],
+				    angle = info.angle,
+				    text = getCoords(center, middle, length + padding, angle),
+				    coord = getCoords(center, middle, length, angle),
+				    anchor = angle > 25 && angle < 155 ? 'start' : angle > 205 && angle < 335 ? 'end' : 'middle',
+				    baseline = angle > 125 && angle < 245 ? 'hanging' : angle > 45 && angle < 315 ? 'middle' : '';
 
-			res += '<g class="tick" transform="translate(' + text.x + ',' + text.y + ')">' + '<text dominant-baseline="' + baseline + '" text-anchor="' + anchor + '">' + info.text + '</text>' + '</g>' + '<line class="axis" ' + 'x1="' + center + '" x2="' + coord.x + '" y1="' + middle + '" y2="' + coord.y + '"></line>';
-
-			angle += step;
+				res += '<g class="tick" transform="translate(' + text.x + ',' + text.y + ')">' + '<text dominant-baseline="' + baseline + '" text-anchor="' + anchor + '">' + info.text + '</text>' + '</g>' + '<line class="axis" ' + 'x1="' + center + '" x2="' + coord.x + '" y1="' + middle + '" y2="' + coord.y + '"></line>';
+			}
+			i++;
 		});
 
 		return res;
@@ -33557,13 +33586,14 @@
 	var Spiral = function (_DrawLine) {
 		_inherits(Spiral, _DrawLine);
 
-		function Spiral(ref, area, index, labels) {
+		function Spiral(ref, area, index, labels, settings) {
 			_classCallCheck(this, Spiral);
 
 			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Spiral).call(this, ref));
 
 			_this.area = area;
 			_this.references = [ref];
+			_this.settings = settings || {};
 
 			_this.labels = labels;
 
@@ -33591,6 +33621,7 @@
 				    inner = area.inner,
 				    length = (inner.width < inner.height ? inner.width : inner.height) / 2,
 				    labels = this.labels,
+				    buckets = this.buckets = [],
 				    mapping = {},
 				    bucketer = this.bucketer;
 
@@ -33630,12 +33661,13 @@
 						angle: deg,
 						text: labels[label]
 					};
+					buckets.push(label);
 
 					deg += degrees;
 				});
 
 				// compute the x labels
-				this.axis = buildGrid(mapping, area);
+				this.axis = buildGrid(mapping, area, this.settings.step || 1);
 
 				diff = length / (max - min);
 				this.mapping = mapping;
@@ -33671,6 +33703,30 @@
 			key: 'closeSet',
 			value: function closeSet(set) {
 				return set;
+			}
+		}, {
+			key: 'getHighlight',
+			value: function getHighlight(pos) {
+				var angle,
+				    bucket,
+				    x = pos.x - this.area.inner.center,
+				    y = this.area.inner.middle - pos.y,
+				    deg = Math.atan(x / y) / Math.PI * 180,
+				    buckets = this.buckets;
+
+				if (x >= 0 && y >= 0) {
+					angle = deg;
+				} else if (x <= 0 && y <= 0) {
+					angle = deg + 180;
+				} else if (x <= 0) {
+					angle = deg + 360;
+				} else {
+					angle = deg + 180;
+				}
+
+				bucket = this.bucketer.$getBucket(Math.round(angle / 360 * buckets.length) % buckets.length);
+
+				return bucket;
 			}
 		}]);
 

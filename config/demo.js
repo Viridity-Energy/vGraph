@@ -1267,7 +1267,7 @@ angular.module( 'vgraph' ).controller( 'BoxCtrl',
 				className: 'green',
 				getValue: null,
 				isValid: function( d ){
-					return d.$minIndex > 20 && d.$minIndex < 40;
+					return (d.$minIndex > 20 && d.$minIndex < 30) || (d.$minIndex > 40 && d.$minIndex < 50);
 				}
 			},
 			data = [ {x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40}  ];
@@ -2315,8 +2315,12 @@ angular.module( 'vgraph' ).controller( 'SpiralCtrl',
 			}
 		};
 
-		$scope.index =  function( datum ){
-			return Math.round( datum.$avgIndex % 24 );
+		$scope.indexHour =  function( datum ){
+			return Math.round( datum.$avgIndex % 24 ); // every hour
+		};
+
+		$scope.indexMin =  function( datum ){
+			return Math.round( datum.$avgIndex % (24 * 12) ); // every 5 minutes
 		};
 
 		$scope.ref = { name : 'y', view: 'basic', className: 'red' };
@@ -2337,8 +2341,5 @@ angular.module( 'vgraph' ).controller( 'SpiralCtrl',
 		}
 
 		makeData();
-		//$timeout( makeData, 1000 );
-
-		//$timeout( makeData, 6000 );
 	}]
 );

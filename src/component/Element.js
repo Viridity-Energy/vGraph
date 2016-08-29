@@ -59,6 +59,7 @@ class Element {
 		var refs = [],
 			references = drawer.getReferences();
 
+		this.name = name;
 		this.chart = chart;
 		this.publish = publish;
 		this.element = domNode;
@@ -115,7 +116,7 @@ class Element {
 					root.appendChild( els[0] );
 				}
 			}
-			
+
 			// dataSets will be the content, preParsed, used to make the data
 			if ( root.tagName === 'g' ){
 				appendChildren(

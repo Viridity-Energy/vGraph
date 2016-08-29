@@ -11,36 +11,37 @@ function getCoords( centerX, centerY, radius, angleInDegrees ) {
 	};
 }
 
-function buildGrid( labels, area ){
-	var res = '',
+function buildGrid( labels, area, step ){
+	var i = 0,
+		res = '',
 		tick = 3,
 		padding = 4,
 		keys = Object.keys(labels),
-		step = 360 / keys.length,
 		inner = area.inner,
 		length = ( inner.width < inner.height ? inner.width : inner.height ) / 2 + tick,
 		center = inner.center,
 		middle = inner.middle;
 
 	keys.forEach(function( key ){
-		var 
-			info = labels[key],
-			angle = info.angle,
-			text = getCoords( center, middle, length+padding, angle ),
-			coord = getCoords( center, middle, length, angle ),
-			anchor = ( angle > 25 && angle < 155 ) ? 'start' :
-				( angle > 205 && angle < 295 ) ? 'end' : 'middle',
-			baseline = ( angle > 125 && angle < 245 ) ? 'hanging' : 
-				( angle > 45 && angle < 315 ) ? 'middle' : '';
+		if ( i % step === 0 ){
+			var info = labels[key],
+				angle = info.angle,
+				text = getCoords( center, middle, length+padding, angle ),
+				coord = getCoords( center, middle, length, angle ),
+				anchor = ( angle > 25 && angle < 155 ) ? 'start' :
+					( angle > 205 && angle < 335 ) ? 'end' : 'middle',
+				baseline = ( angle > 125 && angle < 245 ) ? 'hanging' : 
+					( angle > 45 && angle < 315 ) ? 'middle' : '';
 		
-		res += '<g class="tick" transform="translate('+text.x+','+text.y+')">'+
-				'<text dominant-baseline="'+baseline+'" text-anchor="'+anchor+
-					'">'+info.text+'</text>'+
-			'</g>'+
-			'<line class="axis" '+
-				'x1="'+center+'" x2="'+coord.x+'" y1="'+middle+'" y2="'+coord.y+'"></line>';
+			res += '<g class="tick" transform="translate('+text.x+','+text.y+')">'+
+					'<text dominant-baseline="'+baseline+'" text-anchor="'+anchor+
+						'">'+info.text+'</text>'+
+				'</g>'+
+				'<line class="axis" '+
+					'x1="'+center+'" x2="'+coord.x+'" y1="'+middle+'" y2="'+coord.y+'"></line>';
 
-		angle += step;
+		}
+		i++;
 	});
 
 	return res;
@@ -48,11 +49,12 @@ function buildGrid( labels, area ){
 
 class Spiral extends DrawLine {
 		
-	constructor( ref, area, index, labels ){
+	constructor( ref, area, index, labels, settings ){
 		super( ref );
 
 		this.area = area;
 		this.references = [ref];
+		this.settings = settings || {};
 		
 		this.labels = labels;
 
@@ -77,6 +79,7 @@ class Spiral extends DrawLine {
 			inner = area.inner,
 			length = ( inner.width < inner.height ? inner.width : inner.height ) / 2,
 			labels = this.labels,
+			buckets = this.buckets = [],
 			mapping = {},
 			bucketer = this.bucketer;
 
@@ -116,12 +119,13 @@ class Spiral extends DrawLine {
 				angle: deg,
 				text: labels[label]
 			};
+			buckets.push( label );
 
 			deg += degrees;
 		});
 
 		// compute the x labels
-		this.axis = buildGrid( mapping, area );
+		this.axis = buildGrid( mapping, area, this.settings.step || 1 );
 
 		diff = length / ( max - min );
 		this.mapping = mapping;
@@ -156,6 +160,31 @@ class Spiral extends DrawLine {
 
 	closeSet( set ){
 		return set;
+	}
+
+	getHighlight( pos ){
+		var angle,
+			bucket,
+			x = pos.x - this.area.inner.center,
+			y = this.area.inner.middle - pos.y,
+			deg = Math.atan(x/y) / Math.PI * 180,
+			buckets = this.buckets;
+
+		if ( x >= 0 && y >= 0 ){
+			angle = deg;
+		}else if ( x <= 0 && y <= 0 ){
+			angle = deg + 180;
+		}else if ( x <= 0 ){
+			angle = deg + 360;
+		}else{
+			angle = deg + 180;
+		}
+
+		bucket = this.bucketer.$getBucket(
+			Math.round( angle/360 * buckets.length ) % buckets.length
+		);
+
+		return bucket;
 	}
 }
 

@@ -366,30 +366,49 @@ class View {
 	}
 
 	getPoint( pos ){
-		var point,
+		var point = Object.create( this.normalizer.$getClosest(pos,'$x') ),
 			references = this.references;
+		
+		Object.keys(references).forEach(function(key){
+			var ref = references[key];
+
+			if ( ref.highlights ){
+				Object.keys(ref.highlights).forEach(function(k){
+					point[k] = ref.highlights[k]( point );
+				});
+			}
+
+			if ( ref.$ops.getValue ){
+				point[ ref.name ] = ref.$ops.getValue( point );
+			}
+		});
+		
+		return point;
+	}
+
+	getHighlight( pos ){
+		var point;
 
 		if ( this.normalizer ){
-			point = Object.create( this.normalizer.$getClosest(pos,'$x') );
+			this.components.forEach(function( comp ){
+				if ( comp.name && comp.drawer.getHighlight ){
+					if ( !point ){
+						point = {};
+					}
 
-			Object.keys(references).forEach(function(key){
-				var ref = references[key];
-
-				if ( ref.highlights ){
-					Object.keys(ref.highlights).forEach(function(k){
-						point[k] = ref.highlights[k]( point );
-					});
-				}
-
-				if ( ref.$ops.getValue ){
-					point[ ref.name ] = ref.$ops.getValue( point );
+					point[ comp.name ] = comp.drawer.getHighlight( pos );
 				}
 			});
+
+			if ( point ){
+				return point;
+			}else{
+				// the default is linear data search
+				return this.getPoint( pos.x );
+			}
 		}else{
 			console.log( 'unconfigured', this );
 		}
-
-		return point;
 	}
 }
 
