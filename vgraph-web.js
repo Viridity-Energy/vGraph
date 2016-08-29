@@ -25,6 +25,7 @@ require('./src/directives/vgraphPie.js');
 require('./src/directives/vgraphPublish.js');
 require('./src/directives/vgraphStack.js');
 require('./src/directives/vgraphStatus.js');
+require('./src/directives/vgraphSpiral.js');
 require('./src/directives/vgraphTarget.js');
 require('./src/directives/vgraphTooltip.js');
 require('./src/directives/vgraphZoom.js');

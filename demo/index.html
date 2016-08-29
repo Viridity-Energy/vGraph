@@ -34,6 +34,14 @@
 			height: 300;
 		}
 
+		svg.spiral {
+			font-size: 16px;
+			width: 400px;
+			height: 400px;
+			padding: 30px;
+			margin: 10px;
+		}
+
 		[vgraph-chart="zoom"] svg {
 			height: 50px;
 		}
@@ -203,6 +211,15 @@
 			fill: yellow;
 			opacity: .80;
 		}
+
+		[vgraph-spiral] line.axis {
+			stroke: black;
+		}
+
+		[vgraph-spiral] path {
+			stroke: black;
+			fill: transparent;
+		}
 	</style>
 
 	<article ng-controller="AppCtrl">
@@ -247,6 +264,8 @@
 				ng-click="pie = !pie"/></label>
 			<label>Heatmap<input type='checkbox' ng-checked="heatmap" 
 				ng-click="heatmap = !heatmap"/></label>
+			<label>Spiral<input type='checkbox' ng-checked="spiral" 
+				ng-click="spiral = !spiral"/></label>
 		</section>
 
 		<div ng-if="simple" ng-controller="FloodCtrl">
@@ -1469,6 +1488,29 @@
 									style="text-anchor: middle;"
 									>{{content.text}}</text></y-heading>
 							</g>
+							<g vgraph-interact></g>
+						</svg>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<section ng-if="spiral">
+			<h5>Spiral</h5>
+			<div ng-controller="SpiralCtrl">
+				<div vgraph-page="page">
+					<div vgraph-chart="spiral">
+						<div vgraph-publish="{focus:'content'}">{{content}}</div>
+						<svg xmlns="http://www.w3.org/2000/svg"  version="1.1" class="spiral">
+							<g vgraph-label x="left" y="middle">
+								<text text-anchor="middle" dy="1em" transform="rotate(-90)">10s</text>
+							</g>
+							<g vgraph-label x="center" y="top">
+								<text text-anchor="middle" dy="1em">100s</text>
+							</g>
+							<g vgraph-spiral="ref" index="index" 
+								publish="spiral"></g>
+								
 							<g vgraph-interact></g>
 						</svg>
 					</div>

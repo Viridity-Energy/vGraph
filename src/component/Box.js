@@ -74,9 +74,11 @@ function extend( model, settings ){
 		top: model.top + oPadding.top,
 		bottom: model.bottom - oPadding.bottom,
 		left: model.left + oPadding.left,
-		right: model.right - oPadding.right
+		right: model.right - oPadding.right,
 	};
 		
+	model.inner.center = (model.inner.right + model.inner.left) / 2;
+	model.inner.middle = (model.inner.bottom + model.inner.top) / 2;
 	model.inner.width = model.inner.right - model.inner.left;
 	model.inner.height = model.inner.bottom - model.inner.top;
 

@@ -2288,6 +2288,67 @@
 		//$timeout( makeData, 6000 );
 	}]);
 
+	angular.module('vgraph').controller('SpiralCtrl', ['$scope', '$timeout', function ($scope, $timeout) {
+		var data = [{ x: 0, y: 10 }];
+
+		$scope.page = [{
+			src: data,
+			manager: 'feed',
+			interval: 'x',
+			readings: {
+				'y': 'y'
+			}
+		}];
+
+		$scope.spiral = {
+			zoom: 'zoomable',
+			x: {
+				scale: function scale() {
+					return d3.scale.linear();
+				}
+			},
+			y: {
+				scale: function scale() {
+					return d3.scale.linear();
+				}
+			},
+			views: {
+				basic: {
+					manager: 'feed',
+					normalizer: new vGraph.data.Normalizer(function (index) {
+						return index; // don't combine at all
+					})
+				}
+			}
+		};
+
+		$scope.index = function (datum) {
+			return Math.round(datum.$avgIndex % 24);
+		};
+
+		$scope.ref = { name: 'y', view: 'basic', className: 'red' };
+
+		function makeData() {
+			for (var i = 0, c = 2000; i < c; i++) {
+				var counter = 0;
+				var min = -1,
+				    max = 1,
+				    t = Math.random() * (max - min) + min,
+				    p = {
+					x: data.length,
+					y: data[data.length - 1].y + t
+				};
+
+				data.push(p);
+			}
+		}
+
+		makeData();
+		//$timeout( makeData, 1000 );
+
+		//$timeout( makeData, 6000 );
+	}]);
+
 /***/ },
 /* 1 */
 /***/ function(module, exports, __webpack_require__) {
@@ -19007,10 +19068,10 @@
 
 	module.exports = {
 		calculations: __webpack_require__(72),
-		component: __webpack_require__(110),
-		data: __webpack_require__(111),
-		draw: __webpack_require__(113),
-		lib: __webpack_require__(114),
+		component: __webpack_require__(112),
+		data: __webpack_require__(113),
+		draw: __webpack_require__(115),
+		lib: __webpack_require__(116),
 		stats: __webpack_require__(14)
 	};
 
@@ -19048,8 +19109,9 @@
 	__webpack_require__(105);
 	__webpack_require__(106);
 	__webpack_require__(107);
-	__webpack_require__(108);
 	__webpack_require__(109);
+	__webpack_require__(110);
+	__webpack_require__(111);
 
 /***/ },
 /* 6 */
@@ -20216,8 +20278,6 @@
 		    dataSet,
 		    root = self.element;
 
-		root.innerHTML = '';
-
 		for (i = children.length - 1; i !== -1; i--) {
 			dataSet = dataSets[i];
 			child = children[i];
@@ -20254,7 +20314,9 @@
 		_createClass(Element, null, [{
 			key: 'svgCompile',
 			value: function svgCompile(template) {
-				return new DOMParser().parseFromString('<g xmlns="http://www.w3.org/2000/svg">' + template + '</g>', 'image/svg+xml').childNodes[0].childNodes;
+				var els = new DOMParser().parseFromString('<g xmlns="http://www.w3.org/2000/svg">' + template + '</g>', 'image/svg+xml').childNodes[0].childNodes;
+
+				return els;
 			}
 		}]);
 
@@ -20303,7 +20365,9 @@
 			key: 'build',
 			value: function build() {
 				// TODO: this is probably better to be moved to a root drawer class
-				var drawer = this.drawer,
+				var els,
+				    root = this.element,
+				    drawer = this.drawer,
 				    dataSets = drawer.dataSets;
 
 				if (dataSets) {
@@ -20315,11 +20379,21 @@
 						drawer.closeSet(dataSet);
 					});
 
+					root.innerHTML = '';
+
+					if (drawer.makeAxis) {
+						els = Element.svgCompile(drawer.makeAxis());
+
+						while (els.length) {
+							root.appendChild(els[0]);
+						}
+					}
+
 					// dataSets will be the content, preParsed, used to make the data
-					if (this.element.tagName === 'g') {
+					if (root.tagName === 'g') {
 						appendChildren(this, dataSets, Element.svgCompile(make(dataSets, drawer.makeElement.bind(drawer)).join('')));
 					} else {
-						this.element.setAttribute('d', make(dataSets, drawer.makePath.bind(drawer)).join(''));
+						root.setAttribute('d', make(dataSets, drawer.makePath.bind(drawer)).join(''));
 					}
 				}
 			}
@@ -21489,67 +21563,80 @@
 				    maxRow,
 				    content,
 				    interval,
+				    maxCell,
 				    headers = config.map(function (m) {
 					return m.title;
 				}),
-				    references = [],
 				    getReference = this.getReference.bind(this);
 
 				config.forEach(function (cfg) {
-					var ref = getReference(cfg.reference),
-					    t = ref.$ops.$view.getBounds();
+					var ref, t;
 
-					ref.$ops.resetField();
-					references.push(ref);
+					if (cfg.reference) {
+						ref = getReference(cfg.reference);
+						t = ref.$ops.$view.getBounds();
 
-					cfg.$bounds = t;
+						ref.$ops.resetField();
+						cfg.$ref = ref;
 
-					if (diff) {
-						if (diff < t.max - t.min) {
+						cfg.$bounds = t;
+
+						if (diff) {
+							if (diff < t.max - t.min) {
+								diff = t.max - t.min;
+							}
+
+							if (interval > t.interval) {
+								interval = t.interval;
+							}
+						} else {
 							diff = t.max - t.min;
-						}
-
-						if (interval > t.interval) {
 							interval = t.interval;
 						}
-					} else {
-						diff = t.max - t.min;
-						interval = t.interval;
 					}
 				});
 
-				cells = Math.ceil(diff / interval) + 1;
+				maxCell = Math.ceil(diff / interval);
+				cells = maxCell + 1;
 				content = makeArray(cells);
 
-				config.forEach(function (cfg, index) {
+				config.forEach(function (cfg) {
 					var i,
 					    t,
-					    pos,
 					    row,
-					    min = cfg.$bounds.min,
-					    max = min + diff,
-					    ref = references[index],
-					    maxCell = cells - 1,
-					    interval = cfg.$bounds.interval;
+					    min,
+					    max,
+					    interval,
+					    ref = cfg.$ref,
+					    pos = content[0].length;
 
-					pos = content[0].length;
 					addColumn(content);
 
-					for (i = min; i <= max; i += interval) {
-						t = ref.$ops.$view.dataManager.data.$getNode(i);
-						if (t) {
-							t = cfg.field ? t[cfg.field] : ref.$ops.getValue(t);
+					if (cfg.$ref) {
+						min = cfg.$bounds.min;
+						max = min + diff;
+						interval = cfg.$bounds.interval;
 
-							if (cfg.format) {
-								t = cfg.format(t);
+						for (i = min; i <= max; i += interval) {
+							t = ref.$ops.$view.dataManager.data.$getNode(i);
+							if (t) {
+								t = cfg.field ? t[cfg.field] : ref.$ops.getValue(t);
+
+								if (cfg.format) {
+									t = cfg.format(t);
+								}
+
+								row = Math.floor((i - min) / (max - min) * maxCell + 0.5);
+								if (!maxRow || maxRow < row) {
+									maxRow = row;
+								}
+
+								content[row][pos] = t;
 							}
-
-							row = Math.floor((i - min) / (max - min) * maxCell + 0.5);
-							if (!maxRow || maxRow < row) {
-								maxRow = row;
-							}
-
-							content[row][pos] = t;
+						}
+					} else if (cfg.value) {
+						for (i = content.length - 1; i !== -1; i--) {
+							content[i][pos] = cfg.value;
 						}
 					}
 				});
@@ -22113,6 +22200,8 @@
 			right: model.right - oPadding.right
 		};
 
+		model.inner.center = (model.inner.right + model.inner.left) / 2;
+		model.inner.middle = (model.inner.bottom + model.inner.top) / 2;
 		model.inner.width = model.inner.right - model.inner.left;
 		model.inner.height = model.inner.bottom - model.inner.top;
 
@@ -30922,6 +31011,8 @@
 				    index = this._hasher(datum),
 				    match = this._$index[index];
 
+				datum.$bucket = index;
+
 				if (!match) {
 					needNew = true;
 
@@ -31649,6 +31740,10 @@
 					}
 				}
 
+				for (i = set.length - 1; i > -1; i--) {
+					set[i].y = this.ref.$ops.$view.y.scale(set[i].y);
+				}
+
 				return set;
 			}
 		}, {
@@ -31662,7 +31757,7 @@
 				if (dataSet.length) {
 					for (i = 0, c = dataSet.length; i < c; i++) {
 						point = dataSet[i];
-						res.push(point.x + ',' + this.ref.$ops.$view.y.scale(point.y));
+						res.push(point.x + ',' + point.y);
 					}
 
 					return 'M' + res.join('L');
@@ -32273,7 +32368,7 @@
 				};
 
 				data.$error = function (err) {
-					dis.$trigger('error', err);
+					dis.error(err);
 				};
 
 				data.$reset = function () {
@@ -32297,6 +32392,11 @@
 				for (i = 0, c = arr.length; i < c; i++) {
 					this.data.push(arr[i]);
 				}
+			}
+		}, {
+			key: 'error',
+			value: function error(err) {
+				this.$trigger('error', err);
 			}
 		}, {
 			key: '$onPush',
@@ -33357,6 +33457,234 @@
 
 	'use strict';
 
+	var DrawSpiral = __webpack_require__(108),
+	    ComponentElement = __webpack_require__(13);
+
+	__webpack_require__(2).module('vgraph').directive('vgraphSpiral', [function () {
+		return {
+			scope: {
+				config: '=vgraphSpiral',
+				index: '=index'
+			},
+			require: ['^vgraphChart', 'vgraphSpiral'],
+			controller: ComponentElement,
+			link: function link(scope, $el, attrs, requirements) {
+				var el = $el[0],
+				    chart = requirements[0],
+				    element = requirements[1],
+				    box = chart.box,
+				    className = 'spiral ';
+
+				el.innerHTML = '';
+
+				scope.$watch('config', function (config) {
+					var cfg = chart.getReference(config);
+
+					if (cfg) {
+						element.configure(chart, new DrawSpiral(cfg, box, scope.index), el, attrs.name, attrs.publish);
+
+						if (cfg.classExtend) {
+							className += cfg.classExtend + ' ';
+						}
+
+						className += attrs.className || cfg.className;
+
+						el.setAttribute('class', className);
+
+						cfg.$ops.$view.registerComponent(element);
+					}
+				});
+			}
+		};
+	}]);
+
+/***/ },
+/* 108 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	var DrawLine = __webpack_require__(92),
+	    Classifier = __webpack_require__(12),
+	    DataBucketer = __webpack_require__(83);
+
+	function getCoords(centerX, centerY, radius, angleInDegrees) {
+		var angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
+
+		return {
+			x: centerX + radius * Math.cos(angleInRadians),
+			y: centerY + radius * Math.sin(angleInRadians)
+		};
+	}
+
+	function buildGrid(labels, area) {
+		var res = '',
+		    tick = 3,
+		    padding = 4,
+		    keys = Object.keys(labels),
+		    step = 360 / keys.length,
+		    inner = area.inner,
+		    length = (inner.width < inner.height ? inner.width : inner.height) / 2 + tick,
+		    center = inner.center,
+		    middle = inner.middle;
+
+		keys.forEach(function (key) {
+			var info = labels[key],
+			    angle = info.angle,
+			    text = getCoords(center, middle, length + padding, angle),
+			    coord = getCoords(center, middle, length, angle),
+			    anchor = angle > 25 && angle < 155 ? 'start' : angle > 205 && angle < 295 ? 'end' : 'middle',
+			    baseline = angle > 125 && angle < 245 ? 'hanging' : angle > 45 && angle < 315 ? 'middle' : '';
+
+			res += '<g class="tick" transform="translate(' + text.x + ',' + text.y + ')">' + '<text dominant-baseline="' + baseline + '" text-anchor="' + anchor + '">' + info.text + '</text>' + '</g>' + '<line class="axis" ' + 'x1="' + center + '" x2="' + coord.x + '" y1="' + middle + '" y2="' + coord.y + '"></line>';
+
+			angle += step;
+		});
+
+		return res;
+	}
+
+	var Spiral = function (_DrawLine) {
+		_inherits(Spiral, _DrawLine);
+
+		function Spiral(ref, area, index, labels) {
+			_classCallCheck(this, Spiral);
+
+			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Spiral).call(this, ref));
+
+			_this.area = area;
+			_this.references = [ref];
+
+			_this.labels = labels;
+
+			if (ref.classify) {
+				_this.classifier = new Classifier(ref.classify);
+			} else if (ref.classifier) {
+				_this.classifier = ref.classifier;
+			}
+
+			_this.bucketer = new DataBucketer(index);
+			return _this;
+		}
+
+		_createClass(Spiral, [{
+			key: 'parse',
+			value: function parse(keys) {
+				var min,
+				    max,
+				    diff,
+				    count,
+				    degrees,
+				    deg = 0,
+				    ref = this.references[0],
+				    area = this.area,
+				    inner = area.inner,
+				    length = (inner.width < inner.height ? inner.width : inner.height) / 2,
+				    labels = this.labels,
+				    mapping = {},
+				    bucketer = this.bucketer;
+
+				bucketer.$reset();
+
+				keys.forEach(function (key) {
+					var op = ref.$ops,
+					    n = op.$getNode(key),
+					    v = op.getValue(n);
+
+					if (min === undefined) {
+						min = max = v;
+					} else {
+						if (v < min) {
+							min = v;
+						} else if (v > max) {
+							max = v;
+						}
+					}
+
+					n.$v = v;
+					bucketer.push(n); // { bucket, value }
+				});
+
+				if (!labels) {
+					labels = {};
+					bucketer.$getIndexs().forEach(function (label) {
+						labels[label] = label;
+					});
+				}
+
+				count = Object.keys(labels).length;
+				degrees = 360 / count;
+
+				Object.keys(labels).forEach(function (label) {
+					mapping[label] = {
+						angle: deg,
+						text: labels[label]
+					};
+
+					deg += degrees;
+				});
+
+				// compute the x labels
+				this.axis = buildGrid(mapping, area);
+
+				diff = length / (max - min);
+				this.mapping = mapping;
+				this.calcRadius = function (v) {
+					return (v - min) * diff;
+				};
+				this.calcPoint = function (v, d) {
+					return getCoords(inner.center, inner.middle, this.calcRadius(v), d);
+				};
+
+				_get(Object.getPrototypeOf(Spiral.prototype), 'parse', this).call(this, keys);
+			}
+		}, {
+			key: 'makeAxis',
+			value: function makeAxis() {
+				return this.axis;
+			}
+		}, {
+			key: 'getPoint',
+			value: function getPoint(index) {
+				var p,
+				    node = this.ref.$ops.$getNode(index),
+				    v = node.$v;
+
+				if (v || v === 0) {
+					p = this.calcPoint(v, this.mapping[node.$bucket].angle);
+					p.classified = this.classifier ? this.classifier.parse(node, this.ref.$ops.getStats()) : null;
+				}
+
+				return p;
+			}
+		}, {
+			key: 'closeSet',
+			value: function closeSet(set) {
+				return set;
+			}
+		}]);
+
+		return Spiral;
+	}(DrawLine);
+
+	module.exports = Spiral;
+
+/***/ },
+/* 109 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
 	var d3 = __webpack_require__(1),
 	    angular = __webpack_require__(2);
 
@@ -33433,7 +33761,7 @@
 	}]);
 
 /***/ },
-/* 108 */
+/* 110 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33564,7 +33892,7 @@
 	}]);
 
 /***/ },
-/* 109 */
+/* 111 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33739,7 +34067,7 @@
 	}]);
 
 /***/ },
-/* 110 */
+/* 112 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33755,7 +34083,7 @@
 	};
 
 /***/ },
-/* 111 */
+/* 113 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33763,7 +34091,7 @@
 	module.exports = {
 		Bucketer: __webpack_require__(83),
 		Feed: __webpack_require__(98),
-		Hasher: __webpack_require__(112),
+		Hasher: __webpack_require__(114),
 		List: __webpack_require__(30),
 		Linear: __webpack_require__(71),
 		Loader: __webpack_require__(99),
@@ -33772,7 +34100,7 @@
 	};
 
 /***/ },
-/* 112 */
+/* 114 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -33806,7 +34134,7 @@
 	};
 
 /***/ },
-/* 113 */
+/* 115 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33821,11 +34149,12 @@
 		Icon: __webpack_require__(86),
 		Line: __webpack_require__(92),
 		Linear: __webpack_require__(11),
-		Pie: __webpack_require__(103)
+		Pie: __webpack_require__(103),
+		Spiral: __webpack_require__(108)
 	};
 
 /***/ },
-/* 114 */
+/* 116 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';

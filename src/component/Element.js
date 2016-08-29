@@ -5,8 +5,6 @@ function appendChildren( self, dataSets, children ){
 		child,
 		dataSet,
 		root = self.element;
-
-	root.innerHTML = '';
 	
 	for( i = children.length - 1; i !== -1; i-- ){
 		dataSet = dataSets[i];
@@ -44,11 +42,13 @@ function make( dataSets, maker ){
 
 class Element {
 	static svgCompile( template ){
-		return (new DOMParser().parseFromString(
+		var els = (new DOMParser().parseFromString(
 			'<g xmlns="http://www.w3.org/2000/svg">' +
 				template +
 			'</g>','image/svg+xml'
 		)).childNodes[0].childNodes;
+
+		return els;
 	}
 
 	constructor(){
@@ -90,7 +90,9 @@ class Element {
 
 	build(){
 		// TODO: this is probably better to be moved to a root drawer class
-		var drawer = this.drawer,
+		var els,
+			root = this.element,
+			drawer = this.drawer,
 			dataSets = drawer.dataSets;
 
 		if ( dataSets ){
@@ -102,8 +104,20 @@ class Element {
 				drawer.closeSet( dataSet );
 			});
 
+			root.innerHTML = '';
+
+			if ( drawer.makeAxis ){
+				els = Element.svgCompile(
+					drawer.makeAxis()
+				);
+
+				while( els.length ){
+					root.appendChild( els[0] );
+				}
+			}
+			
 			// dataSets will be the content, preParsed, used to make the data
-			if ( this.element.tagName === 'g' ){
+			if ( root.tagName === 'g' ){
 				appendChildren(
 					this,
 					dataSets,
@@ -115,7 +129,7 @@ class Element {
 					)
 				);
 			}else{
-				this.element.setAttribute(
+				root.setAttribute(
 					'd',
 					make( 
 						dataSets, 

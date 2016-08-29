@@ -2283,3 +2283,62 @@ angular.module( 'vgraph' ).controller( 'HeatmapCtrl',
 	}]
 );
 
+angular.module( 'vgraph' ).controller( 'SpiralCtrl',
+	['$scope', '$timeout',
+	function( $scope, $timeout ){
+		var data = [ { x: 0, y: 10} ];
+
+		$scope.page = [{
+			src: data,
+			manager: 'feed',
+			interval: 'x',
+			readings:{
+				'y': 'y'
+			}
+		}];
+
+		$scope.spiral = {
+			zoom: 'zoomable',
+			x: {
+				scale: function(){ return d3.scale.linear(); }
+			},
+			y: {
+				scale: function(){ return d3.scale.linear(); }
+			},
+			views: {
+				basic: {
+					manager: 'feed',
+					normalizer: new vGraph.data.Normalizer(function(index){
+						return index; // don't combine at all
+					})
+				}
+			}
+		};
+
+		$scope.index =  function( datum ){
+			return Math.round( datum.$avgIndex % 24 );
+		};
+
+		$scope.ref = { name : 'y', view: 'basic', className: 'red' };
+
+		function makeData(){
+			for( var i = 0, c = 2000; i < c; i++ ){
+				var counter = 0;
+				var min = -1,
+					max = 1,
+					t = Math.random() * (max - min) + min,
+					p = {
+						x : data.length,
+						y : data[data.length-1].y + t
+					};
+
+				data.push( p );
+			}
+		}
+
+		makeData();
+		//$timeout( makeData, 1000 );
+
+		//$timeout( makeData, 6000 );
+	}]
+);

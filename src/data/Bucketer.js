@@ -32,6 +32,8 @@ class Bucketer extends Collection {
 			index = this._hasher( datum ),
 			match = this._$index[ index ];
 
+		datum.$bucket = index;
+		
 		if ( !match ){
 			needNew = true;
 

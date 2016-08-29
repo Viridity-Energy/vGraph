@@ -594,7 +594,6 @@ class Chart{
 			interval,
 			maxCell,
 			headers = config.map(function(m){ return m.title; }),
-			references = [],
 			getReference = this.getReference.bind(this);
 
 		config.forEach(function( cfg ){
@@ -625,25 +624,25 @@ class Chart{
 			}
 		});
 
-		maxCell = Math.ceil( diff/interval )
+		maxCell = Math.ceil( diff/interval );
 		cells =  maxCell + 1;
 		content = makeArray( cells );
 		
-		config.forEach(function( cfg, index ){
+		config.forEach(function( cfg ){
 			var i,
 				t,
 				row,
 				min,
 				max,
-				inteval,
+				interval,
 				ref = cfg.$ref,
 				pos = content[0].length;
 
 			addColumn(content);
 
 			if ( cfg.$ref ){
-				min = cfg.$bounds.min,
-				max = min + diff,
+				min = cfg.$bounds.min;
+				max = min + diff;
 				interval = cfg.$bounds.interval;
 
 				for( i = min; i <= max; i += interval ){
@@ -664,7 +663,7 @@ class Chart{
 					}
 				}
 			}else if ( cfg.value ){
-				for ( i = content.length - 1; i != -1; i-- ){
+				for ( i = content.length - 1; i !== -1; i-- ){
 					content[i][pos] = cfg.value;
 				}
 			}

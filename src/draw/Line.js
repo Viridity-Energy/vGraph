@@ -83,6 +83,10 @@ class Line extends DrawLinear{
 			}
 		}
 
+		for( i = set.length-1; i > -1; i-- ){
+			set[i].y = this.ref.$ops.$view.y.scale( set[i].y );
+		}
+
 		return set;
 	}
 
@@ -94,7 +98,7 @@ class Line extends DrawLinear{
 		if ( dataSet.length ){
 			for( i = 0, c = dataSet.length; i < c; i++ ){
 				point = dataSet[i];
-				res.push( point.x + ',' + this.ref.$ops.$view.y.scale(point.y) );
+				res.push( point.x + ',' + point.y );
 			}
 
 			return 'M' + res.join('L');

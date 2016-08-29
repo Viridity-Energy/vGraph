@@ -8,5 +8,6 @@ module.exports = {
 	Icon: require('./draw/Icon.js'),
 	Line: require('./draw/Line.js'),
 	Linear: require('./draw/Linear.js'),
-	Pie: require('./draw/Pie.js')
+	Pie: require('./draw/Pie.js'),
+	Spiral: require('./draw/Spiral.js')
 };
