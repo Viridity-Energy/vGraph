@@ -21619,16 +21619,21 @@
 
 					if (cfg.$ref) {
 						min = cfg.$bounds.min;
-						max = min + diff;
 						interval = cfg.$bounds.interval;
-
+						max = min + Math.ceil((cfg.$bounds.max - min) / interval) * interval;
+						// if data is read in to the hour, but we're only showing the last minute,
+						// this enables a cleaner export of the data that was read in
 						for (i = min; i <= max; i += interval) {
 							t = ref.$ops.$view.dataManager.data.$getNode(i);
 							if (t) {
-								t = cfg.field ? t[cfg.field] : ref.$ops.getValue(t);
+								if (cfg.getValue) {
+									t = cfg.getValue(t);
+								} else {
+									t = cfg.field ? t[cfg.field] : ref.$ops.getValue(t);
 
-								if (cfg.format) {
-									t = cfg.format(t);
+									if (cfg.format) {
+										t = cfg.format(t);
+									}
 								}
 
 								row = Math.floor((i - min) / (max - min) * maxCell + 0.5);
@@ -21646,11 +21651,11 @@
 					}
 				});
 
-				content.unshift(headers);
-
 				if (maxRow + 1 !== content.length) {
 					content.splice(maxRow + 1);
 				}
+
+				content.unshift(headers);
 
 				return content;
 			}
@@ -31876,9 +31881,7 @@
 				    y1 = parsed.y1,
 				    y2 = parsed.y2;
 
-				if (y1 === null || y2 === null) {
-					return 0;
-				} else {
+				if ((y1 || y1 === 0) && (y1 || y2 === 0)) {
 					set.push({
 						x: x,
 						y1: y1,
@@ -31886,6 +31889,8 @@
 					});
 
 					return -1;
+				} else {
+					return 0;
 				}
 			}
 		}, {

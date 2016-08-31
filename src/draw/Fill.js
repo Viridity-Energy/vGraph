@@ -44,9 +44,7 @@ class Fill extends DrawLinear{
 			y1 = parsed.y1,
 			y2 = parsed.y2;
 		
-		if ( y1 === null || y2 === null ){
-			return 0;
-		} else {
+		if ( (y1 || y1 === 0) && (y1 || y2 === 0) ){
 			set.push({
 				x: x,
 				y1: y1,
@@ -54,6 +52,8 @@ class Fill extends DrawLinear{
 			});
 
 			return -1;
+		} else {
+			return 0;
 		}
 	}
 
