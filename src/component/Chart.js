@@ -440,6 +440,10 @@ class Chart{
 			settings = this.settings,
 			viewModel = this.getView( viewName );
 		
+		if ( !dis.waitingOn ){
+			dis.waitingOn = {};
+		}
+
 		viewModel.$name = viewName;
 		viewModel.configure(
 			viewSettings,
@@ -451,12 +455,30 @@ class Chart{
 
 		viewModel.$name = viewName;
 
-		viewModel.dataManager.register(function(){
-			dis.needsRender(viewModel,300);
+		viewModel.dataManager.$on('error',function( info ){
+			dis.waitingOn[ info.feed.$$feedUid ] = info.message;
+			dis.error( info.message );
 		});
 
-		viewModel.dataManager.onError(function( error ){
-			dis.error( error );
+		viewModel.dataManager.$on('data-ready', function( feed ){
+			var keys;
+
+			if ( dis.waitingOn[feed.$$feedUid] ){
+				delete dis.waitingOn[ feed.$$feedUid ];
+
+				keys = Object.keys( dis.waitingOn );
+				if ( keys.length ){
+					dis.error( keys[keys.length-1] );
+				}else{
+					dis.error( null );
+				}
+			}
+		});
+
+		viewModel.dataManager.$on('data',function(){
+			if ( Object.keys(dis.waitingOn).length === 0 ){
+				dis.needsRender(viewModel,300);
+			}
 		});
 	}
 

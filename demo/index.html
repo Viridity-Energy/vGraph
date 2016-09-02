@@ -11,15 +11,15 @@
 	<h5>Growing Graph</h5>
 	<style>
 		[ng-controller] {
-			display : inline-block;
-			width: 800;
+			display : block;
 			margin: 10px 0;
+			overflow: hidden;
 		}
 
 		svg[vgraph-chart], [vgraph-chart] svg{
 			margin: 10px 30px 30px;
 			padding: 20px 40px;
-			width: 740;
+			width: 80%;
 			height: 150;
 		}
 
@@ -487,12 +487,15 @@
 						{{chart.pristine ? 'pristine' : 'dirty'}} : 
 						{{chart.message}} 
 					</span>
-					<section vgraph-chart="graph" interface="interface" name="test">
+					<section vgraph-chart="graph"
+						interface="interface"
+						name="test">
 						<span vgraph-status="chart">
 							{{chart.loading ? 'loading' : 'not loading'}} : 
 							{{chart.pristine ? 'pristine' : 'dirty'}} : 
 							{{chart.message}} 
 						</span>
+						<hr/>
 						<svg>
 							<g vgraph-axis="'left'"
 								tick-length="4" tick-padding="-2"></g>
@@ -507,6 +510,7 @@
 						</svg>
 					</section>
 				</div>
+				<button ng-click="go()">Click Me</button>
 			</div>
 		</section>
 

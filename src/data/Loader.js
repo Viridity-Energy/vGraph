@@ -38,7 +38,10 @@ class Loader{
 			confs = [],
 			proc = this._process.bind( this ),
 			readyReg = feed.$on( 'ready', function(){
-				dis.ready = true;
+				if ( dis.error ){
+					dis.error = false;
+					dataManager.$trigger('data-ready',feed);
+				}
 			}),
 			dataReg = feed.$on( 'data', function( data ){
 				var i, c,
@@ -51,11 +54,14 @@ class Loader{
 				}
 			}),
 			errorState = feed.$on( 'error', function( error ){
-				dataManager.setError( error );
+				dataManager.$trigger('error',{
+					message: error,
+					feed: feed 
+				});
+				dis.error = true;
 			}),
 			forceReset = feed.$on( 'reset', function(){
 				dataManager.reset();
-				dis.ready = false;
 			});
 
 		this.$$loaderUid = uid++;
@@ -64,47 +70,13 @@ class Loader{
 		this.confs = confs;
 		this.dataManager = dataManager;
 
-		dataManager.$follow( this );
-		
 		this.$destroy = function(){
-			dataManager.$ignore( this );
 			errorState();
 			forceReset();
 			readyReg();
 			dataReg();
 		};
 	}
-
-	// DataLoader.prototype.$destory is defined on a per instance level
-	/*
-	function _makeSetter( property, next ){
-		if ( next ){
-			return function( ctx, value ){
-				if ( !ctx[property] ){
-					ctx[property] = {};
-				}
-
-				next( ctx[property], value );
-			};
-		}else{
-			return function( ctx, value ){
-				ctx[property] = value;
-			};
-		}
-	}
-
-	function makeSetter( readFrom ){
-		var i, c,
-			fn,
-			readings = readFrom.split('.');
-	
-		for( i = reading.length; i > -1; i-- ){
-			fn = _makeGetter( readings[i], fn );
-		}
-	}
-	*/
-
-	
 
 	addConfig( cfg ){
 		var tmp,

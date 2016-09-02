@@ -39,7 +39,7 @@ angular.module( 'vgraph' ).directive( 'vgraphMessage',
 				function checkMessage(){
 					var msg = graph.message;
 
-					if ( msg && !graph.loading ){
+					if ( msg ){
 						$el.attr( 'visibility', 'visible' );
 						$text.text( msg );
 					}else{

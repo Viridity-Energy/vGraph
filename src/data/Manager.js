@@ -33,38 +33,17 @@ function regulator( min, max, func, context ){
 
 class Manager {
 	constructor(){
-		var loaders = [];
-
-		this.registrations = [];
-		this.errorRegistrations = [];
+		var dis = this;
 
 		this.$$managerUid = uid++;
-		this.$dataProc = regulator( 20, 200, function( dis ){
+		this.dataReady = regulator( 20, 200, function(){
 			if ( dis.calculations ){
 				dis.calculations.$reset( dis.data );
 				dis.calculations( dis.data );
 			}
 
-			dis.registrations.forEach(function( registration ){
-				registration();
-			});
+			dis.$trigger('data',dis.data);
 		});
-
-		this.getLoaders = function(){
-			return loaders;
-		};
-
-		this.$follow = function( loader ){
-			loaders.push( loader );
-		};
-
-		this.$ignore = function( loader ){
-			var dex = loaders.indexOf( loader );
-
-			if ( dex !== -1 ){
-				loaders.splice( dex, 1 );
-			}
-		};
 
 		this.reset();
 	}
@@ -77,7 +56,7 @@ class Manager {
 		this.data = new Linear();
 		this.ready = false;
 
-		this.dataReady(true);
+		this.dataReady();
 	}
 	// expect a seed function to be defined
 
@@ -116,30 +95,6 @@ class Manager {
 		}
 		
 		return this.data.$setValue( interval, name, value );
-	}
-
-	dataReady( force ){
-		var registrations = this.registrations;
-
-		if ( force ){
-			registrations.forEach(function( registration ){
-				registration();
-			});
-		}else{
-			this.$dataProc( this );
-		}
-	}
-
-	onError( cb ){
-		this.errorRegistrations.push( cb );
-	}
-
-	setError( error ){
-		var i, c;
-
-		for( i = 0, c = this.errorRegistrations.length; i < c; i++ ){
-			this.errorRegistrations[i]( error );
-		}
 	}
 
 	getNode( interval ){
@@ -193,5 +148,7 @@ class Manager {
 		}
 	}
 }
+
+require('../lib/Eventing.js')( Manager.prototype );
 
 module.exports = Manager;

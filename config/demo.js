@@ -415,65 +415,71 @@ angular.module( 'vgraph' ).controller( 'LoadingCtrl',
 			}
 		];
 
-		setTimeout(function(){
-			data.$error('Model Based Error');
-		}, 2000);
+		$scope.go = function(){
+			setTimeout(function(){
+				data.$error('Model Based Error');
+			}, 2000);
 
-		setTimeout(function(){
-			$scope.interface.error('Interface Based Error');
-		}, 3000);
+			setTimeout(function(){
+				$scope.interface.error('Interface Based Error');
+			}, 3000);
 
-		setTimeout(function(){
-			$scope.$apply(function(){
-				$scope.graph.message = null;
+			setTimeout(function(){
+				$scope.$apply(function(){
+					data.$reset();
+				});
+			}, 4000);
 
-				data.push({x : 0, y1 : 10, y2 : 20, y3 : 30, y4 : 40});
+			setTimeout(function(){
+				$scope.$apply(function(){
+					data.push({x : 0, y1 : 10, y2 : 20, y3 : 30, y4 : 40});
 
-				for( var i = 0, c = 2000; i < c; i++ ){
-					var counter = 0;
-					var min = -1,
-						max = 1,
-						t = Math.random() * (max - min) + min;
+					for( var i = 0, c = 2000; i < c; i++ ){
+						var counter = 0;
+						var min = -1,
+							max = 1,
+							t = Math.random() * (max - min) + min;
 
-					data.push({
-						x : data.length,
-						y1 : data[data.length-1].y1 + t,
-						y2 : data[data.length-1].y2 + t,
-						y3 : data[data.length-1].y3 + t,
-						y4 : data[data.length-1].y4 + t
-					});
-				}
-			});
-		}, 4000);
+						data.push({
+							x : data.length,
+							y1 : data[data.length-1].y1 + t,
+							y2 : data[data.length-1].y2 + t,
+							y3 : data[data.length-1].y3 + t,
+							y4 : data[data.length-1].y4 + t
+						});
+					}
+				});
+			}, 6000);
 
-		setTimeout(function(){
-			$scope.$apply(function(){
-				data.$reset();
-			});
-		}, 6000);
+			setTimeout(function(){
+				$scope.$apply(function(){
+					data.$reset();
+				});
+			}, 8000);
 
-		setTimeout(function(){
-			$scope.$apply(function(){
-				$scope.graph.message = null;
+			setTimeout(function(){
+				$scope.$apply(function(){
+					$scope.graph.message = null;
 
-				data.push({x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40});
+					data.push({x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40});
 
-				for( var i = 0, c = 2000; i < c; i++ ){
-					var counter = 0;
-					var min = -1,
-						max = 1,
-						t = Math.random() * (max - min) + min;
+					for( var i = 0, c = 2000; i < c; i++ ){
+						var counter = 0;
+						var min = -1,
+							max = 1,
+							t = Math.random() * (max - min) + min;
 
-					data.push({
-						x : data.length,
-						y1 : data[data.length-1].y1 + t,
-						y2 : data[data.length-1].y2 + t,
-						y3 : data[data.length-1].y3 + t,
-						y4 : data[data.length-1].y4 + t
-					});
-				}
-			});
-		}, 8000);
+						data.push({
+							x : data.length,
+							y1 : data[data.length-1].y1 + t,
+							y2 : data[data.length-1].y2 + t,
+							y3 : data[data.length-1].y3 + t,
+							y4 : data[data.length-1].y4 + t
+						});
+					}
+				});
+			}, 10000);
+		};
 	}]
 );
 

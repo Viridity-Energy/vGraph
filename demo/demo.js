@@ -445,65 +445,71 @@
 			className: 'orange'
 		}];
 
-		setTimeout(function () {
-			data.$error('Model Based Error');
-		}, 2000);
+		$scope.go = function () {
+			setTimeout(function () {
+				data.$error('Model Based Error');
+			}, 2000);
 
-		setTimeout(function () {
-			$scope.interface.error('Interface Based Error');
-		}, 3000);
+			setTimeout(function () {
+				$scope.interface.error('Interface Based Error');
+			}, 3000);
 
-		setTimeout(function () {
-			$scope.$apply(function () {
-				$scope.graph.message = null;
+			setTimeout(function () {
+				$scope.$apply(function () {
+					data.$reset();
+				});
+			}, 4000);
 
-				data.push({ x: 0, y1: 10, y2: 20, y3: 30, y4: 40 });
+			setTimeout(function () {
+				$scope.$apply(function () {
+					data.push({ x: 0, y1: 10, y2: 20, y3: 30, y4: 40 });
 
-				for (var i = 0, c = 2000; i < c; i++) {
-					var counter = 0;
-					var min = -1,
-					    max = 1,
-					    t = Math.random() * (max - min) + min;
+					for (var i = 0, c = 2000; i < c; i++) {
+						var counter = 0;
+						var min = -1,
+						    max = 1,
+						    t = Math.random() * (max - min) + min;
 
-					data.push({
-						x: data.length,
-						y1: data[data.length - 1].y1 + t,
-						y2: data[data.length - 1].y2 + t,
-						y3: data[data.length - 1].y3 + t,
-						y4: data[data.length - 1].y4 + t
-					});
-				}
-			});
-		}, 4000);
+						data.push({
+							x: data.length,
+							y1: data[data.length - 1].y1 + t,
+							y2: data[data.length - 1].y2 + t,
+							y3: data[data.length - 1].y3 + t,
+							y4: data[data.length - 1].y4 + t
+						});
+					}
+				});
+			}, 6000);
 
-		setTimeout(function () {
-			$scope.$apply(function () {
-				data.$reset();
-			});
-		}, 6000);
+			setTimeout(function () {
+				$scope.$apply(function () {
+					data.$reset();
+				});
+			}, 8000);
 
-		setTimeout(function () {
-			$scope.$apply(function () {
-				$scope.graph.message = null;
+			setTimeout(function () {
+				$scope.$apply(function () {
+					$scope.graph.message = null;
 
-				data.push({ x: 0, y1: 20, y2: 25, y3: 30, y4: 40 });
+					data.push({ x: 0, y1: 20, y2: 25, y3: 30, y4: 40 });
 
-				for (var i = 0, c = 2000; i < c; i++) {
-					var counter = 0;
-					var min = -1,
-					    max = 1,
-					    t = Math.random() * (max - min) + min;
+					for (var i = 0, c = 2000; i < c; i++) {
+						var counter = 0;
+						var min = -1,
+						    max = 1,
+						    t = Math.random() * (max - min) + min;
 
-					data.push({
-						x: data.length,
-						y1: data[data.length - 1].y1 + t,
-						y2: data[data.length - 1].y2 + t,
-						y3: data[data.length - 1].y3 + t,
-						y4: data[data.length - 1].y4 + t
-					});
-				}
-			});
-		}, 8000);
+						data.push({
+							x: data.length,
+							y1: data[data.length - 1].y1 + t,
+							y2: data[data.length - 1].y2 + t,
+							y3: data[data.length - 1].y3 + t,
+							y4: data[data.length - 1].y4 + t
+						});
+					}
+				});
+			}, 10000);
+		};
 	}]);
 
 	angular.module('vgraph').controller('StackedCtrl', ['$scope', function ($scope) {
@@ -20892,6 +20898,19 @@
 	var d3 = __webpack_require__(1),
 	    ComponentChart = __webpack_require__(20);
 
+	// TODO : add this back to bmoor
+	function throttle(fn, time) {
+		var active = false;
+		return function () {
+			if (!active) {
+				active = true;
+				setTimeout(function () {
+					active = false;
+					fn();
+				}, time);
+			}
+		};
+	}
 	__webpack_require__(2).module('vgraph').directive('vgraphChart', [function () {
 		function resize(box) {
 			if (box.$mat && box.inner.width) {
@@ -20911,9 +20930,11 @@
 			require: ['vgraphChart', '^vgraphPage'],
 			link: function link($scope, $el, $attrs, requirements) {
 				var el,
+				    cfg,
 				    page = requirements[1],
 				    graph = requirements[0],
-				    box = graph.box;
+				    box = graph.box,
+				    binded = box.resize.bind(box);
 
 				if ($el[0].tagName === 'svg') {
 					el = $el[0];
@@ -20939,17 +20960,40 @@
 				resize(box);
 
 				$scope.$watch('settings', function (settings) {
-					graph.configure(page, settings);
+					if (settings) {
+						if (cfg && cfg.onDestroy) {
+							cfg.onDestroy(graph);
+						}
+
+						cfg = settings;
+
+						if (settings.onCreate) {
+							settings.onCreate(graph);
+						}
+
+						graph.configure(page, settings);
+					}
 				});
 
+				$scope.$on('$destroy', function () {
+					if (cfg && cfg.onDestroy) {
+						cfg.onDestroy(graph);
+					}
+				});
+
+				// TODO : something more elegant...
 				if ($scope.interface) {
-					$scope.interface.resize = box.resize.bind(box);
+					$scope.interface.resize = binded;
 					$scope.interface.error = graph.error.bind(graph);
 					// TODO : clear, reset
 				}
 
 				if ($attrs.name) {
 					page.setChart($attrs.name, graph);
+				}
+
+				if (!$attrs.noResize) {
+					window.addEventListener('resize', throttle(binded, 100));
 				}
 			},
 			restrict: 'A'
@@ -21417,17 +21461,39 @@
 				    settings = this.settings,
 				    viewModel = this.getView(viewName);
 
+				if (!dis.waitingOn) {
+					dis.waitingOn = {};
+				}
+
 				viewModel.$name = viewName;
 				viewModel.configure(viewSettings, settings, this.box, this.page, this.zoom);
 
 				viewModel.$name = viewName;
 
-				viewModel.dataManager.register(function () {
-					dis.needsRender(viewModel, 300);
+				viewModel.dataManager.$on('error', function (info) {
+					dis.waitingOn[info.feed.$$feedUid] = info.message;
+					dis.error(info.message);
 				});
 
-				viewModel.dataManager.onError(function (error) {
-					dis.error(error);
+				viewModel.dataManager.$on('data-ready', function (feed) {
+					var keys;
+
+					if (dis.waitingOn[feed.$$feedUid]) {
+						delete dis.waitingOn[feed.$$feedUid];
+
+						keys = Object.keys(dis.waitingOn);
+						if (keys.length) {
+							dis.error(keys[keys.length - 1]);
+						} else {
+							dis.error(null);
+						}
+					}
+				});
+
+				viewModel.dataManager.$on('data', function () {
+					if (Object.keys(dis.waitingOn).length === 0) {
+						dis.needsRender(viewModel, 300);
+					}
 				});
 			}
 		}, {
@@ -31992,7 +32058,7 @@
 
 				function startPulse() {
 					if (!pulsing && graph.loading) {
-						$text.text(graph.message || 'Loading Data');
+						$text.text('Loading Data');
 
 						$el.attr('visibility', 'visible');
 						pulsing = true;
@@ -32037,7 +32103,7 @@
 				function checkPulse() {
 					stopPulse();
 
-					if (graph.loading && box.ratio) {
+					if (graph.loading && box.ratio && !graph.message) {
 						startPulse();
 					}
 				}
@@ -32093,7 +32159,7 @@
 				function checkMessage() {
 					var msg = graph.message;
 
-					if (msg && !graph.loading) {
+					if (msg) {
 						$el.attr('visibility', 'visible');
 						$text.text(msg);
 					} else {
@@ -32557,7 +32623,10 @@
 			    confs = [],
 			    proc = this._process.bind(this),
 			    readyReg = feed.$on('ready', function () {
-				dis.ready = true;
+				if (dis.error) {
+					dis.error = false;
+					dataManager.$trigger('data-ready', feed);
+				}
 			}),
 			    dataReg = feed.$on('data', function (data) {
 				var i, c, j, co;
@@ -32569,11 +32638,14 @@
 				}
 			}),
 			    errorState = feed.$on('error', function (error) {
-				dataManager.setError(error);
+				dataManager.$trigger('error', {
+					message: error,
+					feed: feed
+				});
+				dis.error = true;
 			}),
 			    forceReset = feed.$on('reset', function () {
 				dataManager.reset();
-				dis.ready = false;
 			});
 
 			this.$$loaderUid = uid++;
@@ -32582,43 +32654,13 @@
 			this.confs = confs;
 			this.dataManager = dataManager;
 
-			dataManager.$follow(this);
-
 			this.$destroy = function () {
-				dataManager.$ignore(this);
 				errorState();
 				forceReset();
 				readyReg();
 				dataReg();
 			};
 		}
-
-		// DataLoader.prototype.$destory is defined on a per instance level
-		/*
-	 function _makeSetter( property, next ){
-	 	if ( next ){
-	 		return function( ctx, value ){
-	 			if ( !ctx[property] ){
-	 				ctx[property] = {};
-	 			}
-	 				next( ctx[property], value );
-	 		};
-	 	}else{
-	 		return function( ctx, value ){
-	 			ctx[property] = value;
-	 		};
-	 	}
-	 }
-	 	function makeSetter( readFrom ){
-	 	var i, c,
-	 		fn,
-	 		readings = readFrom.split('.');
-	 
-	 	for( i = reading.length; i > -1; i-- ){
-	 		fn = _makeGetter( readings[i], fn );
-	 	}
-	 }
-	 */
 
 		_createClass(Loader, [{
 			key: 'addConfig',
@@ -32773,38 +32815,17 @@
 		function Manager() {
 			_classCallCheck(this, Manager);
 
-			var loaders = [];
-
-			this.registrations = [];
-			this.errorRegistrations = [];
+			var dis = this;
 
 			this.$$managerUid = uid++;
-			this.$dataProc = regulator(20, 200, function (dis) {
+			this.dataReady = regulator(20, 200, function () {
 				if (dis.calculations) {
 					dis.calculations.$reset(dis.data);
 					dis.calculations(dis.data);
 				}
 
-				dis.registrations.forEach(function (registration) {
-					registration();
-				});
+				dis.$trigger('data', dis.data);
 			});
-
-			this.getLoaders = function () {
-				return loaders;
-			};
-
-			this.$follow = function (loader) {
-				loaders.push(loader);
-			};
-
-			this.$ignore = function (loader) {
-				var dex = loaders.indexOf(loader);
-
-				if (dex !== -1) {
-					loaders.splice(dex, 1);
-				}
-			};
 
 			this.reset();
 		}
@@ -32820,7 +32841,7 @@
 				this.data = new Linear();
 				this.ready = false;
 
-				this.dataReady(true);
+				this.dataReady();
 			}
 			// expect a seed function to be defined
 
@@ -32862,33 +32883,6 @@
 				}
 
 				return this.data.$setValue(interval, name, value);
-			}
-		}, {
-			key: 'dataReady',
-			value: function dataReady(force) {
-				var registrations = this.registrations;
-
-				if (force) {
-					registrations.forEach(function (registration) {
-						registration();
-					});
-				} else {
-					this.$dataProc(this);
-				}
-			}
-		}, {
-			key: 'onError',
-			value: function onError(cb) {
-				this.errorRegistrations.push(cb);
-			}
-		}, {
-			key: 'setError',
-			value: function setError(error) {
-				var i, c;
-
-				for (i = 0, c = this.errorRegistrations.length; i < c; i++) {
-					this.errorRegistrations[i](error);
-				}
 			}
 		}, {
 			key: 'getNode',
@@ -32952,6 +32946,8 @@
 
 		return Manager;
 	}();
+
+	__webpack_require__(24)(Manager.prototype);
 
 	module.exports = Manager;
 

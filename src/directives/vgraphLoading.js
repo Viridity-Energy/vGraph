@@ -70,7 +70,7 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
 				
 				function startPulse(){
 					if ( !pulsing && graph.loading ){
-						$text.text( graph.message || 'Loading Data' );
+						$text.text( 'Loading Data' );
 
 						$el.attr( 'visibility', 'visible' );
 						pulsing = true;
@@ -122,7 +122,7 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
 				function checkPulse(){
 					stopPulse();
 
-					if ( graph.loading && box.ratio ){
+					if ( graph.loading && box.ratio && !graph.message ){
 						startPulse();
 					}
 				}

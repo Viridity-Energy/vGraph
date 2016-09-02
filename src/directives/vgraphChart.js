@@ -1,6 +1,19 @@
 var d3 = require('d3'),
 	ComponentChart = require('../component/Chart.js');
 
+// TODO : add this back to bmoor
+function throttle( fn, time ){
+	var active = false;
+	return function(){
+		if ( !active ){
+			active = true;
+			setTimeout(function(){
+				active = false;
+				fn();
+			}, time );
+		}
+	};
+}
 require('angular').module( 'vgraph' ).directive( 'vgraphChart',
 	[
 	function(){
@@ -34,9 +47,11 @@ require('angular').module( 'vgraph' ).directive( 'vgraphChart',
 			require : ['vgraphChart','^vgraphPage'],
 			link: function ( $scope, $el, $attrs, requirements ){
 				var el,
+					cfg,
 					page = requirements[1],
 					graph = requirements[0],
-					box = graph.box;
+					box = graph.box,
+					binded = box.resize.bind( box );
 
 				if ( $el[0].tagName === 'svg' ){
 					el = $el[0];
@@ -62,17 +77,40 @@ require('angular').module( 'vgraph' ).directive( 'vgraphChart',
 				resize( box );
 
 				$scope.$watch('settings', function( settings ){
-					graph.configure( page, settings );
+					if ( settings ){
+						if ( cfg && cfg.onDestroy ){
+							cfg.onDestroy( graph );
+						}
+
+						cfg = settings;
+					
+						if ( settings.onCreate ){
+							settings.onCreate( graph );
+						}
+
+						graph.configure( page, settings );
+					}
 				});
 
+				$scope.$on('$destroy', function(){
+					if ( cfg && cfg.onDestroy ){
+						cfg.onDestroy(graph);
+					}
+				});
+
+				// TODO : something more elegant...
 				if ( $scope.interface ){
-					$scope.interface.resize = box.resize.bind( box );
+					$scope.interface.resize = binded;
 					$scope.interface.error = graph.error.bind( graph );
 					// TODO : clear, reset
 				}
 
 				if ( $attrs.name ){
 					page.setChart( $attrs.name, graph );
+				}
+
+				if ( !$attrs.noResize ){
+					window.addEventListener('resize', throttle(binded,100));
 				}
 			},
 			restrict: 'A'
