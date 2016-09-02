@@ -145,6 +145,7 @@ class Chart{
 		this.loading = true;
 		this.pristine = false;
 		this.settings = {};
+		this.waitingOn = {};
 	}
 
 	configure( page, settings ){
@@ -439,10 +440,6 @@ class Chart{
 		var dis = this,
 			settings = this.settings,
 			viewModel = this.getView( viewName );
-		
-		if ( !dis.waitingOn ){
-			dis.waitingOn = {};
-		}
 
 		viewModel.$name = viewName;
 		viewModel.configure(
