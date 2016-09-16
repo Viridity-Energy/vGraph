@@ -101,6 +101,10 @@ class Element {
 				this.chart.$trigger( 'publish:'+this.publish, dataSets );
 			}
 
+			if ( drawer.configure ){
+				drawer.configure( dataSets, this.chart.box );
+			}
+			
 			dataSets.forEach(function( dataSet ){
 				drawer.closeSet( dataSet );
 			});

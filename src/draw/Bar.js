@@ -58,6 +58,11 @@ function validateDataset( dataSet, settings ){
 	if ( settings.width ){
 		applyWidth( dataSet, settings.width / 2 );
 	}else{
+		if ( settings.padding ){
+			dataSet.x1 += settings.padding;
+			dataSet.x2 -= settings.padding;
+		}
+
 		width = dataSet.x2 - dataSet.x1;
 
 		if ( settings.maxWidth && width > settings.maxWidth ){
@@ -172,13 +177,19 @@ class Bar extends DrawLinear {
 				className = this.classifier.getClasses(dataSet.classified);
 			}
 
-			var t = '<rect class="'+className+
-				'" x="'+dataSet.x1+
-				'" y="'+dataSet.y1+
-				'" width="'+(dataSet.x2 - dataSet.x1)+
-				'" height="'+(dataSet.y2 - dataSet.y1)+'"/>';
-			
-			return t;
+			if ( this.settings.line ){
+				return '<line class="'+className+
+					'" x1="'+( (dataSet.x1+dataSet.x2)/2 )+
+					'" y1="'+dataSet.y1+
+					'" x2="'+( (dataSet.x1+dataSet.x2)/2 )+
+					'" y2="'+dataSet.y2+'"/>';
+			}else{
+				return '<rect class="'+className+
+					'" x="'+dataSet.x1+
+					'" y="'+dataSet.y1+
+					'" width="'+(dataSet.x2 - dataSet.x1)+
+					'" height="'+(dataSet.y2 - dataSet.y1)+'"/>';
+			}
 		}
 	}
 	

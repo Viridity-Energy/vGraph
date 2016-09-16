@@ -721,7 +721,9 @@ var vGraph =
 
 					if (cfg) {
 						element.configure(chart, new DrawBar(cfg, pair, {
+							line: attrs.line,
 							width: parseInt(attrs.width, 10),
+							padding: parseInt(attrs.padding, 10),
 							maxWidth: parseInt(attrs.maxWidth, 10),
 							minWidth: parseInt(attrs.minWidth, 10)
 						}), el, attrs.name);
@@ -815,6 +817,11 @@ var vGraph =
 		if (settings.width) {
 			applyWidth(dataSet, settings.width / 2);
 		} else {
+			if (settings.padding) {
+				dataSet.x1 += settings.padding;
+				dataSet.x2 -= settings.padding;
+			}
+
 			width = dataSet.x2 - dataSet.x1;
 
 			if (settings.maxWidth && width > settings.maxWidth) {
@@ -936,9 +943,11 @@ var vGraph =
 						className = this.classifier.getClasses(dataSet.classified);
 					}
 
-					var t = '<rect class="' + className + '" x="' + dataSet.x1 + '" y="' + dataSet.y1 + '" width="' + (dataSet.x2 - dataSet.x1) + '" height="' + (dataSet.y2 - dataSet.y1) + '"/>';
-
-					return t;
+					if (this.settings.line) {
+						return '<line class="' + className + '" x1="' + (dataSet.x1 + dataSet.x2) / 2 + '" y1="' + dataSet.y1 + '" x2="' + (dataSet.x1 + dataSet.x2) / 2 + '" y2="' + dataSet.y2 + '"/>';
+					} else {
+						return '<rect class="' + className + '" x="' + dataSet.x1 + '" y="' + dataSet.y1 + '" width="' + (dataSet.x2 - dataSet.x1) + '" height="' + (dataSet.y2 - dataSet.y1) + '"/>';
+					}
 				}
 			}
 		}, {
@@ -1380,6 +1389,10 @@ var vGraph =
 				if (dataSets) {
 					if (this.publish) {
 						this.chart.$trigger('publish:' + this.publish, dataSets);
+					}
+
+					if (drawer.configure) {
+						drawer.configure(dataSets, this.chart.box);
 					}
 
 					dataSets.forEach(function (dataSet) {
@@ -2157,6 +2170,7 @@ var vGraph =
 				this.loading = true;
 				this.pristine = false;
 				this.settings = {};
+				this.waitingOn = {};
 			}
 		}, {
 			key: 'configure',
@@ -2456,10 +2470,6 @@ var vGraph =
 				var dis = this,
 				    settings = this.settings,
 				    viewModel = this.getView(viewName);
-
-				if (!dis.waitingOn) {
-					dis.waitingOn = {};
-				}
 
 				viewModel.$name = viewName;
 				viewModel.configure(viewSettings, settings, this.box, this.page, this.zoom);
