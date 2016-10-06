@@ -125,8 +125,9 @@ class Loader{
 		if ( cfg.parseInterval ){
 			tmp.parseInterval = cfg.parseInterval;
 		}else{
+			tmp.$parseInterval = makeGetter( cfg.interval );
 			tmp.parseInterval = function( datum ){
-				return +datum[ cfg.interval ];
+				return +tmp.$parseInterval(datum);
 			};
 		}
 
