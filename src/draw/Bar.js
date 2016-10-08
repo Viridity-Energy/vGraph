@@ -44,23 +44,37 @@ function calcBar( x1, x2, y1, y2, box ){
 }
 
 function applyWidth( dataSet, width ){
-	var x1 = dataSet.x1,
-		x2 = dataSet.x2,
-		center = (x1+x2) / 2;
+	dataSet.x1 = dataSet.center - width;
+	dataSet.x2 = dataSet.center + width;
+}
 
-	dataSet.x1 = center - width;
-	dataSet.x2 = center + width;
+function calcPadding( dataSet, padding ){
+	var lOffset = dataSet.center - dataSet.x1,
+		rOffset = dataSet.x2 - dataSet.center;
+	
+	if ( lOffset < rOffset ){ // right needs to be adjusted
+		dataSet.x2 = dataSet.center + lOffset - padding;
+		dataSet.x1 += padding;
+	}else{ // left needs to be adjusted
+		dataSet.x1 = dataSet.center - rOffset + padding;
+		dataSet.x2 -= padding;
+	}
 }
 
 function validateDataset( dataSet, settings ){
 	var width;
+		
+	if ( dataSet.y1 > dataSet.y2 ){
+		width = dataSet.y1;
+		dataSet.y1 = dataSet.y2;
+		dataSet.y2 = width;
+	}
 
 	if ( settings.width ){
 		applyWidth( dataSet, settings.width / 2 );
 	}else{
 		if ( settings.padding ){
-			dataSet.x1 += settings.padding;
-			dataSet.x2 -= settings.padding;
+			calcPadding( dataSet, settings.padding );
 		}
 
 		width = dataSet.x2 - dataSet.x1;
@@ -73,6 +87,18 @@ function validateDataset( dataSet, settings ){
 			applyWidth( dataSet, 0.5 );
 		}
 	}
+}
+
+function closeDataset( dataSet, top, bottom, settings ){
+	dataSet.y1 = top.y.scale(
+		dataSet.y1 === '+' ? top.viewport.maxValue : dataSet.y1
+	);
+	dataSet.y2 = bottom.y.scale(
+		dataSet.y2 === '-' ? 
+			( settings.zeroed && bottom.viewport.minValue < 0 ? 0 : bottom.viewport.minValue ) : dataSet.y2
+	);
+	
+	validateDataset( dataSet, settings );
 }
 
 class Bar extends DrawLinear {
@@ -110,7 +136,7 @@ class Bar extends DrawLinear {
 		if ( this.bottom !== this.top ){
 			y2 = bottom.$getValue(index);
 		}else{
-			y2 = '-'; // this.bottom.$view.viewport.minValue;
+			y2 = '-';
 		}
 
 		if ( isNumeric(y1) && isNumeric(y2) && y1 !== y2 ){
@@ -147,16 +173,23 @@ class Bar extends DrawLinear {
 		return 0;
 	}
 
-	closeSet( set ){
-		var top = this.top.$ops.$view,
-			bottom = this.bottom.$ops.$view,
-			y1 = set.y1 === '+' ? top.viewport.maxValue : set.y1,
-			y2 = set.y2 === '-' ? bottom.viewport.minValue : set.y2;
+	firstSet( dataSet, box ){
+		dataSet.center = (dataSet.x1 + dataSet.x2) / 2;
+		dataSet.x1 = box.inner.left;
+	}
 
-		set.y1 = top.y.scale(y1);
-		set.y2 = bottom.y.scale(y2);
+	closeSet( dataSet, prev ){
+		dataSet.center = (dataSet.x1 + dataSet.x2) / 2;
+		prev.x2 = dataSet.x1 = (prev.x2 + dataSet.x1) / 2;
 
-		validateDataset( set, this.settings );
+		closeDataset( prev, this.top.$ops.$view, this.bottom.$ops.$view, this.settings );
+	}
+
+	lastSet( dataSet, prev, box ){
+		this.closeSet( dataSet, prev );
+
+		dataSet.x2 = box.inner.right;
+		closeDataset( dataSet, this.top.$ops.$view, this.bottom.$ops.$view, this.settings );
 	}
 
 	makePath( dataSet ){
@@ -177,19 +210,11 @@ class Bar extends DrawLinear {
 				className = this.classifier.getClasses(dataSet.classified);
 			}
 
-			if ( this.settings.line ){
-				return '<line class="'+className+
-					'" x1="'+( (dataSet.x1+dataSet.x2)/2 )+
-					'" y1="'+dataSet.y1+
-					'" x2="'+( (dataSet.x1+dataSet.x2)/2 )+
-					'" y2="'+dataSet.y2+'"/>';
-			}else{
-				return '<rect class="'+className+
-					'" x="'+dataSet.x1+
-					'" y="'+dataSet.y1+
-					'" width="'+(dataSet.x2 - dataSet.x1)+
-					'" height="'+(dataSet.y2 - dataSet.y1)+'"/>';
-			}
+			return '<rect class="'+className+
+				'" x="'+dataSet.x1+
+				'" y="'+dataSet.y1+
+				'" width="'+(dataSet.x2 - dataSet.x1)+
+				'" height="'+(dataSet.y2 - dataSet.y1)+'"/>';
 		}
 	}
 	

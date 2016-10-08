@@ -73,8 +73,8 @@ angular.module( 'vgraph' ).controller( 'FloodCtrl',
 
 		for( var i = 0, c = 20; i < c; i++ ){
 			var counter = 0;
-			var min = -1,
-				max = 1,
+			var min = -10,
+				max = 10,
 				t = Math.random() * (max - min) + min;
 
 			data.push({

@@ -59,7 +59,6 @@ class Fill extends DrawLinear{
 
 	makePath( dataSet ){
 		var i, c,
-			y1,
 			y2,
 			point,
 			top = this.top.$ops.$view,
@@ -72,12 +71,12 @@ class Fill extends DrawLinear{
 				point = dataSet[i];
 				
 				if ( point.y1 || point.y1 === 0 ){
-					y1 = point.y1 === '+' ? top.viewport.maxValue : point.y1;
-					line1.push( point.x+','+top.y.scale(y1) );
+					line1.push( point.x+','+top.y.scale(point.y1) );
 				}
 
 				if ( point.y2 || point.y2 === 0 ){
-					y2 = point.y2 === '-' ? bottom.viewport.minValue : point.y2;
+					y2 = point.y2 === '-' ? 
+						( bottom.viewport.minValue > 0 ? bottom.viewport.minValue : 0 ) : point.y2;
 					line2.unshift( point.x+','+bottom.y.scale(y2) );
 				}
 			}

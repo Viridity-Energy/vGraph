@@ -25,9 +25,9 @@ require('angular').module( 'vgraph' ).directive( 'vgraphBar',
 						element.configure(
 							chart,
 							new DrawBar(cfg,pair,{
-								line: attrs.line,
 								width: parseInt(attrs.width,10),
-								padding: parseInt(attrs.padding,10),
+								zeroed: attrs.zeroed,
+								padding: parseFloat(attrs.padding),
 								maxWidth: parseInt(attrs.maxWidth,10),
 								minWidth: parseInt(attrs.minWidth,10)
 							}),

@@ -89,6 +89,37 @@ class Element {
 		return drawer.getLimits();
 	}
 
+	closeSets(){
+		var i, c,
+			prev,
+			dataSet,
+			box = this.chart.box,
+			drawer = this.drawer,
+			dataSets = drawer.dataSets;
+
+		if ( dataSets.length ){
+			prev = dataSets[0];
+
+			if ( drawer.firstSet ){
+				drawer.firstSet( prev, box );
+			}else{
+				drawer.closeSet( prev );
+			}
+			
+			for( i = 1, c = dataSets.length-1; i < c; i++ ){
+				dataSet = dataSets[i];
+				drawer.closeSet( dataSet, prev );
+				prev = dataSet;
+			}
+
+			if ( drawer.lastSet ){
+				drawer.lastSet( dataSets[c], prev, box );
+			}else if ( c ){
+				drawer.closeSet( dataSets[c], prev );
+			}
+		}
+	}
+
 	build(){
 		// TODO: this is probably better to be moved to a root drawer class
 		var els,
@@ -97,17 +128,11 @@ class Element {
 			dataSets = drawer.dataSets;
 
 		if ( dataSets ){
+			this.closeSets();
+
 			if ( this.publish ){
 				this.chart.$trigger( 'publish:'+this.publish, dataSets );
 			}
-
-			if ( drawer.configure ){
-				drawer.configure( dataSets, this.chart.box );
-			}
-			
-			dataSets.forEach(function( dataSet ){
-				drawer.closeSet( dataSet );
-			});
 
 			root.innerHTML = '';
 

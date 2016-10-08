@@ -721,9 +721,9 @@ var vGraph =
 
 					if (cfg) {
 						element.configure(chart, new DrawBar(cfg, pair, {
-							line: attrs.line,
 							width: parseInt(attrs.width, 10),
-							padding: parseInt(attrs.padding, 10),
+							zeroed: attrs.zeroed,
+							padding: parseFloat(attrs.padding),
 							maxWidth: parseInt(attrs.maxWidth, 10),
 							minWidth: parseInt(attrs.minWidth, 10)
 						}), el, attrs.name);
@@ -803,23 +803,39 @@ var vGraph =
 	}
 
 	function applyWidth(dataSet, width) {
-		var x1 = dataSet.x1,
-		    x2 = dataSet.x2,
-		    center = (x1 + x2) / 2;
+		dataSet.x1 = dataSet.center - width;
+		dataSet.x2 = dataSet.center + width;
+	}
 
-		dataSet.x1 = center - width;
-		dataSet.x2 = center + width;
+	function calcPadding(dataSet, padding) {
+		var lOffset = dataSet.center - dataSet.x1,
+		    rOffset = dataSet.x2 - dataSet.center;
+
+		if (lOffset < rOffset) {
+			// right needs to be adjusted
+			dataSet.x2 = dataSet.center + lOffset - padding;
+			dataSet.x1 += padding;
+		} else {
+			// left needs to be adjusted
+			dataSet.x1 = dataSet.center - rOffset + padding;
+			dataSet.x2 -= padding;
+		}
 	}
 
 	function validateDataset(dataSet, settings) {
 		var width;
 
+		if (dataSet.y1 > dataSet.y2) {
+			width = dataSet.y1;
+			dataSet.y1 = dataSet.y2;
+			dataSet.y2 = width;
+		}
+
 		if (settings.width) {
 			applyWidth(dataSet, settings.width / 2);
 		} else {
 			if (settings.padding) {
-				dataSet.x1 += settings.padding;
-				dataSet.x2 -= settings.padding;
+				calcPadding(dataSet, settings.padding);
 			}
 
 			width = dataSet.x2 - dataSet.x1;
@@ -832,6 +848,13 @@ var vGraph =
 				applyWidth(dataSet, 0.5);
 			}
 		}
+	}
+
+	function closeDataset(dataSet, top, bottom, settings) {
+		dataSet.y1 = top.y.scale(dataSet.y1 === '+' ? top.viewport.maxValue : dataSet.y1);
+		dataSet.y2 = bottom.y.scale(dataSet.y2 === '-' ? settings.zeroed && bottom.viewport.minValue < 0 ? 0 : bottom.viewport.minValue : dataSet.y2);
+
+		validateDataset(dataSet, settings);
 	}
 
 	var Bar = function (_DrawLinear) {
@@ -878,7 +901,7 @@ var vGraph =
 				if (this.bottom !== this.top) {
 					y2 = bottom.$getValue(index);
 				} else {
-					y2 = '-'; // this.bottom.$view.viewport.minValue;
+					y2 = '-';
 				}
 
 				if (isNumeric(y1) && isNumeric(y2) && y1 !== y2) {
@@ -914,17 +937,26 @@ var vGraph =
 				return 0;
 			}
 		}, {
+			key: 'firstSet',
+			value: function firstSet(dataSet, box) {
+				dataSet.center = (dataSet.x1 + dataSet.x2) / 2;
+				dataSet.x1 = box.inner.left;
+			}
+		}, {
 			key: 'closeSet',
-			value: function closeSet(set) {
-				var top = this.top.$ops.$view,
-				    bottom = this.bottom.$ops.$view,
-				    y1 = set.y1 === '+' ? top.viewport.maxValue : set.y1,
-				    y2 = set.y2 === '-' ? bottom.viewport.minValue : set.y2;
+			value: function closeSet(dataSet, prev) {
+				dataSet.center = (dataSet.x1 + dataSet.x2) / 2;
+				prev.x2 = dataSet.x1 = (prev.x2 + dataSet.x1) / 2;
 
-				set.y1 = top.y.scale(y1);
-				set.y2 = bottom.y.scale(y2);
+				closeDataset(prev, this.top.$ops.$view, this.bottom.$ops.$view, this.settings);
+			}
+		}, {
+			key: 'lastSet',
+			value: function lastSet(dataSet, prev, box) {
+				this.closeSet(dataSet, prev);
 
-				validateDataset(set, this.settings);
+				dataSet.x2 = box.inner.right;
+				closeDataset(dataSet, this.top.$ops.$view, this.bottom.$ops.$view, this.settings);
 			}
 		}, {
 			key: 'makePath',
@@ -943,11 +975,7 @@ var vGraph =
 						className = this.classifier.getClasses(dataSet.classified);
 					}
 
-					if (this.settings.line) {
-						return '<line class="' + className + '" x1="' + (dataSet.x1 + dataSet.x2) / 2 + '" y1="' + dataSet.y1 + '" x2="' + (dataSet.x1 + dataSet.x2) / 2 + '" y2="' + dataSet.y2 + '"/>';
-					} else {
-						return '<rect class="' + className + '" x="' + dataSet.x1 + '" y="' + dataSet.y1 + '" width="' + (dataSet.x2 - dataSet.x1) + '" height="' + (dataSet.y2 - dataSet.y1) + '"/>';
-					}
+					return '<rect class="' + className + '" x="' + dataSet.x1 + '" y="' + dataSet.y1 + '" width="' + (dataSet.x2 - dataSet.x1) + '" height="' + (dataSet.y2 - dataSet.y1) + '"/>';
 				}
 			}
 		}, {
@@ -1378,6 +1406,39 @@ var vGraph =
 				return drawer.getLimits();
 			}
 		}, {
+			key: 'closeSets',
+			value: function closeSets() {
+				var i,
+				    c,
+				    prev,
+				    dataSet,
+				    box = this.chart.box,
+				    drawer = this.drawer,
+				    dataSets = drawer.dataSets;
+
+				if (dataSets.length) {
+					prev = dataSets[0];
+
+					if (drawer.firstSet) {
+						drawer.firstSet(prev, box);
+					} else {
+						drawer.closeSet(prev);
+					}
+
+					for (i = 1, c = dataSets.length - 1; i < c; i++) {
+						dataSet = dataSets[i];
+						drawer.closeSet(dataSet, prev);
+						prev = dataSet;
+					}
+
+					if (drawer.lastSet) {
+						drawer.lastSet(dataSets[c], prev, box);
+					} else if (c) {
+						drawer.closeSet(dataSets[c], prev);
+					}
+				}
+			}
+		}, {
 			key: 'build',
 			value: function build() {
 				// TODO: this is probably better to be moved to a root drawer class
@@ -1387,17 +1448,11 @@ var vGraph =
 				    dataSets = drawer.dataSets;
 
 				if (dataSets) {
+					this.closeSets();
+
 					if (this.publish) {
 						this.chart.$trigger('publish:' + this.publish, dataSets);
 					}
-
-					if (drawer.configure) {
-						drawer.configure(dataSets, this.chart.box);
-					}
-
-					dataSets.forEach(function (dataSet) {
-						drawer.closeSet(dataSet);
-					});
 
 					root.innerHTML = '';
 
@@ -6480,7 +6535,6 @@ var vGraph =
 			value: function makePath(dataSet) {
 				var i,
 				    c,
-				    y1,
 				    y2,
 				    point,
 				    top = this.top.$ops.$view,
@@ -6493,12 +6547,11 @@ var vGraph =
 						point = dataSet[i];
 
 						if (point.y1 || point.y1 === 0) {
-							y1 = point.y1 === '+' ? top.viewport.maxValue : point.y1;
-							line1.push(point.x + ',' + top.y.scale(y1));
+							line1.push(point.x + ',' + top.y.scale(point.y1));
 						}
 
 						if (point.y2 || point.y2 === 0) {
-							y2 = point.y2 === '-' ? bottom.viewport.minValue : point.y2;
+							y2 = point.y2 === '-' ? bottom.viewport.minValue > 0 ? bottom.viewport.minValue : 0 : point.y2;
 							line2.unshift(point.x + ',' + bottom.y.scale(y2));
 						}
 					}
