@@ -495,10 +495,10 @@ angular.module( 'vgraph' ).controller( 'StackedCtrl',
 			y: {
 				scale: function(){ return d3.scale.linear(); },
 				padding: {
-					top: function( spread, min ){
+					max: function( spread, min ){
 						return spread * 0.05;
 					},
-					bottom: function( spread, min ){
+					min: function( spread, min ){
 						if ( min > 0 ){
 							return spread * 0.05;
 						}

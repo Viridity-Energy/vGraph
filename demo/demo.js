@@ -526,11 +526,11 @@
 					return d3.scale.linear();
 				},
 				padding: {
-					top: function top(spread, min) {
+					max: function max(spread, min) {
 						return spread * 0.05;
 					},
-					bottom: function bottom(spread, min) {
-						if (min > 0) {
+					min: function min(spread, _min) {
+						if (_min > 0) {
 							return spread * 0.05;
 						}
 					}
@@ -24344,13 +24344,13 @@
 
 				if (this.y.padding) {
 					if (angular.isObject(this.y.padding)) {
-						if (this.y.padding.top) {
-							step = angular.isFunction(this.y.padding.top) ? this.y.padding.top(spread, min, max) : spread * this.y.padding.top;
+						if (this.y.padding.max) {
+							step = angular.isFunction(this.y.padding.max) ? this.y.padding.max(spread, min, max) : spread * this.y.padding.max;
 							max = max + step;
 						}
 
-						if (this.y.padding.bottom) {
-							step = angular.isFunction(this.y.padding.bottom) ? this.y.padding.bottom(spread, min, max) : spread * this.y.padding.bottom;
+						if (this.y.padding.min) {
+							step = angular.isFunction(this.y.padding.min) ? this.y.padding.min(spread, min, max) : spread * this.y.padding.min;
 							min = min - step;
 						}
 					} else {

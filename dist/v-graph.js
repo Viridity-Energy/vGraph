@@ -3693,13 +3693,13 @@ var vGraph =
 
 				if (this.y.padding) {
 					if (angular.isObject(this.y.padding)) {
-						if (this.y.padding.top) {
-							step = angular.isFunction(this.y.padding.top) ? this.y.padding.top(spread, min, max) : spread * this.y.padding.top;
+						if (this.y.padding.max) {
+							step = angular.isFunction(this.y.padding.max) ? this.y.padding.max(spread, min, max) : spread * this.y.padding.max;
 							max = max + step;
 						}
 
-						if (this.y.padding.bottom) {
-							step = angular.isFunction(this.y.padding.bottom) ? this.y.padding.bottom(spread, min, max) : spread * this.y.padding.bottom;
+						if (this.y.padding.min) {
+							step = angular.isFunction(this.y.padding.min) ? this.y.padding.min(spread, min, max) : spread * this.y.padding.min;
 							min = min - step;
 						}
 					} else {
