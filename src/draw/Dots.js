@@ -2,7 +2,7 @@ var DrawLinear = require('./Linear.js');
 	
 class Dots extends DrawLinear{	
 	constructor( ref, radius ){
-		super( ref );
+		super( [ref] );
 
 		this.ref = ref;
 		this.radius = radius;

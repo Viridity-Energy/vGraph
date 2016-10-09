@@ -6,13 +6,13 @@ class Linear{
 		return v || v === 0;
 	}
 
-	constructor(){
+	constructor( refs ){
 		var i, c,
 			ref,
 			t = [];
 
-		for( i = 0, c = arguments.length; i < c; i++ ){
-			ref = arguments[i];
+		for( i = 0, c = refs.length; i < c; i++ ){
+			ref = refs[i];
 			if ( ref ){
 				t.push( ref );
 

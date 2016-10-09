@@ -19074,12 +19074,12 @@
 	__webpack_require__(5);
 
 	module.exports = {
-		calculations: __webpack_require__(72),
-		component: __webpack_require__(112),
-		data: __webpack_require__(113),
-		draw: __webpack_require__(115),
-		lib: __webpack_require__(116),
-		stats: __webpack_require__(14)
+		calculations: __webpack_require__(73),
+		component: __webpack_require__(113),
+		data: __webpack_require__(114),
+		draw: __webpack_require__(116),
+		lib: __webpack_require__(117),
+		stats: __webpack_require__(15)
 	};
 
 /***/ },
@@ -19093,32 +19093,32 @@
 
 	__webpack_require__(8);
 	__webpack_require__(9);
-	__webpack_require__(15);
-	__webpack_require__(17);
-	__webpack_require__(19);
-	__webpack_require__(74);
+	__webpack_require__(16);
+	__webpack_require__(18);
+	__webpack_require__(20);
 	__webpack_require__(75);
-	__webpack_require__(77);
-	__webpack_require__(80);
+	__webpack_require__(76);
+	__webpack_require__(78);
 	__webpack_require__(81);
-	__webpack_require__(84);
+	__webpack_require__(82);
 	__webpack_require__(85);
-	__webpack_require__(87);
+	__webpack_require__(86);
 	__webpack_require__(88);
 	__webpack_require__(89);
 	__webpack_require__(90);
 	__webpack_require__(91);
-	__webpack_require__(94);
+	__webpack_require__(92);
 	__webpack_require__(95);
 	__webpack_require__(96);
-	__webpack_require__(102);
-	__webpack_require__(104);
+	__webpack_require__(97);
+	__webpack_require__(103);
 	__webpack_require__(105);
 	__webpack_require__(106);
 	__webpack_require__(107);
-	__webpack_require__(109);
+	__webpack_require__(108);
 	__webpack_require__(110);
 	__webpack_require__(111);
+	__webpack_require__(112);
 
 /***/ },
 /* 6 */
@@ -19703,7 +19703,7 @@
 	'use strict';
 
 	var DrawBar = __webpack_require__(10),
-	    ComponentElement = __webpack_require__(13);
+	    ComponentElement = __webpack_require__(14);
 
 	__webpack_require__(2).module('vgraph').directive('vgraphBar', [function () {
 		return {
@@ -19755,16 +19755,160 @@
 
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+	var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var DrawLinear = __webpack_require__(11),
+	var DrawZone = __webpack_require__(11),
+	    DrawLinear = __webpack_require__(12),
 	    isNumeric = DrawLinear.isNumeric;
 
-	// y1 > y2, x1 < x2
+	function applyWidth(dataSet, width) {
+		dataSet.x1 = dataSet.center - width;
+		dataSet.x2 = dataSet.center + width;
+	}
+
+	function calcPadding(dataSet, padding) {
+		var lOffset = dataSet.center - dataSet.x1,
+		    rOffset = dataSet.x2 - dataSet.center;
+
+		if (lOffset < rOffset) {
+			// right needs to be adjusted
+			dataSet.x2 = dataSet.center + lOffset - padding;
+			dataSet.x1 += padding;
+		} else {
+			// left needs to be adjusted
+			dataSet.x1 = dataSet.center - rOffset + padding;
+			dataSet.x2 -= padding;
+		}
+	}
+
+	function validateDataset(dataSet, settings) {
+		var width;
+
+		if (settings.width) {
+			applyWidth(dataSet, settings.width / 2);
+		} else {
+			if (settings.padding) {
+				calcPadding(dataSet, settings.padding);
+			}
+
+			width = dataSet.x2 - dataSet.x1;
+
+			if (settings.maxWidth && width > settings.maxWidth) {
+				applyWidth(dataSet, settings.maxWidth / 2);
+			} else if (settings.minWidth && width < settings.minWidth) {
+				applyWidth(dataSet, settings.minWidth / 2);
+			} else if (width < 1) {
+				applyWidth(dataSet, 0.5);
+			}
+		}
+	}
+
+	function closeDataset(dataSet, top, bottom, settings) {
+		dataSet.y1 = top.y.scale(dataSet.y1 === '+' ? top.viewport.maxValue : dataSet.y1);
+		dataSet.y2 = bottom.y.scale(dataSet.y2 === '-' ? settings.zeroed && bottom.viewport.minValue < 0 ? 0 : bottom.viewport.minValue : dataSet.y2);
+
+		validateDataset(dataSet, settings);
+	}
+
+	var Bar = function (_DrawZone) {
+		_inherits(Bar, _DrawZone);
+
+		function Bar(top, bottom, settings) {
+			_classCallCheck(this, Bar);
+
+			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Bar).call(this, [top, bottom], settings));
+
+			_this.top = top;
+
+			if (bottom) {
+				_this.bottom = bottom;
+			} else {
+				_this.bottom = top;
+			}
+			return _this;
+		}
+
+		_createClass(Bar, [{
+			key: 'getPoint',
+			value: function getPoint(index) {
+				var y1,
+				    y2,
+				    t,
+				    top = this.top.$ops,
+				    node = top.$getNode(index),
+				    bottom = this.bottom.$ops;
+
+				y1 = top.getValue(node);
+
+				if (this.bottom !== this.top) {
+					y2 = bottom.$getValue(index);
+				} else {
+					y2 = '-';
+				}
+
+				if (isNumeric(y1) && isNumeric(y2) && y1 !== y2) {
+					t = {
+						classified: this.classifier ? this.classifier.parse(node, top.getStats()) : null,
+						x: node.$x,
+						y1: y1,
+						y2: y2
+					};
+				}
+
+				return t;
+			}
+		}, {
+			key: 'firstSet',
+			value: function firstSet(dataSet, box) {
+				dataSet.center = (dataSet.x1 + dataSet.x2) / 2;
+				dataSet.x1 = box.inner.left;
+			}
+		}, {
+			key: 'closeSet',
+			value: function closeSet(dataSet, prev) {
+				dataSet.center = (dataSet.x1 + dataSet.x2) / 2;
+				prev.x2 = dataSet.x1 = (prev.x2 + dataSet.x1) / 2;
+
+				closeDataset(prev, this.top.$ops.$view, this.bottom.$ops.$view, this.settings);
+				_get(Object.getPrototypeOf(Bar.prototype), 'closeSet', this).call(this, prev);
+			}
+		}, {
+			key: 'lastSet',
+			value: function lastSet(dataSet, prev, box) {
+				this.closeSet(dataSet, prev);
+
+				dataSet.x2 = box.inner.right;
+				closeDataset(dataSet, this.top.$ops.$view, this.bottom.$ops.$view, this.settings);
+			}
+		}]);
+
+		return Bar;
+	}(DrawZone);
+
+	module.exports = Bar;
+
+/***/ },
+/* 11 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	var DrawLinear = __webpack_require__(12);
+
 	function calcBar(x1, x2, y1, y2, box) {
 		var t;
 
@@ -19806,81 +19950,19 @@
 		return box;
 	}
 
-	function applyWidth(dataSet, width) {
-		dataSet.x1 = dataSet.center - width;
-		dataSet.x2 = dataSet.center + width;
-	}
+	var DrawZone = function (_DrawLinear) {
+		_inherits(DrawZone, _DrawLinear);
 
-	function calcPadding(dataSet, padding) {
-		var lOffset = dataSet.center - dataSet.x1,
-		    rOffset = dataSet.x2 - dataSet.center;
+		function DrawZone(refs, settings) {
+			_classCallCheck(this, DrawZone);
 
-		if (lOffset < rOffset) {
-			// right needs to be adjusted
-			dataSet.x2 = dataSet.center + lOffset - padding;
-			dataSet.x1 += padding;
-		} else {
-			// left needs to be adjusted
-			dataSet.x1 = dataSet.center - rOffset + padding;
-			dataSet.x2 -= padding;
-		}
-	}
+			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(DrawZone).call(this, refs));
 
-	function validateDataset(dataSet, settings) {
-		var width;
-
-		if (dataSet.y1 > dataSet.y2) {
-			width = dataSet.y1;
-			dataSet.y1 = dataSet.y2;
-			dataSet.y2 = width;
-		}
-
-		if (settings.width) {
-			applyWidth(dataSet, settings.width / 2);
-		} else {
-			if (settings.padding) {
-				calcPadding(dataSet, settings.padding);
-			}
-
-			width = dataSet.x2 - dataSet.x1;
-
-			if (settings.maxWidth && width > settings.maxWidth) {
-				applyWidth(dataSet, settings.maxWidth / 2);
-			} else if (settings.minWidth && width < settings.minWidth) {
-				applyWidth(dataSet, settings.minWidth / 2);
-			} else if (width < 1) {
-				applyWidth(dataSet, 0.5);
-			}
-		}
-	}
-
-	function closeDataset(dataSet, top, bottom, settings) {
-		dataSet.y1 = top.y.scale(dataSet.y1 === '+' ? top.viewport.maxValue : dataSet.y1);
-		dataSet.y2 = bottom.y.scale(dataSet.y2 === '-' ? settings.zeroed && bottom.viewport.minValue < 0 ? 0 : bottom.viewport.minValue : dataSet.y2);
-
-		validateDataset(dataSet, settings);
-	}
-
-	var Bar = function (_DrawLinear) {
-		_inherits(Bar, _DrawLinear);
-
-		function Bar(top, bottom, settings) {
-			_classCallCheck(this, Bar);
-
-			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Bar).call(this, top, bottom));
-
-			_this.top = top;
 			_this.settings = settings || {};
-
-			if (bottom) {
-				_this.bottom = bottom;
-			} else {
-				_this.bottom = top;
-			}
 			return _this;
 		}
 
-		_createClass(Bar, [{
+		_createClass(DrawZone, [{
 			key: 'makeSet',
 			value: function makeSet() {
 				return {};
@@ -19891,76 +19973,36 @@
 				return box.x1 !== undefined;
 			}
 		}, {
-			key: 'getPoint',
-			value: function getPoint(index) {
-				var y1,
-				    y2,
-				    t,
-				    top = this.top.$ops,
-				    node = top.$getNode(index),
-				    bottom = this.bottom.$ops;
-
-				y1 = top.getValue(node);
-
-				if (this.bottom !== this.top) {
-					y2 = bottom.$getValue(index);
-				} else {
-					y2 = '-';
-				}
-
-				if (isNumeric(y1) && isNumeric(y2) && y1 !== y2) {
-					t = {
-						classified: this.classifier ? this.classifier.parse(node, top.getStats()) : null,
-						x: node.$x,
-						y1: y1,
-						y2: y2
-					};
-				}
-
-				return t;
-			}
-		}, {
 			key: 'mergePoint',
-			value: function mergePoint(parsed, set) {
+			value: function mergePoint(parsed, dataSet) {
 				var x = parsed.x,
 				    y1 = parsed.y1,
 				    y2 = parsed.y2;
 
 				if (y1 !== null && y2 !== null) {
 					if (y1 === undefined) {
-						y1 = set.y1;
+						y1 = dataSet.y1;
 					}
 
 					if (y2 === undefined) {
-						y2 = set.y2;
+						y2 = dataSet.y2;
 					}
 
-					calcBar(x, x, y1, y2, set);
+					calcBar(x, x, y1, y2, dataSet);
 				}
 
 				return 0;
 			}
 		}, {
-			key: 'firstSet',
-			value: function firstSet(dataSet, box) {
-				dataSet.center = (dataSet.x1 + dataSet.x2) / 2;
-				dataSet.x1 = box.inner.left;
-			}
-		}, {
 			key: 'closeSet',
-			value: function closeSet(dataSet, prev) {
-				dataSet.center = (dataSet.x1 + dataSet.x2) / 2;
-				prev.x2 = dataSet.x1 = (prev.x2 + dataSet.x1) / 2;
+			value: function closeSet(dataSet) {
+				var flip;
 
-				closeDataset(prev, this.top.$ops.$view, this.bottom.$ops.$view, this.settings);
-			}
-		}, {
-			key: 'lastSet',
-			value: function lastSet(dataSet, prev, box) {
-				this.closeSet(dataSet, prev);
-
-				dataSet.x2 = box.inner.right;
-				closeDataset(dataSet, this.top.$ops.$view, this.bottom.$ops.$view, this.settings);
+				if (dataSet.y1 > dataSet.y2) {
+					flip = dataSet.y1;
+					dataSet.y1 = dataSet.y2;
+					dataSet.y2 = flip;
+				}
 			}
 		}, {
 			key: 'makePath',
@@ -19989,13 +20031,13 @@
 			}
 		}]);
 
-		return Bar;
+		return DrawZone;
 	}(DrawLinear);
 
-	module.exports = Bar;
+	module.exports = DrawZone;
 
 /***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -20004,7 +20046,7 @@
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var Classifier = __webpack_require__(12);
+	var Classifier = __webpack_require__(13);
 
 	var Linear = function () {
 		_createClass(Linear, null, [{
@@ -20016,7 +20058,7 @@
 			}
 		}]);
 
-		function Linear() {
+		function Linear(refs) {
 			_classCallCheck(this, Linear);
 
 			var i,
@@ -20024,8 +20066,8 @@
 			    ref,
 			    t = [];
 
-			for (i = 0, c = arguments.length; i < c; i++) {
-				ref = arguments[i];
+			for (i = 0, c = refs.length; i < c; i++) {
+				ref = refs[i];
 				if (ref) {
 					t.push(ref);
 
@@ -20193,7 +20235,7 @@
 	module.exports = Linear;
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -20308,7 +20350,7 @@
 	module.exports = Classifier;
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -20317,7 +20359,7 @@
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var StatCalculations = __webpack_require__(14);
+	var StatCalculations = __webpack_require__(15);
 
 	function appendChildren(self, dataSets, children) {
 		var i,
@@ -20437,7 +20479,7 @@
 
 					if (drawer.lastSet) {
 						drawer.lastSet(dataSets[c], prev, box);
-					} else if (c) {
+					} else if (c > 0) {
 						drawer.closeSet(dataSets[c], prev);
 					}
 				}
@@ -20484,7 +20526,7 @@
 	module.exports = Element;
 
 /***/ },
-/* 14 */
+/* 15 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -20627,13 +20669,13 @@
 	};
 
 /***/ },
-/* 15 */
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawBox = __webpack_require__(16),
-	    ComponentElement = __webpack_require__(13);
+	var DrawBox = __webpack_require__(17),
+	    ComponentElement = __webpack_require__(14);
 
 	__webpack_require__(2).module('vgraph').directive('vgraphBox', [function () {
 		return {
@@ -20675,7 +20717,7 @@
 	}]);
 
 /***/ },
-/* 16 */
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -20690,15 +20732,18 @@
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var DrawBar = __webpack_require__(10);
+	var DrawZone = __webpack_require__(11);
 
-	var Box = function (_DrawBar) {
-		_inherits(Box, _DrawBar);
+	var Box = function (_DrawZone) {
+		_inherits(Box, _DrawZone);
 
 		function Box(ref, settings) {
 			_classCallCheck(this, Box);
 
-			return _possibleConstructorReturn(this, Object.getPrototypeOf(Box).call(this, ref, ref, settings));
+			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Box).call(this, [ref], settings));
+
+			_this.ref = ref;
+			return _this;
 		}
 
 		_createClass(Box, [{
@@ -20706,11 +20751,12 @@
 			value: function getPoint(index) {
 				var t,
 				    value,
-				    node = this.top.$ops.$getNode(index);
+				    ops = this.ref.$ops,
+				    node = ops.$getNode(index);
 
-				if (this.top.isValid(node)) {
-					if (this.top.$ops.getValue) {
-						value = this.top.$ops.getValue(node);
+				if (this.ref.isValid(node)) {
+					if (ops.getValue) {
+						value = ops.getValue(node);
 						t = {
 							x: node.$x,
 							y1: value,
@@ -20741,21 +20787,31 @@
 					return 0;
 				}
 			}
+		}, {
+			key: 'closeSet',
+			value: function closeSet(dataSet) {
+				var view = this.ref.$ops.$view;
+
+				dataSet.y1 = view.y.scale(dataSet.y1 === '+' ? view.viewport.maxValue : dataSet.y1);
+				dataSet.y2 = view.y.scale(dataSet.y2 === '-' ? view.viewport.minValue : dataSet.y2);
+
+				_get(Object.getPrototypeOf(Box.prototype), 'closeSet', this).call(this, dataSet);
+			}
 		}]);
 
 		return Box;
-	}(DrawBar);
+	}(DrawZone);
 
 	module.exports = Box;
 
 /***/ },
-/* 17 */
+/* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawCandlestick = __webpack_require__(18),
-	    ComponentElement = __webpack_require__(13);
+	var DrawCandlestick = __webpack_require__(19),
+	    ComponentElement = __webpack_require__(14);
 
 	__webpack_require__(2).module('vgraph').directive('vgraphCandlestick', [function () {
 		return {
@@ -20793,7 +20849,7 @@
 	}]);
 
 /***/ },
-/* 18 */
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -20806,7 +20862,7 @@
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var DrawLinear = __webpack_require__(11);
+	var DrawLinear = __webpack_require__(12);
 
 	// If someone is hell bent on performance, you can override DrawLine so that a lot of this flexibility
 	// is removed
@@ -20817,7 +20873,7 @@
 		function Candlestick(ref) {
 			_classCallCheck(this, Candlestick);
 
-			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Candlestick).call(this, ref));
+			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Candlestick).call(this, [ref]));
 
 			_this.ref = ref;
 
@@ -20958,13 +21014,13 @@
 	module.exports = Candlestick;
 
 /***/ },
-/* 19 */
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	var d3 = __webpack_require__(1),
-	    ComponentChart = __webpack_require__(20);
+	    ComponentChart = __webpack_require__(21);
 
 	// TODO : add this back to bmoor
 	function throttle(fn, time) {
@@ -21069,7 +21125,7 @@
 	}]);
 
 /***/ },
-/* 20 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -21111,13 +21167,13 @@
 		manager: the manager to lock the view onto
 	**/
 	var angular = __webpack_require__(2),
-	    Hitbox = __webpack_require__(21),
-	    Scheduler = __webpack_require__(22),
-	    domHelper = __webpack_require__(23),
-	    makeEventing = __webpack_require__(24),
-	    ComponentBox = __webpack_require__(25),
-	    ComponentView = __webpack_require__(28),
-	    ComponentReference = __webpack_require__(73);
+	    Hitbox = __webpack_require__(22),
+	    Scheduler = __webpack_require__(23),
+	    domHelper = __webpack_require__(24),
+	    makeEventing = __webpack_require__(25),
+	    ComponentBox = __webpack_require__(26),
+	    ComponentView = __webpack_require__(29),
+	    ComponentReference = __webpack_require__(74);
 
 	var ids = 1,
 	    schedule = new Scheduler();
@@ -21802,7 +21858,7 @@
 	module.exports = Chart;
 
 /***/ },
-/* 21 */
+/* 22 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -21974,7 +22030,7 @@
 	module.exports = Hitbox;
 
 /***/ },
-/* 22 */
+/* 23 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -22129,7 +22185,7 @@
 	module.exports = Scheduler;
 
 /***/ },
-/* 23 */
+/* 24 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -22195,7 +22251,7 @@
 	};
 
 /***/ },
-/* 24 */
+/* 25 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -22253,7 +22309,7 @@
 	};
 
 /***/ },
-/* 25 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -22262,8 +22318,8 @@
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var makeEventing = __webpack_require__(24),
-	    jQuery = __webpack_require__(26);
+	var makeEventing = __webpack_require__(25),
+	    jQuery = __webpack_require__(27);
 
 	function merge(nVal, oVal) {
 		return nVal !== undefined ? parseInt(nVal) : oVal;
@@ -22410,7 +22466,7 @@
 	module.exports = Box;
 
 /***/ },
-/* 26 */
+/* 27 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(module) {"use strict";var _typeof=typeof Symbol==="function"&&typeof Symbol.iterator==="symbol"?function(obj){return typeof obj;}:function(obj){return obj&&typeof Symbol==="function"&&obj.constructor===Symbol?"symbol":typeof obj;};/*eslint-disable no-unused-vars*//*!
@@ -24033,10 +24089,10 @@
 	// (#7102#comment:10, https://github.com/jquery/jquery/pull/557)
 	// and CommonJS for browser emulators (#13566)
 	if(!noGlobal){window.jQuery=window.$=jQuery;}return jQuery;});
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(27)(module)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(28)(module)))
 
 /***/ },
-/* 27 */
+/* 28 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -24053,7 +24109,7 @@
 	};
 
 /***/ },
-/* 28 */
+/* 29 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -24063,9 +24119,9 @@
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var id = 1,
-	    ComponentPane = __webpack_require__(29),
-	    DataNormalizer = __webpack_require__(70),
-	    calculationsCompile = __webpack_require__(72).compile;
+	    ComponentPane = __webpack_require__(30),
+	    DataNormalizer = __webpack_require__(71),
+	    calculationsCompile = __webpack_require__(73).compile;
 
 	function parseSettings(settings, old) {
 		if (!old) {
@@ -24486,7 +24542,7 @@
 	module.exports = View;
 
 /***/ },
-/* 29 */
+/* 30 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -24495,7 +24551,7 @@
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var DataList = __webpack_require__(30);
+	var DataList = __webpack_require__(31);
 
 	var Pane = function () {
 		function Pane(fitToPane, xObj, yObj) {
@@ -24617,7 +24673,7 @@
 	module.exports = Pane;
 
 /***/ },
-/* 30 */
+/* 31 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -24630,8 +24686,8 @@
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var _bisect = __webpack_require__(31).array.bisect,
-	    Collection = __webpack_require__(45).Collection,
+	var _bisect = __webpack_require__(32).array.bisect,
+	    Collection = __webpack_require__(46).Collection,
 	    cachedPush = Array.prototype.push,
 	    cachedSort = Array.prototype.sort;
 
@@ -24774,27 +24830,27 @@
 	module.exports = List;
 
 /***/ },
-/* 31 */
+/* 32 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var bmoor = Object.create(__webpack_require__(32));
+	var bmoor = Object.create(__webpack_require__(33));
 
-	bmoor.dom = __webpack_require__(33);
-	bmoor.data = __webpack_require__(34);
-	bmoor.array = __webpack_require__(35);
-	bmoor.object = __webpack_require__(36);
-	bmoor.build = __webpack_require__(37);
-	bmoor.string = __webpack_require__(41);
-	bmoor.promise = __webpack_require__(42);
+	bmoor.dom = __webpack_require__(34);
+	bmoor.data = __webpack_require__(35);
+	bmoor.array = __webpack_require__(36);
+	bmoor.object = __webpack_require__(37);
+	bmoor.build = __webpack_require__(38);
+	bmoor.string = __webpack_require__(42);
+	bmoor.promise = __webpack_require__(43);
 
-	bmoor.interfaces = __webpack_require__(43);
+	bmoor.interfaces = __webpack_require__(44);
 
 	module.exports = bmoor;
 
 /***/ },
-/* 32 */
+/* 33 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -25377,12 +25433,12 @@
 	};
 
 /***/ },
-/* 33 */
+/* 34 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var bmoor = __webpack_require__(32),
+	var bmoor = __webpack_require__(33),
 	    regex = {};
 
 	function getReg(className) {
@@ -25677,7 +25733,7 @@
 	};
 
 /***/ },
-/* 34 */
+/* 35 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -25717,7 +25773,7 @@
 	};
 
 /***/ },
-/* 35 */
+/* 36 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -25727,7 +25783,7 @@
 	 * @module bmoor.array
 	 **/
 
-	var bmoor = __webpack_require__(32);
+	var bmoor = __webpack_require__(33);
 
 	/**
 	 * Search an array for an element, starting at the begining or a specified location
@@ -25969,7 +26025,7 @@
 	};
 
 /***/ },
-/* 36 */
+/* 37 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -25981,7 +26037,7 @@
 	 * @module bmoor.object
 	 **/
 
-	var bmoor = __webpack_require__(32);
+	var bmoor = __webpack_require__(33);
 
 	function values(obj) {
 		var res = [];
@@ -26189,15 +26245,15 @@
 	};
 
 /***/ },
-/* 37 */
+/* 38 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var bmoor = __webpack_require__(32),
-	    mixin = __webpack_require__(38),
-	    plugin = __webpack_require__(39),
-	    decorate = __webpack_require__(40);
+	var bmoor = __webpack_require__(33),
+	    mixin = __webpack_require__(39),
+	    plugin = __webpack_require__(40),
+	    decorate = __webpack_require__(41);
 
 	function proc(action, proto, def) {
 		var i, c;
@@ -26252,12 +26308,12 @@
 	module.exports = maker;
 
 /***/ },
-/* 38 */
+/* 39 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var bmoor = __webpack_require__(32);
+	var bmoor = __webpack_require__(33);
 
 	module.exports = function (to, from) {
 		bmoor.iterate(from, function (val, key) {
@@ -26266,14 +26322,14 @@
 	};
 
 /***/ },
-/* 39 */
+/* 40 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 
-	var bmoor = __webpack_require__(32);
+	var bmoor = __webpack_require__(33);
 
 	function override(key, target, action, plugin) {
 		var old = target[key];
@@ -26322,14 +26378,14 @@
 	};
 
 /***/ },
-/* 40 */
+/* 41 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 
-	var bmoor = __webpack_require__(32);
+	var bmoor = __webpack_require__(33);
 
 	function override(key, target, action) {
 		var old = target[key];
@@ -26367,12 +26423,12 @@
 	};
 
 /***/ },
-/* 41 */
+/* 42 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var bmoor = __webpack_require__(32);
+	var bmoor = __webpack_require__(33);
 
 	/**
 	 * Array helper functions
@@ -26537,7 +26593,7 @@
 	};
 
 /***/ },
-/* 42 */
+/* 43 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -26552,17 +26608,17 @@
 	};
 
 /***/ },
-/* 43 */
+/* 44 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = {
-		Eventing: __webpack_require__(44)
+		Eventing: __webpack_require__(45)
 	};
 
 /***/ },
-/* 44 */
+/* 45 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -26622,33 +26678,33 @@
 	};
 
 /***/ },
-/* 45 */
+/* 46 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = {
-		Hasher: __webpack_require__(46),
-		Collection: __webpack_require__(61),
-		HashedCollection: __webpack_require__(64),
-		Observor: __webpack_require__(62),
-		Composite: __webpack_require__(63),
-		Table: __webpack_require__(65),
-		Memory: __webpack_require__(67),
-		Index: __webpack_require__(66),
-		Bucketer: __webpack_require__(68),
-		GridIndex: __webpack_require__(69)
+		Hasher: __webpack_require__(47),
+		Collection: __webpack_require__(62),
+		HashedCollection: __webpack_require__(65),
+		Observor: __webpack_require__(63),
+		Composite: __webpack_require__(64),
+		Table: __webpack_require__(66),
+		Memory: __webpack_require__(68),
+		Index: __webpack_require__(67),
+		Bucketer: __webpack_require__(69),
+		GridIndex: __webpack_require__(70)
 	};
 
 /***/ },
-/* 46 */
+/* 47 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var bmoor = __webpack_require__(47);
+	var bmoor = __webpack_require__(48);
 
 	function makeName(cfg) {
 		return cfg.join('-');
@@ -26724,27 +26780,27 @@
 	module.exports = Hasher;
 
 /***/ },
-/* 47 */
+/* 48 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var bmoor = Object.create(__webpack_require__(48));
+	var bmoor = Object.create(__webpack_require__(49));
 
-	bmoor.dom = __webpack_require__(49);
-	bmoor.data = __webpack_require__(50);
-	bmoor.array = __webpack_require__(51);
-	bmoor.object = __webpack_require__(52);
-	bmoor.build = __webpack_require__(53);
-	bmoor.string = __webpack_require__(57);
-	bmoor.promise = __webpack_require__(58);
+	bmoor.dom = __webpack_require__(50);
+	bmoor.data = __webpack_require__(51);
+	bmoor.array = __webpack_require__(52);
+	bmoor.object = __webpack_require__(53);
+	bmoor.build = __webpack_require__(54);
+	bmoor.string = __webpack_require__(58);
+	bmoor.promise = __webpack_require__(59);
 
-	bmoor.interfaces = __webpack_require__(59);
+	bmoor.interfaces = __webpack_require__(60);
 
 	module.exports = bmoor;
 
 /***/ },
-/* 48 */
+/* 49 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -27342,12 +27398,12 @@
 	};
 
 /***/ },
-/* 49 */
+/* 50 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var bmoor = __webpack_require__(48),
+	var bmoor = __webpack_require__(49),
 	    regex = {};
 
 	function getReg(className) {
@@ -27517,7 +27573,7 @@
 	};
 
 /***/ },
-/* 50 */
+/* 51 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -27552,12 +27608,12 @@
 	};
 
 /***/ },
-/* 51 */
+/* 52 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var bmoor = __webpack_require__(48);
+	var bmoor = __webpack_require__(49);
 
 	/**
 	 * Search an array for an element, starting at the begining or a specified location
@@ -27804,14 +27860,14 @@
 	};
 
 /***/ },
-/* 52 */
+/* 53 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 
-	var bmoor = __webpack_require__(48);
+	var bmoor = __webpack_require__(49);
 
 	function values(obj) {
 		var res = [];
@@ -28023,15 +28079,15 @@
 	};
 
 /***/ },
-/* 53 */
+/* 54 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var bmoor = __webpack_require__(48),
-	    mixin = __webpack_require__(54),
-	    plugin = __webpack_require__(55),
-	    decorate = __webpack_require__(56);
+	var bmoor = __webpack_require__(49),
+	    mixin = __webpack_require__(55),
+	    plugin = __webpack_require__(56),
+	    decorate = __webpack_require__(57);
 
 	function proc(action, proto, def) {
 		var i, c;
@@ -28086,12 +28142,12 @@
 	module.exports = maker;
 
 /***/ },
-/* 54 */
+/* 55 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var bmoor = __webpack_require__(48);
+	var bmoor = __webpack_require__(49);
 
 	module.exports = function (to, from) {
 		bmoor.iterate(from, function (val, key) {
@@ -28100,14 +28156,14 @@
 	};
 
 /***/ },
-/* 55 */
+/* 56 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 
-	var bmoor = __webpack_require__(48);
+	var bmoor = __webpack_require__(49);
 
 	function override(key, target, action, plugin) {
 		var old = target[key];
@@ -28156,14 +28212,14 @@
 	};
 
 /***/ },
-/* 56 */
+/* 57 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 
-	var bmoor = __webpack_require__(48);
+	var bmoor = __webpack_require__(49);
 
 	function override(key, target, action) {
 		var old = target[key];
@@ -28201,12 +28257,12 @@
 	};
 
 /***/ },
-/* 57 */
+/* 58 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var bmoor = __webpack_require__(48);
+	var bmoor = __webpack_require__(49);
 
 	function trim(str, chr) {
 		if (!chr) {
@@ -28366,7 +28422,7 @@
 	};
 
 /***/ },
-/* 58 */
+/* 59 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -28381,17 +28437,17 @@
 	};
 
 /***/ },
-/* 59 */
+/* 60 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = {
-		Eventing: __webpack_require__(60)
+		Eventing: __webpack_require__(61)
 	};
 
 /***/ },
-/* 60 */
+/* 61 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -28451,7 +28507,7 @@
 	};
 
 /***/ },
-/* 61 */
+/* 62 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -28465,9 +28521,9 @@
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 	var proto = Array.prototype,
-	    bmoor = __webpack_require__(47),
+	    bmoor = __webpack_require__(48),
 	    getUid = bmoor.data.getUid,
-	    Observor = __webpack_require__(62);
+	    Observor = __webpack_require__(63);
 
 	function manageFilter(collection, datum, filter) {
 		var isIn = filter(datum);
@@ -28759,7 +28815,7 @@
 	module.exports = Collection;
 
 /***/ },
-/* 62 */
+/* 63 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -28774,8 +28830,8 @@
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var bmoor = __webpack_require__(47),
-	    Composite = __webpack_require__(63);
+	var bmoor = __webpack_require__(48),
+	    Composite = __webpack_require__(64);
 
 	var Observor = function (_bmoor$build) {
 		_inherits(Observor, _bmoor$build);
@@ -28826,7 +28882,7 @@
 	module.exports = Observor;
 
 /***/ },
-/* 63 */
+/* 64 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -28835,7 +28891,7 @@
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var bmoor = __webpack_require__(47);
+	var bmoor = __webpack_require__(48);
 
 	var Composite = function () {
 		function Composite(obj, mountPoint) {
@@ -28861,7 +28917,7 @@
 	module.exports = Composite;
 
 /***/ },
-/* 64 */
+/* 65 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -28876,7 +28932,7 @@
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var Collection = __webpack_require__(61);
+	var Collection = __webpack_require__(62);
 
 	var HashedCollection = function (_Collection) {
 		_inherits(HashedCollection, _Collection);
@@ -28931,7 +28987,7 @@
 	module.exports = HashedCollection;
 
 /***/ },
-/* 65 */
+/* 66 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -28940,10 +28996,10 @@
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var Index = __webpack_require__(66),
-	    Hasher = __webpack_require__(46),
-	    Collection = __webpack_require__(61),
-	    HashedCollection = __webpack_require__(64);
+	var Index = __webpack_require__(67),
+	    Hasher = __webpack_require__(47),
+	    Collection = __webpack_require__(62),
+	    HashedCollection = __webpack_require__(65);
 
 	function getIndex(indexes, root, query) {
 		var keys = Object.keys(query).sort(),
@@ -29010,7 +29066,7 @@
 	module.exports = Table;
 
 /***/ },
-/* 66 */
+/* 67 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -29019,9 +29075,9 @@
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var bmoor = __webpack_require__(47),
+	var bmoor = __webpack_require__(48),
 	    getUid = bmoor.data.getUid,
-	    Collection = __webpack_require__(61);
+	    Collection = __webpack_require__(62);
 
 	function createCollection(index, hash) {
 		var c = new Collection(),
@@ -29181,7 +29237,7 @@
 	module.exports = Index;
 
 /***/ },
-/* 67 */
+/* 68 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -29362,7 +29418,7 @@
 	module.exports = Memory;
 
 /***/ },
-/* 68 */
+/* 69 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -29377,7 +29433,7 @@
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var Index = __webpack_require__(66);
+	var Index = __webpack_require__(67);
 
 	// Takes a filter function, seperates the results out to different collections
 
@@ -29424,7 +29480,7 @@
 	module.exports = Bucketer;
 
 /***/ },
-/* 69 */
+/* 70 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -29433,9 +29489,9 @@
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var bmoor = __webpack_require__(47),
+	var bmoor = __webpack_require__(48),
 	    getUid = bmoor.data.getUid,
-	    Collection = __webpack_require__(61);
+	    Collection = __webpack_require__(62);
 
 	function _insert(grid, datum) {
 		var x,
@@ -29639,7 +29695,7 @@
 	module.exports = GridIndex;
 
 /***/ },
-/* 70 */
+/* 71 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -29653,7 +29709,7 @@
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 	var uid = 1,
-	    Linear = __webpack_require__(71);
+	    Linear = __webpack_require__(72);
 
 	var Normalizer = function (_Linear) {
 		_inherits(Normalizer, _Linear);
@@ -29755,7 +29811,7 @@
 	module.exports = Normalizer;
 
 /***/ },
-/* 71 */
+/* 72 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -29770,7 +29826,7 @@
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var List = __webpack_require__(30);
+	var List = __webpack_require__(31);
 
 	var Linear = function (_List) {
 		_inherits(Linear, _List);
@@ -30061,7 +30117,7 @@
 	module.exports = Linear;
 
 /***/ },
-/* 72 */
+/* 73 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -30207,7 +30263,7 @@
 	};
 
 /***/ },
-/* 73 */
+/* 74 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -30309,12 +30365,12 @@
 	module.exports = Reference;
 
 /***/ },
-/* 74 */
+/* 75 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var ComponentElement = __webpack_require__(13);
+	var ComponentElement = __webpack_require__(14);
 
 	__webpack_require__(2).module('vgraph').directive('vgraphCompare', ['$compile', function ($compile) {
 		return {
@@ -30377,13 +30433,13 @@
 	}]);
 
 /***/ },
-/* 75 */
+/* 76 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawDots = __webpack_require__(76),
-	    ComponentElement = __webpack_require__(13);
+	var DrawDots = __webpack_require__(77),
+	    ComponentElement = __webpack_require__(14);
 
 	__webpack_require__(2).module('vgraph').directive('vgraphDots', [function () {
 		return {
@@ -30421,7 +30477,7 @@
 	}]);
 
 /***/ },
-/* 76 */
+/* 77 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -30434,7 +30490,7 @@
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var DrawLinear = __webpack_require__(11);
+	var DrawLinear = __webpack_require__(12);
 
 	var Dots = function (_DrawLinear) {
 		_inherits(Dots, _DrawLinear);
@@ -30442,7 +30498,7 @@
 		function Dots(ref, radius) {
 			_classCallCheck(this, Dots);
 
-			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Dots).call(this, ref));
+			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Dots).call(this, [ref]));
 
 			_this.ref = ref;
 			_this.radius = radius;
@@ -30528,12 +30584,12 @@
 	module.exports = Dots;
 
 /***/ },
-/* 77 */
+/* 78 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var makeBlob = __webpack_require__(78);
+	var makeBlob = __webpack_require__(79);
 
 	__webpack_require__(2).module('vgraph').directive('vgraphExport', ['$q', function ($q) {
 		return {
@@ -30582,12 +30638,12 @@
 	}]);
 
 /***/ },
-/* 78 */
+/* 79 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var svgColorize = __webpack_require__(79);
+	var svgColorize = __webpack_require__(80);
 
 	function formatArray(arr) {
 		return arr.map(function (row) {
@@ -30639,7 +30695,7 @@
 	};
 
 /***/ },
-/* 79 */
+/* 80 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -30683,7 +30739,7 @@
 	module.exports = colorize;
 
 /***/ },
-/* 80 */
+/* 81 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -30769,13 +30825,13 @@
 	}]);
 
 /***/ },
-/* 81 */
+/* 82 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawHeatmap = __webpack_require__(82),
-	    ComponentElement = __webpack_require__(13);
+	var DrawHeatmap = __webpack_require__(83),
+	    ComponentElement = __webpack_require__(14);
 
 	__webpack_require__(2).module('vgraph').directive('vgraphHeatmap', ['$compile', function ($compile) {
 		return {
@@ -30862,7 +30918,7 @@
 	}]);
 
 /***/ },
-/* 82 */
+/* 83 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -30871,8 +30927,8 @@
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var DataBucketer = __webpack_require__(83),
-	    Classifier = __webpack_require__(12);
+	var DataBucketer = __webpack_require__(84),
+	    Classifier = __webpack_require__(13);
 
 	var Heatmap = function () {
 		function Heatmap(ref, area, templates, indexs, buckets) {
@@ -31113,7 +31169,7 @@
 	module.exports = Heatmap;
 
 /***/ },
-/* 83 */
+/* 84 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -31126,7 +31182,7 @@
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var Collection = __webpack_require__(45).Collection;
+	var Collection = __webpack_require__(46).Collection;
 
 	// TODO : use bmoor-data's hasher here, or better use HashedCollection
 
@@ -31211,7 +31267,7 @@
 	module.exports = Bucketer;
 
 /***/ },
-/* 84 */
+/* 85 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -31240,14 +31296,14 @@
 	}]);
 
 /***/ },
-/* 85 */
+/* 86 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	var d3 = __webpack_require__(1),
-	    DrawIcon = __webpack_require__(86),
-	    ComponentElement = __webpack_require__(13);
+	    DrawIcon = __webpack_require__(87),
+	    ComponentElement = __webpack_require__(14);
 
 	__webpack_require__(2).module('vgraph').directive('vgraphIcon', [function () {
 		return {
@@ -31337,7 +31393,7 @@
 	*/
 
 /***/ },
-/* 86 */
+/* 87 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -31352,7 +31408,7 @@
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var DrawBox = __webpack_require__(16);
+	var DrawBox = __webpack_require__(17);
 
 	var Icon = function (_DrawBox) {
 		_inherits(Icon, _DrawBox);
@@ -31395,7 +31451,7 @@
 	module.exports = Icon;
 
 /***/ },
-/* 87 */
+/* 88 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -31475,7 +31531,7 @@
 	}]);
 
 /***/ },
-/* 88 */
+/* 89 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -31567,7 +31623,7 @@
 	}]);
 
 /***/ },
-/* 89 */
+/* 90 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -31615,7 +31671,7 @@
 	}]);
 
 /***/ },
-/* 90 */
+/* 91 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -31716,14 +31772,14 @@
 	}]);
 
 /***/ },
-/* 91 */
+/* 92 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawLine = __webpack_require__(92),
-	    DrawFill = __webpack_require__(93),
-	    ComponentElement = __webpack_require__(13);
+	var DrawLine = __webpack_require__(93),
+	    DrawFill = __webpack_require__(94),
+	    ComponentElement = __webpack_require__(14);
 
 	__webpack_require__(2).module('vgraph').directive('vgraphLine', [function () {
 		return {
@@ -31794,7 +31850,7 @@
 	}]);
 
 /***/ },
-/* 92 */
+/* 93 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -31807,7 +31863,7 @@
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var DrawLinear = __webpack_require__(11),
+	var DrawLinear = __webpack_require__(12),
 	    isNumeric = DrawLinear.isNumeric;
 
 	function smoothLine(set, start) {
@@ -31837,7 +31893,7 @@
 		function Line(ref) {
 			_classCallCheck(this, Line);
 
-			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Line).call(this, ref));
+			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Line).call(this, [ref]));
 
 			_this.ref = ref;
 			return _this;
@@ -31945,7 +32001,7 @@
 	module.exports = Line;
 
 /***/ },
-/* 93 */
+/* 94 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -31958,7 +32014,7 @@
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var DrawLinear = __webpack_require__(11),
+	var DrawLinear = __webpack_require__(12),
 	    isNumeric = DrawLinear.isNumeric;
 
 	var Fill = function (_DrawLinear) {
@@ -31967,7 +32023,7 @@
 		function Fill(top, bottom) {
 			_classCallCheck(this, Fill);
 
-			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Fill).call(this, top, bottom));
+			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Fill).call(this, [top, bottom]));
 
 			_this.top = top;
 
@@ -32074,7 +32130,7 @@
 	module.exports = Fill;
 
 /***/ },
-/* 94 */
+/* 95 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -32186,7 +32242,7 @@
 	}]);
 
 /***/ },
-/* 95 */
+/* 96 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -32239,12 +32295,12 @@
 	}]);
 
 /***/ },
-/* 96 */
+/* 97 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var ComponentPage = __webpack_require__(97);
+	var ComponentPage = __webpack_require__(98);
 
 	__webpack_require__(2).module('vgraph').directive('vgraphPage', [function () {
 		return {
@@ -32265,7 +32321,7 @@
 	}]);
 
 /***/ },
-/* 97 */
+/* 98 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -32276,10 +32332,10 @@
 
 	var uid = 1,
 	    angular = __webpack_require__(2),
-	    DataFeed = __webpack_require__(98),
-	    DataLoader = __webpack_require__(99),
-	    DataManager = __webpack_require__(100),
-	    ComponentZoom = __webpack_require__(101);
+	    DataFeed = __webpack_require__(99),
+	    DataLoader = __webpack_require__(100),
+	    DataManager = __webpack_require__(101),
+	    ComponentZoom = __webpack_require__(102);
 
 	var Page = function () {
 		function Page() {
@@ -32486,7 +32542,7 @@
 	module.exports = Page;
 
 /***/ },
-/* 98 */
+/* 99 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -32630,12 +32686,12 @@
 		return Feed;
 	}();
 
-	__webpack_require__(24)(Feed.prototype);
+	__webpack_require__(25)(Feed.prototype);
 
 	module.exports = Feed;
 
 /***/ },
-/* 99 */
+/* 100 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -32835,7 +32891,7 @@
 	module.exports = Loader;
 
 /***/ },
-/* 100 */
+/* 101 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -32845,8 +32901,8 @@
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var uid = 1,
-	    Linear = __webpack_require__(71),
-	    calculationsCompile = __webpack_require__(72).compile;
+	    Linear = __webpack_require__(72),
+	    calculationsCompile = __webpack_require__(73).compile;
 
 	function regulator(min, max, func, context) {
 		var args, nextTime, limitTime;
@@ -33011,12 +33067,12 @@
 		return Manager;
 	}();
 
-	__webpack_require__(24)(Manager.prototype);
+	__webpack_require__(25)(Manager.prototype);
 
 	module.exports = Manager;
 
 /***/ },
-/* 101 */
+/* 102 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33025,7 +33081,7 @@
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var makeEventing = __webpack_require__(24);
+	var makeEventing = __webpack_require__(25);
 
 	var Zoom = function () {
 		function Zoom() {
@@ -33075,13 +33131,13 @@
 	module.exports = Zoom;
 
 /***/ },
-/* 102 */
+/* 103 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawPie = __webpack_require__(103),
-	    ComponentElement = __webpack_require__(13);
+	var DrawPie = __webpack_require__(104),
+	    ComponentElement = __webpack_require__(14);
 
 	__webpack_require__(2).module('vgraph').directive('vgraphPie', [function () {
 		return {
@@ -33130,7 +33186,7 @@
 	}]);
 
 /***/ },
-/* 103 */
+/* 104 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -33399,7 +33455,7 @@
 	module.exports = Pie;
 
 /***/ },
-/* 104 */
+/* 105 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33431,12 +33487,12 @@
 	}]);
 
 /***/ },
-/* 105 */
+/* 106 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var StatCalculations = __webpack_require__(14);
+	var StatCalculations = __webpack_require__(15);
 
 	__webpack_require__(2).module('vgraph').directive('vgraphStack', [function () {
 		return {
@@ -33500,7 +33556,7 @@
 	}]);
 
 /***/ },
-/* 106 */
+/* 107 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33542,13 +33598,13 @@
 	}]);
 
 /***/ },
-/* 107 */
+/* 108 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawSpiral = __webpack_require__(108),
-	    ComponentElement = __webpack_require__(13);
+	var DrawSpiral = __webpack_require__(109),
+	    ComponentElement = __webpack_require__(14);
 
 	__webpack_require__(2).module('vgraph').directive('vgraphSpiral', [function () {
 		return {
@@ -33592,7 +33648,7 @@
 	}]);
 
 /***/ },
-/* 108 */
+/* 109 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33607,9 +33663,9 @@
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var DrawLine = __webpack_require__(92),
-	    Classifier = __webpack_require__(12),
-	    DataBucketer = __webpack_require__(83);
+	var DrawLine = __webpack_require__(93),
+	    Classifier = __webpack_require__(13),
+	    DataBucketer = __webpack_require__(84);
 
 	function getCoords(centerX, centerY, radius, angleInDegrees) {
 		var angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
@@ -33801,7 +33857,7 @@
 	module.exports = Spiral;
 
 /***/ },
-/* 109 */
+/* 110 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33882,7 +33938,7 @@
 	}]);
 
 /***/ },
-/* 110 */
+/* 111 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -34013,7 +34069,7 @@
 	}]);
 
 /***/ },
-/* 111 */
+/* 112 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -34188,40 +34244,40 @@
 	}]);
 
 /***/ },
-/* 112 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	module.exports = {
-		Box: __webpack_require__(25),
-		Chart: __webpack_require__(20),
-		Element: __webpack_require__(13),
-		Page: __webpack_require__(97),
-		Pane: __webpack_require__(29),
-		View: __webpack_require__(28),
-		Zoom: __webpack_require__(101)
-	};
-
-/***/ },
 /* 113 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = {
-		Bucketer: __webpack_require__(83),
-		Feed: __webpack_require__(98),
-		Hasher: __webpack_require__(114),
-		List: __webpack_require__(30),
-		Linear: __webpack_require__(71),
-		Loader: __webpack_require__(99),
-		Manager: __webpack_require__(100),
-		Normalizer: __webpack_require__(70)
+		Box: __webpack_require__(26),
+		Chart: __webpack_require__(21),
+		Element: __webpack_require__(14),
+		Page: __webpack_require__(98),
+		Pane: __webpack_require__(30),
+		View: __webpack_require__(29),
+		Zoom: __webpack_require__(102)
 	};
 
 /***/ },
 /* 114 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	module.exports = {
+		Bucketer: __webpack_require__(84),
+		Feed: __webpack_require__(99),
+		Hasher: __webpack_require__(115),
+		List: __webpack_require__(31),
+		Linear: __webpack_require__(72),
+		Loader: __webpack_require__(100),
+		Manager: __webpack_require__(101),
+		Normalizer: __webpack_require__(71)
+	};
+
+/***/ },
+/* 115 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -34255,38 +34311,38 @@
 	};
 
 /***/ },
-/* 115 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	module.exports = {
-		Bar: __webpack_require__(10),
-		Box: __webpack_require__(16),
-		Candlestick: __webpack_require__(18),
-		Dots: __webpack_require__(76),
-		Fill: __webpack_require__(93),
-		Heatmap: __webpack_require__(82),
-		Icon: __webpack_require__(86),
-		Line: __webpack_require__(92),
-		Linear: __webpack_require__(11),
-		Pie: __webpack_require__(103),
-		Spiral: __webpack_require__(108)
-	};
-
-/***/ },
 /* 116 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = {
-		DomHelper: __webpack_require__(23),
-		Eventing: __webpack_require__(24),
-		Hitbox: __webpack_require__(21),
-		makeBlob: __webpack_require__(78),
-		Scheduler: __webpack_require__(22),
-		svgColorize: __webpack_require__(79)
+		Bar: __webpack_require__(10),
+		Box: __webpack_require__(17),
+		Candlestick: __webpack_require__(19),
+		Dots: __webpack_require__(77),
+		Fill: __webpack_require__(94),
+		Heatmap: __webpack_require__(83),
+		Icon: __webpack_require__(87),
+		Line: __webpack_require__(93),
+		Linear: __webpack_require__(12),
+		Pie: __webpack_require__(104),
+		Spiral: __webpack_require__(109)
+	};
+
+/***/ },
+/* 117 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	module.exports = {
+		DomHelper: __webpack_require__(24),
+		Eventing: __webpack_require__(25),
+		Hitbox: __webpack_require__(22),
+		makeBlob: __webpack_require__(79),
+		Scheduler: __webpack_require__(23),
+		svgColorize: __webpack_require__(80)
 	};
 
 /***/ }

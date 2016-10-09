@@ -3,7 +3,7 @@ var DrawLinear = require('./Linear.js'),
 		
 class Fill extends DrawLinear{
 	constructor( top, bottom ){
-		super( top, bottom );
+		super( [top,bottom] );
 
 		this.top = top;
 

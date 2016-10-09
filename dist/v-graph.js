@@ -58,12 +58,12 @@ var vGraph =
 	__webpack_require__(2);
 
 	module.exports = {
-		calculations: __webpack_require__(33),
-		component: __webpack_require__(73),
-		data: __webpack_require__(74),
-		draw: __webpack_require__(76),
-		lib: __webpack_require__(77),
-		stats: __webpack_require__(13)
+		calculations: __webpack_require__(34),
+		component: __webpack_require__(74),
+		data: __webpack_require__(75),
+		draw: __webpack_require__(77),
+		lib: __webpack_require__(78),
+		stats: __webpack_require__(14)
 	};
 
 /***/ },
@@ -77,32 +77,32 @@ var vGraph =
 
 	__webpack_require__(6);
 	__webpack_require__(8);
-	__webpack_require__(14);
-	__webpack_require__(16);
-	__webpack_require__(18);
-	__webpack_require__(35);
+	__webpack_require__(15);
+	__webpack_require__(17);
+	__webpack_require__(19);
 	__webpack_require__(36);
-	__webpack_require__(38);
-	__webpack_require__(41);
+	__webpack_require__(37);
+	__webpack_require__(39);
 	__webpack_require__(42);
-	__webpack_require__(45);
+	__webpack_require__(43);
 	__webpack_require__(46);
-	__webpack_require__(48);
+	__webpack_require__(47);
 	__webpack_require__(49);
 	__webpack_require__(50);
 	__webpack_require__(51);
 	__webpack_require__(52);
-	__webpack_require__(55);
+	__webpack_require__(53);
 	__webpack_require__(56);
 	__webpack_require__(57);
-	__webpack_require__(63);
-	__webpack_require__(65);
+	__webpack_require__(58);
+	__webpack_require__(64);
 	__webpack_require__(66);
 	__webpack_require__(67);
 	__webpack_require__(68);
-	__webpack_require__(70);
+	__webpack_require__(69);
 	__webpack_require__(71);
 	__webpack_require__(72);
+	__webpack_require__(73);
 
 /***/ },
 /* 3 */
@@ -699,7 +699,7 @@ var vGraph =
 	'use strict';
 
 	var DrawBar = __webpack_require__(9),
-	    ComponentElement = __webpack_require__(12);
+	    ComponentElement = __webpack_require__(13);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphBar', [function () {
 		return {
@@ -751,16 +751,160 @@ var vGraph =
 
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+	var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var DrawLinear = __webpack_require__(10),
+	var DrawZone = __webpack_require__(10),
+	    DrawLinear = __webpack_require__(11),
 	    isNumeric = DrawLinear.isNumeric;
 
-	// y1 > y2, x1 < x2
+	function applyWidth(dataSet, width) {
+		dataSet.x1 = dataSet.center - width;
+		dataSet.x2 = dataSet.center + width;
+	}
+
+	function calcPadding(dataSet, padding) {
+		var lOffset = dataSet.center - dataSet.x1,
+		    rOffset = dataSet.x2 - dataSet.center;
+
+		if (lOffset < rOffset) {
+			// right needs to be adjusted
+			dataSet.x2 = dataSet.center + lOffset - padding;
+			dataSet.x1 += padding;
+		} else {
+			// left needs to be adjusted
+			dataSet.x1 = dataSet.center - rOffset + padding;
+			dataSet.x2 -= padding;
+		}
+	}
+
+	function validateDataset(dataSet, settings) {
+		var width;
+
+		if (settings.width) {
+			applyWidth(dataSet, settings.width / 2);
+		} else {
+			if (settings.padding) {
+				calcPadding(dataSet, settings.padding);
+			}
+
+			width = dataSet.x2 - dataSet.x1;
+
+			if (settings.maxWidth && width > settings.maxWidth) {
+				applyWidth(dataSet, settings.maxWidth / 2);
+			} else if (settings.minWidth && width < settings.minWidth) {
+				applyWidth(dataSet, settings.minWidth / 2);
+			} else if (width < 1) {
+				applyWidth(dataSet, 0.5);
+			}
+		}
+	}
+
+	function closeDataset(dataSet, top, bottom, settings) {
+		dataSet.y1 = top.y.scale(dataSet.y1 === '+' ? top.viewport.maxValue : dataSet.y1);
+		dataSet.y2 = bottom.y.scale(dataSet.y2 === '-' ? settings.zeroed && bottom.viewport.minValue < 0 ? 0 : bottom.viewport.minValue : dataSet.y2);
+
+		validateDataset(dataSet, settings);
+	}
+
+	var Bar = function (_DrawZone) {
+		_inherits(Bar, _DrawZone);
+
+		function Bar(top, bottom, settings) {
+			_classCallCheck(this, Bar);
+
+			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Bar).call(this, [top, bottom], settings));
+
+			_this.top = top;
+
+			if (bottom) {
+				_this.bottom = bottom;
+			} else {
+				_this.bottom = top;
+			}
+			return _this;
+		}
+
+		_createClass(Bar, [{
+			key: 'getPoint',
+			value: function getPoint(index) {
+				var y1,
+				    y2,
+				    t,
+				    top = this.top.$ops,
+				    node = top.$getNode(index),
+				    bottom = this.bottom.$ops;
+
+				y1 = top.getValue(node);
+
+				if (this.bottom !== this.top) {
+					y2 = bottom.$getValue(index);
+				} else {
+					y2 = '-';
+				}
+
+				if (isNumeric(y1) && isNumeric(y2) && y1 !== y2) {
+					t = {
+						classified: this.classifier ? this.classifier.parse(node, top.getStats()) : null,
+						x: node.$x,
+						y1: y1,
+						y2: y2
+					};
+				}
+
+				return t;
+			}
+		}, {
+			key: 'firstSet',
+			value: function firstSet(dataSet, box) {
+				dataSet.center = (dataSet.x1 + dataSet.x2) / 2;
+				dataSet.x1 = box.inner.left;
+			}
+		}, {
+			key: 'closeSet',
+			value: function closeSet(dataSet, prev) {
+				dataSet.center = (dataSet.x1 + dataSet.x2) / 2;
+				prev.x2 = dataSet.x1 = (prev.x2 + dataSet.x1) / 2;
+
+				closeDataset(prev, this.top.$ops.$view, this.bottom.$ops.$view, this.settings);
+				_get(Object.getPrototypeOf(Bar.prototype), 'closeSet', this).call(this, prev);
+			}
+		}, {
+			key: 'lastSet',
+			value: function lastSet(dataSet, prev, box) {
+				this.closeSet(dataSet, prev);
+
+				dataSet.x2 = box.inner.right;
+				closeDataset(dataSet, this.top.$ops.$view, this.bottom.$ops.$view, this.settings);
+			}
+		}]);
+
+		return Bar;
+	}(DrawZone);
+
+	module.exports = Bar;
+
+/***/ },
+/* 10 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	var DrawLinear = __webpack_require__(11);
+
 	function calcBar(x1, x2, y1, y2, box) {
 		var t;
 
@@ -802,81 +946,19 @@ var vGraph =
 		return box;
 	}
 
-	function applyWidth(dataSet, width) {
-		dataSet.x1 = dataSet.center - width;
-		dataSet.x2 = dataSet.center + width;
-	}
+	var DrawZone = function (_DrawLinear) {
+		_inherits(DrawZone, _DrawLinear);
 
-	function calcPadding(dataSet, padding) {
-		var lOffset = dataSet.center - dataSet.x1,
-		    rOffset = dataSet.x2 - dataSet.center;
+		function DrawZone(refs, settings) {
+			_classCallCheck(this, DrawZone);
 
-		if (lOffset < rOffset) {
-			// right needs to be adjusted
-			dataSet.x2 = dataSet.center + lOffset - padding;
-			dataSet.x1 += padding;
-		} else {
-			// left needs to be adjusted
-			dataSet.x1 = dataSet.center - rOffset + padding;
-			dataSet.x2 -= padding;
-		}
-	}
+			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(DrawZone).call(this, refs));
 
-	function validateDataset(dataSet, settings) {
-		var width;
-
-		if (dataSet.y1 > dataSet.y2) {
-			width = dataSet.y1;
-			dataSet.y1 = dataSet.y2;
-			dataSet.y2 = width;
-		}
-
-		if (settings.width) {
-			applyWidth(dataSet, settings.width / 2);
-		} else {
-			if (settings.padding) {
-				calcPadding(dataSet, settings.padding);
-			}
-
-			width = dataSet.x2 - dataSet.x1;
-
-			if (settings.maxWidth && width > settings.maxWidth) {
-				applyWidth(dataSet, settings.maxWidth / 2);
-			} else if (settings.minWidth && width < settings.minWidth) {
-				applyWidth(dataSet, settings.minWidth / 2);
-			} else if (width < 1) {
-				applyWidth(dataSet, 0.5);
-			}
-		}
-	}
-
-	function closeDataset(dataSet, top, bottom, settings) {
-		dataSet.y1 = top.y.scale(dataSet.y1 === '+' ? top.viewport.maxValue : dataSet.y1);
-		dataSet.y2 = bottom.y.scale(dataSet.y2 === '-' ? settings.zeroed && bottom.viewport.minValue < 0 ? 0 : bottom.viewport.minValue : dataSet.y2);
-
-		validateDataset(dataSet, settings);
-	}
-
-	var Bar = function (_DrawLinear) {
-		_inherits(Bar, _DrawLinear);
-
-		function Bar(top, bottom, settings) {
-			_classCallCheck(this, Bar);
-
-			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Bar).call(this, top, bottom));
-
-			_this.top = top;
 			_this.settings = settings || {};
-
-			if (bottom) {
-				_this.bottom = bottom;
-			} else {
-				_this.bottom = top;
-			}
 			return _this;
 		}
 
-		_createClass(Bar, [{
+		_createClass(DrawZone, [{
 			key: 'makeSet',
 			value: function makeSet() {
 				return {};
@@ -887,76 +969,36 @@ var vGraph =
 				return box.x1 !== undefined;
 			}
 		}, {
-			key: 'getPoint',
-			value: function getPoint(index) {
-				var y1,
-				    y2,
-				    t,
-				    top = this.top.$ops,
-				    node = top.$getNode(index),
-				    bottom = this.bottom.$ops;
-
-				y1 = top.getValue(node);
-
-				if (this.bottom !== this.top) {
-					y2 = bottom.$getValue(index);
-				} else {
-					y2 = '-';
-				}
-
-				if (isNumeric(y1) && isNumeric(y2) && y1 !== y2) {
-					t = {
-						classified: this.classifier ? this.classifier.parse(node, top.getStats()) : null,
-						x: node.$x,
-						y1: y1,
-						y2: y2
-					};
-				}
-
-				return t;
-			}
-		}, {
 			key: 'mergePoint',
-			value: function mergePoint(parsed, set) {
+			value: function mergePoint(parsed, dataSet) {
 				var x = parsed.x,
 				    y1 = parsed.y1,
 				    y2 = parsed.y2;
 
 				if (y1 !== null && y2 !== null) {
 					if (y1 === undefined) {
-						y1 = set.y1;
+						y1 = dataSet.y1;
 					}
 
 					if (y2 === undefined) {
-						y2 = set.y2;
+						y2 = dataSet.y2;
 					}
 
-					calcBar(x, x, y1, y2, set);
+					calcBar(x, x, y1, y2, dataSet);
 				}
 
 				return 0;
 			}
 		}, {
-			key: 'firstSet',
-			value: function firstSet(dataSet, box) {
-				dataSet.center = (dataSet.x1 + dataSet.x2) / 2;
-				dataSet.x1 = box.inner.left;
-			}
-		}, {
 			key: 'closeSet',
-			value: function closeSet(dataSet, prev) {
-				dataSet.center = (dataSet.x1 + dataSet.x2) / 2;
-				prev.x2 = dataSet.x1 = (prev.x2 + dataSet.x1) / 2;
+			value: function closeSet(dataSet) {
+				var flip;
 
-				closeDataset(prev, this.top.$ops.$view, this.bottom.$ops.$view, this.settings);
-			}
-		}, {
-			key: 'lastSet',
-			value: function lastSet(dataSet, prev, box) {
-				this.closeSet(dataSet, prev);
-
-				dataSet.x2 = box.inner.right;
-				closeDataset(dataSet, this.top.$ops.$view, this.bottom.$ops.$view, this.settings);
+				if (dataSet.y1 > dataSet.y2) {
+					flip = dataSet.y1;
+					dataSet.y1 = dataSet.y2;
+					dataSet.y2 = flip;
+				}
 			}
 		}, {
 			key: 'makePath',
@@ -985,13 +1027,13 @@ var vGraph =
 			}
 		}]);
 
-		return Bar;
+		return DrawZone;
 	}(DrawLinear);
 
-	module.exports = Bar;
+	module.exports = DrawZone;
 
 /***/ },
-/* 10 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1000,7 +1042,7 @@ var vGraph =
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var Classifier = __webpack_require__(11);
+	var Classifier = __webpack_require__(12);
 
 	var Linear = function () {
 		_createClass(Linear, null, [{
@@ -1012,7 +1054,7 @@ var vGraph =
 			}
 		}]);
 
-		function Linear() {
+		function Linear(refs) {
 			_classCallCheck(this, Linear);
 
 			var i,
@@ -1020,8 +1062,8 @@ var vGraph =
 			    ref,
 			    t = [];
 
-			for (i = 0, c = arguments.length; i < c; i++) {
-				ref = arguments[i];
+			for (i = 0, c = refs.length; i < c; i++) {
+				ref = refs[i];
 				if (ref) {
 					t.push(ref);
 
@@ -1189,7 +1231,7 @@ var vGraph =
 	module.exports = Linear;
 
 /***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -1304,7 +1346,7 @@ var vGraph =
 	module.exports = Classifier;
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1313,7 +1355,7 @@ var vGraph =
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var StatCalculations = __webpack_require__(13);
+	var StatCalculations = __webpack_require__(14);
 
 	function appendChildren(self, dataSets, children) {
 		var i,
@@ -1433,7 +1475,7 @@ var vGraph =
 
 					if (drawer.lastSet) {
 						drawer.lastSet(dataSets[c], prev, box);
-					} else if (c) {
+					} else if (c > 0) {
 						drawer.closeSet(dataSets[c], prev);
 					}
 				}
@@ -1480,7 +1522,7 @@ var vGraph =
 	module.exports = Element;
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -1623,13 +1665,13 @@ var vGraph =
 	};
 
 /***/ },
-/* 14 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawBox = __webpack_require__(15),
-	    ComponentElement = __webpack_require__(12);
+	var DrawBox = __webpack_require__(16),
+	    ComponentElement = __webpack_require__(13);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphBox', [function () {
 		return {
@@ -1671,7 +1713,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 15 */
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1686,15 +1728,18 @@ var vGraph =
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var DrawBar = __webpack_require__(9);
+	var DrawZone = __webpack_require__(10);
 
-	var Box = function (_DrawBar) {
-		_inherits(Box, _DrawBar);
+	var Box = function (_DrawZone) {
+		_inherits(Box, _DrawZone);
 
 		function Box(ref, settings) {
 			_classCallCheck(this, Box);
 
-			return _possibleConstructorReturn(this, Object.getPrototypeOf(Box).call(this, ref, ref, settings));
+			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Box).call(this, [ref], settings));
+
+			_this.ref = ref;
+			return _this;
 		}
 
 		_createClass(Box, [{
@@ -1702,11 +1747,12 @@ var vGraph =
 			value: function getPoint(index) {
 				var t,
 				    value,
-				    node = this.top.$ops.$getNode(index);
+				    ops = this.ref.$ops,
+				    node = ops.$getNode(index);
 
-				if (this.top.isValid(node)) {
-					if (this.top.$ops.getValue) {
-						value = this.top.$ops.getValue(node);
+				if (this.ref.isValid(node)) {
+					if (ops.getValue) {
+						value = ops.getValue(node);
 						t = {
 							x: node.$x,
 							y1: value,
@@ -1737,21 +1783,31 @@ var vGraph =
 					return 0;
 				}
 			}
+		}, {
+			key: 'closeSet',
+			value: function closeSet(dataSet) {
+				var view = this.ref.$ops.$view;
+
+				dataSet.y1 = view.y.scale(dataSet.y1 === '+' ? view.viewport.maxValue : dataSet.y1);
+				dataSet.y2 = view.y.scale(dataSet.y2 === '-' ? view.viewport.minValue : dataSet.y2);
+
+				_get(Object.getPrototypeOf(Box.prototype), 'closeSet', this).call(this, dataSet);
+			}
 		}]);
 
 		return Box;
-	}(DrawBar);
+	}(DrawZone);
 
 	module.exports = Box;
 
 /***/ },
-/* 16 */
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawCandlestick = __webpack_require__(17),
-	    ComponentElement = __webpack_require__(12);
+	var DrawCandlestick = __webpack_require__(18),
+	    ComponentElement = __webpack_require__(13);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphCandlestick', [function () {
 		return {
@@ -1789,7 +1845,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 17 */
+/* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1802,7 +1858,7 @@ var vGraph =
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var DrawLinear = __webpack_require__(10);
+	var DrawLinear = __webpack_require__(11);
 
 	// If someone is hell bent on performance, you can override DrawLine so that a lot of this flexibility
 	// is removed
@@ -1813,7 +1869,7 @@ var vGraph =
 		function Candlestick(ref) {
 			_classCallCheck(this, Candlestick);
 
-			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Candlestick).call(this, ref));
+			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Candlestick).call(this, [ref]));
 
 			_this.ref = ref;
 
@@ -1954,13 +2010,13 @@ var vGraph =
 	module.exports = Candlestick;
 
 /***/ },
-/* 18 */
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	var d3 = __webpack_require__(7),
-	    ComponentChart = __webpack_require__(19);
+	    ComponentChart = __webpack_require__(20);
 
 	// TODO : add this back to bmoor
 	function throttle(fn, time) {
@@ -2065,7 +2121,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 19 */
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -2107,13 +2163,13 @@ var vGraph =
 		manager: the manager to lock the view onto
 	**/
 	var angular = __webpack_require__(4),
-	    Hitbox = __webpack_require__(20),
-	    Scheduler = __webpack_require__(21),
-	    domHelper = __webpack_require__(22),
-	    makeEventing = __webpack_require__(23),
-	    ComponentBox = __webpack_require__(24),
-	    ComponentView = __webpack_require__(26),
-	    ComponentReference = __webpack_require__(34);
+	    Hitbox = __webpack_require__(21),
+	    Scheduler = __webpack_require__(22),
+	    domHelper = __webpack_require__(23),
+	    makeEventing = __webpack_require__(24),
+	    ComponentBox = __webpack_require__(25),
+	    ComponentView = __webpack_require__(27),
+	    ComponentReference = __webpack_require__(35);
 
 	var ids = 1,
 	    schedule = new Scheduler();
@@ -2798,7 +2854,7 @@ var vGraph =
 	module.exports = Chart;
 
 /***/ },
-/* 20 */
+/* 21 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -2970,7 +3026,7 @@ var vGraph =
 	module.exports = Hitbox;
 
 /***/ },
-/* 21 */
+/* 22 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -3125,7 +3181,7 @@ var vGraph =
 	module.exports = Scheduler;
 
 /***/ },
-/* 22 */
+/* 23 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -3191,7 +3247,7 @@ var vGraph =
 	};
 
 /***/ },
-/* 23 */
+/* 24 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -3249,7 +3305,7 @@ var vGraph =
 	};
 
 /***/ },
-/* 24 */
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -3258,8 +3314,8 @@ var vGraph =
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var makeEventing = __webpack_require__(23),
-	    jQuery = __webpack_require__(25);
+	var makeEventing = __webpack_require__(24),
+	    jQuery = __webpack_require__(26);
 
 	function merge(nVal, oVal) {
 		return nVal !== undefined ? parseInt(nVal) : oVal;
@@ -3406,13 +3462,13 @@ var vGraph =
 	module.exports = Box;
 
 /***/ },
-/* 25 */
+/* 26 */
 /***/ function(module, exports) {
 
 	module.exports = jQuery;
 
 /***/ },
-/* 26 */
+/* 27 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -3422,9 +3478,9 @@ var vGraph =
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var id = 1,
-	    ComponentPane = __webpack_require__(27),
-	    DataNormalizer = __webpack_require__(31),
-	    calculationsCompile = __webpack_require__(33).compile;
+	    ComponentPane = __webpack_require__(28),
+	    DataNormalizer = __webpack_require__(32),
+	    calculationsCompile = __webpack_require__(34).compile;
 
 	function parseSettings(settings, old) {
 		if (!old) {
@@ -3845,7 +3901,7 @@ var vGraph =
 	module.exports = View;
 
 /***/ },
-/* 27 */
+/* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -3854,7 +3910,7 @@ var vGraph =
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var DataList = __webpack_require__(28);
+	var DataList = __webpack_require__(29);
 
 	var Pane = function () {
 		function Pane(fitToPane, xObj, yObj) {
@@ -3976,7 +4032,7 @@ var vGraph =
 	module.exports = Pane;
 
 /***/ },
-/* 28 */
+/* 29 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -3989,8 +4045,8 @@ var vGraph =
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var _bisect = __webpack_require__(29).array.bisect,
-	    Collection = __webpack_require__(30).Collection,
+	var _bisect = __webpack_require__(30).array.bisect,
+	    Collection = __webpack_require__(31).Collection,
 	    cachedPush = Array.prototype.push,
 	    cachedSort = Array.prototype.sort;
 
@@ -4133,19 +4189,19 @@ var vGraph =
 	module.exports = List;
 
 /***/ },
-/* 29 */
+/* 30 */
 /***/ function(module, exports) {
 
 	module.exports = bmoor;
 
 /***/ },
-/* 30 */
+/* 31 */
 /***/ function(module, exports) {
 
 	module.exports = bmoorData;
 
 /***/ },
-/* 31 */
+/* 32 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -4159,7 +4215,7 @@ var vGraph =
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 	var uid = 1,
-	    Linear = __webpack_require__(32);
+	    Linear = __webpack_require__(33);
 
 	var Normalizer = function (_Linear) {
 		_inherits(Normalizer, _Linear);
@@ -4261,7 +4317,7 @@ var vGraph =
 	module.exports = Normalizer;
 
 /***/ },
-/* 32 */
+/* 33 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -4276,7 +4332,7 @@ var vGraph =
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var List = __webpack_require__(28);
+	var List = __webpack_require__(29);
 
 	var Linear = function (_List) {
 		_inherits(Linear, _List);
@@ -4567,7 +4623,7 @@ var vGraph =
 	module.exports = Linear;
 
 /***/ },
-/* 33 */
+/* 34 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -4713,7 +4769,7 @@ var vGraph =
 	};
 
 /***/ },
-/* 34 */
+/* 35 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -4815,12 +4871,12 @@ var vGraph =
 	module.exports = Reference;
 
 /***/ },
-/* 35 */
+/* 36 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var ComponentElement = __webpack_require__(12);
+	var ComponentElement = __webpack_require__(13);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphCompare', ['$compile', function ($compile) {
 		return {
@@ -4883,13 +4939,13 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 36 */
+/* 37 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawDots = __webpack_require__(37),
-	    ComponentElement = __webpack_require__(12);
+	var DrawDots = __webpack_require__(38),
+	    ComponentElement = __webpack_require__(13);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphDots', [function () {
 		return {
@@ -4927,7 +4983,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 37 */
+/* 38 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -4940,7 +4996,7 @@ var vGraph =
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var DrawLinear = __webpack_require__(10);
+	var DrawLinear = __webpack_require__(11);
 
 	var Dots = function (_DrawLinear) {
 		_inherits(Dots, _DrawLinear);
@@ -4948,7 +5004,7 @@ var vGraph =
 		function Dots(ref, radius) {
 			_classCallCheck(this, Dots);
 
-			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Dots).call(this, ref));
+			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Dots).call(this, [ref]));
 
 			_this.ref = ref;
 			_this.radius = radius;
@@ -5034,12 +5090,12 @@ var vGraph =
 	module.exports = Dots;
 
 /***/ },
-/* 38 */
+/* 39 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var makeBlob = __webpack_require__(39);
+	var makeBlob = __webpack_require__(40);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphExport', ['$q', function ($q) {
 		return {
@@ -5088,12 +5144,12 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 39 */
+/* 40 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var svgColorize = __webpack_require__(40);
+	var svgColorize = __webpack_require__(41);
 
 	function formatArray(arr) {
 		return arr.map(function (row) {
@@ -5145,7 +5201,7 @@ var vGraph =
 	};
 
 /***/ },
-/* 40 */
+/* 41 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -5189,7 +5245,7 @@ var vGraph =
 	module.exports = colorize;
 
 /***/ },
-/* 41 */
+/* 42 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -5275,13 +5331,13 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 42 */
+/* 43 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawHeatmap = __webpack_require__(43),
-	    ComponentElement = __webpack_require__(12);
+	var DrawHeatmap = __webpack_require__(44),
+	    ComponentElement = __webpack_require__(13);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphHeatmap', ['$compile', function ($compile) {
 		return {
@@ -5368,7 +5424,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 43 */
+/* 44 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -5377,8 +5433,8 @@ var vGraph =
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var DataBucketer = __webpack_require__(44),
-	    Classifier = __webpack_require__(11);
+	var DataBucketer = __webpack_require__(45),
+	    Classifier = __webpack_require__(12);
 
 	var Heatmap = function () {
 		function Heatmap(ref, area, templates, indexs, buckets) {
@@ -5619,7 +5675,7 @@ var vGraph =
 	module.exports = Heatmap;
 
 /***/ },
-/* 44 */
+/* 45 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -5632,7 +5688,7 @@ var vGraph =
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var Collection = __webpack_require__(30).Collection;
+	var Collection = __webpack_require__(31).Collection;
 
 	// TODO : use bmoor-data's hasher here, or better use HashedCollection
 
@@ -5717,7 +5773,7 @@ var vGraph =
 	module.exports = Bucketer;
 
 /***/ },
-/* 45 */
+/* 46 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -5746,14 +5802,14 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 46 */
+/* 47 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	var d3 = __webpack_require__(7),
-	    DrawIcon = __webpack_require__(47),
-	    ComponentElement = __webpack_require__(12);
+	    DrawIcon = __webpack_require__(48),
+	    ComponentElement = __webpack_require__(13);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphIcon', [function () {
 		return {
@@ -5843,7 +5899,7 @@ var vGraph =
 	*/
 
 /***/ },
-/* 47 */
+/* 48 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -5858,7 +5914,7 @@ var vGraph =
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var DrawBox = __webpack_require__(15);
+	var DrawBox = __webpack_require__(16);
 
 	var Icon = function (_DrawBox) {
 		_inherits(Icon, _DrawBox);
@@ -5901,7 +5957,7 @@ var vGraph =
 	module.exports = Icon;
 
 /***/ },
-/* 48 */
+/* 49 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -5981,7 +6037,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 49 */
+/* 50 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -6073,7 +6129,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 50 */
+/* 51 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -6121,7 +6177,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 51 */
+/* 52 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -6222,14 +6278,14 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 52 */
+/* 53 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawLine = __webpack_require__(53),
-	    DrawFill = __webpack_require__(54),
-	    ComponentElement = __webpack_require__(12);
+	var DrawLine = __webpack_require__(54),
+	    DrawFill = __webpack_require__(55),
+	    ComponentElement = __webpack_require__(13);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphLine', [function () {
 		return {
@@ -6300,7 +6356,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 53 */
+/* 54 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -6313,7 +6369,7 @@ var vGraph =
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var DrawLinear = __webpack_require__(10),
+	var DrawLinear = __webpack_require__(11),
 	    isNumeric = DrawLinear.isNumeric;
 
 	function smoothLine(set, start) {
@@ -6343,7 +6399,7 @@ var vGraph =
 		function Line(ref) {
 			_classCallCheck(this, Line);
 
-			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Line).call(this, ref));
+			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Line).call(this, [ref]));
 
 			_this.ref = ref;
 			return _this;
@@ -6451,7 +6507,7 @@ var vGraph =
 	module.exports = Line;
 
 /***/ },
-/* 54 */
+/* 55 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -6464,7 +6520,7 @@ var vGraph =
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var DrawLinear = __webpack_require__(10),
+	var DrawLinear = __webpack_require__(11),
 	    isNumeric = DrawLinear.isNumeric;
 
 	var Fill = function (_DrawLinear) {
@@ -6473,7 +6529,7 @@ var vGraph =
 		function Fill(top, bottom) {
 			_classCallCheck(this, Fill);
 
-			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Fill).call(this, top, bottom));
+			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Fill).call(this, [top, bottom]));
 
 			_this.top = top;
 
@@ -6580,7 +6636,7 @@ var vGraph =
 	module.exports = Fill;
 
 /***/ },
-/* 55 */
+/* 56 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -6692,7 +6748,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 56 */
+/* 57 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -6745,12 +6801,12 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 57 */
+/* 58 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var ComponentPage = __webpack_require__(58);
+	var ComponentPage = __webpack_require__(59);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphPage', [function () {
 		return {
@@ -6771,7 +6827,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 58 */
+/* 59 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -6782,10 +6838,10 @@ var vGraph =
 
 	var uid = 1,
 	    angular = __webpack_require__(4),
-	    DataFeed = __webpack_require__(59),
-	    DataLoader = __webpack_require__(60),
-	    DataManager = __webpack_require__(61),
-	    ComponentZoom = __webpack_require__(62);
+	    DataFeed = __webpack_require__(60),
+	    DataLoader = __webpack_require__(61),
+	    DataManager = __webpack_require__(62),
+	    ComponentZoom = __webpack_require__(63);
 
 	var Page = function () {
 		function Page() {
@@ -6992,7 +7048,7 @@ var vGraph =
 	module.exports = Page;
 
 /***/ },
-/* 59 */
+/* 60 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -7136,12 +7192,12 @@ var vGraph =
 		return Feed;
 	}();
 
-	__webpack_require__(23)(Feed.prototype);
+	__webpack_require__(24)(Feed.prototype);
 
 	module.exports = Feed;
 
 /***/ },
-/* 60 */
+/* 61 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -7341,7 +7397,7 @@ var vGraph =
 	module.exports = Loader;
 
 /***/ },
-/* 61 */
+/* 62 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -7351,8 +7407,8 @@ var vGraph =
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var uid = 1,
-	    Linear = __webpack_require__(32),
-	    calculationsCompile = __webpack_require__(33).compile;
+	    Linear = __webpack_require__(33),
+	    calculationsCompile = __webpack_require__(34).compile;
 
 	function regulator(min, max, func, context) {
 		var args, nextTime, limitTime;
@@ -7517,12 +7573,12 @@ var vGraph =
 		return Manager;
 	}();
 
-	__webpack_require__(23)(Manager.prototype);
+	__webpack_require__(24)(Manager.prototype);
 
 	module.exports = Manager;
 
 /***/ },
-/* 62 */
+/* 63 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -7531,7 +7587,7 @@ var vGraph =
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var makeEventing = __webpack_require__(23);
+	var makeEventing = __webpack_require__(24);
 
 	var Zoom = function () {
 		function Zoom() {
@@ -7581,13 +7637,13 @@ var vGraph =
 	module.exports = Zoom;
 
 /***/ },
-/* 63 */
+/* 64 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawPie = __webpack_require__(64),
-	    ComponentElement = __webpack_require__(12);
+	var DrawPie = __webpack_require__(65),
+	    ComponentElement = __webpack_require__(13);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphPie', [function () {
 		return {
@@ -7636,7 +7692,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 64 */
+/* 65 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -7905,7 +7961,7 @@ var vGraph =
 	module.exports = Pie;
 
 /***/ },
-/* 65 */
+/* 66 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -7937,12 +7993,12 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 66 */
+/* 67 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var StatCalculations = __webpack_require__(13);
+	var StatCalculations = __webpack_require__(14);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphStack', [function () {
 		return {
@@ -8006,7 +8062,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 67 */
+/* 68 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -8048,13 +8104,13 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 68 */
+/* 69 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawSpiral = __webpack_require__(69),
-	    ComponentElement = __webpack_require__(12);
+	var DrawSpiral = __webpack_require__(70),
+	    ComponentElement = __webpack_require__(13);
 
 	__webpack_require__(4).module('vgraph').directive('vgraphSpiral', [function () {
 		return {
@@ -8098,7 +8154,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 69 */
+/* 70 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -8113,9 +8169,9 @@ var vGraph =
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var DrawLine = __webpack_require__(53),
-	    Classifier = __webpack_require__(11),
-	    DataBucketer = __webpack_require__(44);
+	var DrawLine = __webpack_require__(54),
+	    Classifier = __webpack_require__(12),
+	    DataBucketer = __webpack_require__(45);
 
 	function getCoords(centerX, centerY, radius, angleInDegrees) {
 		var angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
@@ -8307,7 +8363,7 @@ var vGraph =
 	module.exports = Spiral;
 
 /***/ },
-/* 70 */
+/* 71 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -8388,7 +8444,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 71 */
+/* 72 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -8519,7 +8575,7 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 72 */
+/* 73 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -8694,40 +8750,40 @@ var vGraph =
 	}]);
 
 /***/ },
-/* 73 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	module.exports = {
-		Box: __webpack_require__(24),
-		Chart: __webpack_require__(19),
-		Element: __webpack_require__(12),
-		Page: __webpack_require__(58),
-		Pane: __webpack_require__(27),
-		View: __webpack_require__(26),
-		Zoom: __webpack_require__(62)
-	};
-
-/***/ },
 /* 74 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = {
-		Bucketer: __webpack_require__(44),
-		Feed: __webpack_require__(59),
-		Hasher: __webpack_require__(75),
-		List: __webpack_require__(28),
-		Linear: __webpack_require__(32),
-		Loader: __webpack_require__(60),
-		Manager: __webpack_require__(61),
-		Normalizer: __webpack_require__(31)
+		Box: __webpack_require__(25),
+		Chart: __webpack_require__(20),
+		Element: __webpack_require__(13),
+		Page: __webpack_require__(59),
+		Pane: __webpack_require__(28),
+		View: __webpack_require__(27),
+		Zoom: __webpack_require__(63)
 	};
 
 /***/ },
 /* 75 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	module.exports = {
+		Bucketer: __webpack_require__(45),
+		Feed: __webpack_require__(60),
+		Hasher: __webpack_require__(76),
+		List: __webpack_require__(29),
+		Linear: __webpack_require__(33),
+		Loader: __webpack_require__(61),
+		Manager: __webpack_require__(62),
+		Normalizer: __webpack_require__(32)
+	};
+
+/***/ },
+/* 76 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -8761,38 +8817,38 @@ var vGraph =
 	};
 
 /***/ },
-/* 76 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	module.exports = {
-		Bar: __webpack_require__(9),
-		Box: __webpack_require__(15),
-		Candlestick: __webpack_require__(17),
-		Dots: __webpack_require__(37),
-		Fill: __webpack_require__(54),
-		Heatmap: __webpack_require__(43),
-		Icon: __webpack_require__(47),
-		Line: __webpack_require__(53),
-		Linear: __webpack_require__(10),
-		Pie: __webpack_require__(64),
-		Spiral: __webpack_require__(69)
-	};
-
-/***/ },
 /* 77 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = {
-		DomHelper: __webpack_require__(22),
-		Eventing: __webpack_require__(23),
-		Hitbox: __webpack_require__(20),
-		makeBlob: __webpack_require__(39),
-		Scheduler: __webpack_require__(21),
-		svgColorize: __webpack_require__(40)
+		Bar: __webpack_require__(9),
+		Box: __webpack_require__(16),
+		Candlestick: __webpack_require__(18),
+		Dots: __webpack_require__(38),
+		Fill: __webpack_require__(55),
+		Heatmap: __webpack_require__(44),
+		Icon: __webpack_require__(48),
+		Line: __webpack_require__(54),
+		Linear: __webpack_require__(11),
+		Pie: __webpack_require__(65),
+		Spiral: __webpack_require__(70)
+	};
+
+/***/ },
+/* 78 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	module.exports = {
+		DomHelper: __webpack_require__(23),
+		Eventing: __webpack_require__(24),
+		Hitbox: __webpack_require__(21),
+		makeBlob: __webpack_require__(40),
+		Scheduler: __webpack_require__(22),
+		svgColorize: __webpack_require__(41)
 	};
 
 /***/ }

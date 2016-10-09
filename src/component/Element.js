@@ -114,7 +114,7 @@ class Element {
 
 			if ( drawer.lastSet ){
 				drawer.lastSet( dataSets[c], prev, box );
-			}else if ( c ){
+			}else if ( c > 0 ){
 				drawer.closeSet( dataSets[c], prev );
 			}
 		}

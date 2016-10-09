@@ -1,18 +1,21 @@
-var DrawBar = require('./Bar.js');
+var DrawZone = require('./Zone.js');
 
-class Box extends DrawBar {
+class Box extends DrawZone {
 	constructor( ref, settings ){
-		super( ref, ref, settings );
+		super( [ref], settings );
+
+		this.ref = ref;
 	}
 
 	getPoint( index ){
 		var t,
 			value,
-			node = this.top.$ops.$getNode(index);
+			ops = this.ref.$ops,
+			node = ops.$getNode(index);
 
-		if ( this.top.isValid(node) ){
-			if ( this.top.$ops.getValue ){
-				value = this.top.$ops.getValue(node);
+		if ( this.ref.isValid(node) ){
+			if ( ops.getValue ){
+				value = ops.getValue(node);
 				t = {
 					x: node.$x,
 					y1: value,
@@ -41,6 +44,19 @@ class Box extends DrawBar {
 		}else{
 			return 0;
 		}
+	}
+
+	closeSet( dataSet ){
+		var view = this.ref.$ops.$view;
+
+		dataSet.y1 = view.y.scale(
+			dataSet.y1 === '+' ? view.viewport.maxValue : dataSet.y1
+		);
+		dataSet.y2 = view.y.scale(
+			dataSet.y2 === '-' ? view.viewport.minValue : dataSet.y2
+		);
+
+		super.closeSet( dataSet );
 	}
 }
 

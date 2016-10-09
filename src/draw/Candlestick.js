@@ -4,7 +4,7 @@ var DrawLinear = require('./Linear.js');
 // is removed
 class Candlestick extends DrawLinear{
 	constructor( ref ){
-		super( ref );
+		super( [ref] );
 
 		this.ref = ref;
 

@@ -24,7 +24,7 @@ class Line extends DrawLinear{
 	// If someone is hell bent on performance, you can override DrawLine so that a lot of this flexibility
 	// is removed
 	constructor( ref ){
-		super( ref );
+		super( [ref] );
 
 		this.ref = ref;
 	}
