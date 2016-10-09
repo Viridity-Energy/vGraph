@@ -881,6 +881,7 @@ var vGraph =
 
 				dataSet.x2 = box.inner.right;
 				closeDataset(dataSet, this.top.$ops.$view, this.bottom.$ops.$view, this.settings);
+				_get(Object.getPrototypeOf(Bar.prototype), 'closeSet', this).call(this, dataSet);
 			}
 		}]);
 
@@ -3478,6 +3479,7 @@ var vGraph =
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var id = 1,
+	    angular = __webpack_require__(4),
 	    ComponentPane = __webpack_require__(28),
 	    DataNormalizer = __webpack_require__(32),
 	    calculationsCompile = __webpack_require__(34).compile;
@@ -3686,17 +3688,26 @@ var vGraph =
 			key: 'setViewportValues',
 			value: function setViewportValues(min, max) {
 				var step,
-				    box = this.box;
+				    box = this.box,
+				    spread = max - min;
 
 				if (this.y.padding) {
-					if (max === min) {
-						step = min * this.y.padding;
-					} else {
-						step = (max - min) * this.y.padding;
-					}
+					if (angular.isObject(this.y.padding)) {
+						if (this.y.padding.top) {
+							step = angular.isFunction(this.y.padding.top) ? this.y.padding.top(spread, min, max) : spread * this.y.padding.top;
+							max = max + step;
+						}
 
-					max = max + step;
-					min = min - step;
+						if (this.y.padding.bottom) {
+							step = angular.isFunction(this.y.padding.bottom) ? this.y.padding.bottom(spread, min, max) : spread * this.y.padding.bottom;
+							min = min - step;
+						}
+					} else {
+						step = angular.isFunction(this.y.padding) ? this.y.padding(spread, min, max) : spread ? spread * this.y.padding : min * this.y.padding;
+
+						max = max + step;
+						min = min - step;
+					}
 				}
 
 				this.viewport.minValue = min;

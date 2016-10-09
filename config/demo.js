@@ -493,7 +493,17 @@ angular.module( 'vgraph' ).controller( 'StackedCtrl',
 				scale: function(){ return d3.scale.linear(); }
 			},
 			y: {
-				scale: function(){ return d3.scale.linear(); }
+				scale: function(){ return d3.scale.linear(); },
+				padding: {
+					top: function( spread, min ){
+						return spread * 0.05;
+					},
+					bottom: function( spread, min ){
+						if ( min > 0 ){
+							return spread * 0.05;
+						}
+					}
+				}
 			}
 		};
 
