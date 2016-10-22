@@ -213,7 +213,9 @@ class Linear extends List{
 			field = '_$index';
 		}
 
-		return this.closest( value, function( datum ){ return datum[field]; } );
+		return this.closest( value, function( datum ){
+			return datum ? datum[field] : null;
+		});
 	}
 
 	$slice( startIndex, stopIndex ){

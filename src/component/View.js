@@ -231,13 +231,19 @@ class View {
 				if ( this.y.padding.max ){
 					step = angular.isFunction(this.y.padding.max) ? this.y.padding.max(spread,min,max) : 
 						spread * this.y.padding.max;
-					max = max + step;
-				}
 
+					if ( typeof(step) === 'number' ){
+						max = max + step;
+					}
+				}
+				
 				if ( this.y.padding.min ){
 					step = angular.isFunction(this.y.padding.min) ? this.y.padding.min(spread,min,max) : 
 						spread * this.y.padding.min;
-					min = min - step;
+
+					if ( typeof(step) === 'number' ){
+						min = min - step;
+					}
 				}
 			}else{
 				step = angular.isFunction(this.y.padding) ? this.y.padding(spread,min,max) : 
@@ -316,7 +322,7 @@ class View {
 		var min,
 			max;
 
-		if ( this.normalizer && this.normalizer.length ){
+		if ( this.normalizer ){
 			this.components.forEach(function( component ){
 				var t;
 
@@ -379,22 +385,27 @@ class View {
 	}
 
 	getPoint( pos ){
-		var point = Object.create( this.normalizer.$getClosest(pos,'$x') ),
+		var point,
+			p = this.normalizer.$getClosest(pos,'$x'),
 			references = this.references;
 		
-		Object.keys(references).forEach(function(key){
-			var ref = references[key];
+		if ( p ){
+			point = Object.create( p );
 
-			if ( ref.highlights ){
-				Object.keys(ref.highlights).forEach(function(k){
-					point[k] = ref.highlights[k]( point );
-				});
-			}
+			Object.keys(references).forEach(function(key){
+				var ref = references[key];
 
-			if ( ref.$ops.getValue ){
-				point[ ref.name ] = ref.$ops.getValue( point );
-			}
-		});
+				if ( ref.highlights ){
+					Object.keys(ref.highlights).forEach(function(k){
+						point[k] = ref.highlights[k]( point );
+					});
+				}
+
+				if ( ref.$ops.getValue ){
+					point[ ref.name ] = ref.$ops.getValue( point );
+				}
+			});
+		}
 		
 		return point;
 	}

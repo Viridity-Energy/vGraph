@@ -20,6 +20,13 @@ function calcPadding( dataSet, padding ){
 	}
 }
 
+function getMin( dataSet ){
+	var l = dataSet.center - dataSet.x1,
+		r = dataSet.x2 - dataSet.center;
+
+	return l < r ? l : r;
+}
+
 function validateDataset( dataSet, settings ){
 	var width;
 		
@@ -28,6 +35,9 @@ function validateDataset( dataSet, settings ){
 	}else{
 		if ( settings.padding ){
 			calcPadding( dataSet, settings.padding );
+		}else{
+			dataSet.x1 += 1;
+			dataSet.x2 -= 1;
 		}
 
 		width = dataSet.x2 - dataSet.x1;
@@ -38,6 +48,8 @@ function validateDataset( dataSet, settings ){
 			applyWidth( dataSet, settings.minWidth / 2 );
 		}else if ( width < 1 ){
 			applyWidth( dataSet, 0.5 );
+		}else{
+			applyWidth( dataSet, getMin( dataSet ) );
 		}
 	}
 }

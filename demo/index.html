@@ -242,7 +242,7 @@
 				ng-click="buckets = !buckets"/></label>
 			<label>Compare<input type='checkbox' ng-checked="compare" 
 				ng-click="compare = !compare"/></label>
-			<label>Multiple<input type='checkbox' ng-checked="multiple" 
+			<label>Multiple(with zoom)<input type='checkbox' ng-checked="multiple" 
 				ng-click="multiple = !multiple"/></label>
 			<label>Interval<input type='checkbox' ng-checked="intervals" 
 				ng-click="intervals = !intervals"/></label>
@@ -860,10 +860,10 @@
 			<div ng-controller="MultiAxisCtrl" class='grid-on'>
 				<div vgraph-page="page">
 					<div vgraph-chart="graph" name="primary">
-						<span vgraph-highlight="point">
+						<div vgraph-highlight="point">
 							({{point.firstView.$avgIndex}},{{point.firstView['y-1']}}) : 
 							({{point.secondView.$avgIndex}},{{point.secondView['y-2']}})
-						</span>
+						</div>
 						<svg>
 							<g vgraph-axis="'left'" view="firstView"
 								tick-length="4" tick-padding="-2"></g>

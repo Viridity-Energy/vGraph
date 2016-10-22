@@ -46,7 +46,7 @@ class Normalizer extends Linear {
 			grouper = this.$grouper;
 
 		this.$reset();
-
+		
 		collection.$sort();
 		for( i = 0, c = collection.length; i < c; i++ ){
 			datum = collection[i];

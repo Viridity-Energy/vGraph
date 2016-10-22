@@ -615,7 +615,7 @@ var vGraph =
 						    change,
 						    boundry = {};
 
-						if (!(data && data.length)) {
+						if (!data) {
 							$el.attr('visibility', 'hidden');
 							return;
 						}
@@ -783,6 +783,13 @@ var vGraph =
 		}
 	}
 
+	function getMin(dataSet) {
+		var l = dataSet.center - dataSet.x1,
+		    r = dataSet.x2 - dataSet.center;
+
+		return l < r ? l : r;
+	}
+
 	function validateDataset(dataSet, settings) {
 		var width;
 
@@ -791,6 +798,9 @@ var vGraph =
 		} else {
 			if (settings.padding) {
 				calcPadding(dataSet, settings.padding);
+			} else {
+				dataSet.x1 += 1;
+				dataSet.x2 -= 1;
 			}
 
 			width = dataSet.x2 - dataSet.x1;
@@ -801,6 +811,8 @@ var vGraph =
 				applyWidth(dataSet, settings.minWidth / 2);
 			} else if (width < 1) {
 				applyWidth(dataSet, 0.5);
+			} else {
+				applyWidth(dataSet, getMin(dataSet));
 			}
 		}
 	}
@@ -2703,13 +2715,15 @@ var vGraph =
 					}
 				});
 
-				points.$pos = sum / count;
-				points.pos = pos;
+				if (count) {
+					points.$pos = sum / count;
+					points.pos = pos;
 
-				this.$trigger('focus-point', points);
-				this.$trigger('highlight', points);
+					this.$trigger('focus-point', points);
+					this.$trigger('highlight', points);
 
-				this.highlightElements(pos.x, pos.y);
+					this.highlightElements(pos.x, pos.y);
+				}
 			}
 		}, {
 			key: 'highlightOff',
@@ -3695,12 +3709,18 @@ var vGraph =
 					if (angular.isObject(this.y.padding)) {
 						if (this.y.padding.max) {
 							step = angular.isFunction(this.y.padding.max) ? this.y.padding.max(spread, min, max) : spread * this.y.padding.max;
-							max = max + step;
+
+							if (typeof step === 'number') {
+								max = max + step;
+							}
 						}
 
 						if (this.y.padding.min) {
 							step = angular.isFunction(this.y.padding.min) ? this.y.padding.min(spread, min, max) : spread * this.y.padding.min;
-							min = min - step;
+
+							if (typeof step === 'number') {
+								min = min - step;
+							}
 						}
 					} else {
 						step = angular.isFunction(this.y.padding) ? this.y.padding(spread, min, max) : spread ? spread * this.y.padding : min * this.y.padding;
@@ -3765,7 +3785,7 @@ var vGraph =
 			value: function parse() {
 				var min, max;
 
-				if (this.normalizer && this.normalizer.length) {
+				if (this.normalizer) {
 					this.components.forEach(function (component) {
 						var t;
 
@@ -3827,22 +3847,27 @@ var vGraph =
 		}, {
 			key: 'getPoint',
 			value: function getPoint(pos) {
-				var point = Object.create(this.normalizer.$getClosest(pos, '$x')),
+				var point,
+				    p = this.normalizer.$getClosest(pos, '$x'),
 				    references = this.references;
 
-				Object.keys(references).forEach(function (key) {
-					var ref = references[key];
+				if (p) {
+					point = Object.create(p);
 
-					if (ref.highlights) {
-						Object.keys(ref.highlights).forEach(function (k) {
-							point[k] = ref.highlights[k](point);
-						});
-					}
+					Object.keys(references).forEach(function (key) {
+						var ref = references[key];
 
-					if (ref.$ops.getValue) {
-						point[ref.name] = ref.$ops.getValue(point);
-					}
-				});
+						if (ref.highlights) {
+							Object.keys(ref.highlights).forEach(function (k) {
+								point[k] = ref.highlights[k](point);
+							});
+						}
+
+						if (ref.$ops.getValue) {
+							point[ref.name] = ref.$ops.getValue(point);
+						}
+					});
+				}
 
 				return point;
 			}
@@ -4021,11 +4046,11 @@ var vGraph =
 					filtered = data.$slice(minInterval, maxInterval);
 
 					if (this.fitToPane && data.length > 1) {
-						if (minInterval > data.$minIndex) {
+						if (data.$minIndex < minInterval && minInterval < data.$maxIndex) {
 							filtered.$add(minInterval, dataManager.$makePoint(minInterval), true);
 						}
 
-						if (maxInterval < data.$maxIndex) {
+						if (data.$minIndex < maxInterval && maxInterval < data.$maxIndex) {
 							filtered.$add(maxInterval, dataManager.$makePoint(maxInterval));
 						}
 					}
@@ -4061,61 +4086,6 @@ var vGraph =
 	    cachedPush = Array.prototype.push,
 	    cachedSort = Array.prototype.sort;
 
-	function _bisect(arr, value, func) {
-		var idx,
-		    val,
-		    bottom = 0,
-		    top = arr.length - 1;
-
-		if (func(arr[bottom]) >= value) {
-			return {
-				left: bottom,
-				right: bottom
-			};
-		}
-
-		if (func(arr[top]) <= value) {
-			return {
-				left: top,
-				right: top
-			};
-		}
-
-		if (arr.length) {
-			while (top - bottom > 1) {
-				idx = Math.floor((top + bottom) / 2);
-				val = func(arr[idx]);
-
-				if (val === value) {
-					top = idx;
-					bottom = idx;
-				} else if (val > value) {
-					top = idx;
-				} else {
-					bottom = idx;
-				}
-			}
-
-			// if it is one of the end points, make it that point
-			if (top !== idx && func(arr[top]) === value) {
-				return {
-					left: top,
-					right: top
-				};
-			} else if (bottom !== idx && func(arr[bottom]) === value) {
-				return {
-					left: bottom,
-					right: bottom
-				};
-			} else {
-				return {
-					left: bottom,
-					right: top
-				};
-			}
-		}
-	}
-
 	var List = function (_Collection) {
 		_inherits(List, _Collection);
 
@@ -4133,6 +4103,7 @@ var vGraph =
 			key: 'bisect',
 			value: function bisect(value, getValue) {
 				this.$sort();
+
 				return _bisect(this, value, getValue, true);
 			}
 		}, {
@@ -4150,13 +4121,19 @@ var vGraph =
 			value: function closest(value, getValue) {
 				var l,
 				    r,
-				    getter = getValue || this.$getValue,
-				    p = this.closestPair(value, getter);
+				    p,
+				    getter = getValue || this.$getValue;
 
-				l = value - getter(p.left);
-				r = getter(p.right) - value;
+				if (this.length) {
+					p = this.closestPair(value, getter);
 
-				return l < r ? p.left : p.right;
+					l = value - getter(p.left);
+					r = getter(p.right) - value;
+
+					return l < r ? p.left : p.right;
+				} else {
+					return null;
+				}
 			}
 		}, {
 			key: '$reset',
@@ -4585,7 +4562,7 @@ var vGraph =
 				}
 
 				return this.closest(value, function (datum) {
-					return datum[field];
+					return datum ? datum[field] : null;
 				});
 			}
 		}, {
@@ -6461,7 +6438,7 @@ var vGraph =
 		}, {
 			key: 'closeSet',
 			value: function closeSet(set) {
-				var i;
+				var i, t, y;
 
 				while (set[set.length - 1].$faux) {
 					set.pop();
@@ -6475,7 +6452,10 @@ var vGraph =
 				}
 
 				for (i = set.length - 1; i > -1; i--) {
-					set[i].y = this.ref.$ops.$view.y.scale(set[i].y);
+					y = set[i].y;
+					t = this.ref.$ops.$view.y.scale(y);
+					// console.log( y, t );
+					set[i].y = t;
 				}
 
 				return set;

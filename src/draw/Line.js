@@ -70,7 +70,8 @@ class Line extends DrawLinear{
 
 	// Since during set creation I can't see the future, here I need to clean up now that I can
 	closeSet( set ){
-		var i;
+		var i, 
+			t, y;
 
 		while( set[set.length-1].$faux ){
 			set.pop();
@@ -84,7 +85,10 @@ class Line extends DrawLinear{
 		}
 
 		for( i = set.length-1; i > -1; i-- ){
-			set[i].y = this.ref.$ops.$view.y.scale( set[i].y );
+			y = set[i].y;
+			t = this.ref.$ops.$view.y.scale( y );
+			// console.log( y, t );
+			set[i].y = t;
 		}
 
 		return set;

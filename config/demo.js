@@ -860,15 +860,15 @@ angular.module( 'vgraph' ).controller( 'MultiAxisCtrl',
 			viewInfo = {
 				'firstView': {
 					x: {
-						min : 0, 
-						max : 1000
+						min : -200, 
+						max : 1200
 					},
 					manager: 'first'
 				},
 				'secondView': {
 					x: {
-						min : 150, 
-						max : 1150
+						min : -50, 
+						max : 1350
 					},
 					manager: 'second'
 				}
@@ -926,24 +926,18 @@ angular.module( 'vgraph' ).controller( 'MultiAxisCtrl',
 			views: viewInfo
 		};
 
-		var counter = 0;
-		interval = setInterval(function(){
-			var min = -1,
-				max = 1;
+		var i, c,
+			min = -1,
+			max = 1;
 
+		for( i = 0, c = 1000; i < c; i++ ){
 			data.push({
 				x : data.length,
 				x2 : data.length + 150,
 				y1 : data[data.length-1].y1 + (Math.random() * (max - min) + min),
 				y2 : data[data.length-1].y2 + (Math.random() * (max - min) + min)
-			});
-
-			$scope.$apply();
-		}, 20);
-
-		setTimeout(function(){
-			clearInterval( interval );
-		}, 20000 );
+			});	
+		}
 	}]
 );
 

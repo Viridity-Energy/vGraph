@@ -567,13 +567,15 @@ class Chart{
 			}
 		});
 
-		points.$pos = sum / count;
-		points.pos = pos;
+		if ( count ){
+			points.$pos = sum / count;
+			points.pos = pos;
 
-		this.$trigger( 'focus-point', points );
-		this.$trigger( 'highlight', points );
+			this.$trigger( 'focus-point', points );
+			this.$trigger( 'highlight', points );
 
-		this.highlightElements( pos.x, pos.y );
+			this.highlightElements( pos.x, pos.y );
+		}
 	}
 
 	highlightOff(){

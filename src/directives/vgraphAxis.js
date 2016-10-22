@@ -501,7 +501,7 @@ require('angular').module( 'vgraph' ).directive( 'vgraphAxis',
 							change,
 							boundry = {};
 
-						if ( !(data && data.length) ){
+						if ( !data ){
 							$el.attr( 'visibility', 'hidden' );
 							return;
 						}

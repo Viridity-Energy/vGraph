@@ -86,11 +86,11 @@ class Pane{
 			filtered = data.$slice( minInterval, maxInterval );
 
 			if ( this.fitToPane && data.length > 1 ){
-				if ( minInterval > data.$minIndex ){
+				if ( data.$minIndex < minInterval && minInterval < data.$maxIndex ){
 					filtered.$add( minInterval, dataManager.$makePoint(minInterval), true );
 				}
 
-				if ( maxInterval < data.$maxIndex ){
+				if ( data.$minIndex < maxInterval && maxInterval < data.$maxIndex ){
 					filtered.$add( maxInterval, dataManager.$makePoint(maxInterval) );
 				}
 			}
