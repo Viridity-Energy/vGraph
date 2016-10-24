@@ -515,6 +515,10 @@ var vGraph =
 								$axisLabel.attr('text-anchor', 'middle').attr('x', box.height / 2).attr('y', -labelOffset);
 							}
 
+							if (view.viewport.maxValue === view.viewport.minValue) {
+								return;
+							}
+
 							if (tickMargin) {
 								$tickMargin.attr('height', box.inner.height).attr('width', tickMargin).attr('x', -tickMargin).attr('y', 0);
 							}
@@ -2194,12 +2198,14 @@ var vGraph =
 
 		t = className.indexOf(' ');
 		if (t !== -1) {
-			classExtend += ' ' + className.substring(t, -1);
+			classExtend += ' ' + className.substr(t);
 			className = className.substring(0, t);
+
+			console.log(classExtend, className);
 		}
 
 		obj.className = className;
-		obj.classExtend = classExtend;
+		obj.classExtend = ' ' + classExtend;
 	}
 
 	function normalizeY(views) {
@@ -3683,7 +3689,7 @@ var vGraph =
 		}, {
 			key: 'hasData',
 			value: function hasData() {
-				return this.isReady() && this.dataManager.data.length;
+				return this.dataManager && this.dataManager.data.length;
 			}
 
 			// true when the filtered data contains the leading edge of data

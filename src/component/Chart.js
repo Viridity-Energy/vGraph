@@ -49,12 +49,14 @@ function configureClassname( obj ){
 
 	t = className.indexOf(' ');
 	if ( t !== -1 ){
-		classExtend += ' ' + className.substring( t, -1 );
+		classExtend += ' ' + className.substr( t );
 		className = className.substring( 0, t );
+
+		console.log( classExtend, className );
 	}
 
 	obj.className = className;
-	obj.classExtend = classExtend;
+	obj.classExtend = ' '+classExtend;
 }
 
 function normalizeY( views ){

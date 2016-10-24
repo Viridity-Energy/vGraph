@@ -433,10 +433,11 @@
 
 		$scope.config = [{
 			name: 'someLine1',
-			className: 'red'
+			className: 'red dotted'
 		}, {
 			name: 'someLine2',
-			className: 'green'
+			className: 'green',
+			classExtend: 'dotted'
 		}, {
 			name: 'someLine3',
 			className: 'blue'
@@ -445,7 +446,23 @@
 			className: 'orange'
 		}];
 
+		for (var i = 0, c = 3000; i < c; i++) {
+			data.push({
+				x: data.length
+			});
+		}
+
 		$scope.go = function () {
+			for (var i = 0, c = 3000; i < c; i++) {
+				data.push({
+					x: data.length,
+					y1: null,
+					y2: null,
+					y3: null,
+					y4: null
+				});
+			}
+
 			setTimeout(function () {
 				data.$error('Model Based Error');
 			}, 2000);
@@ -462,6 +479,8 @@
 
 			setTimeout(function () {
 				$scope.$apply(function () {
+					data.$reset();
+
 					data.push({ x: 0, y1: 10, y2: 20, y3: 30, y4: 40 });
 
 					for (var i = 0, c = 2000; i < c; i++) {
@@ -19530,6 +19549,10 @@
 								$axisLabel.attr('text-anchor', 'middle').attr('x', box.height / 2).attr('y', -labelOffset);
 							}
 
+							if (view.viewport.maxValue === view.viewport.minValue) {
+								return;
+							}
+
 							if (tickMargin) {
 								$tickMargin.attr('height', box.inner.height).attr('width', tickMargin).attr('x', -tickMargin).attr('y', 0);
 							}
@@ -21203,12 +21226,14 @@
 
 		t = className.indexOf(' ');
 		if (t !== -1) {
-			classExtend += ' ' + className.substring(t, -1);
+			classExtend += ' ' + className.substr(t);
 			className = className.substring(0, t);
+
+			console.log(classExtend, className);
 		}
 
 		obj.className = className;
-		obj.classExtend = classExtend;
+		obj.classExtend = ' ' + classExtend;
 	}
 
 	function normalizeY(views) {
@@ -24329,7 +24354,7 @@
 		}, {
 			key: 'hasData',
 			value: function hasData() {
-				return this.isReady() && this.dataManager.data.length;
+				return this.dataManager && this.dataManager.data.length;
 			}
 
 			// true when the filtered data contains the leading edge of data

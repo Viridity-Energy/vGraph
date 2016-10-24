@@ -399,11 +399,12 @@ angular.module( 'vgraph' ).controller( 'LoadingCtrl',
 		$scope.config = [
 			{
 				name: 'someLine1',
-				className: 'red'
+				className: 'red dotted'
 			},
 			{
 				name: 'someLine2',
-				className: 'green'
+				className: 'green',
+				classExtend: 'dotted'
 			},
 			{
 				name: 'someLine3',
@@ -415,7 +416,23 @@ angular.module( 'vgraph' ).controller( 'LoadingCtrl',
 			}
 		];
 
+		for( var i = 0, c = 3000; i < c; i++ ){
+			data.push({
+				x : data.length
+			});
+		}
+
 		$scope.go = function(){
+			for( var i = 0, c = 3000; i < c; i++ ){
+				data.push({
+					x : data.length,
+					y1: null,
+					y2: null,
+					y3: null,
+					y4: null
+				});
+			}
+
 			setTimeout(function(){
 				data.$error('Model Based Error');
 			}, 2000);
@@ -432,6 +449,8 @@ angular.module( 'vgraph' ).controller( 'LoadingCtrl',
 
 			setTimeout(function(){
 				$scope.$apply(function(){
+					data.$reset();
+
 					data.push({x : 0, y1 : 10, y2 : 20, y3 : 30, y4 : 40});
 
 					for( var i = 0, c = 2000; i < c; i++ ){

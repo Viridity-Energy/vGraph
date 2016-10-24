@@ -209,7 +209,7 @@ class View {
 	}
 
 	hasData(){
-		return this.isReady() && this.dataManager.data.length;
+		return this.dataManager && this.dataManager.data.length;
 	}
 
 	// true when the filtered data contains the leading edge of data
