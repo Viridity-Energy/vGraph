@@ -9,8 +9,11 @@ class Page{
 	constructor(){
 		this.$$pageUid = uid++;
 
-		this.charts = {};
 		this.zooms = {};
+		this.feeds = {};
+		this.charts = {};
+		this.loaders = {};
+		this.dataManagers = {};
 	}
 
 	reset(){
@@ -29,23 +32,23 @@ class Page{
 				Object.keys(t).forEach(function( which ){
 					t[which].$destroy();
 				});
+				loaders[loader] = null;
 			});
 		}
-		this.loaders = {};
 
 		if ( feeds ){
 			Object.keys(feeds).forEach(function( feed ){
 				feeds[feed].$destroy();
+				feeds[feed] = null;
 			});
 		}
-		this.feeds = {};
 
 		if ( managers ){
 			Object.keys(managers).forEach(function( manager ){
 				managers[manager].$destroy();
+				managers[manager] = null;
 			});
 		}
-		this.dataManagers = {};
 	}
 
 	configure( settings ){

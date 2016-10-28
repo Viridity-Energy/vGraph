@@ -374,55 +374,56 @@ angular.module( 'vgraph' ).controller( 'LoadingCtrl',
 	function( $scope ){
 		var data = [];
 
-		$scope.interface = {};
-		$scope.graph = {
-			x: {
-				min: -5,
-				max: 2005,
-				scale: function(){ return d3.scale.linear(); }
-			},
-			y: {
-				scale: function(){ return d3.scale.linear(); }
-			}
-		};
-		$scope.page = [{
-			src: data,
-			interval: 'x',
-			readings:{
-				'someLine1': 'y1',
-				'someLine2': 'y2',
-				'someLine3': 'y3',
-				'someLine4': 'y4' 
-			}
-		}];
-
-		$scope.config = [
-			{
-				name: 'someLine1',
-				className: 'red dotted'
-			},
-			{
-				name: 'someLine2',
-				className: 'green',
-				classExtend: 'dotted'
-			},
-			{
-				name: 'someLine3',
-				className: 'blue'
-			},
-			{
-				name: 'someLine4',
-				className: 'orange'
-			}
-		];
-
-		for( var i = 0, c = 3000; i < c; i++ ){
-			data.push({
-				x : data.length
-			});
-		}
-
 		$scope.go = function(){
+			$scope.interface = {};
+			
+			$scope.graph = {
+				x: {
+					min: -5,
+					max: 2005,
+					scale: function(){ return d3.scale.linear(); }
+				},
+				y: {
+					scale: function(){ return d3.scale.linear(); }
+				}
+			};
+			$scope.page = [{
+				src: data,
+				interval: 'x',
+				readings:{
+					'someLine1': 'y1',
+					'someLine2': 'y2',
+					'someLine3': 'y3',
+					'someLine4': 'y4' 
+				}
+			}];
+
+			$scope.config = [
+				{
+					name: 'someLine1',
+					className: 'red dotted'
+				},
+				{
+					name: 'someLine2',
+					className: 'green',
+					classExtend: 'dotted'
+				},
+				{
+					name: 'someLine3',
+					className: 'blue'
+				},
+				{
+					name: 'someLine4',
+					className: 'orange'
+				}
+			];
+
+			for( var i = 0, c = 3000; i < c; i++ ){
+				data.push({
+					x : data.length
+				});
+			}
+
 			for( var i = 0, c = 3000; i < c; i++ ){
 				data.push({
 					x : data.length,

@@ -2098,17 +2098,19 @@ var vGraph =
 
 				$scope.$watch('settings', function (settings) {
 					if (settings) {
-						if (cfg && cfg.onDestroy) {
-							cfg.onDestroy(graph);
-						}
+						setTimeout(function () {
+							if (cfg && cfg.onDestroy) {
+								cfg.onDestroy(graph);
+							}
 
-						cfg = settings;
+							cfg = settings;
 
-						if (settings.onCreate) {
-							settings.onCreate(graph);
-						}
+							if (settings.onCreate) {
+								settings.onCreate(graph);
+							}
 
-						graph.configure(page, settings);
+							graph.configure(page, settings);
+						}, 5); // make sure it runs after page if both change
 					}
 				});
 
@@ -2118,12 +2120,13 @@ var vGraph =
 					}
 				});
 
-				// TODO : something more elegant...
-				if ($scope.interface) {
-					$scope.interface.resize = binded;
-					$scope.interface.error = graph.error.bind(graph);
-					// TODO : clear, reset
-				}
+				$scope.$watch('interface', function (face) {
+					if (face) {
+						face.resize = binded;
+						face.error = graph.error.bind(graph);
+						// TODO : clear, reset
+					}
+				});
 
 				if ($attrs.name) {
 					page.setChart($attrs.name, graph);
@@ -6846,8 +6849,11 @@ var vGraph =
 
 			this.$$pageUid = uid++;
 
-			this.charts = {};
 			this.zooms = {};
+			this.feeds = {};
+			this.charts = {};
+			this.loaders = {};
+			this.dataManagers = {};
 		}
 
 		_createClass(Page, [{
@@ -6868,23 +6874,23 @@ var vGraph =
 						Object.keys(t).forEach(function (which) {
 							t[which].$destroy();
 						});
+						loaders[loader] = null;
 					});
 				}
-				this.loaders = {};
 
 				if (feeds) {
 					Object.keys(feeds).forEach(function (feed) {
 						feeds[feed].$destroy();
+						feeds[feed] = null;
 					});
 				}
-				this.feeds = {};
 
 				if (managers) {
 					Object.keys(managers).forEach(function (manager) {
 						managers[manager].$destroy();
+						managers[manager] = null;
 					});
 				}
-				this.dataManagers = {};
 			}
 		}, {
 			key: 'configure',

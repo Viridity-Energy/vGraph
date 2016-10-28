@@ -78,17 +78,19 @@ require('angular').module( 'vgraph' ).directive( 'vgraphChart',
 
 				$scope.$watch('settings', function( settings ){
 					if ( settings ){
-						if ( cfg && cfg.onDestroy ){
-							cfg.onDestroy( graph );
-						}
+						setTimeout(function(){
+							if ( cfg && cfg.onDestroy ){
+								cfg.onDestroy( graph );
+							}
 
-						cfg = settings;
-					
-						if ( settings.onCreate ){
-							settings.onCreate( graph );
-						}
+							cfg = settings;
+						
+							if ( settings.onCreate ){
+								settings.onCreate( graph );
+							}
 
-						graph.configure( page, settings );
+							graph.configure( page, settings );
+						},5); // make sure it runs after page if both change
 					}
 				});
 
@@ -98,12 +100,13 @@ require('angular').module( 'vgraph' ).directive( 'vgraphChart',
 					}
 				});
 
-				// TODO : something more elegant...
-				if ( $scope.interface ){
-					$scope.interface.resize = binded;
-					$scope.interface.error = graph.error.bind( graph );
-					// TODO : clear, reset
-				}
+				$scope.$watch('interface', function( face ){
+					if ( face ){
+						face.resize = binded;
+						face.error = graph.error.bind( graph );
+						// TODO : clear, reset
+					}
+				});
 
 				if ( $attrs.name ){
 					page.setChart( $attrs.name, graph );
