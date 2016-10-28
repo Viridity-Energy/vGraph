@@ -29,24 +29,32 @@ class Page{
 		if ( loaders ){
 			Object.keys(loaders).forEach(function( loader ){
 				var t = loaders[loader];
-				Object.keys(t).forEach(function( which ){
-					t[which].$destroy();
-				});
-				loaders[loader] = null;
+				if ( t ){
+					Object.keys(t).forEach(function( which ){
+						t[which].$destroy();
+					});
+					loaders[loader] = null;
+				}
 			});
 		}
 
 		if ( feeds ){
 			Object.keys(feeds).forEach(function( feed ){
-				feeds[feed].$destroy();
-				feeds[feed] = null;
+				var t = feeds[feed];
+				if ( t ){
+					feeds[feed].$destroy();
+					feeds[feed] = null;
+				}
 			});
 		}
 
 		if ( managers ){
 			Object.keys(managers).forEach(function( manager ){
-				managers[manager].$destroy();
-				managers[manager] = null;
+				var t = managers[manager];
+				if ( t ){
+					managers[manager].$destroy();
+					managers[manager] = null;
+				}
 			});
 		}
 	}
