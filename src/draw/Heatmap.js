@@ -1,15 +1,37 @@
-var DataBucketer = require('../data/Bucketer.js'),
-	Classifier = require('../lib/Classifier.js');
+var // Classifier = require('../lib/Classifier.js'),
+	DataBucketer = require('../data/Bucketer.js');
+
+function populateBuckets( bucketer, references ){
+	var i, c,
+		fn,
+		ref;
+
+	function simplify( node ){
+		bucketer.push( ref.simplify(ref.$ops.getValue(node),node.$avgIndex,node) );
+	}
+
+	function passThrough( node ){
+		bucketer.push( node );
+	}
+
+	for( i = 0, c = references.length; i < c; i++ ){
+		ref = references[i];
+		fn = ref.simplify ? simplify : passThrough;
+
+		ref.$ops.eachNode(fn);
+	}
+}
 
 class Heatmap{
 		
-	constructor( ref, area, templates, indexs, buckets ){
+	constructor( refs, area, templates, indexs, buckets ){
 		var t,
 			bucketer;
 
 		this.area = area;
 		this.templates = templates;
-		this.references = [ref];
+
+		this.references = refs;
 		
 		if ( !buckets ){
 			t = Object.keys(indexs);
@@ -19,12 +41,13 @@ class Heatmap{
 			};
 		}
 
+		/*
 		if ( ref.classify ){
 			this.classifier = new Classifier( ref.classify );
 		}else if ( ref.classifier ){
 			this.classifier = ref.classifier;
 		}
-
+		*/
 		this.bucketer = bucketer = new DataBucketer( indexs[buckets.x], function(){
 			return new DataBucketer( indexs[buckets.y] );
 		});
@@ -34,7 +57,7 @@ class Heatmap{
 		return this.references;
 	}
 
-	parse( keys ){
+	parse(){
 		var xPos,
 			yPos,
 			xSize,
@@ -43,18 +66,15 @@ class Heatmap{
 			yCount,
 			xLabels,
 			yLabels,
-			ref = this.references[0],
 			sets = [],
 			grid = [],
 			area = this.area,
-			bucketer = this.bucketer,
-			classifier = this.classifier;
+			bucketer = this.bucketer/*,
+			classifier = this.classifier*/;
 
 		bucketer.$reset();
 		
-		keys.forEach(function( key ){
-			bucketer.push( ref.$ops.$getNode(key) ); // { bucket, value }
-		});
+		populateBuckets( bucketer, this.references );
 
 		if ( !this.labels ){
 			this.labels = {};
@@ -151,12 +171,14 @@ class Heatmap{
 					height: ySize
 				};
 
+				/*
 				if ( classifier ){
 					t.classified = classifier.parse( 
 						data,
 						ref.$ops.getStats()
 					);
 				}
+				*/
 
 				sets.push( t );
 				

@@ -44,7 +44,9 @@ class Bucketer extends Collection {
 
 		match.push( datum );
 
-		return match;
+		if ( needNew ){
+			return match;
+		}
 	}
 
 	$reset(){

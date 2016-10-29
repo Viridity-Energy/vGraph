@@ -2107,6 +2107,263 @@
 	}]);
 
 	angular.module('vgraph').controller('HeatmapCtrl', ['$scope', '$timeout', function ($scope, $timeout) {
+		var data = [{ x: 0, y: 10, y1: 20, y2: 0 }];
+
+		$scope.page = [{
+			src: data,
+			manager: 'feed',
+			interval: 'x',
+			readings: {
+				'y': 'y',
+				'y1': 'y1',
+				'y2': 'y2'
+			}
+		}];
+
+		$scope.heatmap = {
+			zoom: 'zoomable',
+			x: {
+				scale: function scale() {
+					return d3.scale.linear();
+				}
+			},
+			y: {
+				scale: function scale() {
+					return d3.scale.linear();
+				}
+			},
+			views: {
+				basic: {
+					manager: 'feed',
+					normalizer: new vGraph.data.Normalizer(function (index) {
+						return index; // don't combine at all
+					})
+				}
+			}
+		};
+
+		$scope.classicIndexs = {
+			'100s': function s(datum) {
+				return Math.round(datum.$avgIndex / 100);
+			},
+			'10s': function s(datum) {
+				return Math.round(datum.$avgIndex % 10);
+			}
+		};
+
+		$scope.simplifiedIndexs = {
+			'100s': function s(simple) {
+				return Math.round(simple.index / 100);
+			},
+			'10s': function s(simple) {
+				return Math.round(simple.index % 10);
+			}
+		};
+
+		$scope.pairedIndexs = {
+			'type': function type(simple) {
+				return simple.ref;
+			},
+			'10s': function s(simple) {
+				return Math.round(simple.index % 10);
+			}
+		};
+
+		$scope.ref = { name: 'y', view: 'basic', className: 'red' };
+		$scope.ref0 = { name: 'y', view: 'basic', className: 'red',
+			simplify: function simplify(value, index, datum) {
+				return {
+					y: value,
+					index: index
+				};
+			}
+		};
+		$scope.ref1 = { name: 'y1', view: 'basic', className: 'blue',
+			simplify: function simplify(value, index) {
+				return {
+					y: value,
+					index: index,
+					ref: 'y1'
+				};
+			}
+		};
+		$scope.ref2 = { name: 'y2', view: 'basic', className: 'green',
+			simplify: function simplify(value, index, datum) {
+				return {
+					y: value,
+					index: index,
+					ref: 'y2'
+				};
+			}
+		};
+
+		function calcSet(data) {
+			var i,
+			    c,
+			    sum = 0;
+
+			if (!data) {
+				return null;
+			}
+
+			for (i = 0, c = data.length; i < c; i++) {
+				sum += data[i].y;
+			}
+
+			return sum;
+		};
+
+		function calcColumn(column) {
+			var i, c, datum, value, compare;
+
+			for (i = 0, c = column.length; i < c; i++) {
+				datum = column[i];
+				value = calcSet(datum);
+
+				if (value || value === 0) {
+					datum.value = value;
+					datum.display = value.toFixed(2);
+
+					if (!compare) {
+						compare = {
+							min: value,
+							max: value
+						};
+					} else if (compare.min > value) {
+						compare.min = value;
+					} else if (compare.max < value) {
+						compare.max = value;
+					}
+				}
+			}
+
+			return compare;
+		};
+
+		$scope.calculator = function (dataSets) {
+			var i,
+			    c,
+			    min,
+			    max,
+			    datum,
+			    compare,
+			    colorScale,
+			    grid = dataSets.$grid;
+
+			for (i = 0, c = grid.length; i < c; i++) {
+				compare = calcColumn(grid[i]);
+
+				if (compare) {
+					if (min === undefined) {
+						min = compare.min;
+						max = compare.max;
+					} else {
+						if (min > compare.min) {
+							min = compare.min;
+						}
+
+						if (max < compare.max) {
+							max = compare.max;
+						}
+					}
+				}
+			}
+
+			colorScale = d3.scale.linear().domain([min, max]).range(['#FF0000', '#00FF00']);
+
+			for (i = 0, c = dataSets.length; i < c; i++) {
+				datum = dataSets[i];
+				if (datum.data) {
+					datum.$color = colorScale(datum.data.value);
+				}
+			}
+		};
+
+		function makeData() {
+			for (var i = 0, c = 2000; i < c; i++) {
+				var counter = 0;
+				var min = -1,
+				    max = 1,
+				    p = {
+					x: data.length,
+					y: data[data.length - 1].y + Math.random() * (max - min) + min,
+					y1: data[data.length - 1].y1 + Math.random() * (max - min) + min,
+					y2: data[data.length - 1].y2 + Math.random() * (max - min) + min
+				};
+
+				data.push(p);
+			}
+		}
+
+		makeData();
+		//$timeout( makeData, 1000 );
+
+		//$timeout( makeData, 6000 );
+	}]);
+
+	angular.module('vgraph').controller('SpiralCtrl', ['$scope', '$timeout', function ($scope, $timeout) {
+		var data = [{ x: 0, y: 10 }];
+
+		$scope.page = [{
+			src: data,
+			manager: 'feed',
+			interval: 'x',
+			readings: {
+				'y': 'y'
+			}
+		}];
+
+		$scope.spiral = {
+			zoom: 'zoomable',
+			x: {
+				scale: function scale() {
+					return d3.scale.linear();
+				}
+			},
+			y: {
+				scale: function scale() {
+					return d3.scale.linear();
+				}
+			},
+			views: {
+				basic: {
+					manager: 'feed',
+					normalizer: new vGraph.data.Normalizer(function (index) {
+						return index; // don't combine at all
+					})
+				}
+			}
+		};
+
+		$scope.indexHour = function (datum) {
+			return Math.round(datum.$avgIndex % 24); // every hour
+		};
+
+		$scope.indexMin = function (datum) {
+			return Math.round(datum.$avgIndex % (24 * 12)); // every 5 minutes
+		};
+
+		$scope.ref = { name: 'y', view: 'basic', className: 'red' };
+
+		function makeData() {
+			for (var i = 0, c = 2000; i < c; i++) {
+				var counter = 0;
+				var min = -1,
+				    max = 1,
+				    t = Math.random() * (max - min) + min,
+				    p = {
+					x: data.length,
+					y: data[data.length - 1].y + t
+				};
+
+				data.push(p);
+			}
+		}
+
+		makeData();
+	}]);
+
+	angular.module('vgraph').controller('CombinationCtrl', ['$scope', '$timeout', function ($scope, $timeout) {
 		var data = [{ x: 0, y: 10 }];
 
 		$scope.page = [{
@@ -2317,68 +2574,6 @@
 		//$timeout( makeData, 1000 );
 
 		//$timeout( makeData, 6000 );
-	}]);
-
-	angular.module('vgraph').controller('SpiralCtrl', ['$scope', '$timeout', function ($scope, $timeout) {
-		var data = [{ x: 0, y: 10 }];
-
-		$scope.page = [{
-			src: data,
-			manager: 'feed',
-			interval: 'x',
-			readings: {
-				'y': 'y'
-			}
-		}];
-
-		$scope.spiral = {
-			zoom: 'zoomable',
-			x: {
-				scale: function scale() {
-					return d3.scale.linear();
-				}
-			},
-			y: {
-				scale: function scale() {
-					return d3.scale.linear();
-				}
-			},
-			views: {
-				basic: {
-					manager: 'feed',
-					normalizer: new vGraph.data.Normalizer(function (index) {
-						return index; // don't combine at all
-					})
-				}
-			}
-		};
-
-		$scope.indexHour = function (datum) {
-			return Math.round(datum.$avgIndex % 24); // every hour
-		};
-
-		$scope.indexMin = function (datum) {
-			return Math.round(datum.$avgIndex % (24 * 12)); // every 5 minutes
-		};
-
-		$scope.ref = { name: 'y', view: 'basic', className: 'red' };
-
-		function makeData() {
-			for (var i = 0, c = 2000; i < c; i++) {
-				var counter = 0;
-				var min = -1,
-				    max = 1,
-				    t = Math.random() * (max - min) + min,
-				    p = {
-					x: data.length,
-					y: data[data.length - 1].y + t
-				};
-
-				data.push(p);
-			}
-		}
-
-		makeData();
 	}]);
 
 /***/ },
@@ -30870,7 +31065,6 @@
 				    chart = requirements[0],
 				    element = requirements[1],
 				    box = chart.box,
-				    className = 'heatmap ',
 				    children = [],
 				    templates = {
 					cell: el.getElementsByTagName('cell')[0].innerHTML.replace(/ng-binding/g, ''),
@@ -30879,6 +31073,7 @@
 				};
 
 				el.innerHTML = '';
+				el.setAttribute('class', 'heatmap ' + el.getAttribute('class'));
 
 				function calcArea() {
 					area.x1 = box.inner.left;
@@ -30919,21 +31114,27 @@
 				};
 
 				scope.$watch('config', function (config) {
-					var cfg = chart.getReference(config);
+					var refs;
 
-					if (cfg) {
-						element.configure(chart, new DrawHeatmap(cfg, area, templates, scope.indexs), el, attrs.name, attrs.publish);
-
-						if (cfg.classExtend) {
-							className += cfg.classExtend + ' ';
-						}
-
-						className += attrs.className || cfg.className;
-
-						el.setAttribute('class', className);
-
-						cfg.$ops.$view.registerComponent(element);
+					if (!config) {
+						return;
 					}
+
+					if (config.length !== undefined) {
+						refs = config.slice(0);
+					} else {
+						refs = [config];
+					}
+
+					refs.forEach(function (ref, i) {
+						refs[i] = chart.getReference(ref);
+					});
+
+					element.configure(chart, new DrawHeatmap(refs, area, templates, scope.indexs), el, attrs.name, attrs.publish);
+
+					refs.forEach(function (ref) {
+						ref.$ops.$view.registerComponent(element);
+					});
 				});
 			}
 		};
@@ -30949,18 +31150,38 @@
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var DataBucketer = __webpack_require__(84),
-	    Classifier = __webpack_require__(13);
+	var // Classifier = require('../lib/Classifier.js'),
+	DataBucketer = __webpack_require__(84);
+
+	function populateBuckets(bucketer, references) {
+		var i, c, fn, ref;
+
+		function simplify(node) {
+			bucketer.push(ref.simplify(ref.$ops.getValue(node), node.$avgIndex, node));
+		}
+
+		function passThrough(node) {
+			bucketer.push(node);
+		}
+
+		for (i = 0, c = references.length; i < c; i++) {
+			ref = references[i];
+			fn = ref.simplify ? simplify : passThrough;
+
+			ref.$ops.eachNode(fn);
+		}
+	}
 
 	var Heatmap = function () {
-		function Heatmap(ref, area, templates, indexs, buckets) {
+		function Heatmap(refs, area, templates, indexs, buckets) {
 			_classCallCheck(this, Heatmap);
 
 			var t, bucketer;
 
 			this.area = area;
 			this.templates = templates;
-			this.references = [ref];
+
+			this.references = refs;
 
 			if (!buckets) {
 				t = Object.keys(indexs);
@@ -30970,12 +31191,13 @@
 				};
 			}
 
-			if (ref.classify) {
-				this.classifier = new Classifier(ref.classify);
-			} else if (ref.classifier) {
-				this.classifier = ref.classifier;
-			}
-
+			/*
+	  if ( ref.classify ){
+	  	this.classifier = new Classifier( ref.classify );
+	  }else if ( ref.classifier ){
+	  	this.classifier = ref.classifier;
+	  }
+	  */
 			this.bucketer = bucketer = new DataBucketer(indexs[buckets.x], function () {
 				return new DataBucketer(indexs[buckets.y]);
 			});
@@ -30988,7 +31210,7 @@
 			}
 		}, {
 			key: 'parse',
-			value: function parse(keys) {
+			value: function parse() {
 				var xPos,
 				    yPos,
 				    xSize,
@@ -30997,18 +31219,15 @@
 				    yCount,
 				    xLabels,
 				    yLabels,
-				    ref = this.references[0],
 				    sets = [],
 				    grid = [],
 				    area = this.area,
-				    bucketer = this.bucketer,
-				    classifier = this.classifier;
+				    bucketer = this.bucketer /*,
+	                                classifier = this.classifier*/;
 
 				bucketer.$reset();
 
-				keys.forEach(function (key) {
-					bucketer.push(ref.$ops.$getNode(key)); // { bucket, value }
-				});
+				populateBuckets(bucketer, this.references);
 
 				if (!this.labels) {
 					this.labels = {};
@@ -31105,9 +31324,14 @@
 							height: ySize
 						};
 
-						if (classifier) {
-							t.classified = classifier.parse(data, ref.$ops.getStats());
-						}
+						/*
+	     if ( classifier ){
+	     	t.classified = classifier.parse( 
+	     		data,
+	     		ref.$ops.getStats()
+	     	);
+	     }
+	     */
 
 						sets.push(t);
 
@@ -31262,7 +31486,9 @@
 
 				match.push(datum);
 
-				return match;
+				if (needNew) {
+					return match;
+				}
 			}
 		}, {
 			key: '$reset',
@@ -32390,24 +32616,32 @@
 				if (loaders) {
 					Object.keys(loaders).forEach(function (loader) {
 						var t = loaders[loader];
-						Object.keys(t).forEach(function (which) {
-							t[which].$destroy();
-						});
-						loaders[loader] = null;
+						if (t) {
+							Object.keys(t).forEach(function (which) {
+								t[which].$destroy();
+							});
+							loaders[loader] = null;
+						}
 					});
 				}
 
 				if (feeds) {
 					Object.keys(feeds).forEach(function (feed) {
-						feeds[feed].$destroy();
-						feeds[feed] = null;
+						var t = feeds[feed];
+						if (t) {
+							feeds[feed].$destroy();
+							feeds[feed] = null;
+						}
 					});
 				}
 
 				if (managers) {
 					Object.keys(managers).forEach(function (manager) {
-						managers[manager].$destroy();
-						managers[manager] = null;
+						var t = managers[manager];
+						if (t) {
+							managers[manager].$destroy();
+							managers[manager] = null;
+						}
 					});
 				}
 			}

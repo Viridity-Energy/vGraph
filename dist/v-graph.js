@@ -5351,7 +5351,6 @@ var vGraph =
 				    chart = requirements[0],
 				    element = requirements[1],
 				    box = chart.box,
-				    className = 'heatmap ',
 				    children = [],
 				    templates = {
 					cell: el.getElementsByTagName('cell')[0].innerHTML.replace(/ng-binding/g, ''),
@@ -5360,6 +5359,7 @@ var vGraph =
 				};
 
 				el.innerHTML = '';
+				el.setAttribute('class', 'heatmap ' + el.getAttribute('class'));
 
 				function calcArea() {
 					area.x1 = box.inner.left;
@@ -5400,21 +5400,27 @@ var vGraph =
 				};
 
 				scope.$watch('config', function (config) {
-					var cfg = chart.getReference(config);
+					var refs;
 
-					if (cfg) {
-						element.configure(chart, new DrawHeatmap(cfg, area, templates, scope.indexs), el, attrs.name, attrs.publish);
-
-						if (cfg.classExtend) {
-							className += cfg.classExtend + ' ';
-						}
-
-						className += attrs.className || cfg.className;
-
-						el.setAttribute('class', className);
-
-						cfg.$ops.$view.registerComponent(element);
+					if (!config) {
+						return;
 					}
+
+					if (config.length !== undefined) {
+						refs = config.slice(0);
+					} else {
+						refs = [config];
+					}
+
+					refs.forEach(function (ref, i) {
+						refs[i] = chart.getReference(ref);
+					});
+
+					element.configure(chart, new DrawHeatmap(refs, area, templates, scope.indexs), el, attrs.name, attrs.publish);
+
+					refs.forEach(function (ref) {
+						ref.$ops.$view.registerComponent(element);
+					});
 				});
 			}
 		};
@@ -5430,18 +5436,38 @@ var vGraph =
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var DataBucketer = __webpack_require__(45),
-	    Classifier = __webpack_require__(12);
+	var // Classifier = require('../lib/Classifier.js'),
+	DataBucketer = __webpack_require__(45);
+
+	function populateBuckets(bucketer, references) {
+		var i, c, fn, ref;
+
+		function simplify(node) {
+			bucketer.push(ref.simplify(ref.$ops.getValue(node), node.$avgIndex, node));
+		}
+
+		function passThrough(node) {
+			bucketer.push(node);
+		}
+
+		for (i = 0, c = references.length; i < c; i++) {
+			ref = references[i];
+			fn = ref.simplify ? simplify : passThrough;
+
+			ref.$ops.eachNode(fn);
+		}
+	}
 
 	var Heatmap = function () {
-		function Heatmap(ref, area, templates, indexs, buckets) {
+		function Heatmap(refs, area, templates, indexs, buckets) {
 			_classCallCheck(this, Heatmap);
 
 			var t, bucketer;
 
 			this.area = area;
 			this.templates = templates;
-			this.references = [ref];
+
+			this.references = refs;
 
 			if (!buckets) {
 				t = Object.keys(indexs);
@@ -5451,12 +5477,13 @@ var vGraph =
 				};
 			}
 
-			if (ref.classify) {
-				this.classifier = new Classifier(ref.classify);
-			} else if (ref.classifier) {
-				this.classifier = ref.classifier;
-			}
-
+			/*
+	  if ( ref.classify ){
+	  	this.classifier = new Classifier( ref.classify );
+	  }else if ( ref.classifier ){
+	  	this.classifier = ref.classifier;
+	  }
+	  */
 			this.bucketer = bucketer = new DataBucketer(indexs[buckets.x], function () {
 				return new DataBucketer(indexs[buckets.y]);
 			});
@@ -5469,7 +5496,7 @@ var vGraph =
 			}
 		}, {
 			key: 'parse',
-			value: function parse(keys) {
+			value: function parse() {
 				var xPos,
 				    yPos,
 				    xSize,
@@ -5478,18 +5505,15 @@ var vGraph =
 				    yCount,
 				    xLabels,
 				    yLabels,
-				    ref = this.references[0],
 				    sets = [],
 				    grid = [],
 				    area = this.area,
-				    bucketer = this.bucketer,
-				    classifier = this.classifier;
+				    bucketer = this.bucketer /*,
+	                                classifier = this.classifier*/;
 
 				bucketer.$reset();
 
-				keys.forEach(function (key) {
-					bucketer.push(ref.$ops.$getNode(key)); // { bucket, value }
-				});
+				populateBuckets(bucketer, this.references);
 
 				if (!this.labels) {
 					this.labels = {};
@@ -5586,9 +5610,14 @@ var vGraph =
 							height: ySize
 						};
 
-						if (classifier) {
-							t.classified = classifier.parse(data, ref.$ops.getStats());
-						}
+						/*
+	     if ( classifier ){
+	     	t.classified = classifier.parse( 
+	     		data,
+	     		ref.$ops.getStats()
+	     	);
+	     }
+	     */
 
 						sets.push(t);
 
@@ -5743,7 +5772,9 @@ var vGraph =
 
 				match.push(datum);
 
-				return match;
+				if (needNew) {
+					return match;
+				}
 			}
 		}, {
 			key: '$reset',
@@ -6871,24 +6902,32 @@ var vGraph =
 				if (loaders) {
 					Object.keys(loaders).forEach(function (loader) {
 						var t = loaders[loader];
-						Object.keys(t).forEach(function (which) {
-							t[which].$destroy();
-						});
-						loaders[loader] = null;
+						if (t) {
+							Object.keys(t).forEach(function (which) {
+								t[which].$destroy();
+							});
+							loaders[loader] = null;
+						}
 					});
 				}
 
 				if (feeds) {
 					Object.keys(feeds).forEach(function (feed) {
-						feeds[feed].$destroy();
-						feeds[feed] = null;
+						var t = feeds[feed];
+						if (t) {
+							feeds[feed].$destroy();
+							feeds[feed] = null;
+						}
 					});
 				}
 
 				if (managers) {
 					Object.keys(managers).forEach(function (manager) {
-						managers[manager].$destroy();
-						managers[manager] = null;
+						var t = managers[manager];
+						if (t) {
+							managers[manager].$destroy();
+							managers[manager] = null;
+						}
 					});
 				}
 			}

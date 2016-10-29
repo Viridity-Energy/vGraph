@@ -18,7 +18,6 @@ require('angular').module( 'vgraph' ).directive( 'vgraphHeatmap',
 					chart = requirements[0],
 					element = requirements[1],
 					box = chart.box,
-					className = 'heatmap ',
 					children = [],
 					templates = {
 						cell: el.getElementsByTagName('cell')[0].innerHTML.replace(/ng-binding/g,''),
@@ -27,6 +26,7 @@ require('angular').module( 'vgraph' ).directive( 'vgraphHeatmap',
 					};
 
 				el.innerHTML = '';
+				el.setAttribute( 'class', 'heatmap '+el.getAttribute('class') );
 
 				function calcArea(){
 					area.x1 = box.inner.left;
@@ -67,32 +67,38 @@ require('angular').module( 'vgraph' ).directive( 'vgraphHeatmap',
 				};
 
 				scope.$watch('config', function( config ){
-					var cfg = chart.getReference( config );
+					var refs;
 
-					if ( cfg ){
-						element.configure(
-							chart, 
-							new DrawHeatmap(
-								cfg, 
-								area, 
-								templates, 
-								scope.indexs
-							),
-							el,
-							attrs.name,
-							attrs.publish
-						);
-
-						if ( cfg.classExtend ){
-							className += cfg.classExtend + ' ';
-						}
-
-						className += attrs.className || cfg.className;
-
-						el.setAttribute( 'class', className );
-
-						cfg.$ops.$view.registerComponent(element);
+					if ( !config ){
+						return;
 					}
+
+					if ( config.length !== undefined ){
+						refs = config.slice(0);
+					}else{
+						refs = [config];
+					}
+					
+					refs.forEach(function( ref, i ){
+						refs[i] = chart.getReference(ref);
+					});
+
+					element.configure(
+						chart, 
+						new DrawHeatmap(
+							refs, 
+							area, 
+							templates, 
+							scope.indexs
+						),
+						el,
+						attrs.name,
+						attrs.publish
+					);
+
+					refs.forEach(function( ref ){
+						ref.$ops.$view.registerComponent(element);
+					});
 				});
 			}
 		};

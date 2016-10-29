@@ -2109,6 +2109,264 @@ angular.module( 'vgraph' ).controller( 'PieCtrl',
 angular.module( 'vgraph' ).controller( 'HeatmapCtrl',
 	['$scope', '$timeout',
 	function( $scope, $timeout ){
+		var data = [ { x: 0, y: 10, y1: 20, y2: 0} ];
+
+		$scope.page = [{
+			src: data,
+			manager: 'feed',
+			interval: 'x',
+			readings:{
+				'y': 'y',
+				'y1': 'y1',
+				'y2': 'y2'
+			}
+		}];
+
+		$scope.heatmap = {
+			zoom: 'zoomable',
+			x: {
+				scale: function(){ return d3.scale.linear(); }
+			},
+			y: {
+				scale: function(){ return d3.scale.linear(); }
+			},
+			views: {
+				basic: {
+					manager: 'feed',
+					normalizer: new vGraph.data.Normalizer(function(index){
+						return index; // don't combine at all
+					})
+				}
+			}
+		};
+
+		$scope.classicIndexs = {
+			'100s': function( datum ){
+				return Math.round( datum.$avgIndex/100 );
+			},
+			'10s': function( datum ){
+				return Math.round( datum.$avgIndex % 10 );
+			}
+		};
+
+		$scope.simplifiedIndexs = {
+			'100s': function( simple ){
+				return Math.round( simple.index/100 );
+			},
+			'10s': function( simple ){
+				return Math.round( simple.index % 10 );
+			}
+		};
+
+		$scope.pairedIndexs = {
+			'type': function( simple ){
+				return simple.ref;
+			},
+			'10s': function( simple ){
+				return Math.round( simple.index % 10 );
+			}
+		};
+
+		$scope.ref = { name : 'y', view: 'basic', className: 'red' };
+		$scope.ref0 = { name : 'y', view: 'basic', className: 'red', 
+			simplify: function( value, index, datum ){
+				return {
+					y: value,
+					index: index
+				};
+			} 
+		};
+		$scope.ref1 = { name : 'y1', view: 'basic', className: 'blue',
+			simplify: function( value, index ){
+				return {
+					y: value,
+					index: index,
+					ref: 'y1'
+				}
+			}
+		};
+		$scope.ref2 = { name : 'y2', view: 'basic', className: 'green',
+			simplify: function( value, index, datum ){
+				return {
+					y: value,
+					index: index,
+					ref: 'y2'
+				}
+			}
+		};
+
+		function calcSet( data ){
+			var i, c,
+				sum = 0;
+
+			if ( !data ){
+				return null;
+			}
+
+			for( i = 0, c = data.length; i < c; i++ ){
+				sum += data[i].y;
+			}
+
+			return sum;
+		};
+
+		function calcColumn( column ){
+			var i, c,
+				datum,
+				value,
+				compare;
+
+			for( i = 0, c = column.length; i < c; i++ ){
+				datum = column[i];
+				value = calcSet( datum );
+
+				if ( value || value === 0 ){
+					datum.value = value;
+					datum.display = value.toFixed(2);
+
+					if ( !compare ){
+						compare = {
+							min: value,
+							max: value
+						};
+					}else if ( compare.min > value ){
+						compare.min = value;
+					}else if ( compare.max < value ){
+						compare.max = value;
+					}
+				}
+			}
+			
+			return compare;
+		};
+
+		$scope.calculator = function( dataSets ){
+			var i, c,
+				min,
+				max,
+				datum,
+				compare,
+				colorScale,
+				grid = dataSets.$grid;
+
+			for( i = 0, c = grid.length; i < c; i++ ){
+				compare = calcColumn(grid[i]);
+
+				if ( compare ){
+					if ( min === undefined ){
+						min = compare.min;
+						max = compare.max;
+					}else{
+						if ( min > compare.min ){
+							min = compare.min;
+						}
+
+						if ( max < compare.max ){
+							max = compare.max;
+						}
+					}
+				}
+			}
+
+			colorScale = d3.scale.linear()
+				.domain( [min,max] )
+				.range( ['#FF0000','#00FF00'] );
+
+			for( i = 0, c = dataSets.length; i < c; i++ ){
+				datum = dataSets[i];
+				if ( datum.data ){
+					datum.$color = colorScale(datum.data.value);
+				}
+			}
+		};
+
+		function makeData(){
+			for( var i = 0, c = 2000; i < c; i++ ){
+				var counter = 0;
+				var min = -1,
+					max = 1,
+					p = {
+						x : data.length,
+						y : data[data.length-1].y + Math.random() * (max - min) + min,
+						y1 : data[data.length-1].y1 + Math.random() * (max - min) + min,
+						y2 : data[data.length-1].y2 + Math.random() * (max - min) + min
+					};
+
+				data.push( p );
+			}
+		}
+
+		makeData();
+		//$timeout( makeData, 1000 );
+
+		//$timeout( makeData, 6000 );
+	}]
+);
+
+angular.module( 'vgraph' ).controller( 'SpiralCtrl',
+	['$scope', '$timeout',
+	function( $scope, $timeout ){
+		var data = [ { x: 0, y: 10} ];
+
+		$scope.page = [{
+			src: data,
+			manager: 'feed',
+			interval: 'x',
+			readings:{
+				'y': 'y'
+			}
+		}];
+
+		$scope.spiral = {
+			zoom: 'zoomable',
+			x: {
+				scale: function(){ return d3.scale.linear(); }
+			},
+			y: {
+				scale: function(){ return d3.scale.linear(); }
+			},
+			views: {
+				basic: {
+					manager: 'feed',
+					normalizer: new vGraph.data.Normalizer(function(index){
+						return index; // don't combine at all
+					})
+				}
+			}
+		};
+
+		$scope.indexHour =  function( datum ){
+			return Math.round( datum.$avgIndex % 24 ); // every hour
+		};
+
+		$scope.indexMin =  function( datum ){
+			return Math.round( datum.$avgIndex % (24 * 12) ); // every 5 minutes
+		};
+
+		$scope.ref = { name : 'y', view: 'basic', className: 'red' };
+
+		function makeData(){
+			for( var i = 0, c = 2000; i < c; i++ ){
+				var counter = 0;
+				var min = -1,
+					max = 1,
+					t = Math.random() * (max - min) + min,
+					p = {
+						x : data.length,
+						y : data[data.length-1].y + t
+					};
+
+				data.push( p );
+			}
+		}
+
+		makeData();
+	}]
+);
+
+angular.module( 'vgraph' ).controller( 'CombinationCtrl',
+	['$scope', '$timeout',
+	function( $scope, $timeout ){
 		var data = [ { x: 0, y: 10} ];
 
 		$scope.page = [{
@@ -2310,66 +2568,5 @@ angular.module( 'vgraph' ).controller( 'HeatmapCtrl',
 		//$timeout( makeData, 1000 );
 
 		//$timeout( makeData, 6000 );
-	}]
-);
-
-angular.module( 'vgraph' ).controller( 'SpiralCtrl',
-	['$scope', '$timeout',
-	function( $scope, $timeout ){
-		var data = [ { x: 0, y: 10} ];
-
-		$scope.page = [{
-			src: data,
-			manager: 'feed',
-			interval: 'x',
-			readings:{
-				'y': 'y'
-			}
-		}];
-
-		$scope.spiral = {
-			zoom: 'zoomable',
-			x: {
-				scale: function(){ return d3.scale.linear(); }
-			},
-			y: {
-				scale: function(){ return d3.scale.linear(); }
-			},
-			views: {
-				basic: {
-					manager: 'feed',
-					normalizer: new vGraph.data.Normalizer(function(index){
-						return index; // don't combine at all
-					})
-				}
-			}
-		};
-
-		$scope.indexHour =  function( datum ){
-			return Math.round( datum.$avgIndex % 24 ); // every hour
-		};
-
-		$scope.indexMin =  function( datum ){
-			return Math.round( datum.$avgIndex % (24 * 12) ); // every 5 minutes
-		};
-
-		$scope.ref = { name : 'y', view: 'basic', className: 'red' };
-
-		function makeData(){
-			for( var i = 0, c = 2000; i < c; i++ ){
-				var counter = 0;
-				var min = -1,
-					max = 1,
-					t = Math.random() * (max - min) + min,
-					p = {
-						x : data.length,
-						y : data[data.length-1].y + t
-					};
-
-				data.push( p );
-			}
-		}
-
-		makeData();
 	}]
 );
