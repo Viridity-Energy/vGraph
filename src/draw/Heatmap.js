@@ -1,4 +1,4 @@
-var // Classifier = require('../lib/Classifier.js'),
+var Classifier = require('../lib/Classifier.js'),
 	DataBucketer = require('../data/Bucketer.js');
 
 function populateBuckets( bucketer, references ){
@@ -41,13 +41,14 @@ class Heatmap{
 			};
 		}
 
-		/*
-		if ( ref.classify ){
-			this.classifier = new Classifier( ref.classify );
-		}else if ( ref.classifier ){
-			this.classifier = ref.classifier;
+		if ( refs.length === 1 ){
+			if ( refs[0].classify ){
+				this.classifier = new Classifier( refs[0].classify );
+			}else if ( refs[0].classifier ){
+				this.classifier = refs[0].classifier;
+			}
 		}
-		*/
+		
 		this.bucketer = bucketer = new DataBucketer( indexs[buckets.x], function(){
 			return new DataBucketer( indexs[buckets.y] );
 		});
@@ -69,12 +70,13 @@ class Heatmap{
 			sets = [],
 			grid = [],
 			area = this.area,
-			bucketer = this.bucketer/*,
-			classifier = this.classifier*/;
+			bucketer = this.bucketer,
+			references = this.references,
+			classifier = this.classifier;
 
 		bucketer.$reset();
 		
-		populateBuckets( bucketer, this.references );
+		populateBuckets( bucketer, references );
 
 		if ( !this.labels ){
 			this.labels = {};
@@ -171,14 +173,12 @@ class Heatmap{
 					height: ySize
 				};
 
-				/*
 				if ( classifier ){
 					t.classified = classifier.parse( 
 						data,
-						ref.$ops.getStats()
+						references[0].$ops.getStats()
 					);
 				}
-				*/
 
 				sets.push( t );
 				
@@ -240,8 +240,7 @@ class Heatmap{
 			}
 
 			return '<g class="'+className+'"'+
-				' transform="translate('+dataSet.x1+','+dataSet.y1+')"'+
-				'>'+
+				' transform="translate('+dataSet.x1+','+dataSet.y1+')">'+
 					'<rect x="0" y="0'+
 						( dataSet.$color ? '" style="fill:'+dataSet.$color : '' )+
 						'" width="'+(dataSet.x2 - dataSet.x1)+
