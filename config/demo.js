@@ -2083,6 +2083,12 @@ angular.module( 'vgraph' ).controller( 'PieCtrl',
 			}
 		};
 
+		$scope.options = {
+			red: {
+				className: 'orange'
+			}
+		};
+
 		$scope.ref = { name : 'y', className : 'red' };
 
 		function makeData(){

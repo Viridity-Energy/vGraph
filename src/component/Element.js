@@ -131,7 +131,10 @@ class Element {
 			this.closeSets();
 
 			if ( this.publish ){
-				this.chart.$trigger( 'publish:'+this.publish, dataSets );
+				this.chart.$trigger(
+					'publish:'+this.publish, 
+					drawer.publish ? drawer.publish() : dataSets 
+				);
 			}
 
 			root.innerHTML = '';

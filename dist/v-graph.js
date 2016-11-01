@@ -1510,7 +1510,7 @@ var vGraph =
 					this.closeSets();
 
 					if (this.publish) {
-						this.chart.$trigger('publish:' + this.publish, dataSets);
+						this.chart.$trigger('publish:' + this.publish, drawer.publish ? drawer.publish() : dataSets);
 					}
 
 					root.innerHTML = '';
@@ -7688,7 +7688,8 @@ var vGraph =
 		return {
 			scope: {
 				config: '=vgraphPie',
-				buckets: '=buckets'
+				buckets: '=',
+				options: '='
 			},
 			require: ['^vgraphChart', 'vgraphPie'],
 			controller: ComponentElement,
@@ -7727,7 +7728,7 @@ var vGraph =
 						refs[i] = chart.getReference(ref);
 					});
 
-					element.configure(chart, new DrawPie(refs, scope.buckets, area), el, attrs.name, attrs.publish);
+					element.configure(chart, new DrawPie(refs, scope.buckets, area, scope.options), el, attrs.name, attrs.publish);
 
 					refs.forEach(function (ref) {
 						ref.$ops.$view.registerComponent(element);
@@ -7853,12 +7854,15 @@ var vGraph =
 	}
 
 	var Pie = function () {
-		function Pie(references, buckets, area) {
+		function Pie(references, buckets, area, options) {
 			_classCallCheck(this, Pie);
 
 			var fn;
 
+			console.log(options);
+
 			this.area = area;
+			this.options = options || {};
 			this.buckets = Object.keys(buckets);
 			this.references = references;
 
@@ -7940,11 +7944,29 @@ var vGraph =
 		}, {
 			key: 'makeElement',
 			value: function makeElement(set) {
-				var className = set.bucket;
+				var options = this.options,
+				    className = set.bucket;
+
+				if (options[set.bucket] && options[set.bucket].className) {
+					className += ' ' + options[set.bucket].className;
+				}
 
 				if (set.value) {
 					return '<path class="slice ' + className + '" d="' + this.makePath(set) + '"/>';
 				}
+			}
+		}, {
+			key: 'publish',
+			value: function publish() {
+				var slices = {},
+				    options = this.options;
+
+				this.dataSets.forEach(function (d) {
+					slices[d.bucket] = d;
+					slices['$' + d.bucket] = options[d.bucket];
+				});
+
+				return slices;
 			}
 		}, {
 			key: 'getHitbox',

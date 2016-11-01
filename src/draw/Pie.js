@@ -107,10 +107,14 @@ function populateBuckets( bucketer, references ){
 }
 
 class Pie {
-	constructor( references, buckets, area ){
+	constructor( references, buckets, area, options ){
 		var fn;
 
+
+		console.log( options );
+		
 		this.area = area;
+		this.options = options || {};
 		this.buckets = Object.keys(buckets);
 		this.references = references;
 
@@ -200,12 +204,29 @@ class Pie {
 	}
 
 	makeElement( set ){
-		var className = set.bucket;
+		var options = this.options,
+			className = set.bucket;
+
+		if ( options[set.bucket] && options[set.bucket].className ){
+			className += ' '+options[set.bucket].className;
+		}
 
 		if ( set.value ){
 			return '<path class="slice '+className+
 				'" d="'+this.makePath(set)+'"/>';
 		}
+	}
+
+	publish(){
+		var slices = {},
+			options = this.options;
+
+		this.dataSets.forEach(function( d ){
+			slices[ d.bucket ] = d;
+			slices[ '$'+d.bucket ] = options[ d.bucket ];
+		});
+
+		return slices;
 	}
 
 	getHitbox( set ){

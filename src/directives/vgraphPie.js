@@ -7,7 +7,8 @@ require('angular').module( 'vgraph' ).directive( 'vgraphPie',
 		return {
 			scope : {
 				config: '=vgraphPie',
-				buckets: '=buckets'
+				buckets: '=',
+				options: '='
 			},
 			require : ['^vgraphChart','vgraphPie'],
 			controller: ComponentElement,
@@ -49,7 +50,7 @@ require('angular').module( 'vgraph' ).directive( 'vgraphPie',
 
 					element.configure(
 						chart,
-						new DrawPie(refs,scope.buckets,area),
+						new DrawPie(refs,scope.buckets,area,scope.options),
 						el,
 						attrs.name,
 						attrs.publish
