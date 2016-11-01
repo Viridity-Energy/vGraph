@@ -1,125 +1,98 @@
 
-	function getCoords( centerX, centerY, radius, angleInDegrees ) {
-		var angleInRadians = (angleInDegrees-90) * Math.PI / 180.0;
+function getCoords( centerX, centerY, radius, angleInDegrees ) {
+	var angleInRadians = (angleInDegrees-90) * Math.PI / 180.0;
 
-		return {
-			x: centerX + ( radius * Math.cos(angleInRadians) ),
-			y: centerY + ( radius * Math.sin(angleInRadians) )
-		};
-	}
+	return {
+		x: centerX + ( radius * Math.cos(angleInRadians) ),
+		y: centerY + ( radius * Math.sin(angleInRadians) )
+	};
+}
 
-	function makeSliver( x, y, radius, start, stop, bigArc ){
-		var arcSweep = bigArc ? '1' : '0';
-		
-		return 'M'+x+','+y+
-			'L'+start.x+','+start.y+
-			'A'+radius+','+radius+' 0 '+arcSweep+' 0 '+stop.x+','+stop.y+'Z';
-	}
+function makeSliver( x, y, radius, start, stop, bigArc ){
+	var arcSweep = bigArc ? '1' : '0';
+	
+	return 'M'+x+','+y+
+		'L'+start.x+','+start.y+
+		'A'+radius+','+radius+' 0 '+arcSweep+' 0 '+stop.x+','+stop.y+'Z';
+}
 
-	function stackFunc( bucket, old, fn ){
-		function test( node, value ){
-			var v = fn(node,value);
+function stackFunc( bucket, old, fn ){
+	function test( node, value ){
+		var v = fn(node,value);
 
-			if ( v !== undefined ){
-				return {
-					bucket: bucket,
-					value: v
-				};
-			}
-		}
-
-		if ( !old ){
-			return test;
-		}else{
-			return function( node, value ){
-				return test(node,value) || old(node,value);
+		if ( v !== undefined ){
+			return {
+				bucket: bucket,
+				value: v
 			};
 		}
 	}
 
+	if ( !old ){
+		return test;
+	}else{
+		return function( node, value ){
+			return test(node,value) || old(node,value);
+		};
+	}
+}
+
 function getMax( eins, zwei, drei ){
-		if ( eins > zwei && eins > drei ){
-			return eins;
-		}else if ( zwei > drei ){
-			return zwei;
-		}else{
-			return drei;
-		}
+	if ( eins > zwei && eins > drei ){
+		return eins;
+	}else if ( zwei > drei ){
+		return zwei;
+	}else{
+		return drei;
+	}
+}
+
+function getMin( eins, zwei, drei ){
+	if ( eins < zwei && eins < drei ){
+		return eins;
+	}else if ( zwei < drei ){
+		return zwei;
+	}else{
+		return drei;
+	}
+}
+
+function calcBox( x, y, radius, start, startAngle, stop, stopAngle ){
+	var minX = x,
+		maxX = x,
+		minY = y,
+		maxY = y;
+
+	if ( startAngle === 0 || stopAngle === 360 ){
+		minY = y - radius;
 	}
 
-	function getMin( eins, zwei, drei ){
-		if ( eins < zwei && eins < drei ){
-			return eins;
-		}else if ( zwei < drei ){
-			return zwei;
-		}else{
-			return drei;
-		}
+	if ( startAngle <= 90 && stopAngle >= 90 ){
+		maxX = x + radius;
 	}
 
-	function calcBox( x, y, radius, start, startAngle, stop, stopAngle ){
-		var minX = x,
-			maxX = x,
-			minY = y,
-			maxY = y;
-
-		if ( startAngle === 0 || stopAngle === 360 ){
-			minY = y - radius;
-		}
-
-		if ( startAngle <= 90 && stopAngle >= 90 ){
-			maxX = x + radius;
-		}
-
-		if ( startAngle < 180 && stopAngle >= 180 ){
-			maxY = y + radius;
-		}
-
-		if ( startAngle <= 270 && stopAngle >= 270 ){
-			minX = x - radius;
-		}
-
-		return {
-			minX: getMin( minX, start.x, stop.x ),
-			maxX: getMax( maxX, start.x, stop.x ),
-			minY: getMin( minY, start.y, stop.y ),
-			maxY: getMax( maxY, start.y, stop.y )
-		};
+	if ( startAngle < 180 && stopAngle >= 180 ){
+		maxY = y + radius;
 	}
 
-class Pie {
-	constructor( reference, buckets, area ){
-		var fn;
-
-		this.area = area;
-		this.buckets = Object.keys(buckets);
-		this.references = [reference];
-
-		this.buckets.forEach(function(bucket){
-			fn = stackFunc( bucket, fn, buckets[bucket] );
-		});
-
-		this.getPoint = function( index ){
-			var node = reference.$ops.$getNode( index );
-
-			return fn( node, reference.$ops.getValue(node) );
-		};
+	if ( startAngle <= 270 && stopAngle >= 270 ){
+		minX = x - radius;
 	}
 
-	getReferences(){
-		return this.references;
-	}
+	return {
+		minX: getMin( minX, start.x, stop.x ),
+		maxX: getMax( maxX, start.x, stop.x ),
+		minY: getMin( minY, start.y, stop.y ),
+		maxY: getMax( maxY, start.y, stop.y )
+	};
+}
 
-	parse( keys ){
-		var i, c,
-			parsed,
-			sets = [],
-			total = 0,
-			buckets = {};
+function populateBuckets( bucketer, references ){
+	var buckets = {};
 
-		// I need to start on the end, and find the last valid point.  Go until there
-		for( i = 0, c = keys.length; i < c; i++ ){
-			parsed = this.getPoint(keys[i]); // { bucket, value }
+	references.forEach(function( ref ){
+		ref.$ops.eachNode(function( node ){
+			var parsed = bucketer( ref.$ops.getValue(node), node );
 			if ( parsed ){
 				if ( !buckets[parsed.bucket] ){
 					buckets[parsed.bucket] = parsed.value;
@@ -127,7 +100,36 @@ class Pie {
 					buckets[parsed.bucket] += parsed.value;
 				}
 			}
-		}
+		});
+	});
+
+	return buckets;
+}
+
+class Pie {
+	constructor( references, buckets, area ){
+		var fn;
+
+		this.area = area;
+		this.buckets = Object.keys(buckets);
+		this.references = references;
+
+		this.buckets.forEach(function(bucket){
+			fn = stackFunc( bucket, fn, buckets[bucket] );
+		});
+
+		// fn( node, reference.$ops.getValue(node) )
+		this.bucketer = fn;
+	}
+
+	getReferences(){
+		return this.references;
+	}
+
+	parse(){
+		var sets = [],
+			total = 0,
+			buckets = populateBuckets( this.bucketer, this.references );
 
 		Object.keys(buckets).forEach(function(bucket){
 			var start = total,

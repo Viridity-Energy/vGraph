@@ -16,8 +16,9 @@ require('angular').module( 'vgraph' ).directive( 'vgraphPie',
 					area = {},
 					chart = requirements[0],
 					box = chart.box,
-					element = requirements[1],
-					className = 'pie ';
+					element = requirements[1];
+
+				el.setAttribute( 'class', 'pie '+el.getAttribute('class') );
 
 				function calcArea(){
 					area.radius = ( (box.inner.width < box.inner.height) ?
@@ -30,27 +31,33 @@ require('angular').module( 'vgraph' ).directive( 'vgraphPie',
 				box.$on( 'resize', calcArea );
 
 				scope.$watch('config', function( config ){
-					var cfg = chart.getReference( config );
+					var refs;
 
-					if ( cfg ){
-						element.configure(
-							chart,
-							new DrawPie(cfg,scope.buckets,area),
-							el,
-							attrs.name,
-							attrs.publish
-						);
-
-						if ( cfg.classExtend ){
-							className += cfg.classExtend + ' ';
-						}
-
-						className += attrs.className || cfg.className;
-
-						el.setAttribute( 'class', className );
-
-						cfg.$ops.$view.registerComponent(element);
+					if ( !config ){
+						return;
 					}
+
+					if ( config.length !== undefined ){
+						refs = config.slice(0);
+					}else{
+						refs = [config];
+					}
+					
+					refs.forEach(function( ref, i ){
+						refs[i] = chart.getReference(ref);
+					});
+
+					element.configure(
+						chart,
+						new DrawPie(refs,scope.buckets,area),
+						el,
+						attrs.name,
+						attrs.publish
+					);
+
+					refs.forEach(function( ref ){
+						ref.$ops.$view.registerComponent(element);
+					});
 				});
 			}
 		};

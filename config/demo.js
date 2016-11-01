@@ -2068,15 +2068,15 @@ angular.module( 'vgraph' ).controller( 'PieCtrl',
 		}];
 
 		$scope.buckets = {
-			blue: function( datum, value ){
+			blue: function( value ){
 				return 1;
 			},
-			red: function( datum, value ){
+			red: function( value ){
 				if ( value > 15 ){
 					return 1;
 				}
 			},
-			green: function( datum, value ){
+			green: function( value ){
 				if ( value < 5 ){
 					return 1;
 				}
@@ -2446,15 +2446,15 @@ angular.module( 'vgraph' ).controller( 'CombinationCtrl',
 		};
 
 		$scope.buckets = {
-			blue: function( datum, value ){
+			blue: function( value ){
 				return 1;
 			},
-			red: function( datum, value ){
+			red: function( value ){
 				if ( value > 15 ){
 					return 1;
 				}
 			},
-			green: function( datum, value ){
+			green: function( value ){
 				if ( value < 5 ){
 					return 1;
 				}

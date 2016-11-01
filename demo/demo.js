@@ -2069,15 +2069,15 @@
 		}];
 
 		$scope.buckets = {
-			blue: function blue(datum, value) {
+			blue: function blue(value) {
 				return 1;
 			},
-			red: function red(datum, value) {
+			red: function red(value) {
 				if (value > 15) {
 					return 1;
 				}
 			},
-			green: function green(datum, value) {
+			green: function green(value) {
 				if (value < 5) {
 					return 1;
 				}
@@ -2455,15 +2455,15 @@
 		};
 
 		$scope.buckets = {
-			blue: function blue(datum, value) {
+			blue: function blue(value) {
 				return 1;
 			},
-			red: function red(datum, value) {
+			red: function red(value) {
 				if (value > 15) {
 					return 1;
 				}
 			},
-			green: function green(datum, value) {
+			green: function green(value) {
 				if (value < 5) {
 					return 1;
 				}
@@ -33411,8 +33411,9 @@
 				    area = {},
 				    chart = requirements[0],
 				    box = chart.box,
-				    element = requirements[1],
-				    className = 'pie ';
+				    element = requirements[1];
+
+				el.setAttribute('class', 'pie ' + el.getAttribute('class'));
 
 				function calcArea() {
 					area.radius = (box.inner.width < box.inner.height ? box.inner.width : box.inner.height) / 2;
@@ -33424,21 +33425,27 @@
 				box.$on('resize', calcArea);
 
 				scope.$watch('config', function (config) {
-					var cfg = chart.getReference(config);
+					var refs;
 
-					if (cfg) {
-						element.configure(chart, new DrawPie(cfg, scope.buckets, area), el, attrs.name, attrs.publish);
-
-						if (cfg.classExtend) {
-							className += cfg.classExtend + ' ';
-						}
-
-						className += attrs.className || cfg.className;
-
-						el.setAttribute('class', className);
-
-						cfg.$ops.$view.registerComponent(element);
+					if (!config) {
+						return;
 					}
+
+					if (config.length !== undefined) {
+						refs = config.slice(0);
+					} else {
+						refs = [config];
+					}
+
+					refs.forEach(function (ref, i) {
+						refs[i] = chart.getReference(ref);
+					});
+
+					element.configure(chart, new DrawPie(refs, scope.buckets, area), el, attrs.name, attrs.publish);
+
+					refs.forEach(function (ref) {
+						ref.$ops.$view.registerComponent(element);
+					});
 				});
 			}
 		};
@@ -33540,25 +33547,41 @@
 		};
 	}
 
+	function populateBuckets(bucketer, references) {
+		var buckets = {};
+
+		references.forEach(function (ref) {
+			ref.$ops.eachNode(function (node) {
+				var parsed = bucketer(ref.$ops.getValue(node), node);
+				if (parsed) {
+					if (!buckets[parsed.bucket]) {
+						buckets[parsed.bucket] = parsed.value;
+					} else {
+						buckets[parsed.bucket] += parsed.value;
+					}
+				}
+			});
+		});
+
+		return buckets;
+	}
+
 	var Pie = function () {
-		function Pie(reference, buckets, area) {
+		function Pie(references, buckets, area) {
 			_classCallCheck(this, Pie);
 
 			var fn;
 
 			this.area = area;
 			this.buckets = Object.keys(buckets);
-			this.references = [reference];
+			this.references = references;
 
 			this.buckets.forEach(function (bucket) {
 				fn = stackFunc(bucket, fn, buckets[bucket]);
 			});
 
-			this.getPoint = function (index) {
-				var node = reference.$ops.$getNode(index);
-
-				return fn(node, reference.$ops.getValue(node));
-			};
+			// fn( node, reference.$ops.getValue(node) )
+			this.bucketer = fn;
 		}
 
 		_createClass(Pie, [{
@@ -33568,25 +33591,10 @@
 			}
 		}, {
 			key: 'parse',
-			value: function parse(keys) {
-				var i,
-				    c,
-				    parsed,
-				    sets = [],
+			value: function parse() {
+				var sets = [],
 				    total = 0,
-				    buckets = {};
-
-				// I need to start on the end, and find the last valid point.  Go until there
-				for (i = 0, c = keys.length; i < c; i++) {
-					parsed = this.getPoint(keys[i]); // { bucket, value }
-					if (parsed) {
-						if (!buckets[parsed.bucket]) {
-							buckets[parsed.bucket] = parsed.value;
-						} else {
-							buckets[parsed.bucket] += parsed.value;
-						}
-					}
-				}
+				    buckets = populateBuckets(this.bucketer, this.references);
 
 				Object.keys(buckets).forEach(function (bucket) {
 					var start = total,
