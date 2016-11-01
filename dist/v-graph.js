@@ -7963,7 +7963,7 @@ var vGraph =
 
 				this.dataSets.forEach(function (d) {
 					slices[d.bucket] = d;
-					slices['$' + d.bucket] = options[d.bucket];
+					d.$ = options[d.bucket];
 				});
 
 				return slices;

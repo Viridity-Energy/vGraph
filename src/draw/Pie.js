@@ -112,7 +112,7 @@ class Pie {
 
 
 		console.log( options );
-		
+
 		this.area = area;
 		this.options = options || {};
 		this.buckets = Object.keys(buckets);
@@ -223,7 +223,7 @@ class Pie {
 
 		this.dataSets.forEach(function( d ){
 			slices[ d.bucket ] = d;
-			slices[ '$'+d.bucket ] = options[ d.bucket ];
+			d.$ = options[ d.bucket ];
 		});
 
 		return slices;
