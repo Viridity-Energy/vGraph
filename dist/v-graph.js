@@ -1667,11 +1667,14 @@ var vGraph =
 				for (j = 0; j < co; j++) {
 					cfg = config[j];
 					datum = cfg.$ops.$getNode(dex);
-					v = cfg.$ops.getValue(datum) || 0;
 
-					sum += v;
+					if (datum) {
+						v = cfg.$ops.getValue(datum) || 0;
 
-					datum[nameAs[j]] = sum;
+						sum += v;
+
+						datum[nameAs[j]] = sum;
+					}
 				}
 			}
 
@@ -3874,6 +3877,7 @@ var vGraph =
 
 						if (ref.$ops.getValue) {
 							point[ref.name] = ref.$ops.getValue(point);
+							point['_' + ref.name] = ref.$ops.getRaw(point);
 						}
 					});
 				}
@@ -4817,6 +4821,13 @@ var vGraph =
 			key: 'setView',
 			value: function setView(viewComp) {
 				this.$view = viewComp;
+			}
+		}, {
+			key: 'getRaw',
+			value: function getRaw(d) {
+				if (d) {
+					return d[this.$getRoot().field];
+				}
 			}
 		}, {
 			key: 'eachNode',

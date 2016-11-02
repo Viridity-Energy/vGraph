@@ -36,6 +36,12 @@ class Reference {
 		this.$view = viewComp;
 	}
 
+	getRaw( d ){
+		if ( d ){
+			return d[ this.$getRoot().field ];
+		}
+	}
+
 	eachNode( fn ){
 		this.$view.normalizer.$sort().forEach( fn );
 	}

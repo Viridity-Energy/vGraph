@@ -606,10 +606,10 @@
 				<div vgraph-chart="graph">
 					<pre vgraph-highlight="point">
 					Stacked - Lines
-	{{ config[0].name }} : {{ point.default[config[0].name] }} : {{config[0].pointAs}} : {{ point.default[config[0].pointAs] }}:{{ config[0].className }}
-	{{ config[1].name }} : {{ point.default[config[1].name] }} : {{config[0].pointAs}} : {{ point.default[config[1].pointAs] }}:{{ config[1].className }}
-	{{ config[2].name }} : {{ point.default[config[2].name] }} : {{config[0].pointAs}} : {{ point.default[config[2].pointAs] }}:{{ config[2].className }}
-	{{ config[3].name }} : {{ point.default[config[3].name] }} : {{config[0].pointAs}} : {{ point.default[config[3].pointAs] }}:{{ config[3].className }}
+	{{ config[0].name }} : {{ point.default[config[0].name] }} : {{config[0].pointAs}} : {{ point.default[config[0].pointAs] }}:{{ config[0].className }} : {{ point.default['_'+config[0].name] }}
+	{{ config[1].name }} : {{ point.default[config[1].name] }} : {{config[0].pointAs}} : {{ point.default[config[1].pointAs] }}:{{ config[1].className }} : {{ point.default['_'+config[0].name] }}
+	{{ config[2].name }} : {{ point.default[config[2].name] }} : {{config[0].pointAs}} : {{ point.default[config[2].pointAs] }}:{{ config[2].className }} : {{ point.default['_'+config[0].name] }}
+	{{ config[3].name }} : {{ point.default[config[3].name] }} : {{config[0].pointAs}} : {{ point.default[config[3].pointAs] }}:{{ config[3].className }} : {{ point.default['_'+config[0].name] }}
 					</pre>
 					<svg>
 						<g vgraph-axis="'left'"

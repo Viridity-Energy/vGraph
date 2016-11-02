@@ -131,11 +131,14 @@ module.exports = {
 			for( j = 0; j < co; j++ ){
 				cfg = config[j];
 				datum = cfg.$ops.$getNode(dex);
-				v = cfg.$ops.getValue(datum) || 0;
 
-				sum += v;
+				if ( datum ){
+					v = cfg.$ops.getValue(datum) || 0;
 
-				datum[ nameAs[j] ] = sum;
+					sum += v;
+
+					datum[ nameAs[j] ] = sum;
+				}
 			}
 		}
 

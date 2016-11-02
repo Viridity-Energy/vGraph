@@ -403,6 +403,7 @@ class View {
 
 				if ( ref.$ops.getValue ){
 					point[ ref.name ] = ref.$ops.getValue( point );
+					point[ '_'+ref.name ] = ref.$ops.getRaw( point );
 				}
 			});
 		}
