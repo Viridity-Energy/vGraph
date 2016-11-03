@@ -3871,13 +3871,13 @@ var vGraph =
 
 						if (ref.highlights) {
 							Object.keys(ref.highlights).forEach(function (k) {
-								point[k] = ref.highlights[k](point);
+								point[k] = ref.highlights[k](p);
 							});
 						}
 
 						if (ref.$ops.getValue) {
-							point[ref.name] = ref.$ops.getValue(point);
-							point['_' + ref.name] = ref.$ops.getRaw(point);
+							point['_' + ref.name] = ref.$ops.getRaw(p);
+							point[ref.name] = ref.$ops.getValue(p);
 						}
 					});
 				}
