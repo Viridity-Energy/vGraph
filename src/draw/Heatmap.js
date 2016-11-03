@@ -219,7 +219,8 @@ class Heatmap{
     '>{{ text }}</text>'
 	*/
 	makeElement( dataSet ){
-		var template,
+		var heading,
+			template,
 			className = '';
 
 		if ( dataSet ){
@@ -231,6 +232,7 @@ class Heatmap{
 				template = this.templates.cell;
 				className += ' bucket';
 			}else{
+				heading = true;
 				if ( dataSet.type === 'x' ){
 					template = this.templates.xHeading;
 				}else{
@@ -242,11 +244,12 @@ class Heatmap{
 			return '<g class="'+className+'"'+
 				' transform="translate('+dataSet.x1+','+dataSet.y1+')">'+
 					'<rect x="0" y="0'+
+						'" width="'+(dataSet.width)+'" height="'+(dataSet.height)+
 						( dataSet.$color ? '" style="fill:'+dataSet.$color : '' )+
-						'" width="'+(dataSet.x2 - dataSet.x1)+
-						'" height="'+(dataSet.y2 - dataSet.y1)+
 					'"/>'+
-					template+
+					'<g transform="translate('+dataSet.width/2+','+dataSet.height/2+')">'+
+						template+
+					'</g>'+
 				'</g>';
 		}
 	}

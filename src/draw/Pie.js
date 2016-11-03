@@ -110,9 +110,6 @@ class Pie {
 	constructor( references, buckets, area, options ){
 		var fn;
 
-
-		console.log( options );
-
 		this.area = area;
 		this.options = options || {};
 		this.buckets = Object.keys(buckets);
