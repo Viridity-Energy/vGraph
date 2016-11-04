@@ -71,6 +71,7 @@ angular.module( 'vgraph' ).directive( 'vgraphTarget',
 					var i, c;
 
 					configs = [];
+					$dots.selectAll( 'circle.point' ).remove();
 
 					if ( cfgs ){
 						for( i = 0, c = cfgs.length; i < c; i++ ){
