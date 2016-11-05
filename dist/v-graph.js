@@ -3742,6 +3742,14 @@ var vGraph =
 					}
 				}
 
+				if (this.y.min !== undefined) {
+					min = this.y.min;
+				}
+
+				if (this.y.max !== undefined) {
+					max = this.y.max;
+				}
+
 				this.viewport.minValue = min;
 				this.viewport.maxValue = max;
 
