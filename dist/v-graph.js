@@ -5523,6 +5523,8 @@ var vGraph =
 				    ySize,
 				    xCount,
 				    yCount,
+				    xHash,
+				    yHash,
 				    xLabels,
 				    yLabels,
 				    sets = [],
@@ -5543,32 +5545,46 @@ var vGraph =
 				if (this.labels.x) {
 					xLabels = this.labels.x;
 				} else {
-					xLabels = {};
+					xHash = {};
+					xLabels = [];
 					bucketer.$getIndexs().forEach(function (label) {
-						xLabels[label] = label;
+						if (!xHash[label]) {
+							xHash[label] = true;
+							xLabels.push({
+								text: label,
+								value: label
+							});
+						}
 					});
 				}
 
 				if (this.labels.y) {
 					yLabels = this.labels.y;
 				} else {
-					yLabels = {};
+					yHash = {};
+					yLabels = [];
 					bucketer.forEach(function (bucket) {
 						bucket.$getIndexs().forEach(function (label) {
-							yLabels[label] = label;
+							if (!yHash[label]) {
+								yHash[label] = true;
+								yLabels.push({
+									text: label,
+									value: label
+								});
+							}
 						});
 					});
 				}
 
-				xCount = Object.keys(xLabels).length;
-				yCount = Object.keys(yLabels).length;
+				xCount = xLabels.length;
+				yCount = yLabels.length;
 
 				xSize = (area.x2 - area.x1) / xCount;
 				ySize = (area.y2 - area.y1) / yCount;
 
 				// compute the x labels
 				xPos = area.x1;
-				Object.keys(xLabels).forEach(function (key) {
+				xLabels.forEach(function (label) {
 					var xNext = xPos + xSize;
 
 					sets.push({
@@ -5579,7 +5595,7 @@ var vGraph =
 						y2: area.y1,
 						width: xSize,
 						height: area.labelHeight,
-						text: xLabels[key]
+						text: label.text
 					});
 
 					xPos = xNext;
@@ -5587,7 +5603,7 @@ var vGraph =
 
 				// compute the y labels
 				yPos = area.y1;
-				Object.keys(yLabels).forEach(function (key) {
+				yLabels.forEach(function (label) {
 					var yNext = yPos + ySize;
 
 					sets.push({
@@ -5598,7 +5614,7 @@ var vGraph =
 						y2: yNext,
 						width: area.labelWidth,
 						height: ySize,
-						text: yLabels[key]
+						text: label.text
 					});
 
 					yPos = yNext;
@@ -5606,15 +5622,17 @@ var vGraph =
 
 				// compute the data cells
 				xPos = area.x1;
-				Object.keys(xLabels).forEach(function (x) {
-					var col = [],
+				xLabels.forEach(function (xl) {
+					var x = xl.value,
+					    col = [],
 					    xNext = xPos + xSize;
 
 					grid.push(col);
 					yPos = area.y1;
 
-					Object.keys(yLabels).forEach(function (y) {
+					yLabels.forEach(function (yl) {
 						var t,
+						    y = yl.value,
 						    yNext = yPos + ySize,
 						    data = bucketer.$getBucket(x).$getBucket(y);
 
