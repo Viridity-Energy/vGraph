@@ -2654,6 +2654,20 @@ var vGraph =
 			key: 'registerComponent',
 			value: function registerComponent(component) {
 				this.components.push(component);
+
+				if (this.pristine) {
+					if (component.build) {
+						component.build();
+					}
+
+					if (component.process) {
+						component.process();
+					}
+
+					if (component.finalize) {
+						component.finalize();
+					}
+				}
 			}
 		}, {
 			key: 'configureHitarea',
@@ -3650,7 +3664,17 @@ var vGraph =
 					loadReference(refs[name], normalizer);
 				});
 
-				this.adjustSettings = settings.adjustSettings || chartSettings.adjustSettings;
+				if (settings.adjustSettings) {
+					this.adjustSettings = function (x, xDiff, y, yDiff) {
+						if (chartSettings.adjustSettings) {
+							chartSettings.adjustSettings(x, xDiff, y, yDiff);
+						}
+						settings.adjustSettings(x, xDiff, y, yDiff);
+					};
+				} else {
+					this.adjustSettings = chartSettings.adjustSettings;
+				}
+
 				this.pane = new ComponentPane(settings.fitToPane || chartSettings.fitToPane, this.x, this.y);
 
 				if (this.x.max) {

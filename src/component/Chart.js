@@ -494,6 +494,20 @@ class Chart{
 
 	registerComponent( component ){
 		this.components.push(component);
+
+		if ( this.pristine ){
+			if ( component.build ){
+				component.build();
+			}
+
+			if ( component.process ){
+				component.process();
+			}
+
+			if ( component.finalize ){
+				component.finalize();
+			}
+		}
 	}
 
 	configureHitarea(){

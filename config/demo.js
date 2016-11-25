@@ -30,6 +30,10 @@ angular.module( 'vgraph' ).controller( 'FloodCtrl',
 			},
 			data = [ {x : 0, y1 : 20, y2 : 25, y3 : 30, y4 : 40}  ];
 
+		$timeout(function(){ 
+			$scope.ready = true;
+		}, 3000);
+
 		$scope.graph = {
 			x : {
 				min: -5,

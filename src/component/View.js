@@ -167,7 +167,17 @@ class View {
 			loadReference( refs[name], normalizer );
 		});
 
-		this.adjustSettings = settings.adjustSettings||chartSettings.adjustSettings;
+		if ( settings.adjustSettings ){
+			this.adjustSettings = function( x, xDiff, y, yDiff ){
+				if ( chartSettings.adjustSettings ){
+					chartSettings.adjustSettings( x, xDiff, y, yDiff );
+				}
+				settings.adjustSettings( x, xDiff, y, yDiff );
+			};
+		}else{
+			this.adjustSettings = chartSettings.adjustSettings;
+		}
+		
 		this.pane = new ComponentPane( settings.fitToPane||chartSettings.fitToPane, this.x, this.y );
 
 		if ( this.x.max ){
