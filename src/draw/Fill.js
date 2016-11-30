@@ -44,7 +44,7 @@ class Fill extends DrawLinear{
 			y1 = parsed.y1,
 			y2 = parsed.y2;
 		
-		if ( (y1 || y1 === 0) && (y1 || y2 === 0) ){
+		if ( y1 !== null && y2 !== null ){
 			set.push({
 				x: x,
 				y1: y1,
@@ -59,6 +59,7 @@ class Fill extends DrawLinear{
 
 	makePath( dataSet ){
 		var i, c,
+			y1,
 			y2,
 			point,
 			top = this.top.$ops.$view,
@@ -67,7 +68,25 @@ class Fill extends DrawLinear{
 			line2 = [];
 		
 		if ( dataSet.length ){
-			for( i = 0, c = dataSet.length; i < c; i++ ){
+			// prune off the leading edge where both lines aren't defined together
+			c = 0;
+			for( i = dataSet.length - 1; i > 0 && !c; i-- ){
+				point = dataSet[i];
+
+				if ( !y1 ){
+					y1 = ( point.y1 || point.y1===0 );
+				}
+
+				if ( !y2 ){
+					y2 = ( point.y2 || point.y2 === 0 );
+				}
+
+				if ( y1 && y2 ){
+					c = i + 1;
+				}
+			}
+
+			for( i = 0; i < c; i++ ){
 				point = dataSet[i];
 				
 				if ( point.y1 || point.y1 === 0 ){
