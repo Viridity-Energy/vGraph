@@ -133,9 +133,10 @@ class View {
 			}
 		}
 
+		// need to know the bounds of the actual data, not the bounds of the visualization
 		return {
-			min: this.x.min !== undefined ? this.x.min : data[0]._$index,
-			max: this.x.max !== undefined ? this.x.max : data[data.length-1]._$index,
+			min: data[0]._$index,
+			max: data[data.length-1]._$index,
 			interval: interval
 		};
 	}
