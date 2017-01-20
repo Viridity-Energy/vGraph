@@ -834,7 +834,7 @@ var vGraph =
 		function Bar(top, bottom, settings) {
 			_classCallCheck(this, Bar);
 
-			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Bar).call(this, [top, bottom], settings));
+			var _this = _possibleConstructorReturn(this, (Bar.__proto__ || Object.getPrototypeOf(Bar)).call(this, [top, bottom], settings));
 
 			_this.top = top;
 
@@ -888,7 +888,7 @@ var vGraph =
 				prev.x2 = dataSet.x1 = (prev.x2 + dataSet.x1) / 2;
 
 				closeDataset(prev, this.top.$ops.$view, this.bottom.$ops.$view, this.settings);
-				_get(Object.getPrototypeOf(Bar.prototype), 'closeSet', this).call(this, prev);
+				_get(Bar.prototype.__proto__ || Object.getPrototypeOf(Bar.prototype), 'closeSet', this).call(this, prev);
 			}
 		}, {
 			key: 'lastSet',
@@ -897,7 +897,7 @@ var vGraph =
 
 				dataSet.x2 = box.inner.right;
 				closeDataset(dataSet, this.top.$ops.$view, this.bottom.$ops.$view, this.settings);
-				_get(Object.getPrototypeOf(Bar.prototype), 'closeSet', this).call(this, dataSet);
+				_get(Bar.prototype.__proto__ || Object.getPrototypeOf(Bar.prototype), 'closeSet', this).call(this, dataSet);
 			}
 		}]);
 
@@ -969,7 +969,7 @@ var vGraph =
 		function DrawZone(refs, settings) {
 			_classCallCheck(this, DrawZone);
 
-			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(DrawZone).call(this, refs));
+			var _this = _possibleConstructorReturn(this, (DrawZone.__proto__ || Object.getPrototypeOf(DrawZone)).call(this, refs));
 
 			_this.settings = settings || {};
 			return _this;
@@ -1756,7 +1756,7 @@ var vGraph =
 		function Box(ref, settings) {
 			_classCallCheck(this, Box);
 
-			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Box).call(this, [ref], settings));
+			var _this = _possibleConstructorReturn(this, (Box.__proto__ || Object.getPrototypeOf(Box)).call(this, [ref], settings));
 
 			_this.ref = ref;
 			return _this;
@@ -1797,7 +1797,7 @@ var vGraph =
 			key: 'mergePoint',
 			value: function mergePoint(parsed, set) {
 				if ((parsed.y1 || parsed.y1 === 0) && (parsed.y2 || parsed.y2 === 0)) {
-					_get(Object.getPrototypeOf(Box.prototype), 'mergePoint', this).call(this, parsed, set);
+					_get(Box.prototype.__proto__ || Object.getPrototypeOf(Box.prototype), 'mergePoint', this).call(this, parsed, set);
 					return -1;
 				} else {
 					return 0;
@@ -1811,7 +1811,7 @@ var vGraph =
 				dataSet.y1 = view.y.scale(dataSet.y1 === '+' ? view.viewport.maxValue : dataSet.y1);
 				dataSet.y2 = view.y.scale(dataSet.y2 === '-' ? view.viewport.minValue : dataSet.y2);
 
-				_get(Object.getPrototypeOf(Box.prototype), 'closeSet', this).call(this, dataSet);
+				_get(Box.prototype.__proto__ || Object.getPrototypeOf(Box.prototype), 'closeSet', this).call(this, dataSet);
 			}
 		}]);
 
@@ -1889,7 +1889,7 @@ var vGraph =
 		function Candlestick(ref) {
 			_classCallCheck(this, Candlestick);
 
-			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Candlestick).call(this, [ref]));
+			var _this = _possibleConstructorReturn(this, (Candlestick.__proto__ || Object.getPrototypeOf(Candlestick)).call(this, [ref]));
 
 			_this.ref = ref;
 
@@ -2268,10 +2268,112 @@ var vGraph =
 
 	function addColumn(arr) {
 		var i, c;
-
 		for (i = 0, c = arr.length; i < c; i++) {
 			arr[i].push(null);
 		}
+	}
+
+	function setRangeType(ranges, view) {
+		var name;
+
+		// this assume that all views
+		// timeline will have same min
+		// if intended to be run concurrent
+		name = view.min;
+
+		if (!ranges[name]) {
+			ranges[name] = {};
+		}
+
+		return name;
+	}
+
+	function setIndexMap(ranges, view) {
+		var i,
+		    v = view.cellIndexes,
+		    r = ranges[view.min.toString() || view.min].cellIndexes,
+		    byIndex = {},
+		    byUnit = {},
+		    index;
+
+		for (i = v.length - 1; i >= 0; i--) {
+			index = r.indexOf(v[i]);
+			if (index !== -1) {
+				byUnit[v[i]] = index;
+				byIndex[i] = index;
+			}
+		}
+		view.map = {
+			byIndex: byIndex,
+			byUnit: byUnit
+		};
+	}
+
+	function addIndex(bounds, ranges, views, view) {
+		var t = {},
+		    rangeName,
+		    range;
+
+		t.diff = bounds.max - bounds.min;
+		t.interval = bounds.interval;
+		t.min = bounds.min;
+		t.max = bounds.max;
+
+		rangeName = setRangeType(ranges, bounds);
+		range = ranges[rangeName];
+
+		if (range && range.diff) {
+
+			if (range.diff < bounds.max - bounds.min) {
+				range.diff = bounds.max - bounds.min;
+			}
+
+			if (range.interval > bounds.interval) {
+				range.interval = bounds.interval;
+			}
+
+			if (range.min > bounds.min) {
+				range.min = bounds.min;
+			}
+
+			if (range.max < bounds.max) {
+				range.max = bounds.max;
+			}
+		} else {
+			Object.assign(range, t);
+		}
+
+		if (!ranges.interval || ranges.interval > t.interval) {
+			ranges.interval = t.interval;
+		}
+
+		t.maxCell = Math.ceil(t.diff / t.interval);
+		t.cells = t.maxCell + 1;
+
+		if (!range.maxCell || range.maxCell < t.maxCell) {
+			range.maxCell = t.maxCell;
+			range.cells = t.cells;
+		}
+
+		if (!ranges.cells || ranges.cells < t.cells) {
+			ranges.cells = t.cells;
+		}
+
+		// set local indexes for view
+		for (var inc = t.maxCell; inc >= 0; inc--) {
+			//set refs against self
+			if (t.cellIndexes) {
+				t.cellIndexes.unshift(t.min + t.interval * inc);
+			} else {
+				t.cellIndexes = [t.min + t.interval * inc];
+			}
+		}
+
+		if (!range.cellIndexes || t.cellIndexes.length > range.cellIndexes.length) {
+			range.cellIndexes = t.cellIndexes;
+		}
+
+		views[view] = t; // set as view object
 	}
 
 	var Chart = function () {
@@ -2787,22 +2889,22 @@ var vGraph =
 		}, {
 			key: 'export',
 			value: function _export(config) {
-				var diff,
-				    cells,
+				var maxCell,
 				    maxRow,
 				    content,
-				    interval,
-				    maxCell,
+				    viewIndexes = {},
+				    rangeIndexes = {},
 				    headers = config.map(function (m) {
 					return m.title;
 				}),
 				    getReference = this.getReference.bind(this);
 
 				config.forEach(function (cfg) {
-					var ref, t;
+					var ref, name, t;
 
 					if (cfg.reference) {
 						ref = getReference(cfg.reference);
+						name = ref.$ops.$view.$name;
 						t = ref.$ops.$view.getBounds();
 
 						ref.$ops.resetField();
@@ -2810,24 +2912,12 @@ var vGraph =
 
 						cfg.$bounds = t;
 
-						if (diff) {
-							if (diff < t.max - t.min) {
-								diff = t.max - t.min;
-							}
-
-							if (interval > t.interval) {
-								interval = t.interval;
-							}
-						} else {
-							diff = t.max - t.min;
-							interval = t.interval;
-						}
+						addIndex(t, rangeIndexes, viewIndexes, name);
 					}
 				});
 
-				maxCell = Math.ceil(diff / interval);
-				cells = maxCell + 1;
-				content = makeArray(cells);
+				maxCell = rangeIndexes.maxCell;
+				content = makeArray(rangeIndexes.cells);
 
 				config.forEach(function (cfg) {
 					var i,
@@ -2835,11 +2925,17 @@ var vGraph =
 					    row,
 					    min,
 					    max,
+					    index,
+					    view,
 					    interval,
 					    ref = cfg.$ref,
 					    pos = content[0].length;
 
 					addColumn(content);
+
+					view = ref.$ops.$view.$name;
+
+					setIndexMap(rangeIndexes, viewIndexes[view]);
 
 					if (cfg.$ref) {
 						min = cfg.$bounds.min;
@@ -2860,7 +2956,19 @@ var vGraph =
 									}
 								}
 
-								row = Math.floor((i - min) / (max - min) * maxCell + 0.5);
+								if (view) {
+									// map to indexes
+									if (index && typeof viewIndexes[view].map.byIndex[i.toString() || i] === 'number') {
+										row = viewIndexes[view].map.byIndex[i.toString() || i];
+									} else if (typeof viewIndexes[view].map.byUnit[i.toString() || i] === 'number') {
+										row = viewIndexes[view].map.byUnit[i.toString() || i];
+									}
+
+									// otherwise spread them out
+								} else {
+									row = Math.floor((i - min) / (max - min) * maxCell + 0.5);
+								}
+
 								if (!maxRow || maxRow < row) {
 									maxRow = row;
 								}
@@ -3630,6 +3738,7 @@ var vGraph =
 					}
 				}
 
+				// need to know the bounds of the actual data, not the bounds of the visualization
 				return {
 					min: data[0]._$index,
 					max: data[data.length - 1]._$index,
@@ -4137,7 +4246,7 @@ var vGraph =
 		function List(fn) {
 			_classCallCheck(this, List);
 
-			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(List).call(this));
+			var _this = _possibleConstructorReturn(this, (List.__proto__ || Object.getPrototypeOf(List)).call(this));
 
 			_this.$reset();
 			_this.$getValue = fn;
@@ -4256,7 +4365,7 @@ var vGraph =
 		function Normalizer(grouper) {
 			_classCallCheck(this, Normalizer);
 
-			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Normalizer).call(this));
+			var _this = _possibleConstructorReturn(this, (Normalizer.__proto__ || Object.getPrototypeOf(Normalizer)).call(this));
 
 			_this.$modelUid = uid++;
 
@@ -4355,7 +4464,7 @@ var vGraph =
 
 	'use strict';
 
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
@@ -4382,7 +4491,7 @@ var vGraph =
 		function Linear() {
 			_classCallCheck(this, Linear);
 
-			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Linear).call(this, function (d) {
+			var _this = _possibleConstructorReturn(this, (Linear.__proto__ || Object.getPrototypeOf(Linear)).call(this, function (d) {
 				return d._$index;
 			}));
 
@@ -5044,7 +5153,7 @@ var vGraph =
 		function Dots(ref, radius) {
 			_classCallCheck(this, Dots);
 
-			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Dots).call(this, [ref]));
+			var _this = _possibleConstructorReturn(this, (Dots.__proto__ || Object.getPrototypeOf(Dots)).call(this, [ref]));
 
 			_this.ref = ref;
 			_this.radius = radius;
@@ -5784,7 +5893,7 @@ var vGraph =
 		function Bucketer(hasher, bucketFactory) {
 			_classCallCheck(this, Bucketer);
 
-			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Bucketer).call(this));
+			var _this = _possibleConstructorReturn(this, (Bucketer.__proto__ || Object.getPrototypeOf(Bucketer)).call(this));
 
 			_this._hasher = hasher;
 			_this._factory = bucketFactory || function () {
@@ -6010,7 +6119,7 @@ var vGraph =
 		function Icon(ref, box, template, settings) {
 			_classCallCheck(this, Icon);
 
-			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Icon).call(this, ref, settings));
+			var _this = _possibleConstructorReturn(this, (Icon.__proto__ || Object.getPrototypeOf(Icon)).call(this, ref, settings));
 
 			_this.box = box;
 			_this.template = template;
@@ -6033,7 +6142,7 @@ var vGraph =
 		}, {
 			key: 'mergePoint',
 			value: function mergePoint(parsed, set) {
-				var t = _get(Object.getPrototypeOf(Icon.prototype), 'mergePoint', this).call(this, parsed, set);
+				var t = _get(Icon.prototype.__proto__ || Object.getPrototypeOf(Icon.prototype), 'mergePoint', this).call(this, parsed, set);
 
 				return this.settings.separate ? 0 : t;
 			}
@@ -6487,7 +6596,7 @@ var vGraph =
 		function Line(ref) {
 			_classCallCheck(this, Line);
 
-			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Line).call(this, [ref]));
+			var _this = _possibleConstructorReturn(this, (Line.__proto__ || Object.getPrototypeOf(Line)).call(this, [ref]));
 
 			_this.ref = ref;
 			return _this;
@@ -6620,7 +6729,7 @@ var vGraph =
 		function Fill(top, bottom) {
 			_classCallCheck(this, Fill);
 
-			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Fill).call(this, [top, bottom]));
+			var _this = _possibleConstructorReturn(this, (Fill.__proto__ || Object.getPrototypeOf(Fill)).call(this, [top, bottom]));
 
 			_this.top = top;
 
@@ -8365,7 +8474,7 @@ var vGraph =
 		function Spiral(ref, area, index, labels, settings) {
 			_classCallCheck(this, Spiral);
 
-			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Spiral).call(this, ref));
+			var _this = _possibleConstructorReturn(this, (Spiral.__proto__ || Object.getPrototypeOf(Spiral)).call(this, ref));
 
 			_this.area = area;
 			_this.references = [ref];
@@ -8454,7 +8563,7 @@ var vGraph =
 					return getCoords(inner.center, inner.middle, this.calcRadius(v), d);
 				};
 
-				_get(Object.getPrototypeOf(Spiral.prototype), 'parse', this).call(this, keys);
+				_get(Spiral.prototype.__proto__ || Object.getPrototypeOf(Spiral.prototype), 'parse', this).call(this, keys);
 			}
 		}, {
 			key: 'makeAxis',

@@ -113,10 +113,115 @@ function makeArray( size ){
 
 function addColumn( arr ){
 	var i, c;
-
 	for( i = 0, c = arr.length; i < c; i++ ){
 		arr[i].push( null );
 	}
+}
+
+function setRangeType(ranges, view) {
+    var name;
+
+    // this assume that all views
+    // timeline will have same min
+    // if intended to be run concurrent
+    name = view.min;
+
+    if (!ranges[ name ]) {
+    	ranges[ name ] = {};
+    }
+
+    return name;
+
+}
+
+function setIndexMap(ranges, view) {
+    var i,	
+    	v = view.cellIndexes,
+    	r = ranges[ view.min.toString() || view.min ].cellIndexes,
+        byIndex = {},
+        byUnit = {},
+        index;
+
+	for (i = v.length - 1; i >= 0; i--) {
+        index = r.indexOf( v[i] );
+        if (index !== -1) {
+            byUnit[ v[i] ] = index;
+            byIndex[ i ] = index;
+        }
+    }
+    view.map = {
+    	byIndex: byIndex,
+    	byUnit: byUnit
+    };
+}
+
+
+function addIndex( bounds, ranges, views, view ){
+	var t = {},
+		rangeName,
+		range;
+
+	t.diff = bounds.max - bounds.min;
+	t.interval = bounds.interval;
+	t.min = bounds.min;
+	t.max = bounds.max;
+
+	rangeName = setRangeType(ranges, bounds);
+	range = ranges[ rangeName ];
+
+	if ( range && range.diff ){
+
+		if ( range.diff < bounds.max - bounds.min ){
+			range.diff = bounds.max - bounds.min;
+		}
+
+		if ( range.interval > bounds.interval ) {
+			range.interval = bounds.interval;
+		}
+
+
+		if ( range.min > bounds.min ) {
+			range.min = bounds.min;
+		}
+
+		if ( range.max < bounds.max ) {
+			range.max = bounds.max;
+		}
+	} else {
+		Object.assign(range, t);
+	}
+
+	if (!ranges.interval || ranges.interval > t.interval ) {
+		ranges.interval = t.interval;
+	}
+
+	t.maxCell = Math.ceil( t.diff / t.interval );
+	t.cells = t.maxCell + 1;
+
+	if (!range.maxCell || range.maxCell < t.maxCell) {
+		range.maxCell = t.maxCell;
+		range.cells = t.cells;
+	}
+
+	if (!ranges.cells || ranges.cells < t.cells ) {
+		ranges.cells = t.cells;
+	}
+
+	// set local indexes for view
+	for (var inc = t.maxCell; inc >= 0; inc--) {
+		//set refs against self
+		if ( t.cellIndexes ) {
+			t.cellIndexes.unshift( t.min + (t.interval * inc) );
+		} else {
+			t.cellIndexes = [ t.min + (t.interval * inc) ];
+		}
+	}
+
+	if (!range.cellIndexes || t.cellIndexes.length > range.cellIndexes.length ) {
+		range.cellIndexes = t.cellIndexes;
+	}
+
+	views[view] = t; // set as view object
 }
 
 class Chart{
@@ -624,58 +729,54 @@ class Chart{
 	}
 
 	export( config ){
-		var diff,
-			cells,
+		var
+			maxCell,
 			maxRow,
 			content,
-			interval,
-			maxCell,
+			viewIndexes = {},
+			rangeIndexes = {},
 			headers = config.map(function(m){ return m.title; }),
 			getReference = this.getReference.bind(this);
 
 		config.forEach(function( cfg ){
 			var ref,
+				name,
 				t;
 
 			if ( cfg.reference ){
 				ref = getReference(cfg.reference);
+				name = ref.$ops.$view.$name;
 				t = ref.$ops.$view.getBounds();
-
+				
 				ref.$ops.resetField();
 				cfg.$ref = ref;
 				
 				cfg.$bounds = t;
 
-				if ( diff ){
-					if ( diff < t.max - t.min ){
-						diff = t.max - t.min;
-					}
-
-					if ( interval > t.interval ){
-						interval = t.interval;
-					}
-				}else{
-					diff = t.max - t.min;
-					interval = t.interval;
-				}
+				addIndex( t, rangeIndexes, viewIndexes, name );
 			}
 		});
 
-		maxCell = Math.ceil( diff/interval );
-		cells =  maxCell + 1;
-		content = makeArray( cells );
-		
+		maxCell = rangeIndexes.maxCell;
+		content = makeArray( rangeIndexes.cells );
+
 		config.forEach(function( cfg ){
 			var i,
 				t,
 				row,
 				min,
 				max,
+				index,
+				view,
 				interval,
 				ref = cfg.$ref,
 				pos = content[0].length;
 
 			addColumn(content);
+
+			view = ref.$ops.$view.$name;
+
+			setIndexMap( rangeIndexes, viewIndexes[ view ] );
 
 			if ( cfg.$ref ){
 				min = cfg.$bounds.min;
@@ -696,11 +797,23 @@ class Chart{
 							}
 						}
 
-						row = Math.floor( (i-min)/(max-min) * maxCell + 0.5 );
+						if ( view ) {
+							// map to indexes
+							if ( index && typeof( viewIndexes[view].map.byIndex[ i.toString() || i ] ) === 'number' ) {
+								row = viewIndexes[view].map.byIndex[ i.toString() || i ];
+							} else if ( typeof( viewIndexes[view].map.byUnit[ i.toString() || i ] ) === 'number' ) {
+								row = viewIndexes[view].map.byUnit[ i.toString() || i ];
+							}
+
+						// otherwise spread them out
+						} else {
+							row = Math.floor( (i-min)/(max-min) * maxCell + 0.5 );
+						}
+
 						if ( !maxRow || maxRow < row ){
 							maxRow = row;
 						}
-						
+
 						content[row][pos] = t;
 					}
 				}
