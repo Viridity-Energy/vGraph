@@ -124,7 +124,18 @@ function setRangeType(ranges, view) {
     // this assume that all views
     // timeline will have same min
     // if intended to be run concurrent
-    name = view.min;
+    if (jQuery.isEmptyObject(ranges)) {
+    	name = view.min;
+    } else {
+    	for (var i in ranges) {
+    		if (ranges[i].min) {
+    			if (ranges[i].min > view.min) {
+    				view.min = ranges[i].min;
+    			}
+    		}
+    	}
+    	name = view.min;
+    }
 
     if (!ranges[ name ]) {
     	ranges[ name ] = {};
@@ -160,14 +171,12 @@ function addIndex( bounds, ranges, views, view ){
 	var t = {},
 		rangeName,
 		range;
-
+	rangeName = setRangeType(ranges, bounds);
+	range = ranges[rangeName];
 	t.diff = bounds.max - bounds.min;
 	t.interval = bounds.interval;
 	t.min = bounds.min;
 	t.max = bounds.max;
-
-	rangeName = setRangeType(ranges, bounds);
-	range = ranges[ rangeName ];
 
 	if ( range && range.diff ){
 
