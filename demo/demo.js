@@ -52648,8 +52648,7 @@
 			key: '_process',
 			value: function _process(cfg, datum) {
 				var interval;
-				console.log('cfg', cfg);
-				console.log('datum', datum);
+
 				if (cfg.isDefined && !cfg.isDefined(datum)) {
 					return;
 				}
