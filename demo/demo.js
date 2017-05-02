@@ -30407,11 +30407,11 @@
 	__webpack_require__(5);
 
 	module.exports = {
-		calculations: __webpack_require__(89),
-		component: __webpack_require__(129),
-		data: __webpack_require__(130),
-		draw: __webpack_require__(132),
-		lib: __webpack_require__(133),
+		calculations: __webpack_require__(73),
+		component: __webpack_require__(113),
+		data: __webpack_require__(114),
+		draw: __webpack_require__(116),
+		lib: __webpack_require__(117),
 		stats: __webpack_require__(15)
 	};
 
@@ -30429,29 +30429,29 @@
 	__webpack_require__(16);
 	__webpack_require__(18);
 	__webpack_require__(20);
+	__webpack_require__(75);
+	__webpack_require__(76);
+	__webpack_require__(78);
+	__webpack_require__(81);
+	__webpack_require__(82);
+	__webpack_require__(85);
+	__webpack_require__(86);
+	__webpack_require__(88);
+	__webpack_require__(89);
+	__webpack_require__(90);
 	__webpack_require__(91);
 	__webpack_require__(92);
-	__webpack_require__(94);
+	__webpack_require__(95);
+	__webpack_require__(96);
 	__webpack_require__(97);
-	__webpack_require__(98);
-	__webpack_require__(101);
-	__webpack_require__(102);
-	__webpack_require__(104);
+	__webpack_require__(103);
 	__webpack_require__(105);
 	__webpack_require__(106);
 	__webpack_require__(107);
 	__webpack_require__(108);
+	__webpack_require__(110);
 	__webpack_require__(111);
 	__webpack_require__(112);
-	__webpack_require__(113);
-	__webpack_require__(119);
-	__webpack_require__(121);
-	__webpack_require__(122);
-	__webpack_require__(123);
-	__webpack_require__(124);
-	__webpack_require__(126);
-	__webpack_require__(127);
-	__webpack_require__(128);
 
 /***/ },
 /* 6 */
@@ -32529,7 +32529,7 @@
 	    makeEventing = __webpack_require__(25),
 	    ComponentBox = __webpack_require__(26),
 	    ComponentView = __webpack_require__(29),
-	    ComponentReference = __webpack_require__(90);
+	    ComponentReference = __webpack_require__(74);
 
 	var ids = 1,
 	    schedule = new Scheduler();
@@ -43819,8 +43819,8 @@
 	var id = 1,
 	    angular = __webpack_require__(2),
 	    ComponentPane = __webpack_require__(30),
-	    DataNormalizer = __webpack_require__(87),
-	    calculationsCompile = __webpack_require__(89).compile;
+	    DataNormalizer = __webpack_require__(71),
+	    calculationsCompile = __webpack_require__(73).compile;
 
 	function parseSettings(settings, old) {
 		if (!old) {
@@ -44549,6 +44549,1956 @@
 	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 	/**
+	 * The core of bmoor's usefulness
+	 * @module bmoor
+	 **/
+
+	/**
+	 * Tests if the value is undefined
+	 *
+	 * @function isUndefined
+	 * @param {*} value - The variable to test
+	 * @return {boolean}
+	 **/
+	function isUndefined(value) {
+		return value === undefined;
+	}
+
+	/**
+	 * Tests if the value is not undefined
+	 *
+	 * @function isDefined
+	 * @param {*} value The variable to test
+	 * @return {boolean}
+	 **/
+	function isDefined(value) {
+		return value !== undefined;
+	}
+
+	/**
+	 * Tests if the value is a string
+	 *
+	 * @function isString
+	 * @param {*} value The variable to test
+	 * @return {boolean}
+	 **/
+	function isString(value) {
+		return typeof value === 'string';
+	}
+
+	/**
+	 * Tests if the value is numeric
+	 *
+	 * @function isNumber
+	 * @param {*} value The variable to test
+	 * @return {boolean}
+	 **/
+	function isNumber(value) {
+		return typeof value === 'number';
+	}
+
+	/**
+	 * Tests if the value is a function
+	 *
+	 * @function isFuncion
+	 * @param {*} value The variable to test
+	 * @return {boolean}
+	 **/
+	function isFunction(value) {
+		return typeof value === 'function';
+	}
+
+	/**
+	 * Tests if the value is an object
+	 *
+	 * @function isObject
+	 * @param {*} value The variable to test
+	 * @return {boolean}
+	 **/
+	function isObject(value) {
+		return value && (typeof value === 'undefined' ? 'undefined' : _typeof(value)) === 'object';
+	}
+
+	/**
+	 * Tests if the value is a boolean
+	 *
+	 * @function isBoolean
+	 * @param {*} value The variable to test
+	 * @return {boolean}
+	 **/
+	function isBoolean(value) {
+		return typeof value === 'boolean';
+	}
+
+	/**
+	 * Tests if the value can be used as an array
+	 *
+	 * @function isArrayLike
+	 * @param {*} value The variable to test
+	 * @return {boolean}
+	 **/
+	function isArrayLike(value) {
+		// for me, if you have a length, I'm assuming you're array like, might change
+		if (value) {
+			return isObject(value) && (value.length === 0 || 0 in value && value.length - 1 in value);
+		} else {
+			return false;
+		}
+	}
+
+	/**
+	 * Tests if the value is an array
+	 *
+	 * @function isArray
+	 * @param {*} value The variable to test
+	 * @return {boolean}
+	 **/
+	function isArray(value) {
+		return value instanceof Array;
+	}
+
+	/**
+	 * Tests if the value has no content.
+	 * If an object, has no own properties.
+	 * If array, has length == 0.
+	 * If other, is not defined
+	 *
+	 * @function isEmpty
+	 * @param {*} value The variable to test
+	 * @return {boolean}
+	 **/
+	function isEmpty(value) {
+		var key;
+
+		if (isObject(value)) {
+			for (key in value) {
+				if (value.hasOwnProperty(key)) {
+					return false;
+				}
+			}
+		} else if (isArrayLike(value)) {
+			return value.length === 0;
+		} else {
+			return isUndefined(value);
+		}
+
+		return true;
+	}
+
+	function parse(space) {
+		if (!space) {
+			return [];
+		} else if (isString(space)) {
+			return space.split('.'); // turn strings into an array
+		} else if (isArray(space)) {
+			return space.slice(0);
+		} else {
+			return space;
+		}
+	}
+
+	/**
+	 * Sets a value to a namespace, returns the old value
+	 *
+	 * @function set
+	 * @param {object} root The root of the namespace, bMoor.namespace.root if not defined
+	 * @param {string|array} space The namespace
+	 * @param {*} value The value to set the namespace to
+	 * @return {*}
+	 **/
+	function set(root, space, value) {
+		var i,
+		    c,
+		    old,
+		    val,
+		    nextSpace,
+		    curSpace = root;
+
+		if (isString(space)) {
+			space = space.split('.');
+
+			val = space.pop();
+
+			for (i = 0, c = space.length; i < c; i++) {
+				nextSpace = space[i];
+
+				if (isUndefined(curSpace[nextSpace])) {
+					curSpace[nextSpace] = {};
+				}
+
+				curSpace = curSpace[nextSpace];
+			}
+
+			old = curSpace[val];
+			curSpace[val] = value;
+		}
+
+		return old;
+	}
+
+	function _makeSetter(property, next) {
+		if (next) {
+			return function (ctx, value) {
+				var t = ctx[property];
+
+				if (!t) {
+					t = ctx[property] = {};
+				}
+
+				return next(t, value);
+			};
+		} else {
+			return function (ctx, value) {
+				var t = ctx[property];
+				ctx[property] = value;
+				return t;
+			};
+		}
+	}
+
+	function makeSetter(space) {
+		var i,
+		    fn,
+		    readings = space.split('.');
+
+		for (i = readings.length - 1; i > -1; i--) {
+			fn = _makeSetter(readings[i], fn);
+		}
+
+		return fn;
+	}
+
+	/**
+	 * get a value from a namespace, if it doesn't exist, the path will be created
+	 *
+	 * @function get
+	 * @param {object} root The root of the namespace, bMoor.namespace.root if not defined
+	 * @param {string|array|function} space The namespace
+	 * @return {array}
+	 **/
+	function get(root, space) {
+		var i,
+		    c,
+		    curSpace = root,
+		    nextSpace;
+
+		if (isString(space)) {
+			if (space.length) {
+				space = space.split('.');
+
+				for (i = 0, c = space.length; i < c; i++) {
+					nextSpace = space[i];
+
+					if (isUndefined(curSpace[nextSpace])) {
+						return;
+					}
+
+					curSpace = curSpace[nextSpace];
+				}
+			}
+
+			return curSpace;
+		} else {
+			throw new Error('unsupported type: ' + space);
+		}
+	}
+
+	function _makeGetter(property, next) {
+		if (next) {
+			return function (obj) {
+				try {
+					return next(obj[property]);
+				} catch (ex) {
+					return undefined;
+				}
+			};
+		} else {
+			return function (obj) {
+				try {
+					return obj[property];
+				} catch (ex) {
+					return undefined;
+				}
+			};
+		}
+	}
+
+	function makeGetter(space) {
+		var i, fn;
+
+		if (space.length) {
+			space = space.split('.');
+
+			for (i = space.length - 1; i > -1; i--) {
+				fn = _makeGetter(space[i], fn);
+			}
+		} else {
+			return function (obj) {
+				return obj;
+			};
+		}
+
+		return fn;
+	}
+
+	function exec(root, space, args, ctx) {
+		var i,
+		    c,
+		    last,
+		    nextSpace,
+		    curSpace = root;
+
+		if (isString(space)) {
+			if (space.length) {
+				space = space.split('.');
+
+				for (i = 0, c = space.length; i < c; i++) {
+					nextSpace = space[i];
+
+					if (isUndefined(curSpace[nextSpace])) {
+						return;
+					}
+
+					last = curSpace;
+					curSpace = curSpace[nextSpace];
+				}
+			}
+
+			if (curSpace) {
+				return curSpace.apply(ctx || last, args || []);
+			}
+		}
+
+		throw new Error('unsupported eval: ' + space);
+	}
+
+	function _makeExec(property, next) {
+		if (next) {
+			return function (obj, args, ctx) {
+				try {
+					return next(obj[property], args, ctx);
+				} catch (ex) {
+					return undefined;
+				}
+			};
+		} else {
+			return function (obj, args, ctx) {
+				return obj[property].apply(ctx || obj, args || []);
+			};
+		}
+	}
+
+	function makeExec(space) {
+		var i, fn;
+
+		if (space.length) {
+			space = space.split('.');
+
+			fn = _makeExec(space[space.length - 1]);
+
+			for (i = space.length - 2; i > -1; i--) {
+				fn = _makeExec(space[i], fn);
+			}
+		} else {
+			throw new Error('unsupported eval: ' + space);
+		}
+
+		return fn;
+	}
+
+	function load(root, space) {
+		var i, c, arr, res;
+
+		space = space.split('[]');
+		if (space.length === 1) {
+			return [get(root, space[0])];
+		} else {
+			arr = get(root, space[0]);
+			res = [];
+
+			if (arr) {
+				for (i = 0, c = arr.length; i < c; i++) {
+					res.push(get(arr[i], space[1]));
+				}
+			}
+
+			return res;
+		}
+	}
+
+	function makeLoader(space) {
+		var getArray, getVariable;
+
+		space = space.split('[]');
+
+		if (space.length === 1) {
+			return [makeGetter(space[0])];
+		} else {
+			getArray = makeGetter(space[0]);
+			getVariable = makeGetter(space[1]);
+
+			return function (obj) {
+				var i,
+				    c,
+				    arr = getArray(obj),
+				    res = [];
+
+				if (arr) {
+					for (i = 0, c = arr.length; i < c; i++) {
+						res.push(getVariable(arr[i]));
+					}
+				}
+
+				return res;
+			};
+		}
+	}
+
+	/**
+	 * Delete a namespace, returns the old value
+	 *
+	 * @function del
+	 * @param {object} root The root of the namespace, bMoor.namespace.root if not defined
+	 * @param {string|array} space The namespace
+	 * @return {*}
+	 **/
+	function del(root, space) {
+		var old,
+		    val,
+		    nextSpace,
+		    curSpace = root;
+
+		if (space && (isString(space) || isArrayLike(space))) {
+			space = parse(space);
+
+			val = space.pop();
+
+			for (var i = 0; i < space.length; i++) {
+				nextSpace = space[i];
+
+				if (isUndefined(curSpace[nextSpace])) {
+					return;
+				}
+
+				curSpace = curSpace[nextSpace];
+			}
+
+			old = curSpace[val];
+			delete curSpace[val];
+		}
+
+		return old;
+	}
+
+	/**
+	 * Call a function against all elements of an array like object, from 0 to length.  
+	 *
+	 * @function loop
+	 * @param {array} arr The array to iterate through
+	 * @param {function} fn The function to call against each element
+	 * @param {object} context The context to call each function against
+	 **/
+	function loop(arr, fn, context) {
+		var i, c;
+
+		if (!context) {
+			context = arr;
+		}
+
+		if (arr.forEach) {
+			arr.forEach(fn, context);
+		} else {
+			for (i = 0, c = arr.length; i < c; ++i) {
+				if (i in arr) {
+					fn.call(context, arr[i], i, arr);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Call a function against all own properties of an object.  
+	 *
+	 * @function each
+	 * @param {object} arr The object to iterate through
+	 * @param {function} fn The function to call against each element
+	 * @param {object} context The context to call each function against
+	 **/
+	function each(obj, fn, context) {
+		var key;
+
+		if (!context) {
+			context = obj;
+		}
+
+		for (key in obj) {
+			if (obj.hasOwnProperty(key)) {
+				fn.call(context, obj[key], key, obj);
+			}
+		}
+	}
+
+	/**
+	 * Call a function against all own properties of an object, skipping specific framework properties.
+	 * In this framework, $ implies a system function, _ implies private, so skip _
+	 *
+	 * @function iterate
+	 * @param {object} obj The object to iterate through
+	 * @param {function} fn The function to call against each element
+	 * @param {object} context The scope to call each function against
+	 **/
+	function iterate(obj, fn, context) {
+		var key;
+
+		if (!context) {
+			context = obj;
+		}
+
+		for (key in obj) {
+			if (obj.hasOwnProperty(key) && key.charAt(0) !== '_') {
+				fn.call(context, obj[key], key, obj);
+			}
+		}
+	}
+
+	/**
+	 * Call a function against all own properties of an object, skipping specific framework properties.
+	 * In this framework, $ implies a system function, _ implies private, so skip both
+	 *
+	 * @function safe
+	 * @param {object} obj - The object to iterate through
+	 * @param {function} fn - The function to call against each element
+	 * @param {object} scope - The scope to call each function against
+	 **/
+	function safe(obj, fn, context) {
+		var key;
+
+		if (!context) {
+			context = obj;
+		}
+
+		for (key in obj) {
+			if (obj.hasOwnProperty(key) && key.charAt(0) !== '_' && key.charAt(0) !== '$') {
+				fn.call(context, obj[key], key, obj);
+			}
+		}
+	}
+
+	function naked(obj, fn, context) {
+		safe(obj, function (t, k, o) {
+			if (!isFunction(t)) {
+				fn.call(context, t, k, o);
+			}
+		});
+	}
+
+	module.exports = {
+		// booleans
+		isUndefined: isUndefined,
+		isDefined: isDefined,
+		isString: isString,
+		isNumber: isNumber,
+		isFunction: isFunction,
+		isObject: isObject,
+		isBoolean: isBoolean,
+		isArrayLike: isArrayLike,
+		isArray: isArray,
+		isEmpty: isEmpty,
+		// access
+		parse: parse,
+		set: set,
+		makeSetter: makeSetter,
+		get: get,
+		makeGetter: makeGetter,
+		exec: exec,
+		makeExec: makeExec,
+		load: load,
+		makeLoader: makeLoader,
+		del: del,
+		// controls
+		loop: loop,
+		each: each,
+		iterate: iterate,
+		safe: safe,
+		naked: naked
+	};
+
+/***/ },
+/* 34 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var bmoor = __webpack_require__(33),
+	    regex = {};
+
+	function getReg(className) {
+		var reg = regex[className];
+
+		if (!reg) {
+			reg = new RegExp('(?:^|\\s)' + className + '(?!\\S)');
+			regex[className] = reg;
+		}
+
+		return reg;
+	}
+
+	function getScrollPosition(doc) {
+		if (!doc) {
+			doc = document;
+		}
+
+		return {
+			left: window.pageXOffset || (doc.documentElement || doc.body).scrollLeft,
+			top: window.pageYOffset || (doc.documentElement || doc.body).scrollTop
+		};
+	}
+
+	function getBoundryBox(element) {
+		return element.getBoundingClientRect();
+	}
+
+	function centerOn(element, target, doc) {
+		var el = getBoundryBox(element),
+		    targ = getBoundryBox(target),
+		    pos = getScrollPosition(doc);
+
+		if (!doc) {
+			doc = document;
+		}
+
+		element.style.top = pos.top + targ.top + targ.height / 2 - el.height / 2;
+		element.style.left = pos.left + targ.left + targ.width / 2 - el.width / 2;
+		element.style.right = '';
+		element.style.bottom = '';
+
+		element.style.position = 'absolute';
+		doc.body.appendChild(element);
+	}
+
+	function showOn(element, target, doc) {
+		var direction,
+		    targ = getBoundryBox(target),
+		    x = targ.x + targ.width / 2,
+		    y = targ.y + targ.height / 2,
+		    centerX = window.innerWidth / 2,
+		    centerY = window.innerHeight / 2,
+		    pos = getScrollPosition(doc);
+
+		if (!doc) {
+			doc = document;
+		}
+
+		if (x < centerX) {
+			// right side has more room
+			direction = 'r';
+			element.style.left = pos.left + targ.right;
+			element.style.right = '';
+		} else {
+			// left side has more room
+			//element.style.left = targ.left - el.width - offset;
+			direction = 'l';
+			element.style.right = window.innerWidth - targ.left - pos.left;
+			element.style.left = '';
+		}
+
+		if (y < centerY) {
+			// more room on bottom
+			direction = 'b' + direction;
+			element.style.top = pos.top + targ.bottom;
+			element.style.bottom = '';
+		} else {
+			// more room on top
+			direction = 't' + direction;
+			element.style.bottom = window.innerHeight - targ.top - pos.top;
+			element.style.top = '';
+		}
+
+		element.style.position = 'absolute';
+		doc.body.appendChild(element);
+
+		return direction;
+	}
+
+	function massage(elements) {
+		if (!bmoor.isArrayLike(elements)) {
+			elements = [elements];
+		}
+
+		return elements;
+	}
+
+	function getDomElement(element, doc) {
+		if (!doc) {
+			doc = document;
+		}
+
+		if (bmoor.isString(element)) {
+			return doc.querySelector(element);
+		} else {
+			return element;
+		}
+	}
+
+	function getDomCollection(elements, doc) {
+		var i,
+		    c,
+		    j,
+		    co,
+		    el,
+		    selection,
+		    els = [];
+
+		if (!doc) {
+			doc = document;
+		}
+
+		elements = massage(elements);
+
+		for (i = 0, c = elements.length; i < c; i++) {
+			el = elements[i];
+			if (bmoor.isString(el)) {
+				selection = doc.querySelectorAll(el);
+				for (j = 0, co = selection.length; j < co; j++) {
+					els.push(selection[j]);
+				}
+			} else {
+				els.push(el);
+			}
+		}
+
+		return els;
+	}
+
+	function addClass(elements, className) {
+		var i,
+		    c,
+		    node,
+		    baseClass,
+		    reg = getReg(className);
+
+		elements = massage(elements);
+
+		for (i = 0, c = elements.length; i < c; i++) {
+			node = elements[i];
+			baseClass = node.getAttribute('class') || '';
+
+			if (!baseClass.match(reg)) {
+				node.setAttribute('class', baseClass + ' ' + className);
+			}
+		}
+	}
+
+	function removeClass(elements, className) {
+		var i,
+		    c,
+		    node,
+		    reg = getReg(className);
+
+		elements = massage(elements);
+
+		for (i = 0, c = elements.length; i < c; i++) {
+			node = elements[i];
+			node.setAttribute('class', (node.getAttribute('class') || '').replace(reg, ''));
+		}
+	}
+
+	function triggerEvent(elements, eventName, eventData) {
+		var i, c, doc, node, event, EventClass;
+
+		elements = massage(elements);
+
+		for (i = 0, c = elements.length; i < c; i++) {
+			node = elements[i];
+
+			// Make sure we use the ownerDocument from the provided node to avoid cross-window problems
+			if (node.ownerDocument) {
+				doc = node.ownerDocument;
+			} else if (node.nodeType === 9) {
+				// the node may be the document itself, nodeType 9 = DOCUMENT_NODE
+				doc = node;
+			} else if (typeof document !== 'undefined') {
+				doc = document;
+			} else {
+				throw new Error('Invalid node passed to fireEvent: ' + node.id);
+			}
+
+			if (node.dispatchEvent) {
+				try {
+					// modern, except for IE still? https://developer.mozilla.org/en-US/docs/Web/API/Event
+					// I ain't doing them all
+					// slightly older style, give some backwards compatibility
+					switch (eventName) {
+						case 'click':
+						case 'mousedown':
+						case 'mouseup':
+							EventClass = MouseEvent;
+							break;
+
+						case 'focus':
+						case 'blur':
+							EventClass = FocusEvent; // jshint ignore:line
+							break;
+
+						case 'change':
+						case 'select':
+							EventClass = UIEvent; // jshint ignore:line
+							break;
+
+						default:
+							EventClass = CustomEvent;
+					}
+
+					if (!eventData) {
+						eventData = { 'view': window, 'bubbles': true, 'cancelable': true };
+					} else {
+						if (eventData.bubbles === undefined) {
+							eventData.bubbles = true;
+						}
+						if (eventData.cancelable === undefined) {
+							eventData.cancelable = true;
+						}
+					}
+
+					event = new EventClass(eventName, eventData);
+				} catch (ex) {
+					// slightly older style, give some backwards compatibility
+					switch (eventName) {
+						case 'click':
+						case 'mousedown':
+						case 'mouseup':
+							EventClass = 'MouseEvents';
+							break;
+
+						case 'focus':
+						case 'change':
+						case 'blur':
+						case 'select':
+							EventClass = 'HTMLEvents';
+							break;
+
+						default:
+							EventClass = 'CustomEvent';
+					}
+					event = doc.createEvent(EventClass);
+					event.initEvent(eventName, true, true);
+				}
+
+				event.$synthetic = true; // allow detection of synthetic events
+
+				node.dispatchEvent(event);
+			} else if (node.fireEvent) {
+				// IE-old school style
+				event = doc.createEventObject();
+				event.$synthetic = true; // allow detection of synthetic events
+				node.fireEvent('on' + eventName, event);
+			}
+		}
+	}
+
+	function bringForward(elements) {
+		var i, c, node;
+
+		elements = massage(elements);
+
+		for (i = 0, c = elements.length; i < c; i++) {
+			node = elements[i];
+
+			if (node.parentNode) {
+				node.parentNode.appendChild(node);
+			}
+		}
+	}
+
+	module.exports = {
+		getScrollPosition: getScrollPosition,
+		getBoundryBox: getBoundryBox,
+		getDomElement: getDomElement,
+		getDomCollection: getDomCollection,
+		showOn: showOn,
+		centerOn: centerOn,
+		addClass: addClass,
+		removeClass: removeClass,
+		triggerEvent: triggerEvent,
+		bringForward: bringForward
+	};
+
+/***/ },
+/* 35 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	/**
+	 * Array helper functions
+	 * @module bmoor.data
+	 **/
+
+	var _id = 0;
+
+	function nextUid() {
+		return ++_id;
+	}
+
+	function setUid(obj) {
+		var t = obj.$$bmoorUid;
+
+		if (!t) {
+			t = obj.$$bmoorUid = nextUid();
+		}
+
+		return t;
+	}
+
+	function getUid(obj) {
+		if (!obj.$$bmoorUid) {
+			setUid(obj);
+		}
+
+		return obj.$$bmoorUid;
+	}
+
+	module.exports = {
+		setUid: setUid,
+		getUid: getUid
+	};
+
+/***/ },
+/* 36 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	/**
+	 * Array helper functions
+	 * @module bmoor.array
+	 **/
+
+	var bmoor = __webpack_require__(33);
+
+	/**
+	 * Search an array for an element, starting at the begining or a specified location
+	 *
+	 * @function indexOf
+	 * @param {array} arr An array to be searched
+	 * @param {*} searchElement Content for which to be searched
+	 * @param {integer} fromIndex The begining index from which to begin the search, defaults to 0
+	 * @return {integer} -1 if not found, otherwise the location of the element
+	 **/
+	function indexOf(arr, searchElement, fromIndex) {
+		if (arr.indexOf) {
+			return arr.indexOf(searchElement, fromIndex);
+		} else {
+			var length = parseInt(arr.length, 0);
+
+			fromIndex = +fromIndex || 0;
+
+			if (Math.abs(fromIndex) === Infinity) {
+				fromIndex = 0;
+			}
+
+			if (fromIndex < 0) {
+				fromIndex += length;
+				if (fromIndex < 0) {
+					fromIndex = 0;
+				}
+			}
+
+			for (; fromIndex < length; fromIndex++) {
+				if (arr[fromIndex] === searchElement) {
+					return fromIndex;
+				}
+			}
+
+			return -1;
+		}
+	}
+
+	/**
+	 * Search an array for an element and remove it, starting at the begining or a specified location
+	 *
+	 * @function remove
+	 * @param {array} arr An array to be searched
+	 * @param {*} searchElement Content for which to be searched
+	 * @param {integer} fromIndex The begining index from which to begin the search, defaults to 0
+	 * @return {array} array containing removed element
+	 **/
+	function remove(arr, searchElement, fromIndex) {
+		var pos = indexOf(arr, searchElement, fromIndex);
+
+		if (pos > -1) {
+			return arr.splice(pos, 1)[0];
+		}
+	}
+
+	/**
+	 * Search an array for an element and remove all instances of it, starting at the begining or a specified location
+	 *
+	 * @function remove
+	 * @param {array} arr An array to be searched
+	 * @param {*} searchElement Content for which to be searched
+	 * @param {integer} fromIndex The begining index from which to begin the search, defaults to 0
+	 * @return {integer} number of elements removed
+	 **/
+	function removeAll(arr, searchElement, fromIndex) {
+		var r,
+		    pos = indexOf(arr, searchElement, fromIndex);
+
+		if (pos > -1) {
+			r = removeAll(arr, searchElement, pos + 1);
+			r.unshift(arr.splice(pos, 1)[0]);
+
+			return r;
+		} else {
+			return [];
+		}
+	}
+
+	function bisect(arr, value, func, preSorted) {
+		var idx,
+		    val,
+		    bottom = 0,
+		    top = arr.length - 1;
+
+		if (!preSorted) {
+			arr.sort(function (a, b) {
+				return func(a) - func(b);
+			});
+		}
+
+		if (func(arr[bottom]) >= value) {
+			return {
+				left: bottom,
+				right: bottom
+			};
+		}
+
+		if (func(arr[top]) <= value) {
+			return {
+				left: top,
+				right: top
+			};
+		}
+
+		if (arr.length) {
+			while (top - bottom > 1) {
+				idx = Math.floor((top + bottom) / 2);
+				val = func(arr[idx]);
+
+				if (val === value) {
+					top = idx;
+					bottom = idx;
+				} else if (val > value) {
+					top = idx;
+				} else {
+					bottom = idx;
+				}
+			}
+
+			// if it is one of the end points, make it that point
+			if (top !== idx && func(arr[top]) === value) {
+				return {
+					left: top,
+					right: top
+				};
+			} else if (bottom !== idx && func(arr[bottom]) === value) {
+				return {
+					left: bottom,
+					right: bottom
+				};
+			} else {
+				return {
+					left: bottom,
+					right: top
+				};
+			}
+		}
+	}
+
+	/**
+	 * Generate a new array whose content is a subset of the intial array, but satisfies the supplied function
+	 *
+	 * @function remove
+	 * @param {array} arr An array to be searched
+	 * @param {*} searchElement Content for which to be searched
+	 * @param {integer} fromIndex The begining index from which to begin the search, defaults to 0
+	 * @return {integer} number of elements removed
+	 **/
+	function filter(arr, func, thisArg) {
+		if (arr.filter) {
+			return arr.filter(func, thisArg);
+		} else {
+			var i,
+			    val,
+			    t = Object(this),
+			    // jshint ignore:line
+			c = parseInt(t.length, 10),
+			    res = [];
+
+			if (!bmoor.isFunction(func)) {
+				throw new Error('func needs to be a function');
+			}
+
+			for (i = 0; i < c; i++) {
+				if (i in t) {
+					val = t[i];
+
+					if (func.call(thisArg, val, i, t)) {
+						res.push(val);
+					}
+				}
+			}
+
+			return res;
+		}
+	}
+
+	/**
+	 * Compare two arrays, 
+	 *
+	 * @function remove
+	 * @param {array} arr1 An array to be compared
+	 * @param {array} arr2 An array to be compared
+	 * @param {function} func The comparison function
+	 * @return {object} an object containing the elements unique to the left, matched, and unqiue to the right
+	 **/
+	function compare(arr1, arr2, func) {
+		var cmp,
+		    left = [],
+		    right = [],
+		    leftI = [],
+		    rightI = [];
+
+		arr1 = arr1.slice(0);
+		arr2 = arr2.slice(0);
+
+		arr1.sort(func);
+		arr2.sort(func);
+
+		while (arr1.length > 0 && arr2.length > 0) {
+			cmp = func(arr1[0], arr2[0]);
+
+			if (cmp < 0) {
+				left.push(arr1.shift());
+			} else if (cmp > 0) {
+				right.push(arr2.shift());
+			} else {
+				leftI.push(arr1.shift());
+				rightI.push(arr2.shift());
+			}
+		}
+
+		while (arr1.length) {
+			left.push(arr1.shift());
+		}
+
+		while (arr2.length) {
+			right.push(arr2.shift());
+		}
+
+		return {
+			left: left,
+			intersection: {
+				left: leftI,
+				right: rightI
+			},
+			right: right
+		};
+	}
+
+	module.exports = {
+		indexOf: indexOf,
+		remove: remove,
+		removeAll: removeAll,
+		bisect: bisect,
+		filter: filter,
+		compare: compare
+	};
+
+/***/ },
+/* 37 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+	/**
+	 * Object helper functions
+	 * @module bmoor.object
+	 **/
+
+	var bmoor = __webpack_require__(33);
+
+	function values(obj) {
+		var res = [];
+
+		bmoor.naked(obj, function (v) {
+			res.push(v);
+		});
+
+		return res;
+	}
+
+	function keys(obj) {
+		var res = [];
+
+		if (Object.keys) {
+			return Object.keys(obj);
+		} else {
+			bmoor.naked(obj, function (v, key) {
+				res.push(key);
+			});
+
+			return res;
+		}
+	}
+
+	/**
+	 * Takes a hash and uses the indexs as namespaces to add properties to an objs
+	 *
+	 * @function explode
+	 * @param {object} target The object to map the variables onto
+	 * @param {object} mappings An object orientended as [ namespace ] => value
+	 * @return {object} The object that has had content mapped into it
+	 **/
+	function explode(target, mappings) {
+		bmoor.iterate(mappings, function (val, mapping) {
+			bmoor.set(target, mapping, val);
+		});
+
+		return target;
+	}
+
+	/**
+	 * Create a new instance from an object and some arguments
+	 *
+	 * @function mask
+	 * @param {function} obj The basis for the constructor
+	 * @param {array} args The arguments to pass to the constructor
+	 * @return {object} The new object that has been constructed
+	 **/
+	function mask(obj) {
+		if (Object.create) {
+			var T = function Masked() {};
+
+			T.prototype = obj;
+
+			return new T();
+		} else {
+			return Object.create(obj);
+		}
+	}
+
+	/**
+	 * Create a new instance from an object and some arguments.  This is a shallow copy to <- from[...]
+	 * 
+	 * @function extend
+	 * @param {object} to Destination object.
+	 * @param {...object} src Source object(s).
+	 * @returns {object} Reference to `dst`.
+	 **/
+	function extend(to) {
+		bmoor.loop(arguments, function (cpy) {
+			if (cpy !== to) {
+				if (to && to.extend) {
+					to.extend(cpy);
+				} else {
+					bmoor.iterate(cpy, function (value, key) {
+						to[key] = value;
+					});
+				}
+			}
+		});
+
+		return to;
+	}
+
+	function empty(to) {
+		bmoor.iterate(to, function (v, k) {
+			delete to[k]; // TODO : would it be ok to set it to undefined?
+		});
+	}
+
+	function copy(to) {
+		empty(to);
+
+		return extend.apply(undefined, arguments);
+	}
+
+	// Deep copy version of extend
+	function merge(to) {
+		var from,
+		    i,
+		    c,
+		    m = function m(val, key) {
+			to[key] = merge(to[key], val);
+		};
+
+		for (i = 1, c = arguments.length; i < c; i++) {
+			from = arguments[i];
+
+			if (to === from || !from) {
+				continue;
+			} else if (to && to.merge) {
+				to.merge(from);
+			} else if (!bmoor.isObject(to)) {
+				if (bmoor.isObject(from)) {
+					to = merge({}, from);
+				} else {
+					to = from;
+				}
+			} else {
+				bmoor.safe(from, m);
+			}
+		}
+
+		return to;
+	}
+
+	/**
+	 * A general comparison algorithm to test if two objects are equal
+	 *
+	 * @function equals
+	 * @param {object} obj1 The object to copy the content from
+	 * @param {object} obj2 The object into which to copy the content
+	 * @preturns {boolean}
+	 **/
+	function equals(obj1, obj2) {
+		var t1 = typeof obj1 === 'undefined' ? 'undefined' : _typeof(obj1),
+		    t2 = typeof obj2 === 'undefined' ? 'undefined' : _typeof(obj2),
+		    c,
+		    i,
+		    keyCheck;
+
+		if (obj1 === obj2) {
+			return true;
+		} else if (obj1 !== obj1 && obj2 !== obj2) {
+			return true; // silly NaN
+		} else if (obj1 === null || obj1 === undefined || obj2 === null || obj2 === undefined) {
+			return false; // undefined or null
+		} else if (obj1.equals) {
+			return obj1.equals(obj2);
+		} else if (obj2.equals) {
+			return obj2.equals(obj1); // because maybe somene wants a class to be able to equal a simple object
+		} else if (t1 === t2) {
+			if (t1 === 'object') {
+				if (bmoor.isArrayLike(obj1)) {
+					if (!bmoor.isArrayLike(obj2)) {
+						return false;
+					}
+
+					if ((c = obj1.length) === obj2.length) {
+						for (i = 0; i < c; i++) {
+							if (!equals(obj1[i], obj2[i])) {
+								return false;
+							}
+						}
+
+						return true;
+					}
+				} else if (!bmoor.isArrayLike(obj2)) {
+					keyCheck = {};
+					for (i in obj1) {
+						if (obj1.hasOwnProperty(i)) {
+							if (!equals(obj1[i], obj2[i])) {
+								return false;
+							}
+
+							keyCheck[i] = true;
+						}
+					}
+
+					for (i in obj2) {
+						if (obj2.hasOwnProperty(i)) {
+							if (!keyCheck && obj2[i] !== undefined) {
+								return false;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return false;
+	}
+
+	module.exports = {
+		keys: keys,
+		values: values,
+		explode: explode,
+		mask: mask,
+		extend: extend,
+		empty: empty,
+		copy: copy,
+		merge: merge,
+		equals: equals
+	};
+
+/***/ },
+/* 38 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var bmoor = __webpack_require__(33),
+	    mixin = __webpack_require__(39),
+	    plugin = __webpack_require__(40),
+	    decorate = __webpack_require__(41);
+
+	function proc(action, proto, def) {
+		var i, c;
+
+		if (bmoor.isArray(def)) {
+			for (i = 0, c = def.length; i < c; i++) {
+				action(proto, def[i]);
+			}
+		} else {
+			action(proto, def);
+		}
+	}
+
+	function maker(root, config, base) {
+		if (!base) {
+			base = function BmoorPrototype() {};
+
+			if (config) {
+				if (bmoor.isFunction(root)) {
+					base = function BmoorPrototype() {
+						root.apply(this, arguments);
+					};
+
+					base.prototype = Object.create(root.prototype);
+				} else {
+					base.prototype = Object.create(root);
+				}
+			} else {
+				config = root;
+			}
+		}
+
+		if (config.mixin) {
+			proc(mixin, base.prototype, config.mixin);
+		}
+
+		if (config.decorate) {
+			proc(decorate, base.prototype, config.decorate);
+		}
+
+		if (config.plugin) {
+			proc(plugin, base.prototype, config.plugin);
+		}
+
+		return base;
+	}
+
+	maker.mixin = mixin;
+	maker.decorate = decorate;
+	maker.plugin = plugin;
+
+	module.exports = maker;
+
+/***/ },
+/* 39 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var bmoor = __webpack_require__(33);
+
+	module.exports = function (to, from) {
+		bmoor.iterate(from, function (val, key) {
+			to[key] = val;
+		});
+	};
+
+/***/ },
+/* 40 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+	var bmoor = __webpack_require__(33);
+
+	function override(key, target, action, plugin) {
+		var old = target[key];
+
+		if (old === undefined) {
+			if (bmoor.isFunction(action)) {
+				target[key] = function () {
+					return action.apply(plugin, arguments);
+				};
+			} else {
+				target[key] = action;
+			}
+		} else {
+			if (bmoor.isFunction(action)) {
+				if (bmoor.isFunction(old)) {
+					target[key] = function () {
+						var backup = plugin.$old,
+						    reference = plugin.$target,
+						    rtn;
+
+						plugin.$target = target;
+						plugin.$old = function () {
+							return old.apply(target, arguments);
+						};
+
+						rtn = action.apply(plugin, arguments);
+
+						plugin.$old = backup;
+						plugin.$target = reference;
+
+						return rtn;
+					};
+				} else {
+					console.log('attempting to plug-n-play ' + key + ' an instance of ' + (typeof old === 'undefined' ? 'undefined' : _typeof(old)));
+				}
+			} else {
+				console.log('attempting to plug-n-play with ' + key + ' and instance of ' + (typeof action === 'undefined' ? 'undefined' : _typeof(action)));
+			}
+		}
+	}
+
+	module.exports = function (to, from, ctx) {
+		bmoor.iterate(from, function (val, key) {
+			override(key, to, val, ctx);
+		});
+	};
+
+/***/ },
+/* 41 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+	var bmoor = __webpack_require__(33);
+
+	function override(key, target, action) {
+		var old = target[key];
+
+		if (old === undefined) {
+			target[key] = action;
+		} else {
+			if (bmoor.isFunction(action)) {
+				if (bmoor.isFunction(old)) {
+					target[key] = function () {
+						var backup = this.$old,
+						    rtn;
+
+						this.$old = old;
+
+						rtn = action.apply(this, arguments);
+
+						this.$old = backup;
+
+						return rtn;
+					};
+				} else {
+					console.log('attempting to decorate ' + key + ' an instance of ' + (typeof old === 'undefined' ? 'undefined' : _typeof(old)));
+				}
+			} else {
+				console.log('attempting to decorate with ' + key + ' and instance of ' + (typeof action === 'undefined' ? 'undefined' : _typeof(action)));
+			}
+		}
+	}
+
+	module.exports = function (to, from) {
+		bmoor.iterate(from, function (val, key) {
+			override(key, to, val);
+		});
+	};
+
+/***/ },
+/* 42 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var bmoor = __webpack_require__(33);
+
+	/**
+	 * Array helper functions
+	 * @module bmoor.string
+	 **/
+
+	function trim(str, chr) {
+		if (!chr) {
+			chr = '\\s';
+		}
+		return str.replace(new RegExp('^' + chr + '+|' + chr + '+$', 'g'), '');
+	}
+
+	function ltrim(str, chr) {
+		if (!chr) {
+			chr = '\\s';
+		}
+		return str.replace(new RegExp('^' + chr + '+', 'g'), '');
+	}
+
+	function rtrim(str, chr) {
+		if (!chr) {
+			chr = '\\s';
+		}
+		return str.replace(new RegExp(chr + '+$', 'g'), '');
+	}
+
+	// TODO : eventually I will make getCommands and getFormatter more complicated, but for now
+	//        they work by staying simple
+	function getCommands(str) {
+		var commands = str.split('|');
+
+		commands.forEach(function (command, key) {
+			var args = command.split(':');
+
+			args.forEach(function (arg, k) {
+				args[k] = trim(arg);
+			});
+
+			commands[key] = {
+				command: command,
+				method: args.shift(),
+				args: args
+			};
+		});
+
+		return commands;
+	}
+
+	function stackFunctions(newer, older) {
+		return function (o) {
+			return older(newer(o));
+		};
+	}
+
+	var filters = {
+		precision: function precision(dec) {
+			dec = parseInt(dec, 10);
+
+			return function (num) {
+				return parseFloat(num, 10).toFixed(dec);
+			};
+		},
+		currency: function currency() {
+			return function (num) {
+				return '$' + num;
+			};
+		}
+	};
+
+	function doFilters(ters) {
+		var fn, command, filter;
+
+		while (ters.length) {
+			command = ters.pop();
+			fn = filters[command.method].apply(null, command.args);
+
+			if (filter) {
+				filter = stackFunctions(fn, filter);
+			} else {
+				filter = fn;
+			}
+		}
+
+		return filter;
+	}
+
+	function doVariable(lines) {
+		var fn, dex, line, getter, commands, remainder;
+
+		if (!lines.length) {
+			return null;
+		} else {
+			line = lines.shift();
+			dex = line.indexOf('}}');
+			fn = doVariable(lines);
+
+			if (dex === -1) {
+				return function () {
+					return '--no close--';
+				};
+			} else if (dex === 0) {
+				remainder = line.substr(2);
+				getter = function getter(o) {
+					if (bmoor.isObject(o)) {
+						return JSON.stringify(o);
+					} else {
+						return o;
+					}
+				};
+			} else {
+				commands = getCommands(line.substr(0, dex));
+				remainder = line.substr(dex + 2);
+				getter = bmoor.makeGetter(commands.shift().command);
+
+				if (commands.length) {
+					getter = stackFunctions(getter, doFilters(commands, getter));
+				}
+			}
+
+			//let's optimize this a bit
+			if (fn) {
+				// we have a child method
+				return function (obj) {
+					return getter(obj) + remainder + fn(obj);
+				};
+			} else {
+				// this is the last variable
+				return function (obj) {
+					return getter(obj) + remainder;
+				};
+			}
+		}
+	}
+
+	function getFormatter(str) {
+		var fn,
+		    lines = str.split(/{{/g);
+
+		if (lines.length > 1) {
+			str = lines.shift();
+			fn = doVariable(lines);
+
+			return function (obj) {
+				return str + fn(obj);
+			};
+		} else {
+			return function () {
+				return str;
+			};
+		}
+	}
+
+	getFormatter.filters = filters;
+
+	module.exports = {
+		trim: trim,
+		ltrim: ltrim,
+		rtrim: rtrim,
+		getCommands: getCommands,
+		getFormatter: getFormatter
+	};
+
+/***/ },
+/* 43 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	function always(promise, func) {
+		promise.then(func, func);
+		return promise;
+	}
+
+	module.exports = {
+		always: always
+	};
+
+/***/ },
+/* 44 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	module.exports = {
+		Eventing: __webpack_require__(45)
+	};
+
+/***/ },
+/* 45 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	module.exports = {
+		on: function on(event, cb) {
+			var dis = this;
+
+			if (!this._$listeners) {
+				this._$listeners = {};
+			}
+
+			if (!this._$listeners[event]) {
+				this._$listeners[event] = [];
+			}
+
+			this._$listeners[event].push(cb);
+
+			return function clear$on() {
+				dis._$listeners[event].splice(dis._$listeners[event].indexOf(cb), 1);
+			};
+		},
+		subscribe: function subscribe(subscriptions) {
+			var dis = this,
+			    kills = [],
+			    events = Object.keys(subscriptions);
+
+			events.forEach(function (event) {
+				var action = subscriptions[event];
+
+				kills.push(dis.on(event, action));
+			});
+
+			return function killAll() {
+				kills.forEach(function (kill) {
+					kill();
+				});
+			};
+		},
+		trigger: function trigger(event) {
+			var listeners,
+			    i,
+			    c,
+			    args = Array.prototype.slice.call(arguments, 1);
+
+			if (this._$listeners) {
+				listeners = this._$listeners[event];
+
+				if (listeners) {
+					listeners = listeners.slice(0);
+					for (i = 0, c = listeners.length; i < c; i++) {
+						listeners[i].apply(this, args);
+					}
+				}
+			}
+		}
+	};
+
+/***/ },
+/* 46 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	module.exports = {
+		Hasher: __webpack_require__(47),
+		Collection: __webpack_require__(62),
+		HashedCollection: __webpack_require__(65),
+		Observor: __webpack_require__(63),
+		Composite: __webpack_require__(64),
+		Table: __webpack_require__(66),
+		Memory: __webpack_require__(68),
+		Index: __webpack_require__(67),
+		Bucketer: __webpack_require__(69),
+		GridIndex: __webpack_require__(70)
+	};
+
+/***/ },
+/* 47 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var bmoor = __webpack_require__(48);
+
+	function makeName(cfg) {
+		return cfg.join('-');
+	}
+
+	function buildGetters(cfg) {
+		var i, c;
+
+		for (i = 0, c = cfg.length; i < c; i++) {
+			cfg[i] = bmoor.makeGetter(cfg[i]);
+		}
+	}
+
+	function makeFullfill(cfg, i) {
+		var next, getter;
+
+		if (!i) {
+			i = 0;
+		}
+
+		getter = cfg[i];
+
+		if (i !== cfg.length - 1) {
+			next = makeFullfill(cfg, i + 1);
+			return function (obj) {
+				if (getter(obj) === undefined) {
+					return false;
+				} else {
+					return next(obj);
+				}
+			};
+		} else {
+			return function (obj) {
+				return getter(obj) !== undefined;
+			};
+		}
+	}
+
+	function makeHasher(cfg, i) {
+		var next, getter;
+
+		if (!i) {
+			i = 0;
+		}
+
+		getter = cfg[i];
+
+		if (i !== cfg.length - 1) {
+			next = makeHasher(cfg, i + 1);
+			return function (obj) {
+				return getter(obj) + '::' + next(obj);
+			};
+		} else {
+			return getter;
+		}
+	}
+
+	// Generates the filtering functions
+
+	var Hasher = function Hasher(cfg) {
+		_classCallCheck(this, Hasher);
+
+		var fields = cfg.slice(0).sort();
+
+		this.name = makeName(fields);
+
+		buildGetters(fields);
+
+		this.hash = makeHasher(fields);
+		this.canFulfill = makeFullfill(fields);
+	};
+
+	module.exports = Hasher;
+
+/***/ },
+/* 48 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var bmoor = Object.create(__webpack_require__(49));
+
+	bmoor.dom = __webpack_require__(50);
+	bmoor.data = __webpack_require__(51);
+	bmoor.array = __webpack_require__(52);
+	bmoor.object = __webpack_require__(53);
+	bmoor.build = __webpack_require__(54);
+	bmoor.string = __webpack_require__(58);
+	bmoor.promise = __webpack_require__(59);
+
+	bmoor.interfaces = __webpack_require__(60);
+
+	module.exports = bmoor;
+
+/***/ },
+/* 49 */
+/***/ function(module, exports) {
+
+	'use strict';
+
+	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+	/**
 	 * Library Functions
 	 **/
 	/**
@@ -45139,12 +47089,12 @@
 	};
 
 /***/ },
-/* 34 */
+/* 50 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var bmoor = __webpack_require__(33),
+	var bmoor = __webpack_require__(49),
 	    regex = {};
 
 	function getReg(className) {
@@ -45314,7 +47264,7 @@
 	};
 
 /***/ },
-/* 35 */
+/* 51 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -45349,12 +47299,12 @@
 	};
 
 /***/ },
-/* 36 */
+/* 52 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var bmoor = __webpack_require__(33);
+	var bmoor = __webpack_require__(49);
 
 	/**
 	 * Search an array for an element, starting at the begining or a specified location
@@ -45601,14 +47551,14 @@
 	};
 
 /***/ },
-/* 37 */
+/* 53 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
-	var bmoor = __webpack_require__(33);
+	var bmoor = __webpack_require__(49);
 
 	function values(obj) {
 		var res = [];
@@ -45820,15 +47770,15 @@
 	};
 
 /***/ },
-/* 38 */
+/* 54 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var bmoor = __webpack_require__(33),
-	    mixin = __webpack_require__(39),
-	    plugin = __webpack_require__(40),
-	    decorate = __webpack_require__(41);
+	var bmoor = __webpack_require__(49),
+	    mixin = __webpack_require__(55),
+	    plugin = __webpack_require__(56),
+	    decorate = __webpack_require__(57);
 
 	function proc(action, proto, def) {
 		var i, c;
@@ -45883,12 +47833,12 @@
 	module.exports = maker;
 
 /***/ },
-/* 39 */
+/* 55 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var bmoor = __webpack_require__(33);
+	var bmoor = __webpack_require__(49);
 
 	module.exports = function (to, from) {
 		bmoor.iterate(from, function (val, key) {
@@ -45897,14 +47847,14 @@
 	};
 
 /***/ },
-/* 40 */
+/* 56 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
-	var bmoor = __webpack_require__(33);
+	var bmoor = __webpack_require__(49);
 
 	function override(key, target, action, plugin) {
 		var old = target[key];
@@ -45953,14 +47903,14 @@
 	};
 
 /***/ },
-/* 41 */
+/* 57 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
-	var bmoor = __webpack_require__(33);
+	var bmoor = __webpack_require__(49);
 
 	function override(key, target, action) {
 		var old = target[key];
@@ -45998,12 +47948,12 @@
 	};
 
 /***/ },
-/* 42 */
+/* 58 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var bmoor = __webpack_require__(33);
+	var bmoor = __webpack_require__(49);
 
 	function trim(str, chr) {
 		if (!chr) {
@@ -46163,7 +48113,7 @@
 	};
 
 /***/ },
-/* 43 */
+/* 59 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -46178,17 +48128,17 @@
 	};
 
 /***/ },
-/* 44 */
+/* 60 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = {
-		Eventing: __webpack_require__(45)
+		Eventing: __webpack_require__(61)
 	};
 
 /***/ },
-/* 45 */
+/* 61 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -46228,1996 +48178,24 @@
 				});
 			};
 		},
-		trigger: function trigger(event, arg) {
-			var listeners, i, c;
+		trigger: function trigger(event) {
+			var listeners,
+			    i,
+			    c,
+			    args = Array.prototype.slice.call(arguments, 1);
 
 			if (this._$listeners) {
 				listeners = this._$listeners[event];
 
 				if (listeners) {
+					listeners = listeners.slice(0);
 					for (i = 0, c = listeners.length; i < c; i++) {
-						listeners[i](arg);
+						listeners[i].apply(this, args);
 					}
 				}
 			}
 		}
 	};
-
-/***/ },
-/* 46 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	module.exports = {
-		Feed: __webpack_require__(47),
-		Pool: __webpack_require__(62),
-		Collection: __webpack_require__(84),
-		stream: {
-			Converter: __webpack_require__(85)
-		},
-		object: {
-			Proxy: __webpack_require__(86)
-		}
-	};
-
-/***/ },
-/* 47 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-	var bmoor = __webpack_require__(48),
-	    Eventing = bmoor.Eventing,
-	    setUid = bmoor.data.setUid,
-	    oldPush = Array.prototype.push;
-
-	// designed for one way data flows.
-	// src -> feed -> target
-
-	var Feed = function (_Eventing) {
-		_inherits(Feed, _Eventing);
-
-		function Feed(src) {
-			_classCallCheck(this, Feed);
-
-			var _this = _possibleConstructorReturn(this, (Feed.__proto__ || Object.getPrototypeOf(Feed)).call(this));
-
-			if (!src) {
-				src = [];
-			} else {
-				src.push = src.unshift = _this.add.bind(_this);
-			}
-
-			setUid(_this);
-
-			_this.data = src;
-
-			_this._adding = null;
-			_this.on('stable', function () {
-				_this._adding = null;
-			});
-			return _this;
-		}
-
-		_createClass(Feed, [{
-			key: 'add',
-			value: function add(datum) {
-				oldPush.call(this.data, datum);
-
-				if (this.hasWaiting('insert')) {
-					if (this._adding === null) {
-						this._adding = [datum];
-
-						this.trigger('insert', this._adding);
-					} else {
-						this._adding.push(datum);
-					}
-				}
-
-				this.trigger('update');
-			}
-		}, {
-			key: 'consume',
-			value: function consume(arr) {
-				oldPush.apply(this.data, arr);
-
-				if (this.hasWaiting('insert')) {
-					if (this._adding === null) {
-						this._adding = arr;
-
-						this.trigger('insert', this._adding);
-					} else {
-						this._adding.push.apply(this._adding, arr);
-					}
-				}
-
-				this.trigger('update');
-			}
-		}, {
-			key: 'stable',
-			value: function stable(fn) {
-				var disconnect;
-
-				if (this._adding) {
-					disconnect = this.on('stable', function () {
-						fn();
-						disconnect();
-					});
-				} else {
-					fn();
-				}
-			}
-		}]);
-
-		return Feed;
-	}(Eventing);
-
-	module.exports = Feed;
-
-/***/ },
-/* 48 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var bmoor = Object.create(__webpack_require__(49));
-
-	bmoor.dom = __webpack_require__(50);
-	bmoor.data = __webpack_require__(51);
-	bmoor.array = __webpack_require__(52);
-	bmoor.build = __webpack_require__(53);
-	bmoor.object = __webpack_require__(57);
-	bmoor.string = __webpack_require__(58);
-	bmoor.promise = __webpack_require__(59);
-
-	bmoor.Memory = __webpack_require__(60);
-	bmoor.Eventing = __webpack_require__(61);
-
-	module.exports = bmoor;
-
-/***/ },
-/* 49 */
-/***/ function(module, exports) {
-
-	'use strict';
-
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-	/**
-	 * The core of bmoor's usefulness
-	 * @module bmoor
-	 **/
-
-	/**
-	 * Tests if the value is undefined
-	 *
-	 * @function isUndefined
-	 * @param {*} value - The variable to test
-	 * @return {boolean}
-	 **/
-	function isUndefined(value) {
-		return value === undefined;
-	}
-
-	/**
-	 * Tests if the value is not undefined
-	 *
-	 * @function isDefined
-	 * @param {*} value The variable to test
-	 * @return {boolean}
-	 **/
-	function isDefined(value) {
-		return value !== undefined;
-	}
-
-	/**
-	 * Tests if the value is a string
-	 *
-	 * @function isString
-	 * @param {*} value The variable to test
-	 * @return {boolean}
-	 **/
-	function isString(value) {
-		return typeof value === 'string';
-	}
-
-	/**
-	 * Tests if the value is numeric
-	 *
-	 * @function isNumber
-	 * @param {*} value The variable to test
-	 * @return {boolean}
-	 **/
-	function isNumber(value) {
-		return typeof value === 'number';
-	}
-
-	/**
-	 * Tests if the value is a function
-	 *
-	 * @function isFuncion
-	 * @param {*} value The variable to test
-	 * @return {boolean}
-	 **/
-	function isFunction(value) {
-		return typeof value === 'function';
-	}
-
-	/**
-	 * Tests if the value is an object
-	 *
-	 * @function isObject
-	 * @param {*} value The variable to test
-	 * @return {boolean}
-	 **/
-	function isObject(value) {
-		return value && (typeof value === 'undefined' ? 'undefined' : _typeof(value)) === 'object';
-	}
-
-	/**
-	 * Tests if the value is a boolean
-	 *
-	 * @function isBoolean
-	 * @param {*} value The variable to test
-	 * @return {boolean}
-	 **/
-	function isBoolean(value) {
-		return typeof value === 'boolean';
-	}
-
-	/**
-	 * Tests if the value can be used as an array
-	 *
-	 * @function isArrayLike
-	 * @param {*} value The variable to test
-	 * @return {boolean}
-	 **/
-	function isArrayLike(value) {
-		// for me, if you have a length, I'm assuming you're array like, might change
-		if (value) {
-			return isObject(value) && (value.length === 0 || 0 in value && value.length - 1 in value);
-		} else {
-			return false;
-		}
-	}
-
-	/**
-	 * Tests if the value is an array
-	 *
-	 * @function isArray
-	 * @param {*} value The variable to test
-	 * @return {boolean}
-	 **/
-	function isArray(value) {
-		return value instanceof Array;
-	}
-
-	/**
-	 * Tests if the value has no content.
-	 * If an object, has no own properties.
-	 * If array, has length == 0.
-	 * If other, is not defined
-	 *
-	 * @function isEmpty
-	 * @param {*} value The variable to test
-	 * @return {boolean}
-	 **/
-	function isEmpty(value) {
-		var key;
-
-		if (isObject(value)) {
-			for (key in value) {
-				if (value.hasOwnProperty(key)) {
-					return false;
-				}
-			}
-		} else if (isArrayLike(value)) {
-			return value.length === 0;
-		} else {
-			return isUndefined(value);
-		}
-
-		return true;
-	}
-
-	function parse(path) {
-		if (!path) {
-			return [];
-		} else if (isString(path)) {
-			return path.split('.');
-		} else if (isArray(path)) {
-			return path.slice(0);
-		} else {
-			throw new Error('unable to parse path: ' + path + ' : ' + (typeof path === 'undefined' ? 'undefined' : _typeof(path)));
-		}
-	}
-
-	/**
-	 * Sets a value to a namespace, returns the old value
-	 *
-	 * @function set
-	 * @param {object} root The root of the namespace, bMoor.namespace.root if not defined
-	 * @param {string|array} space The namespace
-	 * @param {*} value The value to set the namespace to
-	 * @return {*}
-	 **/
-	function set(root, space, value) {
-		var i,
-		    c,
-		    old,
-		    val,
-		    nextSpace,
-		    curSpace = root;
-
-		space = parse(space);
-
-		val = space.pop();
-
-		for (i = 0, c = space.length; i < c; i++) {
-			nextSpace = space[i];
-
-			if (isUndefined(curSpace[nextSpace])) {
-				curSpace[nextSpace] = {};
-			}
-
-			curSpace = curSpace[nextSpace];
-		}
-
-		old = curSpace[val];
-		curSpace[val] = value;
-
-		return old;
-	}
-
-	function _makeSetter(property, next) {
-		if (next) {
-			return function (ctx, value) {
-				var t = ctx[property];
-
-				if (!t) {
-					t = ctx[property] = {};
-				}
-
-				return next(t, value);
-			};
-		} else {
-			return function (ctx, value) {
-				var t = ctx[property];
-				ctx[property] = value;
-				return t;
-			};
-		}
-	}
-
-	function makeSetter(space) {
-		var i,
-		    fn,
-		    readings = parse(space);
-
-		for (i = readings.length - 1; i > -1; i--) {
-			fn = _makeSetter(readings[i], fn);
-		}
-
-		return fn;
-	}
-
-	/**
-	 * get a value from a namespace, if it doesn't exist, the path will be created
-	 *
-	 * @function get
-	 * @param {object} root The root of the namespace, bMoor.namespace.root if not defined
-	 * @param {string|array|function} space The namespace
-	 * @return {array}
-	 **/
-	function get(root, path) {
-		var i,
-		    c,
-		    space,
-		    nextSpace,
-		    curSpace = root;
-
-		space = parse(path);
-		if (space.length) {
-			for (i = 0, c = space.length; i < c; i++) {
-				nextSpace = space[i];
-
-				if (isUndefined(curSpace[nextSpace])) {
-					return;
-				}
-
-				curSpace = curSpace[nextSpace];
-			}
-		}
-
-		return curSpace;
-	}
-
-	function _makeGetter(property, next) {
-		if (next) {
-			return function (obj) {
-				try {
-					return next(obj[property]);
-				} catch (ex) {
-					return undefined;
-				}
-			};
-		} else {
-			return function (obj) {
-				try {
-					return obj[property];
-				} catch (ex) {
-					return undefined;
-				}
-			};
-		}
-	}
-
-	function makeGetter(path) {
-		var i,
-		    fn,
-		    space = parse(path);
-
-		if (space.length) {
-			for (i = space.length - 1; i > -1; i--) {
-				fn = _makeGetter(space[i], fn);
-			}
-		} else {
-			return function (obj) {
-				return obj;
-			};
-		}
-
-		return fn;
-	}
-
-	/**
-	 * Delete a namespace, returns the old value
-	 *
-	 * @function del
-	 * @param {object} root The root of the namespace, bMoor.namespace.root if not defined
-	 * @param {string|array} space The namespace
-	 * @return {*}
-	 **/
-	function del(root, space) {
-		var old,
-		    val,
-		    nextSpace,
-		    curSpace = root;
-
-		if (space && (isString(space) || isArrayLike(space))) {
-			space = parse(space);
-
-			val = space.pop();
-
-			for (var i = 0; i < space.length; i++) {
-				nextSpace = space[i];
-
-				if (isUndefined(curSpace[nextSpace])) {
-					return;
-				}
-
-				curSpace = curSpace[nextSpace];
-			}
-
-			old = curSpace[val];
-			delete curSpace[val];
-		}
-
-		return old;
-	}
-
-	/**
-	 * Call a function against all elements of an array like object, from 0 to length.  
-	 *
-	 * @function loop
-	 * @param {array} arr The array to iterate through
-	 * @param {function} fn The function to call against each element
-	 * @param {object} context The context to call each function against
-	 **/
-	function loop(arr, fn, context) {
-		var i, c;
-
-		if (!context) {
-			context = arr;
-		}
-
-		if (arr.forEach) {
-			arr.forEach(fn, context);
-		} else {
-			for (i = 0, c = arr.length; i < c; ++i) {
-				if (i in arr) {
-					fn.call(context, arr[i], i, arr);
-				}
-			}
-		}
-	}
-
-	/**
-	 * Call a function against all own properties of an object.  
-	 *
-	 * @function each
-	 * @param {object} arr The object to iterate through
-	 * @param {function} fn The function to call against each element
-	 * @param {object} context The context to call each function against
-	 **/
-	function each(obj, fn, context) {
-		var key;
-
-		if (!context) {
-			context = obj;
-		}
-
-		for (key in obj) {
-			if (obj.hasOwnProperty(key)) {
-				fn.call(context, obj[key], key, obj);
-			}
-		}
-	}
-
-	/**
-	 * Call a function against all own properties of an object, skipping specific framework properties.
-	 * In this framework, $ implies a system function, _ implies private, so skip _
-	 *
-	 * @function iterate
-	 * @param {object} obj The object to iterate through
-	 * @param {function} fn The function to call against each element
-	 * @param {object} context The scope to call each function against
-	 **/
-	function iterate(obj, fn, context) {
-		var key;
-
-		if (!context) {
-			context = obj;
-		}
-
-		for (key in obj) {
-			if (obj.hasOwnProperty(key) && key.charAt(0) !== '_') {
-				fn.call(context, obj[key], key, obj);
-			}
-		}
-	}
-
-	/**
-	 * Call a function against all own properties of an object, skipping specific framework properties.
-	 * In this framework, $ implies a system function, _ implies private, so skip both
-	 *
-	 * @function safe
-	 * @param {object} obj - The object to iterate through
-	 * @param {function} fn - The function to call against each element
-	 * @param {object} scope - The scope to call each function against
-	 **/
-	function safe(obj, fn, context) {
-		var key;
-
-		if (!context) {
-			context = obj;
-		}
-
-		for (key in obj) {
-			if (obj.hasOwnProperty(key) && key.charAt(0) !== '_' && key.charAt(0) !== '$') {
-				fn.call(context, obj[key], key, obj);
-			}
-		}
-	}
-
-	function naked(obj, fn, context) {
-		safe(obj, function (t, k, o) {
-			if (!isFunction(t)) {
-				fn.call(context, t, k, o);
-			}
-		});
-	}
-
-	module.exports = {
-		// booleans
-		isUndefined: isUndefined,
-		isDefined: isDefined,
-		isString: isString,
-		isNumber: isNumber,
-		isFunction: isFunction,
-		isObject: isObject,
-		isBoolean: isBoolean,
-		isArrayLike: isArrayLike,
-		isArray: isArray,
-		isEmpty: isEmpty,
-		// access
-		parse: parse,
-		set: set,
-		makeSetter: makeSetter,
-		get: get,
-		makeGetter: makeGetter,
-		del: del,
-		// controls
-		loop: loop,
-		each: each,
-		iterate: iterate,
-		safe: safe,
-		naked: naked
-	};
-
-/***/ },
-/* 50 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var bmoor = __webpack_require__(49),
-	    regex = {};
-
-	function getReg(className) {
-		var reg = regex[className];
-
-		if (!reg) {
-			reg = new RegExp('(?:^|\\s)' + className + '(?!\\S)');
-			regex[className] = reg;
-		}
-
-		return reg;
-	}
-
-	function getScrollPosition(doc) {
-		if (!doc) {
-			doc = document;
-		}
-
-		return {
-			left: window.pageXOffset || (doc.documentElement || doc.body).scrollLeft,
-			top: window.pageYOffset || (doc.documentElement || doc.body).scrollTop
-		};
-	}
-
-	function getBoundryBox(element) {
-		return element.getBoundingClientRect();
-	}
-
-	function centerOn(element, target, doc) {
-		var el = getBoundryBox(element),
-		    targ = getBoundryBox(target),
-		    pos = getScrollPosition(doc);
-
-		if (!doc) {
-			doc = document;
-		}
-
-		element.style.top = pos.top + targ.top + targ.height / 2 - el.height / 2;
-		element.style.left = pos.left + targ.left + targ.width / 2 - el.width / 2;
-		element.style.right = '';
-		element.style.bottom = '';
-
-		element.style.position = 'absolute';
-		doc.body.appendChild(element);
-	}
-
-	function showOn(element, target, doc) {
-		var direction,
-		    targ = getBoundryBox(target),
-		    x = targ.x + targ.width / 2,
-		    y = targ.y + targ.height / 2,
-		    centerX = window.innerWidth / 2,
-		    centerY = window.innerHeight / 2,
-		    pos = getScrollPosition(doc);
-
-		if (!doc) {
-			doc = document;
-		}
-
-		if (x < centerX) {
-			// right side has more room
-			direction = 'r';
-			element.style.left = pos.left + targ.right;
-			element.style.right = '';
-		} else {
-			// left side has more room
-			//element.style.left = targ.left - el.width - offset;
-			direction = 'l';
-			element.style.right = window.innerWidth - targ.left - pos.left;
-			element.style.left = '';
-		}
-
-		if (y < centerY) {
-			// more room on bottom
-			direction = 'b' + direction;
-			element.style.top = pos.top + targ.bottom;
-			element.style.bottom = '';
-		} else {
-			// more room on top
-			direction = 't' + direction;
-			element.style.bottom = window.innerHeight - targ.top - pos.top;
-			element.style.top = '';
-		}
-
-		element.style.position = 'absolute';
-		doc.body.appendChild(element);
-
-		return direction;
-	}
-
-	function massage(elements) {
-		if (!bmoor.isArrayLike(elements)) {
-			elements = [elements];
-		}
-
-		return elements;
-	}
-
-	function getDomElement(element, doc) {
-		if (!doc) {
-			doc = document;
-		}
-
-		if (bmoor.isString(element)) {
-			return doc.querySelector(element);
-		} else {
-			return element;
-		}
-	}
-
-	function getDomCollection(elements, doc) {
-		var i,
-		    c,
-		    j,
-		    co,
-		    el,
-		    selection,
-		    els = [];
-
-		if (!doc) {
-			doc = document;
-		}
-
-		elements = massage(elements);
-
-		for (i = 0, c = elements.length; i < c; i++) {
-			el = elements[i];
-			if (bmoor.isString(el)) {
-				selection = doc.querySelectorAll(el);
-				for (j = 0, co = selection.length; j < co; j++) {
-					els.push(selection[j]);
-				}
-			} else {
-				els.push(el);
-			}
-		}
-
-		return els;
-	}
-
-	function addClass(elements, className) {
-		var i,
-		    c,
-		    node,
-		    baseClass,
-		    reg = getReg(className);
-
-		elements = massage(elements);
-
-		for (i = 0, c = elements.length; i < c; i++) {
-			node = elements[i];
-			baseClass = node.getAttribute('class') || '';
-
-			if (!baseClass.match(reg)) {
-				node.setAttribute('class', baseClass + ' ' + className);
-			}
-		}
-	}
-
-	function removeClass(elements, className) {
-		var i,
-		    c,
-		    node,
-		    reg = getReg(className);
-
-		elements = massage(elements);
-
-		for (i = 0, c = elements.length; i < c; i++) {
-			node = elements[i];
-			node.setAttribute('class', (node.getAttribute('class') || '').replace(reg, ''));
-		}
-	}
-
-	function triggerEvent(elements, eventName, eventData) {
-		var i, c, doc, node, event, EventClass;
-
-		elements = massage(elements);
-
-		for (i = 0, c = elements.length; i < c; i++) {
-			node = elements[i];
-
-			// Make sure we use the ownerDocument from the provided node to avoid cross-window problems
-			if (node.ownerDocument) {
-				doc = node.ownerDocument;
-			} else if (node.nodeType === 9) {
-				// the node may be the document itself, nodeType 9 = DOCUMENT_NODE
-				doc = node;
-			} else if (typeof document !== 'undefined') {
-				doc = document;
-			} else {
-				throw new Error('Invalid node passed to fireEvent: ' + node.id);
-			}
-
-			if (node.dispatchEvent) {
-				try {
-					// modern, except for IE still? https://developer.mozilla.org/en-US/docs/Web/API/Event
-					// I ain't doing them all
-					// slightly older style, give some backwards compatibility
-					switch (eventName) {
-						case 'click':
-						case 'mousedown':
-						case 'mouseup':
-							EventClass = MouseEvent;
-							break;
-
-						case 'focus':
-						case 'blur':
-							EventClass = FocusEvent; // jshint ignore:line
-							break;
-
-						case 'change':
-						case 'select':
-							EventClass = UIEvent; // jshint ignore:line
-							break;
-
-						default:
-							EventClass = CustomEvent;
-					}
-
-					if (!eventData) {
-						eventData = { 'view': window, 'bubbles': true, 'cancelable': true };
-					} else {
-						if (eventData.bubbles === undefined) {
-							eventData.bubbles = true;
-						}
-						if (eventData.cancelable === undefined) {
-							eventData.cancelable = true;
-						}
-					}
-
-					event = new EventClass(eventName, eventData);
-				} catch (ex) {
-					// slightly older style, give some backwards compatibility
-					switch (eventName) {
-						case 'click':
-						case 'mousedown':
-						case 'mouseup':
-							EventClass = 'MouseEvents';
-							break;
-
-						case 'focus':
-						case 'change':
-						case 'blur':
-						case 'select':
-							EventClass = 'HTMLEvents';
-							break;
-
-						default:
-							EventClass = 'CustomEvent';
-					}
-					event = doc.createEvent(EventClass);
-					event.initEvent(eventName, true, true);
-				}
-
-				event.$synthetic = true; // allow detection of synthetic events
-
-				node.dispatchEvent(event);
-			} else if (node.fireEvent) {
-				// IE-old school style
-				event = doc.createEventObject();
-				event.$synthetic = true; // allow detection of synthetic events
-				node.fireEvent('on' + eventName, event);
-			}
-		}
-	}
-
-	function bringForward(elements) {
-		var i, c, node;
-
-		elements = massage(elements);
-
-		for (i = 0, c = elements.length; i < c; i++) {
-			node = elements[i];
-
-			if (node.parentNode) {
-				node.parentNode.appendChild(node);
-			}
-		}
-	}
-
-	module.exports = {
-		getScrollPosition: getScrollPosition,
-		getBoundryBox: getBoundryBox,
-		getDomElement: getDomElement,
-		getDomCollection: getDomCollection,
-		showOn: showOn,
-		centerOn: centerOn,
-		addClass: addClass,
-		removeClass: removeClass,
-		triggerEvent: triggerEvent,
-		bringForward: bringForward
-	};
-
-/***/ },
-/* 51 */
-/***/ function(module, exports) {
-
-	"use strict";
-
-	/**
-	 * Array helper functions
-	 * @module bmoor.data
-	 **/
-
-	var _id = 0;
-
-	function nextUid() {
-		return ++_id;
-	}
-
-	function setUid(obj) {
-		var t = obj.$$bmoorUid;
-
-		if (!t) {
-			t = obj.$$bmoorUid = nextUid();
-		}
-
-		return t;
-	}
-
-	function getUid(obj) {
-		if (!obj.$$bmoorUid) {
-			setUid(obj);
-		}
-
-		return obj.$$bmoorUid;
-	}
-
-	module.exports = {
-		setUid: setUid,
-		getUid: getUid
-	};
-
-/***/ },
-/* 52 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	/**
-	 * Array helper functions
-	 * @module bmoor.array
-	 **/
-
-	var bmoor = __webpack_require__(49);
-
-	/**
-	 * Search an array for an element, starting at the begining or a specified location
-	 *
-	 * @function indexOf
-	 * @param {array} arr An array to be searched
-	 * @param {*} searchElement Content for which to be searched
-	 * @param {integer} fromIndex The begining index from which to begin the search, defaults to 0
-	 * @return {integer} -1 if not found, otherwise the location of the element
-	 **/
-	function indexOf(arr, searchElement, fromIndex) {
-		if (arr.indexOf) {
-			return arr.indexOf(searchElement, fromIndex);
-		} else {
-			var length = parseInt(arr.length, 0);
-
-			fromIndex = +fromIndex || 0;
-
-			if (Math.abs(fromIndex) === Infinity) {
-				fromIndex = 0;
-			}
-
-			if (fromIndex < 0) {
-				fromIndex += length;
-				if (fromIndex < 0) {
-					fromIndex = 0;
-				}
-			}
-
-			for (; fromIndex < length; fromIndex++) {
-				if (arr[fromIndex] === searchElement) {
-					return fromIndex;
-				}
-			}
-
-			return -1;
-		}
-	}
-
-	/**
-	 * Search an array for an element and remove it, starting at the begining or a specified location
-	 *
-	 * @function remove
-	 * @param {array} arr An array to be searched
-	 * @param {*} searchElement Content for which to be searched
-	 * @param {integer} fromIndex The begining index from which to begin the search, defaults to 0
-	 * @return {array} array containing removed element
-	 **/
-	function remove(arr, searchElement, fromIndex) {
-		var pos = indexOf(arr, searchElement, fromIndex);
-
-		if (pos > -1) {
-			return arr.splice(pos, 1)[0];
-		}
-	}
-
-	/**
-	 * Search an array for an element and remove all instances of it, starting at the begining or a specified location
-	 *
-	 * @function remove
-	 * @param {array} arr An array to be searched
-	 * @param {*} searchElement Content for which to be searched
-	 * @param {integer} fromIndex The begining index from which to begin the search, defaults to 0
-	 * @return {integer} number of elements removed
-	 **/
-	function removeAll(arr, searchElement, fromIndex) {
-		var r,
-		    pos = indexOf(arr, searchElement, fromIndex);
-
-		if (pos > -1) {
-			r = removeAll(arr, searchElement, pos + 1);
-			r.unshift(arr.splice(pos, 1)[0]);
-
-			return r;
-		} else {
-			return [];
-		}
-	}
-
-	function bisect(arr, value, func, preSorted) {
-		var idx,
-		    val,
-		    bottom = 0,
-		    top = arr.length - 1;
-
-		if (!preSorted) {
-			arr.sort(function (a, b) {
-				return func(a) - func(b);
-			});
-		}
-
-		if (func(arr[bottom]) >= value) {
-			return {
-				left: bottom,
-				right: bottom
-			};
-		}
-
-		if (func(arr[top]) <= value) {
-			return {
-				left: top,
-				right: top
-			};
-		}
-
-		if (arr.length) {
-			while (top - bottom > 1) {
-				idx = Math.floor((top + bottom) / 2);
-				val = func(arr[idx]);
-
-				if (val === value) {
-					top = idx;
-					bottom = idx;
-				} else if (val > value) {
-					top = idx;
-				} else {
-					bottom = idx;
-				}
-			}
-
-			// if it is one of the end points, make it that point
-			if (top !== idx && func(arr[top]) === value) {
-				return {
-					left: top,
-					right: top
-				};
-			} else if (bottom !== idx && func(arr[bottom]) === value) {
-				return {
-					left: bottom,
-					right: bottom
-				};
-			} else {
-				return {
-					left: bottom,
-					right: top
-				};
-			}
-		}
-	}
-
-	/**
-	 * Generate a new array whose content is a subset of the intial array, but satisfies the supplied function
-	 *
-	 * @function remove
-	 * @param {array} arr An array to be searched
-	 * @param {*} searchElement Content for which to be searched
-	 * @param {integer} fromIndex The begining index from which to begin the search, defaults to 0
-	 * @return {integer} number of elements removed
-	 **/
-	function filter(arr, func, thisArg) {
-		if (arr.filter) {
-			return arr.filter(func, thisArg);
-		} else {
-			var i,
-			    val,
-			    t = Object(this),
-			    // jshint ignore:line
-			c = parseInt(t.length, 10),
-			    res = [];
-
-			if (!bmoor.isFunction(func)) {
-				throw new Error('func needs to be a function');
-			}
-
-			for (i = 0; i < c; i++) {
-				if (i in t) {
-					val = t[i];
-
-					if (func.call(thisArg, val, i, t)) {
-						res.push(val);
-					}
-				}
-			}
-
-			return res;
-		}
-	}
-
-	/**
-	 * Compare two arrays, 
-	 *
-	 * @function remove
-	 * @param {array} arr1 An array to be compared
-	 * @param {array} arr2 An array to be compared
-	 * @param {function} func The comparison function
-	 * @return {object} an object containing the elements unique to the left, matched, and unqiue to the right
-	 **/
-	function compare(arr1, arr2, func) {
-		var cmp,
-		    left = [],
-		    right = [],
-		    leftI = [],
-		    rightI = [];
-
-		arr1 = arr1.slice(0);
-		arr2 = arr2.slice(0);
-
-		arr1.sort(func);
-		arr2.sort(func);
-
-		while (arr1.length > 0 && arr2.length > 0) {
-			cmp = func(arr1[0], arr2[0]);
-
-			if (cmp < 0) {
-				left.push(arr1.shift());
-			} else if (cmp > 0) {
-				right.push(arr2.shift());
-			} else {
-				leftI.push(arr1.shift());
-				rightI.push(arr2.shift());
-			}
-		}
-
-		while (arr1.length) {
-			left.push(arr1.shift());
-		}
-
-		while (arr2.length) {
-			right.push(arr2.shift());
-		}
-
-		return {
-			left: left,
-			intersection: {
-				left: leftI,
-				right: rightI
-			},
-			right: right
-		};
-	}
-
-	module.exports = {
-		indexOf: indexOf,
-		remove: remove,
-		removeAll: removeAll,
-		bisect: bisect,
-		filter: filter,
-		compare: compare
-	};
-
-/***/ },
-/* 53 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var bmoor = __webpack_require__(49),
-	    mixin = __webpack_require__(54),
-	    plugin = __webpack_require__(55),
-	    decorate = __webpack_require__(56);
-
-	function proc(action, proto, def) {
-		var i, c;
-
-		if (bmoor.isArray(def)) {
-			for (i = 0, c = def.length; i < c; i++) {
-				action(proto, def[i]);
-			}
-		} else {
-			action(proto, def);
-		}
-	}
-
-	function maker(root, config, base) {
-		if (!base) {
-			base = function BmoorPrototype() {};
-
-			if (config) {
-				if (bmoor.isFunction(root)) {
-					base = function BmoorPrototype() {
-						root.apply(this, arguments);
-					};
-
-					base.prototype = Object.create(root.prototype);
-				} else {
-					base.prototype = Object.create(root);
-				}
-			} else {
-				config = root;
-			}
-		}
-
-		if (config.mixin) {
-			proc(mixin, base.prototype, config.mixin);
-		}
-
-		if (config.decorate) {
-			proc(decorate, base.prototype, config.decorate);
-		}
-
-		if (config.plugin) {
-			proc(plugin, base.prototype, config.plugin);
-		}
-
-		return base;
-	}
-
-	maker.mixin = mixin;
-	maker.decorate = decorate;
-	maker.plugin = plugin;
-
-	module.exports = maker;
-
-/***/ },
-/* 54 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var bmoor = __webpack_require__(49);
-
-	module.exports = function (to, from) {
-		bmoor.iterate(from, function (val, key) {
-			to[key] = val;
-		});
-	};
-
-/***/ },
-/* 55 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-	var bmoor = __webpack_require__(49);
-
-	function override(key, target, action, plugin) {
-		var old = target[key];
-
-		if (old === undefined) {
-			if (bmoor.isFunction(action)) {
-				target[key] = function () {
-					return action.apply(plugin, arguments);
-				};
-			} else {
-				target[key] = action;
-			}
-		} else {
-			if (bmoor.isFunction(action)) {
-				if (bmoor.isFunction(old)) {
-					target[key] = function () {
-						var backup = plugin.$old,
-						    reference = plugin.$target,
-						    rtn;
-
-						plugin.$target = target;
-						plugin.$old = function () {
-							return old.apply(target, arguments);
-						};
-
-						rtn = action.apply(plugin, arguments);
-
-						plugin.$old = backup;
-						plugin.$target = reference;
-
-						return rtn;
-					};
-				} else {
-					console.log('attempting to plug-n-play ' + key + ' an instance of ' + (typeof old === 'undefined' ? 'undefined' : _typeof(old)));
-				}
-			} else {
-				console.log('attempting to plug-n-play with ' + key + ' and instance of ' + (typeof action === 'undefined' ? 'undefined' : _typeof(action)));
-			}
-		}
-	}
-
-	module.exports = function (to, from, ctx) {
-		bmoor.iterate(from, function (val, key) {
-			override(key, to, val, ctx);
-		});
-	};
-
-/***/ },
-/* 56 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-	var bmoor = __webpack_require__(49);
-
-	function override(key, target, action) {
-		var old = target[key];
-
-		if (old === undefined) {
-			target[key] = action;
-		} else {
-			if (bmoor.isFunction(action)) {
-				if (bmoor.isFunction(old)) {
-					target[key] = function () {
-						var backup = this.$old,
-						    rtn;
-
-						this.$old = old;
-
-						rtn = action.apply(this, arguments);
-
-						this.$old = backup;
-
-						return rtn;
-					};
-				} else {
-					console.log('attempting to decorate ' + key + ' an instance of ' + (typeof old === 'undefined' ? 'undefined' : _typeof(old)));
-				}
-			} else {
-				console.log('attempting to decorate with ' + key + ' and instance of ' + (typeof action === 'undefined' ? 'undefined' : _typeof(action)));
-			}
-		}
-	}
-
-	module.exports = function (to, from) {
-		bmoor.iterate(from, function (val, key) {
-			override(key, to, val);
-		});
-	};
-
-/***/ },
-/* 57 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-	/**
-	 * Object helper functions
-	 * @module bmoor.object
-	 **/
-
-	var bmoor = __webpack_require__(49);
-
-	function values(obj) {
-		var res = [];
-
-		bmoor.naked(obj, function (v) {
-			res.push(v);
-		});
-
-		return res;
-	}
-
-	function keys(obj) {
-		var res = [];
-
-		if (Object.keys) {
-			return Object.keys(obj);
-		} else {
-			bmoor.naked(obj, function (v, key) {
-				res.push(key);
-			});
-
-			return res;
-		}
-	}
-
-	/**
-	 * Takes a hash and uses the indexs as namespaces to add properties to an objs
-	 *
-	 * @function explode
-	 * @param {object} target The object to map the variables onto
-	 * @param {object} mappings An object orientended as [ namespace ] => value
-	 * @return {object} The object that has had content mapped into it
-	 **/
-	function explode(target, mappings) {
-		if (!mappings) {
-			mappings = target;
-			target = {};
-		}
-
-		bmoor.iterate(mappings, function (val, mapping) {
-			bmoor.set(target, mapping, val);
-		});
-
-		return target;
-	}
-
-	function implode(obj, ignore) {
-		var rtn = {};
-
-		if (!ignore) {
-			ignore = {};
-		}
-
-		bmoor.iterate(obj, function (val, key) {
-			var t = ignore[key];
-
-			if (bmoor.isObject(val)) {
-				if (t === false) {
-					rtn[key] = val;
-				} else if (!t || bmoor.isObject(t)) {
-					bmoor.iterate(implode(val, t), function (v, k) {
-						rtn[key + '.' + k] = v;
-					});
-				}
-			} else if (!t) {
-				rtn[key] = val;
-			}
-		});
-
-		return rtn;
-	}
-
-	/**
-	 * Create a new instance from an object and some arguments
-	 *
-	 * @function mask
-	 * @param {function} obj The basis for the constructor
-	 * @param {array} args The arguments to pass to the constructor
-	 * @return {object} The new object that has been constructed
-	 **/
-	function mask(obj) {
-		if (Object.create) {
-			var T = function Masked() {};
-
-			T.prototype = obj;
-
-			return new T();
-		} else {
-			return Object.create(obj);
-		}
-	}
-
-	/**
-	 * Create a new instance from an object and some arguments.  This is a shallow copy to <- from[...]
-	 * 
-	 * @function extend
-	 * @param {object} to Destination object.
-	 * @param {...object} src Source object(s).
-	 * @returns {object} Reference to `dst`.
-	 **/
-	function extend(to) {
-		bmoor.loop(arguments, function (cpy) {
-			if (cpy !== to) {
-				if (to && to.extend) {
-					to.extend(cpy);
-				} else {
-					bmoor.iterate(cpy, function (value, key) {
-						to[key] = value;
-					});
-				}
-			}
-		});
-
-		return to;
-	}
-
-	function empty(to) {
-		bmoor.iterate(to, function (v, k) {
-			delete to[k]; // TODO : would it be ok to set it to undefined?
-		});
-	}
-
-	function copy(to) {
-		empty(to);
-
-		return extend.apply(undefined, arguments);
-	}
-
-	// Deep copy version of extend
-	function merge(to) {
-		var from,
-		    i,
-		    c,
-		    m = function m(val, key) {
-			to[key] = merge(to[key], val);
-		};
-
-		for (i = 1, c = arguments.length; i < c; i++) {
-			from = arguments[i];
-
-			if (to === from || !from) {
-				continue;
-			} else if (to && to.merge) {
-				to.merge(from);
-			} else if (!bmoor.isObject(to)) {
-				if (bmoor.isObject(from)) {
-					to = merge({}, from);
-				} else {
-					to = from;
-				}
-			} else {
-				bmoor.safe(from, m);
-			}
-		}
-
-		return to;
-	}
-
-	/**
-	 * A general comparison algorithm to test if two objects are equal
-	 *
-	 * @function equals
-	 * @param {object} obj1 The object to copy the content from
-	 * @param {object} obj2 The object into which to copy the content
-	 * @preturns {boolean}
-	 **/
-	function equals(obj1, obj2) {
-		var t1 = typeof obj1 === 'undefined' ? 'undefined' : _typeof(obj1),
-		    t2 = typeof obj2 === 'undefined' ? 'undefined' : _typeof(obj2),
-		    c,
-		    i,
-		    keyCheck;
-
-		if (obj1 === obj2) {
-			return true;
-		} else if (obj1 !== obj1 && obj2 !== obj2) {
-			return true; // silly NaN
-		} else if (obj1 === null || obj1 === undefined || obj2 === null || obj2 === undefined) {
-			return false; // undefined or null
-		} else if (obj1.equals) {
-			return obj1.equals(obj2);
-		} else if (obj2.equals) {
-			return obj2.equals(obj1); // because maybe somene wants a class to be able to equal a simple object
-		} else if (t1 === t2) {
-			if (t1 === 'object') {
-				if (bmoor.isArrayLike(obj1)) {
-					if (!bmoor.isArrayLike(obj2)) {
-						return false;
-					}
-
-					if ((c = obj1.length) === obj2.length) {
-						for (i = 0; i < c; i++) {
-							if (!equals(obj1[i], obj2[i])) {
-								return false;
-							}
-						}
-
-						return true;
-					}
-				} else if (!bmoor.isArrayLike(obj2)) {
-					keyCheck = {};
-					for (i in obj1) {
-						if (obj1.hasOwnProperty(i)) {
-							if (!equals(obj1[i], obj2[i])) {
-								return false;
-							}
-
-							keyCheck[i] = true;
-						}
-					}
-
-					for (i in obj2) {
-						if (obj2.hasOwnProperty(i)) {
-							if (!keyCheck && obj2[i] !== undefined) {
-								return false;
-							}
-						}
-					}
-				}
-			}
-		}
-
-		return false;
-	}
-
-	module.exports = {
-		keys: keys,
-		values: values,
-		explode: explode,
-		implode: implode,
-		mask: mask,
-		extend: extend,
-		empty: empty,
-		copy: copy,
-		merge: merge,
-		equals: equals
-	};
-
-/***/ },
-/* 58 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var bmoor = __webpack_require__(49);
-
-	/**
-	 * Array helper functions
-	 * @module bmoor.string
-	 **/
-
-	function trim(str, chr) {
-		if (!chr) {
-			chr = '\\s';
-		}
-		return str.replace(new RegExp('^' + chr + '+|' + chr + '+$', 'g'), '');
-	}
-
-	function ltrim(str, chr) {
-		if (!chr) {
-			chr = '\\s';
-		}
-		return str.replace(new RegExp('^' + chr + '+', 'g'), '');
-	}
-
-	function rtrim(str, chr) {
-		if (!chr) {
-			chr = '\\s';
-		}
-		return str.replace(new RegExp(chr + '+$', 'g'), '');
-	}
-
-	// TODO : eventually I will make getCommands and getFormatter more complicated, but for now
-	//        they work by staying simple
-	function getCommands(str) {
-		var commands = str.split('|');
-
-		commands.forEach(function (command, key) {
-			var args = command.split(':');
-
-			args.forEach(function (arg, k) {
-				args[k] = trim(arg);
-			});
-
-			commands[key] = {
-				command: command,
-				method: args.shift(),
-				args: args
-			};
-		});
-
-		return commands;
-	}
-
-	function stackFunctions(newer, older) {
-		return function (o) {
-			return older(newer(o));
-		};
-	}
-
-	var filters = {
-		precision: function precision(dec) {
-			dec = parseInt(dec, 10);
-
-			return function (num) {
-				return parseFloat(num, 10).toFixed(dec);
-			};
-		},
-		currency: function currency() {
-			return function (num) {
-				return '$' + num;
-			};
-		},
-		url: function url() {
-			return function (param) {
-				return encodeURIComponent(param);
-			};
-		}
-	};
-
-	function doFilters(ters) {
-		var fn, command, filter;
-
-		while (ters.length) {
-			command = ters.pop();
-			fn = filters[command.method];
-
-			if (fn) {
-				fn = fn.apply(null, command.args);
-
-				if (filter) {
-					filter = stackFunctions(fn, filter);
-				} else {
-					filter = fn;
-				}
-			}
-		}
-
-		return filter;
-	}
-
-	function doVariable(lines) {
-		var fn, rtn, dex, line, getter, command, commands, remainder;
-
-		if (!lines.length) {
-			return null;
-		} else {
-			line = lines.shift();
-			dex = line.indexOf('}}');
-			fn = doVariable(lines);
-
-			if (dex === -1) {
-				return function () {
-					return '| no close |';
-				};
-			} else if (dex === 0) {
-				// is looks like this {{}}
-				remainder = line.substr(2);
-				getter = function getter(o) {
-					if (bmoor.isObject(o)) {
-						return JSON.stringify(o);
-					} else {
-						return o;
-					}
-				};
-			} else {
-				commands = getCommands(line.substr(0, dex));
-				command = commands.shift().command;
-				remainder = line.substr(dex + 2);
-				getter = bmoor.makeGetter(command);
-
-				if (commands.length) {
-					commands = doFilters(commands, getter);
-
-					if (commands) {
-						getter = stackFunctions(getter, commands);
-					}
-				}
-			}
-
-			//let's optimize this a bit
-			if (fn) {
-				// we have a child method
-				rtn = function rtn(obj) {
-					return getter(obj) + remainder + fn(obj);
-				};
-				rtn.$vars = fn.$vars;
-			} else {
-				// this is the last variable
-				rtn = function rtn(obj) {
-					return getter(obj) + remainder;
-				};
-				rtn.$vars = [];
-			}
-
-			if (command) {
-				rtn.$vars.push(command);
-			}
-
-			return rtn;
-		}
-	}
-
-	function getFormatter(str) {
-		var fn,
-		    rtn,
-		    lines = str.split(/{{/g);
-
-		if (lines.length > 1) {
-			str = lines.shift();
-			fn = doVariable(lines);
-			rtn = function rtn(obj) {
-				return str + fn(obj);
-			};
-			rtn.$vars = fn.$vars;
-		} else {
-			rtn = function rtn() {
-				return str;
-			};
-			rtn.$vars = [];
-		}
-
-		return rtn;
-	}
-
-	getFormatter.filters = filters;
-
-	module.exports = {
-		trim: trim,
-		ltrim: ltrim,
-		rtrim: rtrim,
-		getCommands: getCommands,
-		getFormatter: getFormatter
-	};
-
-/***/ },
-/* 59 */
-/***/ function(module, exports) {
-
-	"use strict";
-
-	function always(promise, func) {
-		promise.then(func, func);
-		return promise;
-	}
-
-	module.exports = {
-		always: always
-	};
-
-/***/ },
-/* 60 */
-/***/ function(module, exports) {
-
-	'use strict';
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var master = {};
-
-	var Memory = function Memory(title) {
-		_classCallCheck(this, Memory);
-
-		var index = {};
-
-		this.register = function (name, obj) {
-			if (index[name]) {
-				throw new Error('Memory - ' + title + ' already has ' + name);
-			} else {
-				index[name] = obj;
-			}
-		};
-
-		this.check = function (name) {
-			return index[name];
-		};
-	};
-
-	module.exports = {
-		Memory: Memory,
-		use: function use(title) {
-			var rtn = master[title];
-
-			if (rtn) {
-				throw new Error('Memory already exists ' + title);
-			} else {
-				rtn = master[title] = new Memory(title);
-			}
-
-			return rtn;
-		}
-	};
-
-/***/ },
-/* 61 */
-/***/ function(module, exports) {
-
-	"use strict";
-
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var Eventing = function () {
-		function Eventing() {
-			_classCallCheck(this, Eventing);
-
-			this._listeners = {};
-		}
-
-		_createClass(Eventing, [{
-			key: "on",
-			value: function on(event, cb) {
-				var dis = this;
-
-				if (!this._listeners[event]) {
-					this._listeners[event] = [];
-				}
-
-				this._listeners[event].push(cb);
-
-				return function clear$on() {
-					dis._listeners[event].splice(dis._listeners[event].indexOf(cb), 1);
-				};
-			}
-		}, {
-			key: "subscribe",
-			value: function subscribe(subscriptions) {
-				var dis = this,
-				    kills = [],
-				    events = Object.keys(subscriptions);
-
-				events.forEach(function (event) {
-					var action = subscriptions[event];
-
-					kills.push(dis.on(event, action));
-				});
-
-				return function killAll() {
-					kills.forEach(function (kill) {
-						kill();
-					});
-				};
-			}
-		}, {
-			key: "trigger",
-			value: function trigger(event) {
-				var _this = this;
-
-				var args = Array.prototype.slice.call(arguments, 1);
-
-				if (this.hasWaiting(event)) {
-					if (!this._triggering) {
-						this._triggering = {};
-						// I want to do this to enforce more async / promise style
-						setTimeout(function () {
-							var events = _this._triggering;
-
-							_this._triggering = null;
-
-							Object.keys(events).forEach(function (event) {
-								var vars = events[event];
-
-								_this._listeners[event].forEach(function (cb) {
-									cb.apply(_this, vars);
-								});
-							});
-
-							if (!_this._triggering && _this._listeners.stable) {
-								_this._listeners.stable.forEach(function (cb) {
-									cb.apply(_this);
-								});
-							}
-						}, 0);
-					}
-
-					this._triggering[event] = args;
-				}
-			}
-		}, {
-			key: "hasWaiting",
-			value: function hasWaiting(event) {
-				return !!this._listeners[event];
-			}
-		}]);
-
-		return Eventing;
-	}();
-
-	module.exports = Eventing;
 
 /***/ },
 /* 62 */
@@ -48233,2777 +48211,302 @@
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var bmoor = __webpack_require__(48),
-	    Eventing = bmoor.Eventing,
+	var proto = Array.prototype,
+	    bmoor = __webpack_require__(48),
 	    getUid = bmoor.data.getUid,
-	    makeGetter = bmoor.makeGetter,
-	    Mapper = __webpack_require__(63).Mapper;
+	    Observor = __webpack_require__(63);
 
-	var Pool = function (_Eventing) {
-		_inherits(Pool, _Eventing);
+	function manageFilter(collection, datum, filter) {
+		var isIn = filter(datum);
 
-		function Pool() {
-			_classCallCheck(this, Pool);
+		collection._addRegistration(datum, datum.$observe.on('update', function CollectionDatumWatch() {
+			var nowIs = filter(datum);
 
-			var _this = _possibleConstructorReturn(this, (Pool.__proto__ || Object.getPrototypeOf(Pool)).call(this));
+			if (isIn !== nowIs) {
+				if (nowIs) {
+					collection.insert(datum);
+				} else {
+					collection.remove(datum);
+				}
+
+				isIn = nowIs;
+			}
+		}));
+
+		return isIn;
+	}
+
+	var Collection = function (_bmoor$build) {
+		_inherits(Collection, _bmoor$build);
+
+		function Collection() {
+			_classCallCheck(this, Collection);
+
+			var i, c;
+
+			var _this = _possibleConstructorReturn(this, (Collection.__proto__ || Object.getPrototypeOf(Collection)).call(this));
 
 			bmoor.data.setUid(_this);
 
-			_this.data = [];
-			_this.feeds = {};
-			_this.index = {};
+			_this._contains = {};
+			_this._following = {};
+			_this._registrations = {};
+
+			for (i = 0, c = arguments.length; i < c; i++) {
+				_this.consume(arguments[i]);
+			}
 			return _this;
 		}
 
-		_createClass(Pool, [{
-			key: 'addFeed',
-			value: function addFeed(feed, index, readings) {
-				var dex = makeGetter(index),
-				    uid = getUid(feed),
-				    data = this.data,
-				    dexs = this.index,
-				    mapper = new Mapper(readings).run,
-				    lastRead = 0,
-				    trigger = this.trigger.bind(this);
+		// private functions
 
-				function read(datum) {
-					var i = dex(datum),
-					    // identity
-					d = dexs[i];
-
-					if (!d) {
-						d = dexs[i] = {
-							_: i
-						};
-						data.push(d);
-					}
-
-					mapper(d, datum);
-				}
-
-				function readAll(changes) {
-					var i, c;
-
-					if (changes && changes.length) {
-						for (i = lastRead, c = changes.length; i < c; i++) {
-							read(changes[i]);
-						}
-
-						trigger('update');
-					}
-				}
-
-				if (!this.feeds[uid]) {
-					readAll();
-
-					this.feeds[uid] = feed.on('insert', readAll);
-				}
-			}
-		}]);
-
-		return Pool;
-	}(Eventing);
-
-	module.exports = Pool;
-
-/***/ },
-/* 63 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	module.exports = {
-		encode: __webpack_require__(64),
-		Mapper: __webpack_require__(79),
-		Mapping: __webpack_require__(81),
-		Path: __webpack_require__(80),
-		translate: __webpack_require__(82),
-		validate: __webpack_require__(83)
-	};
-
-/***/ },
-/* 64 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-	var bmoor = __webpack_require__(65),
-	    ops;
-
-	function parse(def, path, val) {
-		var method;
-
-		if (bmoor.isArray(val)) {
-			method = 'array';
-		} else {
-			method = typeof val === 'undefined' ? 'undefined' : _typeof(val);
-		}
-
-		ops[method](def, path, val);
-	}
-
-	ops = {
-		array: function array(def, path, val) {
-			parse(def, path + '[]', val[0]);
-		},
-		object: function object(def, path, val) {
-			if (path.length && path.charAt(path.length - 1) !== ']') {
-				path += '.';
-			}
-
-			Object.keys(val).forEach(function (key) {
-				parse(def, path + key, val[key]);
-			});
-		},
-		number: function number(def, path, val) {
-			def.push({
-				from: path,
-				type: 'number',
-				sample: val
-			});
-		},
-		boolean: function boolean(def, path, val) {
-			def.push({
-				from: path,
-				type: 'boolean',
-				sample: val
-			});
-		},
-		string: function string(def, path, val) {
-			def.push({
-				from: path,
-				type: 'string',
-				sample: val
-			});
-		}
-	};
-
-	function encode(json) {
-		var t = [];
-
-		parse(t, '', json);
-
-		return t;
-	}
-
-	encode.$ops = ops;
-
-	module.exports = encode;
-
-/***/ },
-/* 65 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var bmoor = Object.create(__webpack_require__(66));
-
-	bmoor.dom = __webpack_require__(67);
-	bmoor.data = __webpack_require__(68);
-	bmoor.array = __webpack_require__(69);
-	bmoor.build = __webpack_require__(70);
-	bmoor.object = __webpack_require__(74);
-	bmoor.string = __webpack_require__(75);
-	bmoor.promise = __webpack_require__(76);
-
-	bmoor.Memory = __webpack_require__(77);
-	bmoor.Eventing = __webpack_require__(78);
-
-	module.exports = bmoor;
-
-/***/ },
-/* 66 */
-/***/ function(module, exports) {
-
-	'use strict';
-
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-	/**
-	 * The core of bmoor's usefulness
-	 * @module bmoor
-	 **/
-
-	/**
-	 * Tests if the value is undefined
-	 *
-	 * @function isUndefined
-	 * @param {*} value - The variable to test
-	 * @return {boolean}
-	 **/
-	function isUndefined(value) {
-		return value === undefined;
-	}
-
-	/**
-	 * Tests if the value is not undefined
-	 *
-	 * @function isDefined
-	 * @param {*} value The variable to test
-	 * @return {boolean}
-	 **/
-	function isDefined(value) {
-		return value !== undefined;
-	}
-
-	/**
-	 * Tests if the value is a string
-	 *
-	 * @function isString
-	 * @param {*} value The variable to test
-	 * @return {boolean}
-	 **/
-	function isString(value) {
-		return typeof value === 'string';
-	}
-
-	/**
-	 * Tests if the value is numeric
-	 *
-	 * @function isNumber
-	 * @param {*} value The variable to test
-	 * @return {boolean}
-	 **/
-	function isNumber(value) {
-		return typeof value === 'number';
-	}
-
-	/**
-	 * Tests if the value is a function
-	 *
-	 * @function isFuncion
-	 * @param {*} value The variable to test
-	 * @return {boolean}
-	 **/
-	function isFunction(value) {
-		return typeof value === 'function';
-	}
-
-	/**
-	 * Tests if the value is an object
-	 *
-	 * @function isObject
-	 * @param {*} value The variable to test
-	 * @return {boolean}
-	 **/
-	function isObject(value) {
-		return value && (typeof value === 'undefined' ? 'undefined' : _typeof(value)) === 'object';
-	}
-
-	/**
-	 * Tests if the value is a boolean
-	 *
-	 * @function isBoolean
-	 * @param {*} value The variable to test
-	 * @return {boolean}
-	 **/
-	function isBoolean(value) {
-		return typeof value === 'boolean';
-	}
-
-	/**
-	 * Tests if the value can be used as an array
-	 *
-	 * @function isArrayLike
-	 * @param {*} value The variable to test
-	 * @return {boolean}
-	 **/
-	function isArrayLike(value) {
-		// for me, if you have a length, I'm assuming you're array like, might change
-		if (value) {
-			return isObject(value) && (value.length === 0 || 0 in value && value.length - 1 in value);
-		} else {
-			return false;
-		}
-	}
-
-	/**
-	 * Tests if the value is an array
-	 *
-	 * @function isArray
-	 * @param {*} value The variable to test
-	 * @return {boolean}
-	 **/
-	function isArray(value) {
-		return value instanceof Array;
-	}
-
-	/**
-	 * Tests if the value has no content.
-	 * If an object, has no own properties.
-	 * If array, has length == 0.
-	 * If other, is not defined
-	 *
-	 * @function isEmpty
-	 * @param {*} value The variable to test
-	 * @return {boolean}
-	 **/
-	function isEmpty(value) {
-		var key;
-
-		if (isObject(value)) {
-			for (key in value) {
-				if (value.hasOwnProperty(key)) {
-					return false;
-				}
-			}
-		} else if (isArrayLike(value)) {
-			return value.length === 0;
-		} else {
-			return isUndefined(value);
-		}
-
-		return true;
-	}
-
-	function parse(path) {
-		if (!path) {
-			return [];
-		} else if (isString(path)) {
-			return path.split('.');
-		} else if (isArray(path)) {
-			return path.slice(0);
-		} else {
-			throw new Error('unable to parse path: ' + path + ' : ' + (typeof path === 'undefined' ? 'undefined' : _typeof(path)));
-		}
-	}
-
-	/**
-	 * Sets a value to a namespace, returns the old value
-	 *
-	 * @function set
-	 * @param {object} root The root of the namespace, bMoor.namespace.root if not defined
-	 * @param {string|array} space The namespace
-	 * @param {*} value The value to set the namespace to
-	 * @return {*}
-	 **/
-	function set(root, space, value) {
-		var i,
-		    c,
-		    old,
-		    val,
-		    nextSpace,
-		    curSpace = root;
-
-		space = parse(space);
-
-		val = space.pop();
-
-		for (i = 0, c = space.length; i < c; i++) {
-			nextSpace = space[i];
-
-			if (isUndefined(curSpace[nextSpace])) {
-				curSpace[nextSpace] = {};
-			}
-
-			curSpace = curSpace[nextSpace];
-		}
-
-		old = curSpace[val];
-		curSpace[val] = value;
-
-		return old;
-	}
-
-	function _makeSetter(property, next) {
-		if (next) {
-			return function (ctx, value) {
-				var t = ctx[property];
-
-				if (!t) {
-					t = ctx[property] = {};
-				}
-
-				return next(t, value);
-			};
-		} else {
-			return function (ctx, value) {
-				var t = ctx[property];
-				ctx[property] = value;
-				return t;
-			};
-		}
-	}
-
-	function makeSetter(space) {
-		var i,
-		    fn,
-		    readings = parse(space);
-
-		for (i = readings.length - 1; i > -1; i--) {
-			fn = _makeSetter(readings[i], fn);
-		}
-
-		return fn;
-	}
-
-	/**
-	 * get a value from a namespace, if it doesn't exist, the path will be created
-	 *
-	 * @function get
-	 * @param {object} root The root of the namespace, bMoor.namespace.root if not defined
-	 * @param {string|array|function} space The namespace
-	 * @return {array}
-	 **/
-	function get(root, path) {
-		var i,
-		    c,
-		    space,
-		    nextSpace,
-		    curSpace = root;
-
-		space = parse(path);
-		if (space.length) {
-			for (i = 0, c = space.length; i < c; i++) {
-				nextSpace = space[i];
-
-				if (isUndefined(curSpace[nextSpace])) {
-					return;
-				}
-
-				curSpace = curSpace[nextSpace];
-			}
-		}
-
-		return curSpace;
-	}
-
-	function _makeGetter(property, next) {
-		if (next) {
-			return function (obj) {
-				try {
-					return next(obj[property]);
-				} catch (ex) {
-					return undefined;
-				}
-			};
-		} else {
-			return function (obj) {
-				try {
-					return obj[property];
-				} catch (ex) {
-					return undefined;
-				}
-			};
-		}
-	}
-
-	function makeGetter(path) {
-		var i,
-		    fn,
-		    space = parse(path);
-
-		if (space.length) {
-			for (i = space.length - 1; i > -1; i--) {
-				fn = _makeGetter(space[i], fn);
-			}
-		} else {
-			return function (obj) {
-				return obj;
-			};
-		}
-
-		return fn;
-	}
-
-	/**
-	 * Delete a namespace, returns the old value
-	 *
-	 * @function del
-	 * @param {object} root The root of the namespace, bMoor.namespace.root if not defined
-	 * @param {string|array} space The namespace
-	 * @return {*}
-	 **/
-	function del(root, space) {
-		var old,
-		    val,
-		    nextSpace,
-		    curSpace = root;
-
-		if (space && (isString(space) || isArrayLike(space))) {
-			space = parse(space);
-
-			val = space.pop();
-
-			for (var i = 0; i < space.length; i++) {
-				nextSpace = space[i];
-
-				if (isUndefined(curSpace[nextSpace])) {
-					return;
-				}
-
-				curSpace = curSpace[nextSpace];
-			}
-
-			old = curSpace[val];
-			delete curSpace[val];
-		}
-
-		return old;
-	}
-
-	/**
-	 * Call a function against all elements of an array like object, from 0 to length.  
-	 *
-	 * @function loop
-	 * @param {array} arr The array to iterate through
-	 * @param {function} fn The function to call against each element
-	 * @param {object} context The context to call each function against
-	 **/
-	function loop(arr, fn, context) {
-		var i, c;
-
-		if (!context) {
-			context = arr;
-		}
-
-		if (arr.forEach) {
-			arr.forEach(fn, context);
-		} else {
-			for (i = 0, c = arr.length; i < c; ++i) {
-				if (i in arr) {
-					fn.call(context, arr[i], i, arr);
-				}
-			}
-		}
-	}
-
-	/**
-	 * Call a function against all own properties of an object.  
-	 *
-	 * @function each
-	 * @param {object} arr The object to iterate through
-	 * @param {function} fn The function to call against each element
-	 * @param {object} context The context to call each function against
-	 **/
-	function each(obj, fn, context) {
-		var key;
-
-		if (!context) {
-			context = obj;
-		}
-
-		for (key in obj) {
-			if (obj.hasOwnProperty(key)) {
-				fn.call(context, obj[key], key, obj);
-			}
-		}
-	}
-
-	/**
-	 * Call a function against all own properties of an object, skipping specific framework properties.
-	 * In this framework, $ implies a system function, _ implies private, so skip _
-	 *
-	 * @function iterate
-	 * @param {object} obj The object to iterate through
-	 * @param {function} fn The function to call against each element
-	 * @param {object} context The scope to call each function against
-	 **/
-	function iterate(obj, fn, context) {
-		var key;
-
-		if (!context) {
-			context = obj;
-		}
-
-		for (key in obj) {
-			if (obj.hasOwnProperty(key) && key.charAt(0) !== '_') {
-				fn.call(context, obj[key], key, obj);
-			}
-		}
-	}
-
-	/**
-	 * Call a function against all own properties of an object, skipping specific framework properties.
-	 * In this framework, $ implies a system function, _ implies private, so skip both
-	 *
-	 * @function safe
-	 * @param {object} obj - The object to iterate through
-	 * @param {function} fn - The function to call against each element
-	 * @param {object} scope - The scope to call each function against
-	 **/
-	function safe(obj, fn, context) {
-		var key;
-
-		if (!context) {
-			context = obj;
-		}
-
-		for (key in obj) {
-			if (obj.hasOwnProperty(key) && key.charAt(0) !== '_' && key.charAt(0) !== '$') {
-				fn.call(context, obj[key], key, obj);
-			}
-		}
-	}
-
-	function naked(obj, fn, context) {
-		safe(obj, function (t, k, o) {
-			if (!isFunction(t)) {
-				fn.call(context, t, k, o);
-			}
-		});
-	}
-
-	module.exports = {
-		// booleans
-		isUndefined: isUndefined,
-		isDefined: isDefined,
-		isString: isString,
-		isNumber: isNumber,
-		isFunction: isFunction,
-		isObject: isObject,
-		isBoolean: isBoolean,
-		isArrayLike: isArrayLike,
-		isArray: isArray,
-		isEmpty: isEmpty,
-		// access
-		parse: parse,
-		set: set,
-		makeSetter: makeSetter,
-		get: get,
-		makeGetter: makeGetter,
-		del: del,
-		// controls
-		loop: loop,
-		each: each,
-		iterate: iterate,
-		safe: safe,
-		naked: naked
-	};
-
-/***/ },
-/* 67 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var bmoor = __webpack_require__(66),
-	    regex = {};
-
-	function getReg(className) {
-		var reg = regex[className];
-
-		if (!reg) {
-			reg = new RegExp('(?:^|\\s)' + className + '(?!\\S)');
-			regex[className] = reg;
-		}
-
-		return reg;
-	}
-
-	function getScrollPosition(doc) {
-		if (!doc) {
-			doc = document;
-		}
-
-		return {
-			left: window.pageXOffset || (doc.documentElement || doc.body).scrollLeft,
-			top: window.pageYOffset || (doc.documentElement || doc.body).scrollTop
-		};
-	}
-
-	function getBoundryBox(element) {
-		return element.getBoundingClientRect();
-	}
-
-	function centerOn(element, target, doc) {
-		var el = getBoundryBox(element),
-		    targ = getBoundryBox(target),
-		    pos = getScrollPosition(doc);
-
-		if (!doc) {
-			doc = document;
-		}
-
-		element.style.top = pos.top + targ.top + targ.height / 2 - el.height / 2;
-		element.style.left = pos.left + targ.left + targ.width / 2 - el.width / 2;
-		element.style.right = '';
-		element.style.bottom = '';
-
-		element.style.position = 'absolute';
-		doc.body.appendChild(element);
-	}
-
-	function showOn(element, target, doc) {
-		var direction,
-		    targ = getBoundryBox(target),
-		    x = targ.x + targ.width / 2,
-		    y = targ.y + targ.height / 2,
-		    centerX = window.innerWidth / 2,
-		    centerY = window.innerHeight / 2,
-		    pos = getScrollPosition(doc);
-
-		if (!doc) {
-			doc = document;
-		}
-
-		if (x < centerX) {
-			// right side has more room
-			direction = 'r';
-			element.style.left = pos.left + targ.right;
-			element.style.right = '';
-		} else {
-			// left side has more room
-			//element.style.left = targ.left - el.width - offset;
-			direction = 'l';
-			element.style.right = window.innerWidth - targ.left - pos.left;
-			element.style.left = '';
-		}
-
-		if (y < centerY) {
-			// more room on bottom
-			direction = 'b' + direction;
-			element.style.top = pos.top + targ.bottom;
-			element.style.bottom = '';
-		} else {
-			// more room on top
-			direction = 't' + direction;
-			element.style.bottom = window.innerHeight - targ.top - pos.top;
-			element.style.top = '';
-		}
-
-		element.style.position = 'absolute';
-		doc.body.appendChild(element);
-
-		return direction;
-	}
-
-	function massage(elements) {
-		if (!bmoor.isArrayLike(elements)) {
-			elements = [elements];
-		}
-
-		return elements;
-	}
-
-	function getDomElement(element, doc) {
-		if (!doc) {
-			doc = document;
-		}
-
-		if (bmoor.isString(element)) {
-			return doc.querySelector(element);
-		} else {
-			return element;
-		}
-	}
-
-	function getDomCollection(elements, doc) {
-		var i,
-		    c,
-		    j,
-		    co,
-		    el,
-		    selection,
-		    els = [];
-
-		if (!doc) {
-			doc = document;
-		}
-
-		elements = massage(elements);
-
-		for (i = 0, c = elements.length; i < c; i++) {
-			el = elements[i];
-			if (bmoor.isString(el)) {
-				selection = doc.querySelectorAll(el);
-				for (j = 0, co = selection.length; j < co; j++) {
-					els.push(selection[j]);
-				}
-			} else {
-				els.push(el);
-			}
-		}
-
-		return els;
-	}
-
-	function addClass(elements, className) {
-		var i,
-		    c,
-		    node,
-		    baseClass,
-		    reg = getReg(className);
-
-		elements = massage(elements);
-
-		for (i = 0, c = elements.length; i < c; i++) {
-			node = elements[i];
-			baseClass = node.getAttribute('class') || '';
-
-			if (!baseClass.match(reg)) {
-				node.setAttribute('class', baseClass + ' ' + className);
-			}
-		}
-	}
-
-	function removeClass(elements, className) {
-		var i,
-		    c,
-		    node,
-		    reg = getReg(className);
-
-		elements = massage(elements);
-
-		for (i = 0, c = elements.length; i < c; i++) {
-			node = elements[i];
-			node.setAttribute('class', (node.getAttribute('class') || '').replace(reg, ''));
-		}
-	}
-
-	function triggerEvent(elements, eventName, eventData) {
-		var i, c, doc, node, event, EventClass;
-
-		elements = massage(elements);
-
-		for (i = 0, c = elements.length; i < c; i++) {
-			node = elements[i];
-
-			// Make sure we use the ownerDocument from the provided node to avoid cross-window problems
-			if (node.ownerDocument) {
-				doc = node.ownerDocument;
-			} else if (node.nodeType === 9) {
-				// the node may be the document itself, nodeType 9 = DOCUMENT_NODE
-				doc = node;
-			} else if (typeof document !== 'undefined') {
-				doc = document;
-			} else {
-				throw new Error('Invalid node passed to fireEvent: ' + node.id);
-			}
-
-			if (node.dispatchEvent) {
-				try {
-					// modern, except for IE still? https://developer.mozilla.org/en-US/docs/Web/API/Event
-					// I ain't doing them all
-					// slightly older style, give some backwards compatibility
-					switch (eventName) {
-						case 'click':
-						case 'mousedown':
-						case 'mouseup':
-							EventClass = MouseEvent;
-							break;
-
-						case 'focus':
-						case 'blur':
-							EventClass = FocusEvent; // jshint ignore:line
-							break;
-
-						case 'change':
-						case 'select':
-							EventClass = UIEvent; // jshint ignore:line
-							break;
-
-						default:
-							EventClass = CustomEvent;
-					}
-
-					if (!eventData) {
-						eventData = { 'view': window, 'bubbles': true, 'cancelable': true };
-					} else {
-						if (eventData.bubbles === undefined) {
-							eventData.bubbles = true;
-						}
-						if (eventData.cancelable === undefined) {
-							eventData.cancelable = true;
-						}
-					}
-
-					event = new EventClass(eventName, eventData);
-				} catch (ex) {
-					// slightly older style, give some backwards compatibility
-					switch (eventName) {
-						case 'click':
-						case 'mousedown':
-						case 'mouseup':
-							EventClass = 'MouseEvents';
-							break;
-
-						case 'focus':
-						case 'change':
-						case 'blur':
-						case 'select':
-							EventClass = 'HTMLEvents';
-							break;
-
-						default:
-							EventClass = 'CustomEvent';
-					}
-					event = doc.createEvent(EventClass);
-					event.initEvent(eventName, true, true);
-				}
-
-				event.$synthetic = true; // allow detection of synthetic events
-
-				node.dispatchEvent(event);
-			} else if (node.fireEvent) {
-				// IE-old school style
-				event = doc.createEventObject();
-				event.$synthetic = true; // allow detection of synthetic events
-				node.fireEvent('on' + eventName, event);
-			}
-		}
-	}
-
-	function bringForward(elements) {
-		var i, c, node;
-
-		elements = massage(elements);
-
-		for (i = 0, c = elements.length; i < c; i++) {
-			node = elements[i];
-
-			if (node.parentNode) {
-				node.parentNode.appendChild(node);
-			}
-		}
-	}
-
-	module.exports = {
-		getScrollPosition: getScrollPosition,
-		getBoundryBox: getBoundryBox,
-		getDomElement: getDomElement,
-		getDomCollection: getDomCollection,
-		showOn: showOn,
-		centerOn: centerOn,
-		addClass: addClass,
-		removeClass: removeClass,
-		triggerEvent: triggerEvent,
-		bringForward: bringForward
-	};
-
-/***/ },
-/* 68 */
-/***/ function(module, exports) {
-
-	"use strict";
-
-	/**
-	 * Array helper functions
-	 * @module bmoor.data
-	 **/
-
-	var _id = 0;
-
-	function nextUid() {
-		return ++_id;
-	}
-
-	function setUid(obj) {
-		var t = obj.$$bmoorUid;
-
-		if (!t) {
-			t = obj.$$bmoorUid = nextUid();
-		}
-
-		return t;
-	}
-
-	function getUid(obj) {
-		if (!obj.$$bmoorUid) {
-			setUid(obj);
-		}
-
-		return obj.$$bmoorUid;
-	}
-
-	module.exports = {
-		setUid: setUid,
-		getUid: getUid
-	};
-
-/***/ },
-/* 69 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	/**
-	 * Array helper functions
-	 * @module bmoor.array
-	 **/
-
-	var bmoor = __webpack_require__(66);
-
-	/**
-	 * Search an array for an element, starting at the begining or a specified location
-	 *
-	 * @function indexOf
-	 * @param {array} arr An array to be searched
-	 * @param {*} searchElement Content for which to be searched
-	 * @param {integer} fromIndex The begining index from which to begin the search, defaults to 0
-	 * @return {integer} -1 if not found, otherwise the location of the element
-	 **/
-	function indexOf(arr, searchElement, fromIndex) {
-		if (arr.indexOf) {
-			return arr.indexOf(searchElement, fromIndex);
-		} else {
-			var length = parseInt(arr.length, 0);
-
-			fromIndex = +fromIndex || 0;
-
-			if (Math.abs(fromIndex) === Infinity) {
-				fromIndex = 0;
-			}
-
-			if (fromIndex < 0) {
-				fromIndex += length;
-				if (fromIndex < 0) {
-					fromIndex = 0;
-				}
-			}
-
-			for (; fromIndex < length; fromIndex++) {
-				if (arr[fromIndex] === searchElement) {
-					return fromIndex;
-				}
-			}
-
-			return -1;
-		}
-	}
-
-	/**
-	 * Search an array for an element and remove it, starting at the begining or a specified location
-	 *
-	 * @function remove
-	 * @param {array} arr An array to be searched
-	 * @param {*} searchElement Content for which to be searched
-	 * @param {integer} fromIndex The begining index from which to begin the search, defaults to 0
-	 * @return {array} array containing removed element
-	 **/
-	function remove(arr, searchElement, fromIndex) {
-		var pos = indexOf(arr, searchElement, fromIndex);
-
-		if (pos > -1) {
-			return arr.splice(pos, 1)[0];
-		}
-	}
-
-	/**
-	 * Search an array for an element and remove all instances of it, starting at the begining or a specified location
-	 *
-	 * @function remove
-	 * @param {array} arr An array to be searched
-	 * @param {*} searchElement Content for which to be searched
-	 * @param {integer} fromIndex The begining index from which to begin the search, defaults to 0
-	 * @return {integer} number of elements removed
-	 **/
-	function removeAll(arr, searchElement, fromIndex) {
-		var r,
-		    pos = indexOf(arr, searchElement, fromIndex);
-
-		if (pos > -1) {
-			r = removeAll(arr, searchElement, pos + 1);
-			r.unshift(arr.splice(pos, 1)[0]);
-
-			return r;
-		} else {
-			return [];
-		}
-	}
-
-	function bisect(arr, value, func, preSorted) {
-		var idx,
-		    val,
-		    bottom = 0,
-		    top = arr.length - 1;
-
-		if (!preSorted) {
-			arr.sort(function (a, b) {
-				return func(a) - func(b);
-			});
-		}
-
-		if (func(arr[bottom]) >= value) {
-			return {
-				left: bottom,
-				right: bottom
-			};
-		}
-
-		if (func(arr[top]) <= value) {
-			return {
-				left: top,
-				right: top
-			};
-		}
-
-		if (arr.length) {
-			while (top - bottom > 1) {
-				idx = Math.floor((top + bottom) / 2);
-				val = func(arr[idx]);
-
-				if (val === value) {
-					top = idx;
-					bottom = idx;
-				} else if (val > value) {
-					top = idx;
-				} else {
-					bottom = idx;
-				}
-			}
-
-			// if it is one of the end points, make it that point
-			if (top !== idx && func(arr[top]) === value) {
-				return {
-					left: top,
-					right: top
-				};
-			} else if (bottom !== idx && func(arr[bottom]) === value) {
-				return {
-					left: bottom,
-					right: bottom
-				};
-			} else {
-				return {
-					left: bottom,
-					right: top
-				};
-			}
-		}
-	}
-
-	/**
-	 * Generate a new array whose content is a subset of the intial array, but satisfies the supplied function
-	 *
-	 * @function remove
-	 * @param {array} arr An array to be searched
-	 * @param {*} searchElement Content for which to be searched
-	 * @param {integer} fromIndex The begining index from which to begin the search, defaults to 0
-	 * @return {integer} number of elements removed
-	 **/
-	function filter(arr, func, thisArg) {
-		if (arr.filter) {
-			return arr.filter(func, thisArg);
-		} else {
-			var i,
-			    val,
-			    t = Object(this),
-			    // jshint ignore:line
-			c = parseInt(t.length, 10),
-			    res = [];
-
-			if (!bmoor.isFunction(func)) {
-				throw new Error('func needs to be a function');
-			}
-
-			for (i = 0; i < c; i++) {
-				if (i in t) {
-					val = t[i];
-
-					if (func.call(thisArg, val, i, t)) {
-						res.push(val);
-					}
-				}
-			}
-
-			return res;
-		}
-	}
-
-	/**
-	 * Compare two arrays, 
-	 *
-	 * @function remove
-	 * @param {array} arr1 An array to be compared
-	 * @param {array} arr2 An array to be compared
-	 * @param {function} func The comparison function
-	 * @return {object} an object containing the elements unique to the left, matched, and unqiue to the right
-	 **/
-	function compare(arr1, arr2, func) {
-		var cmp,
-		    left = [],
-		    right = [],
-		    leftI = [],
-		    rightI = [];
-
-		arr1 = arr1.slice(0);
-		arr2 = arr2.slice(0);
-
-		arr1.sort(func);
-		arr2.sort(func);
-
-		while (arr1.length > 0 && arr2.length > 0) {
-			cmp = func(arr1[0], arr2[0]);
-
-			if (cmp < 0) {
-				left.push(arr1.shift());
-			} else if (cmp > 0) {
-				right.push(arr2.shift());
-			} else {
-				leftI.push(arr1.shift());
-				rightI.push(arr2.shift());
-			}
-		}
-
-		while (arr1.length) {
-			left.push(arr1.shift());
-		}
-
-		while (arr2.length) {
-			right.push(arr2.shift());
-		}
-
-		return {
-			left: left,
-			intersection: {
-				left: leftI,
-				right: rightI
-			},
-			right: right
-		};
-	}
-
-	module.exports = {
-		indexOf: indexOf,
-		remove: remove,
-		removeAll: removeAll,
-		bisect: bisect,
-		filter: filter,
-		compare: compare
-	};
-
-/***/ },
-/* 70 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var bmoor = __webpack_require__(66),
-	    mixin = __webpack_require__(71),
-	    plugin = __webpack_require__(72),
-	    decorate = __webpack_require__(73);
-
-	function proc(action, proto, def) {
-		var i, c;
-
-		if (bmoor.isArray(def)) {
-			for (i = 0, c = def.length; i < c; i++) {
-				action(proto, def[i]);
-			}
-		} else {
-			action(proto, def);
-		}
-	}
-
-	function maker(root, config, base) {
-		if (!base) {
-			base = function BmoorPrototype() {};
-
-			if (config) {
-				if (bmoor.isFunction(root)) {
-					base = function BmoorPrototype() {
-						root.apply(this, arguments);
-					};
-
-					base.prototype = Object.create(root.prototype);
-				} else {
-					base.prototype = Object.create(root);
-				}
-			} else {
-				config = root;
-			}
-		}
-
-		if (config.mixin) {
-			proc(mixin, base.prototype, config.mixin);
-		}
-
-		if (config.decorate) {
-			proc(decorate, base.prototype, config.decorate);
-		}
-
-		if (config.plugin) {
-			proc(plugin, base.prototype, config.plugin);
-		}
-
-		return base;
-	}
-
-	maker.mixin = mixin;
-	maker.decorate = decorate;
-	maker.plugin = plugin;
-
-	module.exports = maker;
-
-/***/ },
-/* 71 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var bmoor = __webpack_require__(66);
-
-	module.exports = function (to, from) {
-		bmoor.iterate(from, function (val, key) {
-			to[key] = val;
-		});
-	};
-
-/***/ },
-/* 72 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-	var bmoor = __webpack_require__(66);
-
-	function override(key, target, action, plugin) {
-		var old = target[key];
-
-		if (old === undefined) {
-			if (bmoor.isFunction(action)) {
-				target[key] = function () {
-					return action.apply(plugin, arguments);
-				};
-			} else {
-				target[key] = action;
-			}
-		} else {
-			if (bmoor.isFunction(action)) {
-				if (bmoor.isFunction(old)) {
-					target[key] = function () {
-						var backup = plugin.$old,
-						    reference = plugin.$target,
-						    rtn;
-
-						plugin.$target = target;
-						plugin.$old = function () {
-							return old.apply(target, arguments);
-						};
-
-						rtn = action.apply(plugin, arguments);
-
-						plugin.$old = backup;
-						plugin.$target = reference;
-
-						return rtn;
-					};
-				} else {
-					console.log('attempting to plug-n-play ' + key + ' an instance of ' + (typeof old === 'undefined' ? 'undefined' : _typeof(old)));
-				}
-			} else {
-				console.log('attempting to plug-n-play with ' + key + ' and instance of ' + (typeof action === 'undefined' ? 'undefined' : _typeof(action)));
-			}
-		}
-	}
-
-	module.exports = function (to, from, ctx) {
-		bmoor.iterate(from, function (val, key) {
-			override(key, to, val, ctx);
-		});
-	};
-
-/***/ },
-/* 73 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-	var bmoor = __webpack_require__(66);
-
-	function override(key, target, action) {
-		var old = target[key];
-
-		if (old === undefined) {
-			target[key] = action;
-		} else {
-			if (bmoor.isFunction(action)) {
-				if (bmoor.isFunction(old)) {
-					target[key] = function () {
-						var backup = this.$old,
-						    rtn;
-
-						this.$old = old;
-
-						rtn = action.apply(this, arguments);
-
-						this.$old = backup;
-
-						return rtn;
-					};
-				} else {
-					console.log('attempting to decorate ' + key + ' an instance of ' + (typeof old === 'undefined' ? 'undefined' : _typeof(old)));
-				}
-			} else {
-				console.log('attempting to decorate with ' + key + ' and instance of ' + (typeof action === 'undefined' ? 'undefined' : _typeof(action)));
-			}
-		}
-	}
-
-	module.exports = function (to, from) {
-		bmoor.iterate(from, function (val, key) {
-			override(key, to, val);
-		});
-	};
-
-/***/ },
-/* 74 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-	/**
-	 * Object helper functions
-	 * @module bmoor.object
-	 **/
-
-	var bmoor = __webpack_require__(66);
-
-	function values(obj) {
-		var res = [];
-
-		bmoor.naked(obj, function (v) {
-			res.push(v);
-		});
-
-		return res;
-	}
-
-	function keys(obj) {
-		var res = [];
-
-		if (Object.keys) {
-			return Object.keys(obj);
-		} else {
-			bmoor.naked(obj, function (v, key) {
-				res.push(key);
-			});
-
-			return res;
-		}
-	}
-
-	/**
-	 * Takes a hash and uses the indexs as namespaces to add properties to an objs
-	 *
-	 * @function explode
-	 * @param {object} target The object to map the variables onto
-	 * @param {object} mappings An object orientended as [ namespace ] => value
-	 * @return {object} The object that has had content mapped into it
-	 **/
-	function explode(target, mappings) {
-		if (!mappings) {
-			mappings = target;
-			target = {};
-		}
-
-		bmoor.iterate(mappings, function (val, mapping) {
-			bmoor.set(target, mapping, val);
-		});
-
-		return target;
-	}
-
-	function implode(obj, ignore) {
-		var rtn = {};
-
-		if (!ignore) {
-			ignore = {};
-		}
-
-		bmoor.iterate(obj, function (val, key) {
-			var t = ignore[key];
-
-			if (bmoor.isObject(val)) {
-				if (t === false) {
-					rtn[key] = val;
-				} else if (!t || bmoor.isObject(t)) {
-					bmoor.iterate(implode(val, t), function (v, k) {
-						rtn[key + '.' + k] = v;
-					});
-				}
-			} else if (!t) {
-				rtn[key] = val;
-			}
-		});
-
-		return rtn;
-	}
-
-	/**
-	 * Create a new instance from an object and some arguments
-	 *
-	 * @function mask
-	 * @param {function} obj The basis for the constructor
-	 * @param {array} args The arguments to pass to the constructor
-	 * @return {object} The new object that has been constructed
-	 **/
-	function mask(obj) {
-		if (Object.create) {
-			var T = function Masked() {};
-
-			T.prototype = obj;
-
-			return new T();
-		} else {
-			return Object.create(obj);
-		}
-	}
-
-	/**
-	 * Create a new instance from an object and some arguments.  This is a shallow copy to <- from[...]
-	 * 
-	 * @function extend
-	 * @param {object} to Destination object.
-	 * @param {...object} src Source object(s).
-	 * @returns {object} Reference to `dst`.
-	 **/
-	function extend(to) {
-		bmoor.loop(arguments, function (cpy) {
-			if (cpy !== to) {
-				if (to && to.extend) {
-					to.extend(cpy);
-				} else {
-					bmoor.iterate(cpy, function (value, key) {
-						to[key] = value;
-					});
-				}
-			}
-		});
-
-		return to;
-	}
-
-	function empty(to) {
-		bmoor.iterate(to, function (v, k) {
-			delete to[k]; // TODO : would it be ok to set it to undefined?
-		});
-	}
-
-	function copy(to) {
-		empty(to);
-
-		return extend.apply(undefined, arguments);
-	}
-
-	// Deep copy version of extend
-	function merge(to) {
-		var from,
-		    i,
-		    c,
-		    m = function m(val, key) {
-			to[key] = merge(to[key], val);
-		};
-
-		for (i = 1, c = arguments.length; i < c; i++) {
-			from = arguments[i];
-
-			if (to === from || !from) {
-				continue;
-			} else if (to && to.merge) {
-				to.merge(from);
-			} else if (!bmoor.isObject(to)) {
-				if (bmoor.isObject(from)) {
-					to = merge({}, from);
-				} else {
-					to = from;
-				}
-			} else {
-				bmoor.safe(from, m);
-			}
-		}
-
-		return to;
-	}
-
-	/**
-	 * A general comparison algorithm to test if two objects are equal
-	 *
-	 * @function equals
-	 * @param {object} obj1 The object to copy the content from
-	 * @param {object} obj2 The object into which to copy the content
-	 * @preturns {boolean}
-	 **/
-	function equals(obj1, obj2) {
-		var t1 = typeof obj1 === 'undefined' ? 'undefined' : _typeof(obj1),
-		    t2 = typeof obj2 === 'undefined' ? 'undefined' : _typeof(obj2),
-		    c,
-		    i,
-		    keyCheck;
-
-		if (obj1 === obj2) {
-			return true;
-		} else if (obj1 !== obj1 && obj2 !== obj2) {
-			return true; // silly NaN
-		} else if (obj1 === null || obj1 === undefined || obj2 === null || obj2 === undefined) {
-			return false; // undefined or null
-		} else if (obj1.equals) {
-			return obj1.equals(obj2);
-		} else if (obj2.equals) {
-			return obj2.equals(obj1); // because maybe somene wants a class to be able to equal a simple object
-		} else if (t1 === t2) {
-			if (t1 === 'object') {
-				if (bmoor.isArrayLike(obj1)) {
-					if (!bmoor.isArrayLike(obj2)) {
-						return false;
-					}
-
-					if ((c = obj1.length) === obj2.length) {
-						for (i = 0; i < c; i++) {
-							if (!equals(obj1[i], obj2[i])) {
-								return false;
-							}
-						}
-
-						return true;
-					}
-				} else if (!bmoor.isArrayLike(obj2)) {
-					keyCheck = {};
-					for (i in obj1) {
-						if (obj1.hasOwnProperty(i)) {
-							if (!equals(obj1[i], obj2[i])) {
-								return false;
-							}
-
-							keyCheck[i] = true;
-						}
-					}
-
-					for (i in obj2) {
-						if (obj2.hasOwnProperty(i)) {
-							if (!keyCheck && obj2[i] !== undefined) {
-								return false;
-							}
-						}
-					}
-				}
-			}
-		}
-
-		return false;
-	}
-
-	module.exports = {
-		keys: keys,
-		values: values,
-		explode: explode,
-		implode: implode,
-		mask: mask,
-		extend: extend,
-		empty: empty,
-		copy: copy,
-		merge: merge,
-		equals: equals
-	};
-
-/***/ },
-/* 75 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var bmoor = __webpack_require__(66);
-
-	/**
-	 * Array helper functions
-	 * @module bmoor.string
-	 **/
-
-	function trim(str, chr) {
-		if (!chr) {
-			chr = '\\s';
-		}
-		return str.replace(new RegExp('^' + chr + '+|' + chr + '+$', 'g'), '');
-	}
-
-	function ltrim(str, chr) {
-		if (!chr) {
-			chr = '\\s';
-		}
-		return str.replace(new RegExp('^' + chr + '+', 'g'), '');
-	}
-
-	function rtrim(str, chr) {
-		if (!chr) {
-			chr = '\\s';
-		}
-		return str.replace(new RegExp(chr + '+$', 'g'), '');
-	}
-
-	// TODO : eventually I will make getCommands and getFormatter more complicated, but for now
-	//        they work by staying simple
-	function getCommands(str) {
-		var commands = str.split('|');
-
-		commands.forEach(function (command, key) {
-			var args = command.split(':');
-
-			args.forEach(function (arg, k) {
-				args[k] = trim(arg);
-			});
-
-			commands[key] = {
-				command: command,
-				method: args.shift(),
-				args: args
-			};
-		});
-
-		return commands;
-	}
-
-	function stackFunctions(newer, older) {
-		return function (o) {
-			return older(newer(o));
-		};
-	}
-
-	var filters = {
-		precision: function precision(dec) {
-			dec = parseInt(dec, 10);
-
-			return function (num) {
-				return parseFloat(num, 10).toFixed(dec);
-			};
-		},
-		currency: function currency() {
-			return function (num) {
-				return '$' + num;
-			};
-		},
-		url: function url() {
-			return function (param) {
-				return encodeURIComponent(param);
-			};
-		}
-	};
-
-	function doFilters(ters) {
-		var fn, command, filter;
-
-		while (ters.length) {
-			command = ters.pop();
-			fn = filters[command.method];
-
-			if (fn) {
-				fn = fn.apply(null, command.args);
-
-				if (filter) {
-					filter = stackFunctions(fn, filter);
-				} else {
-					filter = fn;
-				}
-			}
-		}
-
-		return filter;
-	}
-
-	function doVariable(lines) {
-		var fn, rtn, dex, line, getter, command, commands, remainder;
-
-		if (!lines.length) {
-			return null;
-		} else {
-			line = lines.shift();
-			dex = line.indexOf('}}');
-			fn = doVariable(lines);
-
-			if (dex === -1) {
-				return function () {
-					return '| no close |';
-				};
-			} else if (dex === 0) {
-				// is looks like this {{}}
-				remainder = line.substr(2);
-				getter = function getter(o) {
-					if (bmoor.isObject(o)) {
-						return JSON.stringify(o);
-					} else {
-						return o;
-					}
-				};
-			} else {
-				commands = getCommands(line.substr(0, dex));
-				command = commands.shift().command;
-				remainder = line.substr(dex + 2);
-				getter = bmoor.makeGetter(command);
-
-				if (commands.length) {
-					commands = doFilters(commands, getter);
-
-					if (commands) {
-						getter = stackFunctions(getter, commands);
-					}
-				}
-			}
-
-			//let's optimize this a bit
-			if (fn) {
-				// we have a child method
-				rtn = function rtn(obj) {
-					return getter(obj) + remainder + fn(obj);
-				};
-				rtn.$vars = fn.$vars;
-			} else {
-				// this is the last variable
-				rtn = function rtn(obj) {
-					return getter(obj) + remainder;
-				};
-				rtn.$vars = [];
-			}
-
-			if (command) {
-				rtn.$vars.push(command);
-			}
-
-			return rtn;
-		}
-	}
-
-	function getFormatter(str) {
-		var fn,
-		    rtn,
-		    lines = str.split(/{{/g);
-
-		if (lines.length > 1) {
-			str = lines.shift();
-			fn = doVariable(lines);
-			rtn = function rtn(obj) {
-				return str + fn(obj);
-			};
-			rtn.$vars = fn.$vars;
-		} else {
-			rtn = function rtn() {
-				return str;
-			};
-			rtn.$vars = [];
-		}
-
-		return rtn;
-	}
-
-	getFormatter.filters = filters;
-
-	module.exports = {
-		trim: trim,
-		ltrim: ltrim,
-		rtrim: rtrim,
-		getCommands: getCommands,
-		getFormatter: getFormatter
-	};
-
-/***/ },
-/* 76 */
-/***/ function(module, exports) {
-
-	"use strict";
-
-	function always(promise, func) {
-		promise.then(func, func);
-		return promise;
-	}
-
-	module.exports = {
-		always: always
-	};
-
-/***/ },
-/* 77 */
-/***/ function(module, exports) {
-
-	'use strict';
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var master = {};
-
-	var Memory = function Memory(title) {
-		_classCallCheck(this, Memory);
-
-		var index = {};
-
-		this.register = function (name, obj) {
-			if (index[name]) {
-				throw new Error('Memory - ' + title + ' already has ' + name);
-			} else {
-				index[name] = obj;
-			}
-		};
-
-		this.check = function (name) {
-			return index[name];
-		};
-	};
-
-	module.exports = {
-		Memory: Memory,
-		use: function use(title) {
-			var rtn = master[title];
-
-			if (rtn) {
-				throw new Error('Memory already exists ' + title);
-			} else {
-				rtn = master[title] = new Memory(title);
-			}
-
-			return rtn;
-		}
-	};
-
-/***/ },
-/* 78 */
-/***/ function(module, exports) {
-
-	"use strict";
-
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var Eventing = function () {
-		function Eventing() {
-			_classCallCheck(this, Eventing);
-
-			this._listeners = {};
-		}
-
-		_createClass(Eventing, [{
-			key: "on",
-			value: function on(event, cb) {
-				var dis = this;
-
-				if (!this._listeners[event]) {
-					this._listeners[event] = [];
-				}
-
-				this._listeners[event].push(cb);
-
-				return function clear$on() {
-					dis._listeners[event].splice(dis._listeners[event].indexOf(cb), 1);
-				};
-			}
-		}, {
-			key: "subscribe",
-			value: function subscribe(subscriptions) {
-				var dis = this,
-				    kills = [],
-				    events = Object.keys(subscriptions);
-
-				events.forEach(function (event) {
-					var action = subscriptions[event];
-
-					kills.push(dis.on(event, action));
-				});
-
-				return function killAll() {
-					kills.forEach(function (kill) {
-						kill();
-					});
-				};
-			}
-		}, {
-			key: "trigger",
-			value: function trigger(event) {
-				var _this = this;
-
-				var args = Array.prototype.slice.call(arguments, 1);
-
-				if (this.hasWaiting(event)) {
-					if (!this._triggering) {
-						this._triggering = {};
-						// I want to do this to enforce more async / promise style
-						setTimeout(function () {
-							var events = _this._triggering;
-
-							_this._triggering = null;
-
-							Object.keys(events).forEach(function (event) {
-								var vars = events[event];
-
-								_this._listeners[event].forEach(function (cb) {
-									cb.apply(_this, vars);
-								});
-							});
-
-							if (!_this._triggering && _this._listeners.stable) {
-								_this._listeners.stable.forEach(function (cb) {
-									cb.apply(_this);
-								});
-							}
-						}, 0);
-					}
-
-					this._triggering[event] = args;
-				}
-			}
-		}, {
-			key: "hasWaiting",
-			value: function hasWaiting(event) {
-				return !!this._listeners[event];
-			}
-		}]);
-
-		return Eventing;
-	}();
-
-	module.exports = Eventing;
-
-/***/ },
-/* 79 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var Path = __webpack_require__(80),
-	    bmoor = __webpack_require__(65),
-	    makeGetter = bmoor.makeGetter,
-	    Mapping = __webpack_require__(81);
-
-	function stack(fn, old) {
-		if (old) {
-			return function (to, from, dex) {
-				old(to, from, dex);
-				fn(to, from, dex);
-			};
-		} else {
-			return fn;
-		}
-	}
-
-	// TODO : merging arrays
-
-	// converts one object structure to another
-
-	var Mapper = function () {
-		function Mapper(settings) {
-			var _this = this;
-
-			_classCallCheck(this, Mapper);
-
-			this.mappings = {};
-
-			// this.run is defined via recursive stacks
-			if (settings) {
-				Object.keys(settings).forEach(function (to) {
-					var from = settings[to];
-
-					if (bmoor.isObject(from)) {
-						// so it's an object, parent is an array
-						if (from.to) {
-							to = from.to;
-						}
-
-						if (from.from) {
-							from = from.from;
-						} else {
-							throw new Error('I can not find a from clause');
-						}
-					}
-
-					_this.addMapping(to, from);
-				});
-			}
-		}
-
-		_createClass(Mapper, [{
-			key: 'addMapping',
-			value: function addMapping(to, from) {
-				if (from.indexOf('[') === -1) {
-					this.addLinearMapping(to, from);
-				} else {
-					this.addArrayMapping(to, from);
-				}
-			}
-		}, {
-			key: 'addLinearMapping',
-			value: function addLinearMapping(toPath, fromPath) {
-				var pipe = new Mapping(toPath, fromPath).run;
-
-				// fn( to, from )
-				this.run = stack(pipe, this.run);
-			}
-		}, {
-			key: 'addArrayMapping',
-			value: function addArrayMapping(toPath, fromPath) {
-				var fn,
-				    valGet,
-				    to = new Path(toPath, { get: true, set: true }),
-				    from = new Path(fromPath, { get: true }),
-				    dex = to.path + '-' + from.path,
-				    child = this.mappings[dex];
-
-				if (!child) {
-					// so the path ended with []
-					if (to.remainder === '') {
-						// straight insertion
-						valGet = makeGetter(from.remainder);
-
-						fn = function fn(to, fromObj) {
-							to.push(valGet(fromObj));
-						};
-					} else {
-						// more complex object down there
-						child = this.mappings[dex] = new Mapper();
-
-						fn = function fn(arrTo, fromObj) {
-							var t;
-
-							if (to.remainder.charAt(0) === '[') {
-								if (to.remainder.charAt(1) === 'm') {
-									// this means merge
-									t = arrTo;
-								} else {
-									t = [];
-								}
-							} else {
-								t = {};
-							}
-
-							if (arrTo !== t) {
-								arrTo.push(t);
-							}
-
-							child.run(t, fromObj);
-						};
-					}
-
-					this.run = stack(function (t, f) {
-						var i, c, fromArr, toArr;
-
-						// does an array already exist there?
-						toArr = to.get(t);
-						if (!toArr) {
-							toArr = [];
-							to.set(t, toArr);
-						}
-
-						fromArr = from.get(f);
-
-						for (i = 0, c = fromArr.length; i < c; i++) {
-							fn(toArr, fromArr[i]);
-						}
-					}, this.run);
-				}
-
-				if (child) {
-					child.addMapping(to.remainder, from.remainder);
-				}
-			}
-		}]);
-
-		return Mapper;
-	}();
-
-	module.exports = Mapper;
-
-/***/ },
-/* 80 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var bmoor = __webpack_require__(65),
-	    makeGetter = bmoor.makeGetter,
-	    makeSetter = bmoor.makeSetter;
-
-	var Path = function () {
-		// normal path: foo.bar
-		// array path : foo[]bar
-		function Path(path) {
-			_classCallCheck(this, Path);
-
-			var end,
-			    dex = path.indexOf('[');
-
-			if (dex === -1) {
-				// normal path
-				this.path = path;
-			} else {
-				end = path.indexOf(']', dex);
-
-				this.op = path.substring(dex + 1, end);
-				this.path = path.substr(0, dex);
-				this.remainder = path.substr(end + 1);
-			}
-
-			// if we want to, we can optimize path performance
-			this.get = makeGetter(this.path);
-			this.set = makeSetter(this.path);
-		}
-
-		_createClass(Path, [{
-			key: 'flatten',
-			value: function flatten(obj) {
-				var t, rtn, next;
-
-				if (this.remainder === undefined) {
-					return [this.get(obj)];
-				} else {
-					t = this.get(obj);
-					rtn = [];
-					next = new Path(this.remainder);
-					t.forEach(function (o) {
-						rtn = rtn.concat(next.flatten(o));
-					});
-
-					return rtn;
-				}
-			}
-		}, {
-			key: 'exec',
-			value: function exec(obj, fn) {
-				this.flatten(obj).forEach(function (o) {
-					fn(o);
-				});
-			}
-		}]);
-
-		return Path;
-	}();
-
-	module.exports = Path;
-
-/***/ },
-/* 81 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var bmoor = __webpack_require__(65),
-	    makeGetter = bmoor.makeGetter,
-	    makeSetter = bmoor.makeSetter;
-
-	var Mapping = function Mapping(toPath, fromPath) {
-		_classCallCheck(this, Mapping);
-
-		var getFrom = makeGetter(fromPath),
-		    setTo = makeSetter(toPath);
-
-		this.get = getFrom;
-		this.set = setTo;
-		this.run = function (to, from) {
-			setTo(to, getFrom(from));
-		};
-	};
-
-	module.exports = Mapping;
-
-/***/ },
-/* 82 */
-/***/ function(module, exports) {
-
-	'use strict';
-
-	function go(from, root, info) {
-		var cur = from.shift();
-
-		if (cur[cur.length - 1] === ']') {
-			cur = cur.substr(0, cur.length - 2);
-
-			if (cur === '') {
-				// don't think anything...
-			} else {
-				if (!root[cur]) {
-					root[cur] = {
-						type: 'array'
-					};
-				}
-				root = root[cur];
-			}
-			cur = 'items';
-		}
-
-		if (from.length) {
-			if (!root[cur]) {
-				root[cur] = {
-					type: 'object',
-					properties: {}
-				};
-			}
-			go(from, root[cur].properties, info);
-		} else {
-			root[cur] = info;
-		}
-	}
-
-	function split(str) {
-		return str.replace(/]([^$])/g, '].$1').split('.');
-	}
-
-	function encode(schema) {
-		var i,
-		    c,
-		    d,
-		    rtn,
-		    root,
-		    path = schema[0].to || schema[0].from;
-
-		if (split(path)[0] === '[]') {
-			rtn = { type: 'array' };
-			root = rtn;
-		} else {
-			rtn = { type: 'object', properties: {} };
-			root = rtn.properties;
-		}
-
-		for (i = 0, c = schema.length; i < c; i++) {
-			d = schema[i];
-
-			path = d.to || d.from;
-			go(split(path), root, {
-				type: d.type,
-				alias: d.from
-			});
-		}
-
-		return rtn;
-	}
-
-	module.exports = encode;
-
-/***/ },
-/* 83 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-	var Path = __webpack_require__(80);
-
-	var tests = [function (def, v, errors) {
-		if ((typeof v === 'undefined' ? 'undefined' : _typeof(v)) !== def.type) {
-			errors.push({
-				from: def.from,
-				type: 'type',
-				value: v,
-				expect: def.type
-			});
-		}
-	}];
-
-	function validate(schema, obj) {
-		var errors = [];
-
-		schema.forEach(function (def) {
-			new Path(def.from).exec(obj, function (v) {
-				tests.forEach(function (fn) {
-					fn(def, v, errors);
-				});
-			});
-		});
-
-		if (errors.length) {
-			return errors;
-		} else {
-			return null;
-		}
-	}
-
-	validate.$ops = tests;
-
-	module.exports = validate;
-
-/***/ },
-/* 84 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-	var bmoor = __webpack_require__(48),
-	    Feed = __webpack_require__(47),
-	    setUid = bmoor.data.setUid;
-
-	var Collection = function (_Feed) {
-		_inherits(Collection, _Feed);
-
-		function Collection(src) {
-			_classCallCheck(this, Collection);
-
-			var _this = _possibleConstructorReturn(this, (Collection.__proto__ || Object.getPrototypeOf(Collection)).call(this, src));
-
-			_this._removing = null;
-			_this.on('stable', function () {
-				_this._removing = null;
-			});
-			return _this;
-		}
 
 		_createClass(Collection, [{
-			key: 'remove',
-			value: function remove(datum) {
-				var dex = this.data.indexOf(datum);
+			key: '_canInsert',
+			value: function _canInsert(obj) {
+				var id = getUid(obj);
 
-				if (dex !== -1) {
-					this.data.splice(dex, 1);
+				return !this._contains[id] && (!this._$filter || this._$filter(obj));
+			}
+		}, {
+			key: '_onInsert',
+			value: function _onInsert(datum) {
+				var id = getUid(datum);
 
-					if (this.hasWaiting('remove')) {
-						if (this._removing === null) {
-							this._removing = [datum];
+				this.trigger('insert', datum);
 
-							this.trigger('remove', this._removing);
-						} else {
-							this._removing.push(datum);
-						}
+				if (this._$filter) {
+					manageFilter(this, datum, this._$filter);
+				}
+
+				this._contains[id] = 1;
+			}
+		}, {
+			key: '_canRemove',
+			value: function _canRemove(obj) {
+				var id = getUid(obj),
+				    c = --this._contains[id];
+
+				return !c;
+			}
+		}, {
+			key: '_onRemove',
+			value: function _onRemove(obj) {
+				var uid = getUid(obj),
+				    fn = this._registrations[uid];
+
+				this.trigger('remove', obj);
+
+				if (fn) {
+					fn();
+					this._registrations[uid] = null;
+				}
+			}
+		}, {
+			key: '_addRegistration',
+			value: function _addRegistration(datum, unreg) {
+				var uid = getUid(datum),
+				    old = this._registrations[uid];
+
+				if (old) {
+					this._registrations[uid] = function () {
+						unreg();
+						old();
+					};
+				} else {
+					this._registrations[uid] = unreg;
+				}
+			}
+
+			// General access
+
+		}, {
+			key: 'get',
+			value: function get(pos) {
+				return this[pos];
+			}
+		}, {
+			key: 'insert',
+			value: function insert(datum, front) {
+				Observor.enforce(datum);
+
+				if (this._canInsert(datum)) {
+					if (front) {
+						proto.unshift.call(this, datum);
+					} else {
+						proto.push.call(this, datum);
 					}
 
-					this.trigger('update');
+					this._onInsert(datum);
+
+					return true;
+				}
+
+				return false;
+			}
+		}, {
+			key: 'setFilter',
+			value: function setFilter(fn) {
+				var i, datum;
+
+				this._$filter = fn.bind(this);
+
+				for (i = 0; i < this.length; i++) {
+					datum = this[i];
+
+					if (!manageFilter(datum, fn.bind(this))) {
+						this.splice(i, 1);
+						i--;
+					}
 				}
 			}
 		}, {
-			key: 'stable',
-			value: function stable(fn) {
-				var disconnect;
+			key: 'remove',
+			value: function remove(obj) {
+				var t;
 
-				if (this._adding || this._removing) {
-					disconnect = this.on('stable', function () {
-						fn();
-						disconnect();
-					});
+				if (this._canRemove(obj)) {
+					t = bmoor.array.remove(this, obj);
+
+					this._onRemove(t);
+
+					return true;
+				}
+
+				return false;
+			}
+		}, {
+			key: 'consume',
+			value: function consume(obj) {
+				var i, c;
+
+				if (obj instanceof Collection) {
+					this.follow(obj);
+				} else if (bmoor.isArray(obj)) {
+					for (i = 0, c = obj.length; i < c; i++) {
+						this.insert(obj[i]);
+					}
 				} else {
-					fn();
+					this.insert(obj);
+				}
+			}
+
+			// TODO : other casters like toString, etc
+
+		}, {
+			key: 'toArray',
+			value: function toArray() {
+				return this.slice(0);
+			}
+
+			// inheritance methods
+
+		}, {
+			key: 'follow',
+			value: function follow(collection) {
+				var uid = bmoor.data.getUid(collection);
+
+				if (!this._following[uid]) {
+					this._following[uid] = collection.lead(this);
 				}
 			}
 		}, {
-			key: 'filter',
-			value: function filter(fn) {
-				var _this2 = this;
+			key: 'lead',
+			value: function lead(collection) {
+				var i, c;
 
+				for (i = 0, c = this.length; i < c; i++) {
+					collection.insert(this[i]);
+				}
+
+				return this.subscribe({
+					'insert': collection.insert.bind(collection),
+					'remove': collection.remove.bind(collection)
+				});
+			}
+		}, {
+			key: 'unfollow',
+			value: function unfollow(collection) {
 				var i,
 				    c,
-				    d,
-				    src = [],
-				    child = new Collection(src);
+				    id = bmoor.data.getUid(collection);
 
-				for (i = 0, c = this.data.length; i < c; i++) {
-					d = this.data[i];
-
-					if (fn(d)) {
-						// this will force an insert event to be fired
-						// TODO : Do I want that?
-						src.push(d);
+				if (this._following[id]) {
+					for (i = 0, c = collection.length; i < c; i++) {
+						this.remove(collection[i]);
 					}
+
+					this._following[id]();
+					this._following[id] = null;
 				}
+			}
 
-				child.$parent = this;
+			// override base array functionality
 
-				this.stable(function () {
-					child.$disconnect = _this2.subscribe({
-						insert: function insert(ins) {
-							var i, c, d;
+		}, {
+			key: 'push',
+			value: function push(obj) {
+				this.insert(obj, false);
+			}
+		}, {
+			key: 'unshift',
+			value: function unshift(obj) {
+				this.insert(obj, true);
+			}
+		}, {
+			key: 'pop',
+			value: function pop() {
+				var obj = this[this.length - 1];
+				if (this._canRemove(obj)) {
+					proto.pop.call(this);
+					this._onRemove(obj);
+				}
+			}
+		}, {
+			key: 'shift',
+			value: function shift() {
+				var obj = this[0];
+				if (this._canRemove(obj)) {
+					proto.shift.call(this);
+					this._onRemove(obj);
+				}
+			}
 
-							for (i = 0, c = ins.length; i < c; i++) {
-								d = ins[i];
-								if (fn(d)) {
-									child.add(d);
-								}
-							}
-						},
-						remove: function remove(outs) {
-							var i, c;
+			// extended base array functionality
 
-							for (i = 0, c = outs.length; i < c; i++) {
-								child.remove(outs[i]);
-							}
-						}
-					});
-				});
+		}, {
+			key: '$filter',
+			value: function $filter(fn) {
+				var child = new Collection();
+				child.setFilter(fn);
+
+				this.lead(child);
 
 				return child;
 			}
 		}, {
-			key: 'index',
-			value: function index(fn) {
-				var _this3 = this;
-
+			key: '$concat',
+			value: function $concat() {
 				var i,
 				    c,
-				    d,
-				    _disconnect,
-				    index = {};
+				    child = new Collection();
 
-				for (i = 0, c = this.data.length; i < c; i++) {
-					d = this.data[i];
-
-					index[fn(d)] = d;
+				this.lead(child);
+				for (i = 0, c = arguments; i < c; i++) {
+					child.consume(arguments[i]);
 				}
 
-				this.stable(function () {
-					_disconnect = _this3.subscribe({
-						insert: function insert(ins) {
-							var i, c, d;
-
-							for (i = 0, c = ins.length; i < c; i++) {
-								d = ins[i];
-								index[fn(d)] = d;
-							}
-						},
-						remove: function remove(outs) {
-							var i, c;
-
-							for (i = 0, c = outs.length; i < c; i++) {
-								delete index[fn(outs[i])];
-							}
-						}
-					});
-				});
-
-				return {
-					get: function get(dex) {
-						return index[dex];
-					},
-					keys: function keys() {
-						return Object.keys(index);
-					},
-					disconnect: function disconnect() {
-						_disconnect();
-					}
-				};
-			}
-		}, {
-			key: 'route',
-			value: function route(hasher) {
-				var _this4 = this;
-
-				var i,
-				    c,
-				    old = {},
-				    index = {},
-				    _disconnect2;
-
-				function _get(i) {
-					var t = index[i];
-
-					if (!t) {
-						t = new Collection();
-						index[i] = t;
-					}
-
-					return t;
-				}
-
-				function add(datum) {
-					var i = hasher(datum);
-
-					old[setUid(datum)] = i;
-
-					_get(i).add(datum);
-				}
-
-				function _remove(datum) {
-					var dex = setUid(datum);
-
-					if (dex in old) {
-						_get(old[dex]).remove(datum);
-					}
-				}
-
-				for (i = 0, c = this.data.length; i < c; i++) {
-					add(this.data[i]);
-				}
-
-				this.stable(function () {
-					_disconnect2 = _this4.subscribe({
-						insert: function insert(ins) {
-							var i, c;
-
-							for (i = 0, c = ins.length; i < c; i++) {
-								add(ins[i]);
-							}
-						},
-						remove: function remove(outs) {
-							var i, c;
-
-							for (i = 0, c = outs.length; i < c; i++) {
-								_remove(outs[i]);
-							}
-						}
-					});
-				});
-
-				return {
-					get: function get(hash) {
-						return _get(hash);
-					},
-					reroute: function reroute(datum) {
-						_remove(datum);
-						add(datum);
-					},
-					keys: function keys() {
-						return Object.keys(index);
-					},
-					disconnect: function disconnect() {
-						_disconnect2();
-					}
-				};
+				return child;
 			}
 		}]);
 
 		return Collection;
-	}(Feed);
+	}(bmoor.build(Array, { mixin: bmoor.interfaces.Eventing }));
 
 	module.exports = Collection;
 
 /***/ },
-/* 85 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-	var bmoor = __webpack_require__(48),
-	    Eventing = bmoor.Eventing;
-
-	function _datumStack(fn, old) {
-		if (old) {
-			return function (datum, orig) {
-				return fn(old(datum, orig), orig);
-			};
-		} else {
-			return function (orig) {
-				return fn(orig, orig);
-			};
-		}
-	}
-
-	function datumStack(fns) {
-		var i, c, fn;
-
-		for (i = 0, c = fns.length; i < c; i++) {
-			fn = _datumStack(fns[i], fn);
-		}
-
-		return fn;
-	}
-
-	function _arrStack(fn, old) {
-		if (old) {
-			return function (src) {
-				return fn(old(src));
-			};
-		} else {
-			return fn;
-		}
-	}
-
-	function arrStack(fns) {
-		var i, c, fn;
-
-		for (i = 0, c = fns.length; i < c; i++) {
-			fn = _arrStack(fns[i], fn);
-		}
-
-		return fn;
-	}
-
-	// array wrapper that allows for watching a feed 
-
-	var Converter = function (_Eventing) {
-		_inherits(Converter, _Eventing);
-
-		function Converter(arrFn, datumFn) {
-			_classCallCheck(this, Converter);
-
-			var _this = _possibleConstructorReturn(this, (Converter.__proto__ || Object.getPrototypeOf(Converter)).call(this));
-
-			bmoor.data.setUid(_this);
-
-			_this.data = [];
-
-			_this.setArrayCriteria(arrFn);
-			_this.setDatumCriteria(datumFn);
-			return _this;
-		}
-
-		_createClass(Converter, [{
-			key: 'setArrayCriteria',
-			value: function setArrayCriteria(fns) {
-				if (fns) {
-					this.arrParse = arrStack(fns);
-				} else {
-					this.arrParse = null;
-				}
-			}
-		}, {
-			key: 'setDatumCriteria',
-			value: function setDatumCriteria(fns) {
-				if (fns) {
-					this.datumParse = datumStack(fns);
-				} else {
-					this.datumParse = null;
-				}
-			}
-
-			// I don't want to force it to be Feed, just needs .on and .data
-			// technically converters can stack
-
-		}, {
-			key: 'setFeed',
-			value: function setFeed(feed) {
-				var dis = this;
-
-				if (this.disconnect) {
-					this.disconnect();
-				}
-
-				function readAll(changes) {
-					var i, c, arr;
-
-					if (changes && changes.length) {
-						if (dis.arrParse) {
-							arr = dis.arrParse(changes);
-						} else {
-							arr = changes.slice(0);
-						}
-
-						if (dis.datumParse) {
-							for (i = 0, c = arr.length; i < c; i++) {
-								arr[i] = dis.datumParse(arr[i]);
-							}
-						}
-
-						dis.data = dis.data.concat(arr);
-						dis.trigger('insert', arr);
-					}
-				}
-
-				readAll(feed.data);
-				this.disconnect = feed.on('insert', readAll);
-			}
-		}]);
-
-		return Converter;
-	}(Eventing);
-
-	module.exports = Converter;
-
-/***/ },
-/* 86 */
+/* 63 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -51019,71 +48522,871 @@
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 	var bmoor = __webpack_require__(48),
-	    Eventing = bmoor.Eventing;
+	    Composite = __webpack_require__(64);
 
-	var Proxy = function (_Eventing) {
-		_inherits(Proxy, _Eventing);
+	var Observor = function (_bmoor$build) {
+		_inherits(Observor, _bmoor$build);
 
-		function Proxy(obj) {
-			_classCallCheck(this, Proxy);
+		function Observor(obj) {
+			_classCallCheck(this, Observor);
 
-			var _this = _possibleConstructorReturn(this, (Proxy.__proto__ || Object.getPrototypeOf(Proxy)).call(this));
-
-			_this.getDatum = function () {
-				return obj;
-			};
-			return _this;
+			return _possibleConstructorReturn(this, (Observor.__proto__ || Object.getPrototypeOf(Observor)).call(this, obj, '$observe'));
 		}
 
-		_createClass(Proxy, [{
-			key: 'getMask',
-			value: function getMask() {
-				var t = Object.create(this.getDatum());
-
-				t.$parent = this;
-
-				// TODO : way to calculate the delta
-
-				return t;
-			}
-		}, {
-			key: 'merge',
-			value: function merge(delta) {
-				bmoor.object.merge(this.getDatum(), delta);
-			}
-		}, {
+		_createClass(Observor, [{
 			key: 'update',
-			value: function update(delta) {
-				var datum = this.getDatum();
+			value: function update(content) {
+				var root = this.getRoot();
 
-				if (delta) {
-					if (bmoor.isFunction(delta)) {
-						delta = delta(datum);
+				if (content) {
+					if (bmoor.isFunction(content)) {
+						content = content(root);
 					} else {
-						this.merge(delta);
+						this.merge(content);
 					}
 				}
 
-				this.trigger('update', delta);
+				this.trigger('update', content);
 			}
 		}, {
 			key: 'trigger',
 			value: function trigger() {
-				// always make the datum be the last argument passed
-				arguments[arguments.length] = this.getDatum();
+				// always make the root be the last argument passed
+				arguments[arguments.length] = this.getRoot();
 				arguments.length++;
 
-				_get(Proxy.prototype.__proto__ || Object.getPrototypeOf(Proxy.prototype), 'trigger', this).apply(this, arguments);
+				_get(Observor.prototype.__proto__ || Object.getPrototypeOf(Observor.prototype), 'trigger', this).apply(this, arguments);
 			}
 		}]);
 
-		return Proxy;
-	}(Eventing);
+		return Observor;
+	}(bmoor.build(Composite, { mixin: bmoor.interfaces.Eventing }));
 
-	module.exports = Proxy;
+	Observor.enforce = function (obj) {
+		if (obj.$observe) {
+			return obj.$observe;
+		} else {
+			return new Observor(obj);
+		}
+	};
+
+	module.exports = Observor;
 
 /***/ },
-/* 87 */
+/* 64 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var bmoor = __webpack_require__(48);
+
+	var Composite = function () {
+		function Composite(obj, mountPoint) {
+			_classCallCheck(this, Composite);
+
+			bmoor.set(obj, mountPoint, this);
+
+			this.getRoot = function () {
+				return obj;
+			};
+		}
+
+		_createClass(Composite, [{
+			key: 'merge',
+			value: function merge(content) {
+				bmoor.object.merge(this.getRoot(), content);
+			}
+		}]);
+
+		return Composite;
+	}();
+
+	module.exports = Composite;
+
+/***/ },
+/* 65 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	var Collection = __webpack_require__(62);
+
+	var HashedCollection = function (_Collection) {
+		_inherits(HashedCollection, _Collection);
+
+		function HashedCollection(hasher) {
+			_classCallCheck(this, HashedCollection);
+
+			var _this = _possibleConstructorReturn(this, (HashedCollection.__proto__ || Object.getPrototypeOf(HashedCollection)).call(this));
+
+			_this._index = {};
+			_this._hasher = hasher;
+			return _this;
+		}
+
+		_createClass(HashedCollection, [{
+			key: '_canInsert',
+			value: function _canInsert(datum) {
+				return !this._index[this._hasher.hash(datum)] && _get(HashedCollection.prototype.__proto__ || Object.getPrototypeOf(HashedCollection.prototype), '_canInsert', this).call(this, datum);
+			}
+		}, {
+			key: 'insert',
+			value: function insert(datum, front) {
+				var hash = this._hasher.hash(datum),
+				    res = _get(HashedCollection.prototype.__proto__ || Object.getPrototypeOf(HashedCollection.prototype), 'insert', this).call(this, datum, front); // run the base insert command
+
+				// TODO : watch the hash possibly change?
+				if (res) {
+					this._index[hash] = datum;
+				}
+
+				return res;
+			}
+		}, {
+			key: 'select',
+			value: function select(query) {
+				return this._index[this._hasher.hash(query)];
+			}
+		}, {
+			key: 'update',
+			value: function update(content) {
+				var datum = this.select(content);
+
+				if (datum) {
+					datum.$observe.update(content);
+				}
+			}
+		}]);
+
+		return HashedCollection;
+	}(Collection);
+
+	module.exports = HashedCollection;
+
+/***/ },
+/* 66 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var Index = __webpack_require__(67),
+	    Hasher = __webpack_require__(47),
+	    Collection = __webpack_require__(62),
+	    HashedCollection = __webpack_require__(65);
+
+	function getIndex(indexes, root, query) {
+		var keys = Object.keys(query).sort(),
+		    fields = keys.join('::'),
+		    index = indexes[fields];
+
+		if (!index) {
+			index = new Index(new Hasher(keys), root);
+			indexes[fields] = index;
+		}
+
+		return index;
+	}
+
+	var Table = function () {
+		function Table(primary) {
+			_classCallCheck(this, Table);
+
+			if (primary) {
+				this.primary = new HashedCollection(new Hasher(primary));
+			} else {
+				this.primary = new Collection();
+			}
+
+			this.indexes = {};
+		}
+
+		_createClass(Table, [{
+			key: 'select',
+			value: function select(query) {
+				if (this.primary instanceof HashedCollection && this.primary._hasher.canFulfill(query)) {
+					return this.primary.select(query);
+				} else {
+					return getIndex(this.indexes, this.primary, query).select(query);
+				}
+			}
+		}, {
+			key: 'insert',
+			value: function insert(datum) {
+				return this.primary.insert(datum);
+			}
+		}, {
+			key: 'update',
+			value: function update(datum) {
+				return this.primary.update(datum);
+			}
+		}, {
+			key: 'publish',
+			value: function publish(datum) {
+				if (!this.insert(datum)) {
+					this.update(datum);
+				}
+			}
+		}, {
+			key: 'remove',
+			value: function remove(datum) {
+				this.primary.remove(datum);
+			}
+		}]);
+
+		return Table;
+	}();
+
+	module.exports = Table;
+
+/***/ },
+/* 67 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var bmoor = __webpack_require__(48),
+	    getUid = bmoor.data.getUid,
+	    Collection = __webpack_require__(62);
+
+	function createCollection(index, hash) {
+		var c = new Collection(),
+		    uid = getUid(c);
+
+		index.hashes[hash] = c;
+		index.collections[uid] = c;
+
+		return c;
+	}
+
+	// Takes a filter function, seperates the results out to different collections
+
+	var Index = function () {
+		function Index(hasher, src) {
+			var _this = this;
+
+			_classCallCheck(this, Index);
+
+			this.nodes = {}; // node id => collection id
+			this.hashes = {}; // hash => Collection
+			this.collections = {}; // collection id => Collection
+
+			this._registrations = {};
+			this.hasher = hasher;
+
+			this.update = function (change, datum) {
+				if (!change || _this.hasher.canFulfill(change)) {
+					_this.insert(datum);
+				}
+			};
+
+			if (src) {
+				src.lead(this);
+			}
+		}
+
+		_createClass(Index, [{
+			key: '_addRegistration',
+			value: function _addRegistration(datum, unreg) {
+				var uid = getUid(datum),
+				    old = this._registrations[uid];
+
+				if (old) {
+					this._registrations[uid] = function () {
+						unreg();
+						old();
+					};
+				} else {
+					this._registrations[uid] = unreg;
+				}
+			}
+		}, {
+			key: '_insert',
+			value: function _insert(cuid, datum) {
+				var collection = this.collections[cuid];
+
+				if (collection && collection.insert(datum)) {
+					return collection;
+				}
+			}
+		}, {
+			key: 'insert',
+			value: function insert(datum) {
+				var ocid,
+				    cuid,
+				    ouid,
+				    collection = this.select(datum);
+
+				if (collection) {
+					cuid = getUid(collection);
+					ouid = getUid(datum);
+
+					ocid = this.nodes[ouid];
+
+					if (ocid) {
+						// consider this an update
+						if (ocid !== cuid) {
+							// remove yourself from the old collection
+							this._remove(ocid, datum);
+
+							if (this._insert(cuid, datum)) {
+								return null;
+							} else {
+								this.nodes[ouid] = cuid;
+							}
+						}
+					} else if (this._insert(cuid, datum)) {
+						this.nodes[ouid] = cuid;
+						this._addRegistration(datum, datum.$observe.on('update', this.update));
+					} else {
+						return null;
+					}
+
+					return collection;
+				}
+
+				return null;
+			}
+		}, {
+			key: '_remove',
+			value: function _remove(cuid, datum) {
+				var collection = this.collections[cuid];
+
+				if (collection && collection.remove(datum)) {
+					return collection;
+				}
+			}
+		}, {
+			key: 'remove',
+			value: function remove(datum) {
+				var ouid = getUid(datum),
+				    cuid = this.nodes[ouid];
+
+				if (cuid && this._remove(cuid, datum)) {
+					this._registrations[ouid]();
+					this.nodes[ouid] = null;
+
+					return true;
+				}
+
+				return false;
+			}
+		}, {
+			key: 'select',
+			value: function select(search) {
+				var hash;
+
+				if (this.hasher.canFulfill(search)) {
+					hash = this.hasher.hash(search);
+
+					return this.hashes[hash] || createCollection(this, hash);
+				} else {
+					return null;
+				}
+			}
+		}, {
+			key: 'consume',
+			value: function consume(obj) {
+				var i, c;
+
+				if (obj instanceof Collection) {
+					obj.lead(this);
+				} else if (bmoor.isArray(obj)) {
+					for (i = 0, c = obj.length; i < c; i++) {
+						this.insert(obj[i]);
+					}
+				} else {
+					this.insert(obj);
+				}
+			}
+		}]);
+
+		return Index;
+	}();
+
+	module.exports = Index;
+
+/***/ },
+/* 68 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var MemoryNode = function () {
+		function MemoryNode() {
+			_classCallCheck(this, MemoryNode);
+		}
+
+		_createClass(MemoryNode, [{
+			key: "construct",
+			value: function construct() {
+				this.prev = null;
+				this.next = null;
+			}
+		}, {
+			key: "detach",
+			value: function detach() {
+				if (this.prev) {
+					if (this.next) {
+						this.prev.next = this.next;
+						this.next.prev = this.prev;
+						this.next = null;
+					} else {
+						this.prev.next = null;
+					}
+					this.prev = null;
+				} else if (this.next) {
+					this.next.prev = null;
+					this.next = null;
+				}
+			}
+
+			// insert myself before this node
+
+		}, {
+			key: "insertBefore",
+			value: function insertBefore(node) {
+				this.detach();
+
+				if (node.prev) {
+					this.prev = node.prev;
+					this.prev.next = this;
+				}
+
+				node.prev = this;
+				this.next = node;
+			}
+		}, {
+			key: "insertAfter",
+			value: function insertAfter(node) {
+				this.detach();
+
+				if (node.next) {
+					this.next = node.next;
+					this.next.prev = this;
+				}
+
+				node.next = this;
+				this.prev = node;
+			}
+		}]);
+
+		return MemoryNode;
+	}();
+
+	var Memory = function () {
+		function Memory(hasher, limit, lifetime) {
+			_classCallCheck(this, Memory);
+
+			var unsets = {};
+
+			this.index = {};
+			this.limit = limit;
+			this.length = 0;
+			this.hasher = hasher;
+
+			// tail should be oldest
+			this.head = new MemoryNode();
+			this.tail = new MemoryNode();
+
+			this.tail.insertAfter(this.head);
+
+			if (lifetime) {
+				this.govern = function (hash) {
+					var _this = this;
+
+					var clear = unsets[hash];
+
+					if (clear) {
+						clearTimeout(clear);
+					}
+
+					unsets[hash] = setTimeout(function () {
+						_this.remove(_this.index[hash].$datum);
+					}, lifetime);
+				};
+			} else {
+				this.govern = function () {};
+			}
+		}
+
+		_createClass(Memory, [{
+			key: "select",
+			value: function select(query) {
+				var hash = this.hasher.hash(query);
+
+				return this.index[hash];
+			}
+		}, {
+			key: "get",
+			value: function get(dex) {
+				var i,
+				    node = this.head.next;
+
+				if (dex > this.length) {
+					dex = this.length;
+				}
+
+				for (i = 0; i < dex; i++) {
+					node = node.next;
+				}
+
+				return node.$datum;
+			}
+		}, {
+			key: "first",
+			value: function first() {
+				return this.head.next.$datum;
+			}
+		}, {
+			key: "last",
+			value: function last() {
+				return this.tail.prev.$datum;
+			}
+		}, {
+			key: "insert",
+			value: function insert(datum) {
+				var hash = this.hasher.hash(datum),
+				    node = this.index[hash];
+
+				if (!node) {
+					node = new MemoryNode();
+					node.$datum = datum;
+
+					this.index[hash] = node;
+					if (this.length === this.limit) {
+						this.remove(this.tail.prev.$datum);
+					}
+
+					this.length++;
+				}
+
+				node.insertAfter(this.head);
+				this.govern(hash);
+			}
+		}, {
+			key: "remove",
+			value: function remove(datum) {
+				var hash = this.hasher.hash(datum),
+				    node = this.index[hash];
+
+				if (node) {
+					this.length--;
+					delete this.index[hash];
+					node.detach();
+				}
+			}
+		}]);
+
+		return Memory;
+	}();
+
+	module.exports = Memory;
+
+/***/ },
+/* 69 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	var Index = __webpack_require__(67);
+
+	// Takes a filter function, seperates the results out to different collections
+
+	var Bucketer = function (_Index) {
+		_inherits(Bucketer, _Index);
+
+		function Bucketer(hasher, onInsert, onRemove) {
+			_classCallCheck(this, Bucketer);
+
+			var _this = _possibleConstructorReturn(this, (Bucketer.__proto__ || Object.getPrototypeOf(Bucketer)).call(this, hasher));
+
+			_this._onInsert = onInsert;
+			_this._onRemove = onRemove;
+			return _this;
+		}
+
+		_createClass(Bucketer, [{
+			key: '_insert',
+			value: function _insert(cuid, obj) {
+				var collection = _get(Bucketer.prototype.__proto__ || Object.getPrototypeOf(Bucketer.prototype), '_insert', this).call(this, cuid, obj);
+
+				if (collection) {
+					this._onInsert(collection, obj);
+				}
+
+				return collection;
+			}
+		}, {
+			key: '_remove',
+			value: function _remove(cuid, obj) {
+				var collection = _get(Bucketer.prototype.__proto__ || Object.getPrototypeOf(Bucketer.prototype), '_remove', this).call(this, cuid, obj);
+
+				if (collection) {
+					this._onRemove(collection, obj);
+				}
+
+				return collection;
+			}
+		}]);
+
+		return Bucketer;
+	}(Index);
+
+	module.exports = Bucketer;
+
+/***/ },
+/* 70 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var bmoor = __webpack_require__(48),
+	    getUid = bmoor.data.getUid,
+	    Collection = __webpack_require__(62);
+
+	function _insert(grid, datum) {
+		var x,
+		    xc,
+		    y,
+		    yc,
+		    row,
+		    xMin,
+		    xMax,
+		    yMin,
+		    yMax,
+		    info = grid.index[getUid(datum)],
+		    box = info.getBox(datum);
+
+		// I add one here because it will run to less than the max
+		if (box.xMin > box.xMax) {
+			xMin = grid.xCalc(box.xMax);
+			xMax = grid.xCalc(box.xMin);
+		} else {
+			xMin = grid.xCalc(box.xMin);
+			xMax = grid.xCalc(box.xMax);
+		}
+
+		if (box.yMin > box.yMax) {
+			yMin = grid.yCalc(box.yMax);
+			yMax = grid.yCalc(box.yMin);
+		} else {
+			yMin = grid.yCalc(box.yMin);
+			yMax = grid.yCalc(box.yMax);
+		}
+
+		info.$old = {
+			xMin: xMin,
+			xMax: xMax,
+			yMin: yMin,
+			yMax: yMax
+		};
+
+		for (x = xMin, xc = xMax + 1; x < xc; x++) {
+			grid._xDex[x].insert(datum);
+			row = grid._grid[x];
+
+			for (y = yMin, yc = yMax + 1; y < yc; y++) {
+				row[y].insert(datum);
+			}
+		}
+
+		for (y = yMin, yc = yMax + 1; y < yc; y++) {
+			grid._yDex[y].insert(datum);
+		}
+	}
+
+	var GridIndex = function () {
+		// config : { x : { min, max }, y : { min, max } }
+		function GridIndex(config, divisions, CollectionClass) {
+			_classCallCheck(this, GridIndex);
+
+			if (!divisions) {
+				divisions = 10;
+			}
+
+			this.config = config;
+			this.CollectionClass = CollectionClass || Collection;
+			this.reset(divisions);
+		}
+
+		_createClass(GridIndex, [{
+			key: 'reset',
+			value: function reset(divisions) {
+				var i,
+				    j,
+				    xMin,
+				    xMax,
+				    xDiff,
+				    yMin,
+				    yMax,
+				    yDiff,
+				    xDex = [],
+				    yDex = [],
+				    grid = [],
+				    config = this.config;
+
+				if (config.xMin > config.xMax) {
+					xMin = config.xMax;
+					xMax = config.xMin;
+				} else {
+					xMin = config.xMin;
+					xMax = config.xMax;
+				}
+				xDiff = xMax - xMin;
+
+				if (config.yMin > config.yMax) {
+					yMin = config.yMax;
+					yMax = config.yMin;
+				} else {
+					yMin = config.yMin;
+					yMax = config.yMax;
+				}
+				yDiff = yMax - yMin;
+
+				for (i = 0; i < divisions; i++) {
+					grid.push([]);
+					xDex.push(new this.CollectionClass());
+					yDex.push(new this.CollectionClass());
+
+					for (j = 0; j < divisions; j++) {
+						grid[i].push(new this.CollectionClass());
+					}
+				}
+
+				this.xCalc = function (x) {
+					var t = Math.floor((x - xMin) / xDiff * divisions);
+
+					if (t < 0) {
+						t = 0;
+					} else if (t >= divisions) {
+						t = divisions - 1;
+					}
+
+					return t;
+				};
+
+				this.yCalc = function (y) {
+					var t = Math.floor((y - yMin) / yDiff * divisions);
+
+					if (t < 0) {
+						t = 0;
+					} else if (t >= divisions) {
+						t = divisions - 1;
+					}
+
+					return t;
+				};
+
+				this.index = {};
+				this._grid = grid;
+				this._xDex = xDex;
+				this._yDex = yDex;
+			}
+		}, {
+			key: 'insert',
+			value: function insert(datum, getBox, xIntersect, yIntersect) {
+				var info,
+				    uid = getUid(datum);
+
+				if (this.index[uid]) {
+					info = this.index[uid];
+				} else {
+					this.index[uid] = info = {};
+				}
+
+				info.getBox = getBox;
+				info.xIntersect = xIntersect;
+				info.yIntersect = yIntersect;
+
+				_insert(this, datum);
+			}
+		}, {
+			key: 'check',
+			value: function check(x, y) {
+				var _this = this;
+
+				var xDex = this.xCalc(x),
+				    yDex = this.yCalc(y);
+
+				return this._grid[xDex][yDex].$filter(function (datum) {
+					var info = _this.index[getUid(datum)];
+
+					return info.xIntersect(datum, x) && info.yIntersect(datum, y);
+				});
+			}
+		}, {
+			key: 'checkX',
+			value: function checkX(x) {
+				var _this2 = this;
+
+				var xDex = this.xCalc(x);
+
+				return this._xDex[xDex].$filter(function (datum) {
+					var info = _this2.index[getUid(datum)];
+					return info.xIntersect(datum, x);
+				});
+			}
+		}, {
+			key: 'checkY',
+			value: function checkY(y) {
+				var _this3 = this;
+
+				var yDex = this.yCalc(y);
+
+				return this._yDex[yDex].$filter(function (datum) {
+					var info = _this3.index[getUid(datum)];
+					return info.yIntersect(datum, y);
+				});
+			}
+		}]);
+
+		return GridIndex;
+	}();
+
+	module.exports = GridIndex;
+
+/***/ },
+/* 71 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -51097,7 +49400,7 @@
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 	var uid = 1,
-	    Linear = __webpack_require__(88);
+	    Linear = __webpack_require__(72);
 
 	var Normalizer = function (_Linear) {
 		_inherits(Normalizer, _Linear);
@@ -51199,7 +49502,7 @@
 	module.exports = Normalizer;
 
 /***/ },
-/* 88 */
+/* 72 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -51505,7 +49808,7 @@
 	module.exports = Linear;
 
 /***/ },
-/* 89 */
+/* 73 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -51651,7 +49954,7 @@
 	};
 
 /***/ },
-/* 90 */
+/* 74 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -51760,7 +50063,7 @@
 	module.exports = Reference;
 
 /***/ },
-/* 91 */
+/* 75 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -51828,12 +50131,12 @@
 	}]);
 
 /***/ },
-/* 92 */
+/* 76 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawDots = __webpack_require__(93),
+	var DrawDots = __webpack_require__(77),
 	    ComponentElement = __webpack_require__(14);
 
 	__webpack_require__(2).module('vgraph').directive('vgraphDots', [function () {
@@ -51872,7 +50175,7 @@
 	}]);
 
 /***/ },
-/* 93 */
+/* 77 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -51979,12 +50282,12 @@
 	module.exports = Dots;
 
 /***/ },
-/* 94 */
+/* 78 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var makeBlob = __webpack_require__(95);
+	var makeBlob = __webpack_require__(79);
 
 	__webpack_require__(2).module('vgraph').directive('vgraphExport', ['$q', function ($q) {
 		return {
@@ -52033,12 +50336,12 @@
 	}]);
 
 /***/ },
-/* 95 */
+/* 79 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var svgColorize = __webpack_require__(96);
+	var svgColorize = __webpack_require__(80);
 
 	function formatArray(arr) {
 		return arr.map(function (row) {
@@ -52090,7 +50393,7 @@
 	};
 
 /***/ },
-/* 96 */
+/* 80 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -52134,7 +50437,7 @@
 	module.exports = colorize;
 
 /***/ },
-/* 97 */
+/* 81 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -52220,12 +50523,12 @@
 	}]);
 
 /***/ },
-/* 98 */
+/* 82 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawHeatmap = __webpack_require__(99),
+	var DrawHeatmap = __webpack_require__(83),
 	    ComponentElement = __webpack_require__(14);
 
 	__webpack_require__(2).module('vgraph').directive('vgraphHeatmap', ['$compile', function ($compile) {
@@ -52319,7 +50622,7 @@
 	}]);
 
 /***/ },
-/* 99 */
+/* 83 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -52329,7 +50632,7 @@
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var Classifier = __webpack_require__(13),
-	    DataBucketer = __webpack_require__(100);
+	    DataBucketer = __webpack_require__(84);
 
 	function populateBuckets(bucketer, references) {
 		var i, c, fn, ref;
@@ -52610,7 +50913,7 @@
 	module.exports = Heatmap;
 
 /***/ },
-/* 100 */
+/* 84 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -52710,7 +51013,7 @@
 	module.exports = Bucketer;
 
 /***/ },
-/* 101 */
+/* 85 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -52739,13 +51042,13 @@
 	}]);
 
 /***/ },
-/* 102 */
+/* 86 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	var d3 = __webpack_require__(1),
-	    DrawIcon = __webpack_require__(103),
+	    DrawIcon = __webpack_require__(87),
 	    ComponentElement = __webpack_require__(14);
 
 	__webpack_require__(2).module('vgraph').directive('vgraphIcon', [function () {
@@ -52836,7 +51139,7 @@
 	*/
 
 /***/ },
-/* 103 */
+/* 87 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -52894,7 +51197,7 @@
 	module.exports = Icon;
 
 /***/ },
-/* 104 */
+/* 88 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -52974,7 +51277,7 @@
 	}]);
 
 /***/ },
-/* 105 */
+/* 89 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -53066,7 +51369,7 @@
 	}]);
 
 /***/ },
-/* 106 */
+/* 90 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -53114,7 +51417,7 @@
 	}]);
 
 /***/ },
-/* 107 */
+/* 91 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -53215,13 +51518,13 @@
 	}]);
 
 /***/ },
-/* 108 */
+/* 92 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawLine = __webpack_require__(109),
-	    DrawFill = __webpack_require__(110),
+	var DrawLine = __webpack_require__(93),
+	    DrawFill = __webpack_require__(94),
 	    ComponentElement = __webpack_require__(14);
 
 	__webpack_require__(2).module('vgraph').directive('vgraphLine', [function () {
@@ -53293,7 +51596,7 @@
 	}]);
 
 /***/ },
-/* 109 */
+/* 93 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -53447,7 +51750,7 @@
 	module.exports = Line;
 
 /***/ },
-/* 110 */
+/* 94 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -53595,7 +51898,7 @@
 	module.exports = Fill;
 
 /***/ },
-/* 111 */
+/* 95 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -53707,7 +52010,7 @@
 	}]);
 
 /***/ },
-/* 112 */
+/* 96 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -53760,12 +52063,12 @@
 	}]);
 
 /***/ },
-/* 113 */
+/* 97 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var ComponentPage = __webpack_require__(114);
+	var ComponentPage = __webpack_require__(98);
 
 	__webpack_require__(2).module('vgraph').directive('vgraphPage', [function () {
 		return {
@@ -53786,7 +52089,7 @@
 	}]);
 
 /***/ },
-/* 114 */
+/* 98 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -53797,10 +52100,10 @@
 
 	var uid = 1,
 	    angular = __webpack_require__(2),
-	    DataFeed = __webpack_require__(115),
-	    DataLoader = __webpack_require__(116),
-	    DataManager = __webpack_require__(117),
-	    ComponentZoom = __webpack_require__(118);
+	    DataFeed = __webpack_require__(99),
+	    DataLoader = __webpack_require__(100),
+	    DataManager = __webpack_require__(101),
+	    ComponentZoom = __webpack_require__(102);
 
 	var Page = function () {
 		function Page() {
@@ -54018,7 +52321,7 @@
 	module.exports = Page;
 
 /***/ },
-/* 115 */
+/* 99 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -54167,7 +52470,7 @@
 	module.exports = Feed;
 
 /***/ },
-/* 116 */
+/* 100 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -54368,7 +52671,7 @@
 	module.exports = Loader;
 
 /***/ },
-/* 117 */
+/* 101 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -54378,8 +52681,8 @@
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var uid = 1,
-	    Linear = __webpack_require__(88),
-	    calculationsCompile = __webpack_require__(89).compile;
+	    Linear = __webpack_require__(72),
+	    calculationsCompile = __webpack_require__(73).compile;
 
 	function regulator(min, max, func, context) {
 		var args, nextTime, limitTime;
@@ -54549,7 +52852,7 @@
 	module.exports = Manager;
 
 /***/ },
-/* 118 */
+/* 102 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -54608,12 +52911,12 @@
 	module.exports = Zoom;
 
 /***/ },
-/* 119 */
+/* 103 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawPie = __webpack_require__(120),
+	var DrawPie = __webpack_require__(104),
 	    ComponentElement = __webpack_require__(14);
 
 	__webpack_require__(2).module('vgraph').directive('vgraphPie', [function () {
@@ -54671,7 +52974,7 @@
 	}]);
 
 /***/ },
-/* 120 */
+/* 104 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -54960,7 +53263,7 @@
 	module.exports = Pie;
 
 /***/ },
-/* 121 */
+/* 105 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -54992,7 +53295,7 @@
 	}]);
 
 /***/ },
-/* 122 */
+/* 106 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -55061,7 +53364,7 @@
 	}]);
 
 /***/ },
-/* 123 */
+/* 107 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -55103,12 +53406,12 @@
 	}]);
 
 /***/ },
-/* 124 */
+/* 108 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawSpiral = __webpack_require__(125),
+	var DrawSpiral = __webpack_require__(109),
 	    ComponentElement = __webpack_require__(14);
 
 	__webpack_require__(2).module('vgraph').directive('vgraphSpiral', [function () {
@@ -55153,7 +53456,7 @@
 	}]);
 
 /***/ },
-/* 125 */
+/* 109 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -55168,9 +53471,9 @@
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var DrawLine = __webpack_require__(109),
+	var DrawLine = __webpack_require__(93),
 	    Classifier = __webpack_require__(13),
-	    DataBucketer = __webpack_require__(100);
+	    DataBucketer = __webpack_require__(84);
 
 	function getCoords(centerX, centerY, radius, angleInDegrees) {
 		var angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
@@ -55362,7 +53665,7 @@
 	module.exports = Spiral;
 
 /***/ },
-/* 126 */
+/* 110 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -55444,7 +53747,7 @@
 	}]);
 
 /***/ },
-/* 127 */
+/* 111 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -55575,7 +53878,7 @@
 	}]);
 
 /***/ },
-/* 128 */
+/* 112 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -55750,7 +54053,7 @@
 	}]);
 
 /***/ },
-/* 129 */
+/* 113 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -55759,31 +54062,31 @@
 		Box: __webpack_require__(26),
 		Chart: __webpack_require__(21),
 		Element: __webpack_require__(14),
-		Page: __webpack_require__(114),
+		Page: __webpack_require__(98),
 		Pane: __webpack_require__(30),
 		View: __webpack_require__(29),
-		Zoom: __webpack_require__(118)
+		Zoom: __webpack_require__(102)
 	};
 
 /***/ },
-/* 130 */
+/* 114 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = {
-		Bucketer: __webpack_require__(100),
-		Feed: __webpack_require__(115),
-		Hasher: __webpack_require__(131),
+		Bucketer: __webpack_require__(84),
+		Feed: __webpack_require__(99),
+		Hasher: __webpack_require__(115),
 		List: __webpack_require__(31),
-		Linear: __webpack_require__(88),
-		Loader: __webpack_require__(116),
-		Manager: __webpack_require__(117),
-		Normalizer: __webpack_require__(87)
+		Linear: __webpack_require__(72),
+		Loader: __webpack_require__(100),
+		Manager: __webpack_require__(101),
+		Normalizer: __webpack_require__(71)
 	};
 
 /***/ },
-/* 131 */
+/* 115 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -55817,7 +54120,7 @@
 	};
 
 /***/ },
-/* 132 */
+/* 116 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -55826,18 +54129,18 @@
 		Bar: __webpack_require__(10),
 		Box: __webpack_require__(17),
 		Candlestick: __webpack_require__(19),
-		Dots: __webpack_require__(93),
-		Fill: __webpack_require__(110),
-		Heatmap: __webpack_require__(99),
-		Icon: __webpack_require__(103),
-		Line: __webpack_require__(109),
+		Dots: __webpack_require__(77),
+		Fill: __webpack_require__(94),
+		Heatmap: __webpack_require__(83),
+		Icon: __webpack_require__(87),
+		Line: __webpack_require__(93),
 		Linear: __webpack_require__(12),
-		Pie: __webpack_require__(120),
-		Spiral: __webpack_require__(125)
+		Pie: __webpack_require__(104),
+		Spiral: __webpack_require__(109)
 	};
 
 /***/ },
-/* 133 */
+/* 117 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -55846,9 +54149,9 @@
 		DomHelper: __webpack_require__(24),
 		Eventing: __webpack_require__(25),
 		Hitbox: __webpack_require__(22),
-		makeBlob: __webpack_require__(95),
+		makeBlob: __webpack_require__(79),
 		Scheduler: __webpack_require__(23),
-		svgColorize: __webpack_require__(96)
+		svgColorize: __webpack_require__(80)
 	};
 
 /***/ }
