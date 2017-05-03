@@ -161,7 +161,6 @@ class Loader{
 
 	_process( cfg, datum ){
 		var interval;
-		
 		if ( cfg.isDefined && !cfg.isDefined(datum) ){
 			return;
 		}

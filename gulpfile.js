@@ -107,7 +107,7 @@ gulp.task('watch', ['build'], function(){
 gulp.task('serve', ['watch'], function() {
 	gulp.src(env.demoDir)
 		.pipe($.webserver({
-			port: 8000,
+			port: 9000,
 			host: 'localhost',
 			fallback: 'index.html',
 			livereload: true,
