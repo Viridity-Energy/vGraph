@@ -2274,11 +2274,21 @@ var vGraph =
 	}
 
 	function setRangeType(ranges, view) {
-		var name;
+		var name,
+		    keys = Object.keys(ranges);
 
 		// this assume that all views
 		// timeline will have same min
 		// if intended to be run concurrent
+		if (keys && keys.length) {
+			for (var i in ranges) {
+				if (ranges[i].min) {
+					if (ranges[i].min > view.min) {
+						view.min = ranges[i].min;
+					}
+				}
+			}
+		}
 		name = view.min;
 
 		if (!ranges[name]) {
@@ -2313,14 +2323,12 @@ var vGraph =
 		var t = {},
 		    rangeName,
 		    range;
-
+		rangeName = setRangeType(ranges, bounds);
+		range = ranges[rangeName];
 		t.diff = bounds.max - bounds.min;
 		t.interval = bounds.interval;
 		t.min = bounds.min;
 		t.max = bounds.max;
-
-		rangeName = setRangeType(ranges, bounds);
-		range = ranges[rangeName];
 
 		if (range && range.diff) {
 

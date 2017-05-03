@@ -30407,11 +30407,11 @@
 	__webpack_require__(5);
 
 	module.exports = {
-		calculations: __webpack_require__(72),
-		component: __webpack_require__(112),
-		data: __webpack_require__(113),
-		draw: __webpack_require__(115),
-		lib: __webpack_require__(116),
+		calculations: __webpack_require__(73),
+		component: __webpack_require__(113),
+		data: __webpack_require__(114),
+		draw: __webpack_require__(116),
+		lib: __webpack_require__(117),
 		stats: __webpack_require__(15)
 	};
 
@@ -30429,29 +30429,29 @@
 	__webpack_require__(16);
 	__webpack_require__(18);
 	__webpack_require__(20);
-	__webpack_require__(74);
 	__webpack_require__(75);
-	__webpack_require__(77);
-	__webpack_require__(80);
+	__webpack_require__(76);
+	__webpack_require__(78);
 	__webpack_require__(81);
-	__webpack_require__(84);
+	__webpack_require__(82);
 	__webpack_require__(85);
-	__webpack_require__(87);
+	__webpack_require__(86);
 	__webpack_require__(88);
 	__webpack_require__(89);
 	__webpack_require__(90);
 	__webpack_require__(91);
-	__webpack_require__(94);
+	__webpack_require__(92);
 	__webpack_require__(95);
 	__webpack_require__(96);
-	__webpack_require__(102);
-	__webpack_require__(104);
+	__webpack_require__(97);
+	__webpack_require__(103);
 	__webpack_require__(105);
 	__webpack_require__(106);
 	__webpack_require__(107);
-	__webpack_require__(109);
+	__webpack_require__(108);
 	__webpack_require__(110);
 	__webpack_require__(111);
+	__webpack_require__(112);
 
 /***/ },
 /* 6 */
@@ -32529,7 +32529,7 @@
 	    makeEventing = __webpack_require__(25),
 	    ComponentBox = __webpack_require__(26),
 	    ComponentView = __webpack_require__(29),
-	    ComponentReference = __webpack_require__(73);
+	    ComponentReference = __webpack_require__(74);
 
 	var ids = 1,
 	    schedule = new Scheduler();
@@ -32611,11 +32611,21 @@
 	}
 
 	function setRangeType(ranges, view) {
-		var name;
+		var name,
+		    keys = Object.keys(ranges);
 
 		// this assume that all views
 		// timeline will have same min
 		// if intended to be run concurrent
+		if (keys && keys.length) {
+			for (var i in ranges) {
+				if (ranges[i].min) {
+					if (ranges[i].min > view.min) {
+						view.min = ranges[i].min;
+					}
+				}
+			}
+		}
 		name = view.min;
 
 		if (!ranges[name]) {
@@ -32650,14 +32660,12 @@
 		var t = {},
 		    rangeName,
 		    range;
-
+		rangeName = setRangeType(ranges, bounds);
+		range = ranges[rangeName];
 		t.diff = bounds.max - bounds.min;
 		t.interval = bounds.interval;
 		t.min = bounds.min;
 		t.max = bounds.max;
-
-		rangeName = setRangeType(ranges, bounds);
-		range = ranges[rangeName];
 
 		if (range && range.diff) {
 
@@ -33956,17 +33964,17 @@
 	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 	/*!
-	 * jQuery JavaScript Library v3.1.1
+	 * jQuery JavaScript Library v3.2.1
 	 * https://jquery.com/
 	 *
 	 * Includes Sizzle.js
 	 * https://sizzlejs.com/
 	 *
-	 * Copyright jQuery Foundation and other contributors
+	 * Copyright JS Foundation and other contributors
 	 * Released under the MIT license
 	 * https://jquery.org/license
 	 *
-	 * Date: 2016-09-22T22:30Z
+	 * Date: 2017-03-20T18:59Z
 	 */
 	(function (global, factory) {
 
@@ -34039,7 +34047,7 @@
 		// unguarded in another place, it seems safer to define global only for this module
 
 
-		var version = "3.1.1",
+		var version = "3.2.1",
 
 
 		// Define a local copy of jQuery
@@ -34195,11 +34203,11 @@
 						}
 
 						// Recurse if we're merging plain objects or arrays
-						if (deep && copy && (jQuery.isPlainObject(copy) || (copyIsArray = jQuery.isArray(copy)))) {
+						if (deep && copy && (jQuery.isPlainObject(copy) || (copyIsArray = Array.isArray(copy)))) {
 
 							if (copyIsArray) {
 								copyIsArray = false;
-								clone = src && jQuery.isArray(src) ? src : [];
+								clone = src && Array.isArray(src) ? src : [];
 							} else {
 								clone = src && jQuery.isPlainObject(src) ? src : {};
 							}
@@ -34236,8 +34244,6 @@
 			isFunction: function isFunction(obj) {
 				return jQuery.type(obj) === "function";
 			},
-
-			isArray: Array.isArray,
 
 			isWindow: function isWindow(obj) {
 				return obj != null && obj === obj.window;
@@ -34309,10 +34315,6 @@
 			// Microsoft forgot to hump their vendor prefix (#9572)
 			camelCase: function camelCase(string) {
 				return string.replace(rmsPrefix, "ms-").replace(rdashAlpha, fcamelCase);
-			},
-
-			nodeName: function nodeName(elem, name) {
-				return elem.nodeName && elem.nodeName.toLowerCase() === name.toLowerCase();
 			},
 
 			each: function each(obj, callback) {
@@ -36687,6 +36689,10 @@
 
 		var rneedsContext = jQuery.expr.match.needsContext;
 
+		function nodeName(elem, name) {
+
+			return elem.nodeName && elem.nodeName.toLowerCase() === name.toLowerCase();
+		};
 		var rsingleTag = /^<([a-z][^\/\0>:\x20\t\r\n\f]*)[\x20\t\r\n\f]*\/?>(?:<\/\1>|)$/i;
 
 		var risSimple = /^.[^:#\[\.,]*$/;
@@ -37014,7 +37020,18 @@
 				return _siblings(elem.firstChild);
 			},
 			contents: function contents(elem) {
-				return elem.contentDocument || jQuery.merge([], elem.childNodes);
+				if (nodeName(elem, "iframe")) {
+					return elem.contentDocument;
+				}
+
+				// Support: IE 9 - 11 only, iOS 7 only, Android Browser <=4.3 only
+				// Treat the template element as a regular one in browsers that
+				// don't support it.
+				if (nodeName(elem, "template")) {
+					elem = elem.content || elem;
+				}
+
+				return jQuery.merge([], elem.childNodes);
 			}
 		}, function (name, fn) {
 			jQuery.fn[name] = function (until, selector) {
@@ -37115,7 +37132,7 @@
 			fire = function fire() {
 
 				// Enforce single-firing
-				_locked = options.once;
+				_locked = _locked || options.once;
 
 				// Execute callbacks for all pending executions,
 				// respecting firingIndex overrides and runtime changes
@@ -37281,7 +37298,7 @@
 			throw ex;
 		}
 
-		function adoptValue(value, resolve, reject) {
+		function adoptValue(value, resolve, reject, noValue) {
 			var method;
 
 			try {
@@ -37297,9 +37314,10 @@
 					// Other non-thenables
 				} else {
 
-					// Support: Android 4.0 only
-					// Strict mode functions invoked without .call/.apply get global-object context
-					resolve.call(undefined, value);
+					// Control `resolve` arguments by letting Array#slice cast boolean `noValue` to integer:
+					// * false: [ value ].slice( 0 ) => resolve( value )
+					// * true: [ value ].slice( 1 ) => resolve()
+					resolve.apply(undefined, [value].slice(noValue));
 				}
 
 				// For Promises/A+, convert exceptions into rejections
@@ -37309,7 +37327,7 @@
 
 				// Support: Android 4.0 only
 				// Strict mode functions invoked without .call/.apply get global-object context
-				reject.call(undefined, value);
+				reject.apply(undefined, [value]);
 			}
 		}
 
@@ -37585,7 +37603,7 @@
 
 				// Single- and empty arguments are adopted like Promise.resolve
 				if (remaining <= 1) {
-					adoptValue(singleValue, master.done(updateFunc(i)).resolve, master.reject);
+					adoptValue(singleValue, master.done(updateFunc(i)).resolve, master.reject, !remaining);
 
 					// Use .then() to unwrap secondary thenables (cf. gh-3000)
 					if (master.state() === "pending" || jQuery.isFunction(resolveValues[i] && resolveValues[i].then)) {
@@ -37647,15 +37665,6 @@
 			// A counter to track how many items to wait for before
 			// the ready event fires. See #6781
 			readyWait: 1,
-
-			// Hold (or release) the ready event
-			holdReady: function holdReady(hold) {
-				if (hold) {
-					jQuery.readyWait++;
-				} else {
-					jQuery.ready(true);
-				}
-			},
 
 			// Handle when the DOM is ready
 			ready: function ready(wait) {
@@ -37878,7 +37887,7 @@
 				if (key !== undefined) {
 
 					// Support array or space separated string of keys
-					if (jQuery.isArray(key)) {
+					if (Array.isArray(key)) {
 
 						// If key is an array of keys...
 						// We always set camelCase keys, so remove that.
@@ -38101,7 +38110,7 @@
 
 					// Speed up dequeue by getting out quickly if this is just a lookup
 					if (data) {
-						if (!queue || jQuery.isArray(data)) {
+						if (!queue || Array.isArray(data)) {
 							queue = dataPriv.access(elem, type, jQuery.makeArray(data));
 						} else {
 							queue.push(data);
@@ -38459,7 +38468,7 @@
 				ret = [];
 			}
 
-			if (tag === undefined || tag && jQuery.nodeName(context, tag)) {
+			if (tag === undefined || tag && nodeName(context, tag)) {
 				return jQuery.merge([context], ret);
 			}
 
@@ -39069,7 +39078,7 @@
 
 					// For checkbox, fire native event so checked state will be right
 					trigger: function trigger() {
-						if (this.type === "checkbox" && this.click && jQuery.nodeName(this, "input")) {
+						if (this.type === "checkbox" && this.click && nodeName(this, "input")) {
 							this.click();
 							return false;
 						}
@@ -39077,7 +39086,7 @@
 
 					// For cross-browser consistency, don't fire native .click() on links
 					_default: function _default(event) {
-						return jQuery.nodeName(event.target, "a");
+						return nodeName(event.target, "a");
 					}
 				},
 
@@ -39344,10 +39353,11 @@
 		    rscriptTypeMasked = /^true\/(.*)/,
 		    rcleanScript = /^\s*<!(?:\[CDATA\[|--)|(?:\]\]|--)>\s*$/g;
 
+		// Prefer a tbody over its parent table for containing new rows
 		function manipulationTarget(elem, content) {
-			if (jQuery.nodeName(elem, "table") && jQuery.nodeName(content.nodeType !== 11 ? content : content.firstChild, "tr")) {
+			if (nodeName(elem, "table") && nodeName(content.nodeType !== 11 ? content : content.firstChild, "tr")) {
 
-				return elem.getElementsByTagName("tbody")[0] || elem;
+				return jQuery(">tbody", elem)[0] || elem;
 			}
 
 			return elem;
@@ -39877,12 +39887,19 @@
 			    minWidth,
 			    maxWidth,
 			    ret,
-			    style = elem.style;
+
+
+			// Support: Firefox 51+
+			// Retrieving style before computed somehow
+			// fixes an issue with getting wrong values
+			// on detached elements
+			style = elem.style;
 
 			computed = computed || getStyles(elem);
 
-			// Support: IE <=9 only
-			// getPropertyValue is only needed for .css('filter') (#12537)
+			// getPropertyValue is needed for:
+			//   .css('filter') (IE 9 only, #12537)
+			//   .css('--customProperty) (#3144)
 			if (computed) {
 				ret = computed.getPropertyValue(name) || computed[name];
 
@@ -39945,6 +39962,7 @@
 		// except "table", "table-cell", or "table-caption"
 		// See here for display values: https://developer.mozilla.org/en-US/docs/CSS/display
 		rdisplayswap = /^(none|table(?!-c[ea]).+)/,
+		    rcustomProp = /^--/,
 		    cssShow = { position: "absolute", visibility: "hidden", display: "block" },
 		    cssNormalTransform = {
 			letterSpacing: "0",
@@ -39971,6 +39989,16 @@
 					return name;
 				}
 			}
+		}
+
+		// Return a property mapped along what jQuery.cssProps suggests or to
+		// a vendor prefixed property.
+		function finalPropName(name) {
+			var ret = jQuery.cssProps[name];
+			if (!ret) {
+				ret = jQuery.cssProps[name] = vendorPropName(name) || name;
+			}
+			return ret;
 		}
 
 		function setPositiveNumber(elem, value, subtract) {
@@ -40032,42 +40060,29 @@
 
 		function getWidthOrHeight(elem, name, extra) {
 
-			// Start with offset property, which is equivalent to the border-box value
-			var val,
-			    valueIsBorderBox = true,
+			// Start with computed style
+			var valueIsBorderBox,
 			    styles = getStyles(elem),
+			    val = curCSS(elem, name, styles),
 			    isBorderBox = jQuery.css(elem, "boxSizing", false, styles) === "border-box";
 
-			// Support: IE <=11 only
-			// Running getBoundingClientRect on a disconnected node
-			// in IE throws an error.
-			if (elem.getClientRects().length) {
-				val = elem.getBoundingClientRect()[name];
+			// Computed unit is not pixels. Stop here and return.
+			if (rnumnonpx.test(val)) {
+				return val;
 			}
 
-			// Some non-html elements return undefined for offsetWidth, so check for null/undefined
-			// svg - https://bugzilla.mozilla.org/show_bug.cgi?id=649285
-			// MathML - https://bugzilla.mozilla.org/show_bug.cgi?id=491668
-			if (val <= 0 || val == null) {
+			// Check for style in case a browser which returns unreliable values
+			// for getComputedStyle silently falls back to the reliable elem.style
+			valueIsBorderBox = isBorderBox && (support.boxSizingReliable() || val === elem.style[name]);
 
-				// Fall back to computed then uncomputed css if necessary
-				val = curCSS(elem, name, styles);
-				if (val < 0 || val == null) {
-					val = elem.style[name];
-				}
-
-				// Computed unit is not pixels. Stop here and return.
-				if (rnumnonpx.test(val)) {
-					return val;
-				}
-
-				// Check for style in case a browser which returns unreliable values
-				// for getComputedStyle silently falls back to the reliable elem.style
-				valueIsBorderBox = isBorderBox && (support.boxSizingReliable() || val === elem.style[name]);
-
-				// Normalize "", auto, and prepare for extra
-				val = parseFloat(val) || 0;
+			// Fall back to offsetWidth/Height when value is "auto"
+			// This happens for inline elements with no explicit setting (gh-3571)
+			if (val === "auto") {
+				val = elem["offset" + name[0].toUpperCase() + name.slice(1)];
 			}
+
+			// Normalize "", auto, and prepare for extra
+			val = parseFloat(val) || 0;
 
 			// Use the active box-sizing model to add/subtract irrelevant styles
 			return val + augmentWidthOrHeight(elem, name, extra || (isBorderBox ? "border" : "content"), valueIsBorderBox, styles) + "px";
@@ -40126,9 +40141,15 @@
 				    type,
 				    hooks,
 				    origName = jQuery.camelCase(name),
+				    isCustomProp = rcustomProp.test(name),
 				    style = elem.style;
 
-				name = jQuery.cssProps[origName] || (jQuery.cssProps[origName] = vendorPropName(origName) || origName);
+				// Make sure that we're working with the right name. We don't
+				// want to query the value if it is a CSS custom property
+				// since they are user-defined.
+				if (!isCustomProp) {
+					name = finalPropName(origName);
+				}
 
 				// Gets hook for the prefixed version, then unprefixed version
 				hooks = jQuery.cssHooks[name] || jQuery.cssHooks[origName];
@@ -40163,7 +40184,11 @@
 					// If a hook was provided, use that value, otherwise just set the specified value
 					if (!hooks || !("set" in hooks) || (value = hooks.set(elem, value, extra)) !== undefined) {
 
-						style[name] = value;
+						if (isCustomProp) {
+							style.setProperty(name, value);
+						} else {
+							style[name] = value;
+						}
 					}
 				} else {
 
@@ -40182,10 +40207,15 @@
 				var val,
 				    num,
 				    hooks,
-				    origName = jQuery.camelCase(name);
+				    origName = jQuery.camelCase(name),
+				    isCustomProp = rcustomProp.test(name);
 
-				// Make sure that we're working with the right name
-				name = jQuery.cssProps[origName] || (jQuery.cssProps[origName] = vendorPropName(origName) || origName);
+				// Make sure that we're working with the right name. We don't
+				// want to modify the value if it is a CSS custom property
+				// since they are user-defined.
+				if (!isCustomProp) {
+					name = finalPropName(origName);
+				}
 
 				// Try prefixed name followed by the unprefixed name
 				hooks = jQuery.cssHooks[name] || jQuery.cssHooks[origName];
@@ -40210,6 +40240,7 @@
 					num = parseFloat(val);
 					return extra === true || isFinite(num) ? num || 0 : val;
 				}
+
 				return val;
 			}
 		});
@@ -40296,7 +40327,7 @@
 					    map = {},
 					    i = 0;
 
-					if (jQuery.isArray(name)) {
+					if (Array.isArray(name)) {
 						styles = getStyles(elem);
 						len = name.length;
 
@@ -40421,13 +40452,18 @@
 		jQuery.fx.step = {};
 
 		var fxNow,
-		    timerId,
+		    inProgress,
 		    rfxtypes = /^(?:toggle|show|hide)$/,
 		    rrun = /queueHooks$/;
 
-		function raf() {
-			if (timerId) {
-				window.requestAnimationFrame(raf);
+		function schedule() {
+			if (inProgress) {
+				if (document.hidden === false && window.requestAnimationFrame) {
+					window.requestAnimationFrame(schedule);
+				} else {
+					window.setTimeout(schedule, jQuery.fx.interval);
+				}
+
 				jQuery.fx.tick();
 			}
 		}
@@ -40661,7 +40697,7 @@
 				name = jQuery.camelCase(index);
 				easing = specialEasing[name];
 				value = props[index];
-				if (jQuery.isArray(value)) {
+				if (Array.isArray(value)) {
 					easing = value[1];
 					value = props[index] = value[0];
 				}
@@ -40721,12 +40757,19 @@
 
 				deferred.notifyWith(elem, [animation, percent, remaining]);
 
+				// If there's more to do, yield
 				if (percent < 1 && length) {
 					return remaining;
-				} else {
-					deferred.resolveWith(elem, [animation]);
-					return false;
 				}
+
+				// If this was an empty animation, synthesize a final progress notification
+				if (!length) {
+					deferred.notifyWith(elem, [animation, 1, 0]);
+				}
+
+				// Resolve the animation and report its conclusion
+				deferred.resolveWith(elem, [animation]);
+				return false;
 			},
 			    animation = deferred.promise({
 				elem: elem,
@@ -40790,14 +40833,16 @@
 				animation.opts.start.call(elem, animation);
 			}
 
+			// Attach callbacks from options
+			animation.progress(animation.opts.progress).done(animation.opts.done, animation.opts.complete).fail(animation.opts.fail).always(animation.opts.always);
+
 			jQuery.fx.timer(jQuery.extend(tick, {
 				elem: elem,
 				anim: animation,
 				queue: animation.opts.queue
 			}));
 
-			// attach callbacks from options
-			return animation.progress(animation.opts.progress).done(animation.opts.done, animation.opts.complete).fail(animation.opts.fail).always(animation.opts.always);
+			return animation;
 		}
 
 		jQuery.Animation = jQuery.extend(Animation, {
@@ -40847,8 +40892,8 @@
 				easing: fn && easing || easing && !jQuery.isFunction(easing) && easing
 			};
 
-			// Go to the end state if fx are off or if document is hidden
-			if (jQuery.fx.off || document.hidden) {
+			// Go to the end state if fx are off
+			if (jQuery.fx.off) {
 				opt.duration = 0;
 			} else {
 				if (typeof opt.duration !== "number") {
@@ -41033,7 +41078,7 @@
 			for (; i < timers.length; i++) {
 				timer = timers[i];
 
-				// Checks the timer has not already been removed
+				// Run the timer and safely remove it when done (allowing for external removal)
 				if (!timer() && timers[i] === timer) {
 					timers.splice(i--, 1);
 				}
@@ -41047,28 +41092,21 @@
 
 		jQuery.fx.timer = function (timer) {
 			jQuery.timers.push(timer);
-			if (timer()) {
-				jQuery.fx.start();
-			} else {
-				jQuery.timers.pop();
-			}
+			jQuery.fx.start();
 		};
 
 		jQuery.fx.interval = 13;
 		jQuery.fx.start = function () {
-			if (!timerId) {
-				timerId = window.requestAnimationFrame ? window.requestAnimationFrame(raf) : window.setInterval(jQuery.fx.tick, jQuery.fx.interval);
+			if (inProgress) {
+				return;
 			}
+
+			inProgress = true;
+			schedule();
 		};
 
 		jQuery.fx.stop = function () {
-			if (window.cancelAnimationFrame) {
-				window.cancelAnimationFrame(timerId);
-			} else {
-				window.clearInterval(timerId);
-			}
-
-			timerId = null;
+			inProgress = null;
 		};
 
 		jQuery.fx.speeds = {
@@ -41180,7 +41218,7 @@
 			attrHooks: {
 				type: {
 					set: function set(elem, value) {
-						if (!support.radioValue && value === "radio" && jQuery.nodeName(elem, "input")) {
+						if (!support.radioValue && value === "radio" && nodeName(elem, "input")) {
 							var val = elem.value;
 							elem.setAttribute("type", value);
 							if (val) {
@@ -41587,7 +41625,7 @@
 						val = "";
 					} else if (typeof val === "number") {
 						val += "";
-					} else if (jQuery.isArray(val)) {
+					} else if (Array.isArray(val)) {
 						val = jQuery.map(val, function (value) {
 							return value == null ? "" : value + "";
 						});
@@ -41644,7 +41682,7 @@
 							if ((option.selected || i === index) &&
 
 							// Don't return options that are disabled or in a disabled optgroup
-							!option.disabled && (!option.parentNode.disabled || !jQuery.nodeName(option.parentNode, "optgroup"))) {
+							!option.disabled && (!option.parentNode.disabled || !nodeName(option.parentNode, "optgroup"))) {
 
 								// Get the specific value for the option
 								value = jQuery(option).val();
@@ -41695,7 +41733,7 @@
 		jQuery.each(["radio", "checkbox"], function () {
 			jQuery.valHooks[this] = {
 				set: function set(elem, value) {
-					if (jQuery.isArray(value)) {
+					if (Array.isArray(value)) {
 						return elem.checked = jQuery.inArray(jQuery(elem).val(), value) > -1;
 					}
 				}
@@ -41963,7 +42001,7 @@
 		function buildParams(prefix, obj, traditional, add) {
 			var name;
 
-			if (jQuery.isArray(obj)) {
+			if (Array.isArray(obj)) {
 
 				// Serialize array item.
 				jQuery.each(obj, function (i, v) {
@@ -42004,7 +42042,7 @@
 			};
 
 			// If an array was passed in, assume that it is an array of form elements.
-			if (jQuery.isArray(a) || a.jquery && !jQuery.isPlainObject(a)) {
+			if (Array.isArray(a) || a.jquery && !jQuery.isPlainObject(a)) {
 
 				// Serialize the form elements
 				jQuery.each(a, function () {
@@ -42045,7 +42083,7 @@
 						return null;
 					}
 
-					if (jQuery.isArray(val)) {
+					if (Array.isArray(val)) {
 						return jQuery.map(val, function (val) {
 							return { name: elem.name, value: val.replace(rCRLF, "\r\n") };
 						});
@@ -43427,13 +43465,6 @@
 			}).length;
 		};
 
-		/**
-	  * Gets a window from an element
-	  */
-		function getWindow(elem) {
-			return jQuery.isWindow(elem) ? elem : elem.nodeType === 9 && elem.defaultView;
-		}
-
 		jQuery.offset = {
 			setOffset: function setOffset(elem, options, i) {
 				var curPosition,
@@ -43499,16 +43530,17 @@
 					});
 				}
 
-				var docElem,
-				    win,
+				var doc,
+				    docElem,
 				    rect,
-				    doc,
+				    win,
 				    elem = this[0];
 
 				if (!elem) {
 					return;
 				}
 
+				// Return zeros for disconnected and hidden (display: none) elements (gh-2310)
 				// Support: IE <=11 only
 				// Running getBoundingClientRect on a
 				// disconnected node in IE throws an error
@@ -43518,20 +43550,14 @@
 
 				rect = elem.getBoundingClientRect();
 
-				// Make sure element is not hidden (display: none)
-				if (rect.width || rect.height) {
-					doc = elem.ownerDocument;
-					win = getWindow(doc);
-					docElem = doc.documentElement;
+				doc = elem.ownerDocument;
+				docElem = doc.documentElement;
+				win = doc.defaultView;
 
-					return {
-						top: rect.top + win.pageYOffset - docElem.clientTop,
-						left: rect.left + win.pageXOffset - docElem.clientLeft
-					};
-				}
-
-				// Return zeros for disconnected and hidden elements (gh-2310)
-				return rect;
+				return {
+					top: rect.top + win.pageYOffset - docElem.clientTop,
+					left: rect.left + win.pageXOffset - docElem.clientLeft
+				};
 			},
 
 			position: function position() {
@@ -43557,7 +43583,7 @@
 
 					// Get correct offsets
 					offset = this.offset();
-					if (!jQuery.nodeName(offsetParent[0], "html")) {
+					if (!nodeName(offsetParent[0], "html")) {
 						parentOffset = offsetParent.offset();
 					}
 
@@ -43604,7 +43630,14 @@
 
 			jQuery.fn[method] = function (val) {
 				return access(this, function (elem, method, val) {
-					var win = getWindow(elem);
+
+					// Coalesce documents and windows
+					var win;
+					if (jQuery.isWindow(elem)) {
+						win = elem;
+					} else if (elem.nodeType === 9) {
+						win = elem.defaultView;
+					}
 
 					if (val === undefined) {
 						return win ? win[prop] : elem[method];
@@ -43694,7 +43727,16 @@
 			}
 		});
 
+		jQuery.holdReady = function (hold) {
+			if (hold) {
+				jQuery.readyWait++;
+			} else {
+				jQuery.ready(true);
+			}
+		};
+		jQuery.isArray = Array.isArray;
 		jQuery.parseJSON = JSON.parse;
+		jQuery.nodeName = nodeName;
 
 		// Register as a named AMD module, since jQuery can be concatenated with other
 		// files that may use define, but not via a proper concatenation script that
@@ -43777,8 +43819,8 @@
 	var id = 1,
 	    angular = __webpack_require__(2),
 	    ComponentPane = __webpack_require__(30),
-	    DataNormalizer = __webpack_require__(70),
-	    calculationsCompile = __webpack_require__(72).compile;
+	    DataNormalizer = __webpack_require__(71),
+	    calculationsCompile = __webpack_require__(73).compile;
 
 	function parseSettings(settings, old) {
 		if (!old) {
@@ -44384,7 +44426,7 @@
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 	var _bisect = __webpack_require__(32).array.bisect,
-	    Collection = __webpack_require__(45).Collection,
+	    Collection = __webpack_require__(46).Collection,
 	    cachedPush = Array.prototype.push,
 	    cachedSort = Array.prototype.sort;
 
@@ -44494,7 +44536,7 @@
 	bmoor.string = __webpack_require__(42);
 	bmoor.promise = __webpack_require__(43);
 
-	bmoor.Eventing = __webpack_require__(44);
+	bmoor.interfaces = __webpack_require__(44);
 
 	module.exports = bmoor;
 
@@ -45721,42 +45763,11 @@
 	 * @return {object} The object that has had content mapped into it
 	 **/
 	function explode(target, mappings) {
-		if (!mappings) {
-			mappings = target;
-			target = {};
-		}
-
 		bmoor.iterate(mappings, function (val, mapping) {
 			bmoor.set(target, mapping, val);
 		});
 
 		return target;
-	}
-
-	function implode(obj, ignore) {
-		var rtn = {};
-
-		if (!ignore) {
-			ignore = {};
-		}
-
-		bmoor.iterate(obj, function (val, key) {
-			var t = ignore[key];
-
-			if (bmoor.isObject(val)) {
-				if (t === false) {
-					rtn[key] = val;
-				} else if (!t || bmoor.isObject(t)) {
-					bmoor.iterate(implode(val, t), function (v, k) {
-						rtn[key + '.' + k] = v;
-					});
-				}
-			} else if (!t) {
-				rtn[key] = val;
-			}
-		});
-
-		return rtn;
 	}
 
 	/**
@@ -45916,7 +45927,6 @@
 		keys: keys,
 		values: values,
 		explode: explode,
-		implode: implode,
 		mask: mask,
 		extend: extend,
 		empty: empty,
@@ -46198,7 +46208,7 @@
 	}
 
 	function doVariable(lines) {
-		var fn, rtn, dex, line, getter, command, commands, remainder;
+		var fn, dex, line, getter, commands, remainder;
 
 		if (!lines.length) {
 			return null;
@@ -46209,10 +46219,9 @@
 
 			if (dex === -1) {
 				return function () {
-					return '| no close |';
+					return '--no close--';
 				};
 			} else if (dex === 0) {
-				// is looks like this {{}}
 				remainder = line.substr(2);
 				getter = function getter(o) {
 					if (bmoor.isObject(o)) {
@@ -46223,9 +46232,8 @@
 				};
 			} else {
 				commands = getCommands(line.substr(0, dex));
-				command = commands.shift().command;
 				remainder = line.substr(dex + 2);
-				getter = bmoor.makeGetter(command);
+				getter = bmoor.makeGetter(commands.shift().command);
 
 				if (commands.length) {
 					getter = stackFunctions(getter, doFilters(commands, getter));
@@ -46235,46 +46243,34 @@
 			//let's optimize this a bit
 			if (fn) {
 				// we have a child method
-				rtn = function rtn(obj) {
+				return function (obj) {
 					return getter(obj) + remainder + fn(obj);
 				};
-				rtn.$vars = fn.$vars;
 			} else {
 				// this is the last variable
-				rtn = function rtn(obj) {
+				return function (obj) {
 					return getter(obj) + remainder;
 				};
-				rtn.$vars = [];
 			}
-
-			if (command) {
-				rtn.$vars.push(command);
-			}
-
-			return rtn;
 		}
 	}
 
 	function getFormatter(str) {
 		var fn,
-		    rtn,
 		    lines = str.split(/{{/g);
 
 		if (lines.length > 1) {
 			str = lines.shift();
 			fn = doVariable(lines);
-			rtn = function rtn(obj) {
+
+			return function (obj) {
 				return str + fn(obj);
 			};
-			rtn.$vars = fn.$vars;
 		} else {
-			rtn = function rtn() {
+			return function () {
 				return str;
 			};
-			rtn.$vars = [];
 		}
-
-		return rtn;
 	}
 
 	getFormatter.filters = filters;
@@ -46304,98 +46300,72 @@
 
 /***/ },
 /* 44 */
-/***/ function(module, exports) {
-
-	"use strict";
-
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var Eventing = function () {
-		function Eventing() {
-			_classCallCheck(this, Eventing);
-
-			this._listeners = {};
-		}
-
-		_createClass(Eventing, [{
-			key: "on",
-			value: function on(event, cb) {
-				var dis = this;
-
-				if (!this._listeners[event]) {
-					this._listeners[event] = [];
-				}
-
-				this._listeners[event].push(cb);
-
-				return function clear$on() {
-					dis._listeners[event].splice(dis._listeners[event].indexOf(cb), 1);
-				};
-			}
-		}, {
-			key: "subscribe",
-			value: function subscribe(subscriptions) {
-				var dis = this,
-				    kills = [],
-				    events = Object.keys(subscriptions);
-
-				events.forEach(function (event) {
-					var action = subscriptions[event];
-
-					kills.push(dis.on(event, action));
-				});
-
-				return function killAll() {
-					kills.forEach(function (kill) {
-						kill();
-					});
-				};
-			}
-		}, {
-			key: "trigger",
-			value: function trigger(event) {
-				var i,
-				    c,
-				    listeners,
-				    args = Array.prototype.slice.call(arguments, 1);
-
-				if (this._listeners) {
-					listeners = this._listeners[event];
-
-					if (listeners) {
-						listeners = listeners.slice(0);
-						for (i = 0, c = listeners.length; i < c; i++) {
-							listeners[i].apply(this, args);
-						}
-					}
-				}
-			}
-		}]);
-
-		return Eventing;
-	}();
-
-	module.exports = Eventing;
-
-/***/ },
-/* 45 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = {
-		Hasher: __webpack_require__(46),
-		Collection: __webpack_require__(61),
-		HashedCollection: __webpack_require__(64),
-		Observor: __webpack_require__(62),
-		Composite: __webpack_require__(63),
-		Table: __webpack_require__(65),
-		Memory: __webpack_require__(67),
-		Index: __webpack_require__(66),
-		Bucketer: __webpack_require__(68),
-		GridIndex: __webpack_require__(69)
+		Eventing: __webpack_require__(45)
+	};
+
+/***/ },
+/* 45 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	module.exports = {
+		on: function on(event, cb) {
+			var dis = this;
+
+			if (!this._$listeners) {
+				this._$listeners = {};
+			}
+
+			if (!this._$listeners[event]) {
+				this._$listeners[event] = [];
+			}
+
+			this._$listeners[event].push(cb);
+
+			return function clear$on() {
+				dis._$listeners[event].splice(dis._$listeners[event].indexOf(cb), 1);
+			};
+		},
+		subscribe: function subscribe(subscriptions) {
+			var dis = this,
+			    kills = [],
+			    events = Object.keys(subscriptions);
+
+			events.forEach(function (event) {
+				var action = subscriptions[event];
+
+				kills.push(dis.on(event, action));
+			});
+
+			return function killAll() {
+				kills.forEach(function (kill) {
+					kill();
+				});
+			};
+		},
+		trigger: function trigger(event) {
+			var listeners,
+			    i,
+			    c,
+			    args = Array.prototype.slice.call(arguments, 1);
+
+			if (this._$listeners) {
+				listeners = this._$listeners[event];
+
+				if (listeners) {
+					listeners = listeners.slice(0);
+					for (i = 0, c = listeners.length; i < c; i++) {
+						listeners[i].apply(this, args);
+					}
+				}
+			}
+		}
 	};
 
 /***/ },
@@ -46404,9 +46374,28 @@
 
 	'use strict';
 
+	module.exports = {
+		Hasher: __webpack_require__(47),
+		Collection: __webpack_require__(62),
+		HashedCollection: __webpack_require__(65),
+		Observor: __webpack_require__(63),
+		Composite: __webpack_require__(64),
+		Table: __webpack_require__(66),
+		Memory: __webpack_require__(68),
+		Index: __webpack_require__(67),
+		Bucketer: __webpack_require__(69),
+		GridIndex: __webpack_require__(70)
+	};
+
+/***/ },
+/* 47 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var bmoor = __webpack_require__(47);
+	var bmoor = __webpack_require__(48);
 
 	function makeName(cfg) {
 		return cfg.join('-');
@@ -46482,27 +46471,27 @@
 	module.exports = Hasher;
 
 /***/ },
-/* 47 */
+/* 48 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var bmoor = Object.create(__webpack_require__(48));
+	var bmoor = Object.create(__webpack_require__(49));
 
-	bmoor.dom = __webpack_require__(49);
-	bmoor.data = __webpack_require__(50);
-	bmoor.array = __webpack_require__(51);
-	bmoor.object = __webpack_require__(52);
-	bmoor.build = __webpack_require__(53);
-	bmoor.string = __webpack_require__(57);
-	bmoor.promise = __webpack_require__(58);
+	bmoor.dom = __webpack_require__(50);
+	bmoor.data = __webpack_require__(51);
+	bmoor.array = __webpack_require__(52);
+	bmoor.object = __webpack_require__(53);
+	bmoor.build = __webpack_require__(54);
+	bmoor.string = __webpack_require__(58);
+	bmoor.promise = __webpack_require__(59);
 
-	bmoor.interfaces = __webpack_require__(59);
+	bmoor.interfaces = __webpack_require__(60);
 
 	module.exports = bmoor;
 
 /***/ },
-/* 48 */
+/* 49 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -47100,12 +47089,12 @@
 	};
 
 /***/ },
-/* 49 */
+/* 50 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var bmoor = __webpack_require__(48),
+	var bmoor = __webpack_require__(49),
 	    regex = {};
 
 	function getReg(className) {
@@ -47275,7 +47264,7 @@
 	};
 
 /***/ },
-/* 50 */
+/* 51 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -47310,12 +47299,12 @@
 	};
 
 /***/ },
-/* 51 */
+/* 52 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var bmoor = __webpack_require__(48);
+	var bmoor = __webpack_require__(49);
 
 	/**
 	 * Search an array for an element, starting at the begining or a specified location
@@ -47562,14 +47551,14 @@
 	};
 
 /***/ },
-/* 52 */
+/* 53 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
-	var bmoor = __webpack_require__(48);
+	var bmoor = __webpack_require__(49);
 
 	function values(obj) {
 		var res = [];
@@ -47781,15 +47770,15 @@
 	};
 
 /***/ },
-/* 53 */
+/* 54 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var bmoor = __webpack_require__(48),
-	    mixin = __webpack_require__(54),
-	    plugin = __webpack_require__(55),
-	    decorate = __webpack_require__(56);
+	var bmoor = __webpack_require__(49),
+	    mixin = __webpack_require__(55),
+	    plugin = __webpack_require__(56),
+	    decorate = __webpack_require__(57);
 
 	function proc(action, proto, def) {
 		var i, c;
@@ -47844,12 +47833,12 @@
 	module.exports = maker;
 
 /***/ },
-/* 54 */
+/* 55 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var bmoor = __webpack_require__(48);
+	var bmoor = __webpack_require__(49);
 
 	module.exports = function (to, from) {
 		bmoor.iterate(from, function (val, key) {
@@ -47858,14 +47847,14 @@
 	};
 
 /***/ },
-/* 55 */
+/* 56 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
-	var bmoor = __webpack_require__(48);
+	var bmoor = __webpack_require__(49);
 
 	function override(key, target, action, plugin) {
 		var old = target[key];
@@ -47914,14 +47903,14 @@
 	};
 
 /***/ },
-/* 56 */
+/* 57 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
-	var bmoor = __webpack_require__(48);
+	var bmoor = __webpack_require__(49);
 
 	function override(key, target, action) {
 		var old = target[key];
@@ -47959,12 +47948,12 @@
 	};
 
 /***/ },
-/* 57 */
+/* 58 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var bmoor = __webpack_require__(48);
+	var bmoor = __webpack_require__(49);
 
 	function trim(str, chr) {
 		if (!chr) {
@@ -48124,7 +48113,7 @@
 	};
 
 /***/ },
-/* 58 */
+/* 59 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -48139,17 +48128,17 @@
 	};
 
 /***/ },
-/* 59 */
+/* 60 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = {
-		Eventing: __webpack_require__(60)
+		Eventing: __webpack_require__(61)
 	};
 
 /***/ },
-/* 60 */
+/* 61 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -48209,7 +48198,7 @@
 	};
 
 /***/ },
-/* 61 */
+/* 62 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -48223,9 +48212,9 @@
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 	var proto = Array.prototype,
-	    bmoor = __webpack_require__(47),
+	    bmoor = __webpack_require__(48),
 	    getUid = bmoor.data.getUid,
-	    Observor = __webpack_require__(62);
+	    Observor = __webpack_require__(63);
 
 	function manageFilter(collection, datum, filter) {
 		var isIn = filter(datum);
@@ -48517,7 +48506,7 @@
 	module.exports = Collection;
 
 /***/ },
-/* 62 */
+/* 63 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -48532,8 +48521,8 @@
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var bmoor = __webpack_require__(47),
-	    Composite = __webpack_require__(63);
+	var bmoor = __webpack_require__(48),
+	    Composite = __webpack_require__(64);
 
 	var Observor = function (_bmoor$build) {
 		_inherits(Observor, _bmoor$build);
@@ -48584,7 +48573,7 @@
 	module.exports = Observor;
 
 /***/ },
-/* 63 */
+/* 64 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -48593,7 +48582,7 @@
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var bmoor = __webpack_require__(47);
+	var bmoor = __webpack_require__(48);
 
 	var Composite = function () {
 		function Composite(obj, mountPoint) {
@@ -48619,7 +48608,7 @@
 	module.exports = Composite;
 
 /***/ },
-/* 64 */
+/* 65 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -48634,7 +48623,7 @@
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var Collection = __webpack_require__(61);
+	var Collection = __webpack_require__(62);
 
 	var HashedCollection = function (_Collection) {
 		_inherits(HashedCollection, _Collection);
@@ -48689,7 +48678,7 @@
 	module.exports = HashedCollection;
 
 /***/ },
-/* 65 */
+/* 66 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -48698,10 +48687,10 @@
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var Index = __webpack_require__(66),
-	    Hasher = __webpack_require__(46),
-	    Collection = __webpack_require__(61),
-	    HashedCollection = __webpack_require__(64);
+	var Index = __webpack_require__(67),
+	    Hasher = __webpack_require__(47),
+	    Collection = __webpack_require__(62),
+	    HashedCollection = __webpack_require__(65);
 
 	function getIndex(indexes, root, query) {
 		var keys = Object.keys(query).sort(),
@@ -48768,7 +48757,7 @@
 	module.exports = Table;
 
 /***/ },
-/* 66 */
+/* 67 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -48777,9 +48766,9 @@
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var bmoor = __webpack_require__(47),
+	var bmoor = __webpack_require__(48),
 	    getUid = bmoor.data.getUid,
-	    Collection = __webpack_require__(61);
+	    Collection = __webpack_require__(62);
 
 	function createCollection(index, hash) {
 		var c = new Collection(),
@@ -48939,7 +48928,7 @@
 	module.exports = Index;
 
 /***/ },
-/* 67 */
+/* 68 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -49120,7 +49109,7 @@
 	module.exports = Memory;
 
 /***/ },
-/* 68 */
+/* 69 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -49135,7 +49124,7 @@
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var Index = __webpack_require__(66);
+	var Index = __webpack_require__(67);
 
 	// Takes a filter function, seperates the results out to different collections
 
@@ -49182,7 +49171,7 @@
 	module.exports = Bucketer;
 
 /***/ },
-/* 69 */
+/* 70 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -49191,9 +49180,9 @@
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var bmoor = __webpack_require__(47),
+	var bmoor = __webpack_require__(48),
 	    getUid = bmoor.data.getUid,
-	    Collection = __webpack_require__(61);
+	    Collection = __webpack_require__(62);
 
 	function _insert(grid, datum) {
 		var x,
@@ -49397,7 +49386,7 @@
 	module.exports = GridIndex;
 
 /***/ },
-/* 70 */
+/* 71 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -49411,7 +49400,7 @@
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 	var uid = 1,
-	    Linear = __webpack_require__(71);
+	    Linear = __webpack_require__(72);
 
 	var Normalizer = function (_Linear) {
 		_inherits(Normalizer, _Linear);
@@ -49513,7 +49502,7 @@
 	module.exports = Normalizer;
 
 /***/ },
-/* 71 */
+/* 72 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -49819,7 +49808,7 @@
 	module.exports = Linear;
 
 /***/ },
-/* 72 */
+/* 73 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -49965,7 +49954,7 @@
 	};
 
 /***/ },
-/* 73 */
+/* 74 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -50074,7 +50063,7 @@
 	module.exports = Reference;
 
 /***/ },
-/* 74 */
+/* 75 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -50142,12 +50131,12 @@
 	}]);
 
 /***/ },
-/* 75 */
+/* 76 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawDots = __webpack_require__(76),
+	var DrawDots = __webpack_require__(77),
 	    ComponentElement = __webpack_require__(14);
 
 	__webpack_require__(2).module('vgraph').directive('vgraphDots', [function () {
@@ -50186,7 +50175,7 @@
 	}]);
 
 /***/ },
-/* 76 */
+/* 77 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -50293,12 +50282,12 @@
 	module.exports = Dots;
 
 /***/ },
-/* 77 */
+/* 78 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var makeBlob = __webpack_require__(78);
+	var makeBlob = __webpack_require__(79);
 
 	__webpack_require__(2).module('vgraph').directive('vgraphExport', ['$q', function ($q) {
 		return {
@@ -50347,12 +50336,12 @@
 	}]);
 
 /***/ },
-/* 78 */
+/* 79 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var svgColorize = __webpack_require__(79);
+	var svgColorize = __webpack_require__(80);
 
 	function formatArray(arr) {
 		return arr.map(function (row) {
@@ -50404,7 +50393,7 @@
 	};
 
 /***/ },
-/* 79 */
+/* 80 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -50448,7 +50437,7 @@
 	module.exports = colorize;
 
 /***/ },
-/* 80 */
+/* 81 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -50534,12 +50523,12 @@
 	}]);
 
 /***/ },
-/* 81 */
+/* 82 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawHeatmap = __webpack_require__(82),
+	var DrawHeatmap = __webpack_require__(83),
 	    ComponentElement = __webpack_require__(14);
 
 	__webpack_require__(2).module('vgraph').directive('vgraphHeatmap', ['$compile', function ($compile) {
@@ -50633,7 +50622,7 @@
 	}]);
 
 /***/ },
-/* 82 */
+/* 83 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -50643,7 +50632,7 @@
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var Classifier = __webpack_require__(13),
-	    DataBucketer = __webpack_require__(83);
+	    DataBucketer = __webpack_require__(84);
 
 	function populateBuckets(bucketer, references) {
 		var i, c, fn, ref;
@@ -50924,7 +50913,7 @@
 	module.exports = Heatmap;
 
 /***/ },
-/* 83 */
+/* 84 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -50937,7 +50926,7 @@
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var Collection = __webpack_require__(45).Collection;
+	var Collection = __webpack_require__(46).Collection;
 
 	// TODO : use bmoor-data's hasher here, or better use HashedCollection
 
@@ -51024,7 +51013,7 @@
 	module.exports = Bucketer;
 
 /***/ },
-/* 84 */
+/* 85 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -51053,13 +51042,13 @@
 	}]);
 
 /***/ },
-/* 85 */
+/* 86 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	var d3 = __webpack_require__(1),
-	    DrawIcon = __webpack_require__(86),
+	    DrawIcon = __webpack_require__(87),
 	    ComponentElement = __webpack_require__(14);
 
 	__webpack_require__(2).module('vgraph').directive('vgraphIcon', [function () {
@@ -51150,7 +51139,7 @@
 	*/
 
 /***/ },
-/* 86 */
+/* 87 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -51208,7 +51197,7 @@
 	module.exports = Icon;
 
 /***/ },
-/* 87 */
+/* 88 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -51288,7 +51277,7 @@
 	}]);
 
 /***/ },
-/* 88 */
+/* 89 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -51380,7 +51369,7 @@
 	}]);
 
 /***/ },
-/* 89 */
+/* 90 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -51428,7 +51417,7 @@
 	}]);
 
 /***/ },
-/* 90 */
+/* 91 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -51529,13 +51518,13 @@
 	}]);
 
 /***/ },
-/* 91 */
+/* 92 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawLine = __webpack_require__(92),
-	    DrawFill = __webpack_require__(93),
+	var DrawLine = __webpack_require__(93),
+	    DrawFill = __webpack_require__(94),
 	    ComponentElement = __webpack_require__(14);
 
 	__webpack_require__(2).module('vgraph').directive('vgraphLine', [function () {
@@ -51607,7 +51596,7 @@
 	}]);
 
 /***/ },
-/* 92 */
+/* 93 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -51761,7 +51750,7 @@
 	module.exports = Line;
 
 /***/ },
-/* 93 */
+/* 94 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -51909,7 +51898,7 @@
 	module.exports = Fill;
 
 /***/ },
-/* 94 */
+/* 95 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -52021,7 +52010,7 @@
 	}]);
 
 /***/ },
-/* 95 */
+/* 96 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -52074,12 +52063,12 @@
 	}]);
 
 /***/ },
-/* 96 */
+/* 97 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var ComponentPage = __webpack_require__(97);
+	var ComponentPage = __webpack_require__(98);
 
 	__webpack_require__(2).module('vgraph').directive('vgraphPage', [function () {
 		return {
@@ -52100,7 +52089,7 @@
 	}]);
 
 /***/ },
-/* 97 */
+/* 98 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -52111,10 +52100,10 @@
 
 	var uid = 1,
 	    angular = __webpack_require__(2),
-	    DataFeed = __webpack_require__(98),
-	    DataLoader = __webpack_require__(99),
-	    DataManager = __webpack_require__(100),
-	    ComponentZoom = __webpack_require__(101);
+	    DataFeed = __webpack_require__(99),
+	    DataLoader = __webpack_require__(100),
+	    DataManager = __webpack_require__(101),
+	    ComponentZoom = __webpack_require__(102);
 
 	var Page = function () {
 		function Page() {
@@ -52332,7 +52321,7 @@
 	module.exports = Page;
 
 /***/ },
-/* 98 */
+/* 99 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -52481,7 +52470,7 @@
 	module.exports = Feed;
 
 /***/ },
-/* 99 */
+/* 100 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -52681,7 +52670,7 @@
 	module.exports = Loader;
 
 /***/ },
-/* 100 */
+/* 101 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -52691,8 +52680,8 @@
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var uid = 1,
-	    Linear = __webpack_require__(71),
-	    calculationsCompile = __webpack_require__(72).compile;
+	    Linear = __webpack_require__(72),
+	    calculationsCompile = __webpack_require__(73).compile;
 
 	function regulator(min, max, func, context) {
 		var args, nextTime, limitTime;
@@ -52862,7 +52851,7 @@
 	module.exports = Manager;
 
 /***/ },
-/* 101 */
+/* 102 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -52921,12 +52910,12 @@
 	module.exports = Zoom;
 
 /***/ },
-/* 102 */
+/* 103 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawPie = __webpack_require__(103),
+	var DrawPie = __webpack_require__(104),
 	    ComponentElement = __webpack_require__(14);
 
 	__webpack_require__(2).module('vgraph').directive('vgraphPie', [function () {
@@ -52984,7 +52973,7 @@
 	}]);
 
 /***/ },
-/* 103 */
+/* 104 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -53273,7 +53262,7 @@
 	module.exports = Pie;
 
 /***/ },
-/* 104 */
+/* 105 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -53305,7 +53294,7 @@
 	}]);
 
 /***/ },
-/* 105 */
+/* 106 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -53374,7 +53363,7 @@
 	}]);
 
 /***/ },
-/* 106 */
+/* 107 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -53416,12 +53405,12 @@
 	}]);
 
 /***/ },
-/* 107 */
+/* 108 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var DrawSpiral = __webpack_require__(108),
+	var DrawSpiral = __webpack_require__(109),
 	    ComponentElement = __webpack_require__(14);
 
 	__webpack_require__(2).module('vgraph').directive('vgraphSpiral', [function () {
@@ -53466,7 +53455,7 @@
 	}]);
 
 /***/ },
-/* 108 */
+/* 109 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -53481,9 +53470,9 @@
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var DrawLine = __webpack_require__(92),
+	var DrawLine = __webpack_require__(93),
 	    Classifier = __webpack_require__(13),
-	    DataBucketer = __webpack_require__(83);
+	    DataBucketer = __webpack_require__(84);
 
 	function getCoords(centerX, centerY, radius, angleInDegrees) {
 		var angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
@@ -53675,7 +53664,7 @@
 	module.exports = Spiral;
 
 /***/ },
-/* 109 */
+/* 110 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -53757,7 +53746,7 @@
 	}]);
 
 /***/ },
-/* 110 */
+/* 111 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -53888,7 +53877,7 @@
 	}]);
 
 /***/ },
-/* 111 */
+/* 112 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -54063,7 +54052,7 @@
 	}]);
 
 /***/ },
-/* 112 */
+/* 113 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -54072,31 +54061,31 @@
 		Box: __webpack_require__(26),
 		Chart: __webpack_require__(21),
 		Element: __webpack_require__(14),
-		Page: __webpack_require__(97),
+		Page: __webpack_require__(98),
 		Pane: __webpack_require__(30),
 		View: __webpack_require__(29),
-		Zoom: __webpack_require__(101)
+		Zoom: __webpack_require__(102)
 	};
 
 /***/ },
-/* 113 */
+/* 114 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = {
-		Bucketer: __webpack_require__(83),
-		Feed: __webpack_require__(98),
-		Hasher: __webpack_require__(114),
+		Bucketer: __webpack_require__(84),
+		Feed: __webpack_require__(99),
+		Hasher: __webpack_require__(115),
 		List: __webpack_require__(31),
-		Linear: __webpack_require__(71),
-		Loader: __webpack_require__(99),
-		Manager: __webpack_require__(100),
-		Normalizer: __webpack_require__(70)
+		Linear: __webpack_require__(72),
+		Loader: __webpack_require__(100),
+		Manager: __webpack_require__(101),
+		Normalizer: __webpack_require__(71)
 	};
 
 /***/ },
-/* 114 */
+/* 115 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -54130,7 +54119,7 @@
 	};
 
 /***/ },
-/* 115 */
+/* 116 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -54139,18 +54128,18 @@
 		Bar: __webpack_require__(10),
 		Box: __webpack_require__(17),
 		Candlestick: __webpack_require__(19),
-		Dots: __webpack_require__(76),
-		Fill: __webpack_require__(93),
-		Heatmap: __webpack_require__(82),
-		Icon: __webpack_require__(86),
-		Line: __webpack_require__(92),
+		Dots: __webpack_require__(77),
+		Fill: __webpack_require__(94),
+		Heatmap: __webpack_require__(83),
+		Icon: __webpack_require__(87),
+		Line: __webpack_require__(93),
 		Linear: __webpack_require__(12),
-		Pie: __webpack_require__(103),
-		Spiral: __webpack_require__(108)
+		Pie: __webpack_require__(104),
+		Spiral: __webpack_require__(109)
 	};
 
 /***/ },
-/* 116 */
+/* 117 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -54159,9 +54148,9 @@
 		DomHelper: __webpack_require__(24),
 		Eventing: __webpack_require__(25),
 		Hitbox: __webpack_require__(22),
-		makeBlob: __webpack_require__(78),
+		makeBlob: __webpack_require__(79),
 		Scheduler: __webpack_require__(23),
-		svgColorize: __webpack_require__(79)
+		svgColorize: __webpack_require__(80)
 	};
 
 /***/ }
