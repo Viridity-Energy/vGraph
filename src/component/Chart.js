@@ -119,14 +119,13 @@ function addColumn( arr ){
 }
 
 function setRangeType(ranges, view) {
-    var name;
+    var name,
+    	keys = Object.keys(ranges);
 
     // this assume that all views
     // timeline will have same min
     // if intended to be run concurrent
-    if (jQuery.isEmptyObject(ranges)) {
-    	name = view.min;
-    } else {
+    if (keys && keys.length) {
     	for (var i in ranges) {
     		if (ranges[i].min) {
     			if (ranges[i].min > view.min) {
@@ -134,8 +133,8 @@ function setRangeType(ranges, view) {
     			}
     		}
     	}
-    	name = view.min;
     }
+	name = view.min;
 
     if (!ranges[ name ]) {
     	ranges[ name ] = {};

@@ -15,8 +15,8 @@
   },
   "dependencies": {
     "angular": "1.5.8",
-    "bmoor": "^0.3.13",
-    "bmoor-data": "^0.3.1",
+    "bmoor": "0.3.19",
+    "bmoor-data": "0.3.1",
     "d3": "3.5.4",
     "jquery": "^3.1.0"
   },
