@@ -515,7 +515,7 @@ var vGraph =
 								$axisLabel.attr('text-anchor', 'middle').attr('x', box.height / 2).attr('y', -labelOffset);
 							}
 
-							if (view.viewport.maxValue === view.viewport.minValue) {
+							if (!view.viewport || view.viewport.maxValue === view.viewport.minValue) {
 								return;
 							}
 
@@ -3844,7 +3844,7 @@ var vGraph =
 		}, {
 			key: 'isLeading',
 			value: function isLeading() {
-				return this.viewport && this.viewport.maxInterval > this.filtered.$maxIndex;
+				return this.viewport && this.filtered && this.viewport.maxInterval > this.filtered.$maxIndex;
 			}
 		}, {
 			key: 'getLeading',
@@ -7613,7 +7613,6 @@ var vGraph =
 			key: '_process',
 			value: function _process(cfg, datum) {
 				var interval;
-
 				if (cfg.isDefined && !cfg.isDefined(datum)) {
 					return;
 				}

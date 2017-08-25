@@ -225,7 +225,7 @@ class View {
 
 	// true when the filtered data contains the leading edge of data
 	isLeading(){
-		return this.viewport && this.viewport.maxInterval > this.filtered.$maxIndex;
+		return this.viewport && this.filtered && this.viewport.maxInterval > this.filtered.$maxIndex;
 	}
 
 	getLeading(){
