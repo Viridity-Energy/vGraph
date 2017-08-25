@@ -381,7 +381,7 @@ require('angular').module( 'vgraph' ).directive( 'vgraphAxis',
 									.attr( 'y', -labelOffset );
 							}
 
-							if ( view.viewport.maxValue === view.viewport.minValue ){
+							if ( !view.viewport || view.viewport.maxValue === view.viewport.minValue ){
 								return;
 							}
 
