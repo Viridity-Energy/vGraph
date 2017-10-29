@@ -52,7 +52,7 @@ function extend( model, settings ){
 			top: 0
 		};
 	}
-	
+
 	model.outer.width = merge( settings.outer.width, model.outer.width ) || 0;
 	model.outer.right = model.outer.width;
 	model.outer.height = merge( settings.outer.height, model.outer.height ) || 0;
@@ -66,7 +66,9 @@ function extend( model, settings ){
 	model.width = model.right - model.left;
 	model.height = model.bottom - model.top;
 
-	model.center = ( model.left + model.right ) / 2;
+  // model.center = ( model.left + model.right ) / 2;
+  // updated logic for find graph center position
+  model.center = (model.outer.width + oMargin.right + oMargin.left + oPadding.right + oPadding.left) / 2;
 	model.middle = ( model.top + model.bottom ) / 2;
 
 	// where are the inners
@@ -76,7 +78,7 @@ function extend( model, settings ){
 		left: model.left + oPadding.left,
 		right: model.right - oPadding.right,
 	};
-		
+
 	model.inner.center = (model.inner.right + model.inner.left) / 2;
 	model.inner.middle = (model.inner.bottom + model.inner.top) / 2;
 	model.inner.width = model.inner.right - model.inner.left;
@@ -97,17 +99,27 @@ class Box {
 	}
 
 	resize(){
-		var el = this.$element;
+    var graphHeight;
+    var el = this.$element;
+    var widget = el.closest('dashboard-widget');
 
 		el.attr( 'width', null )
 			.attr( 'height', null );
 
-		el[0].style.cssText = null;
+    el[0].style.cssText = null;
+
+    if (widget.length) { // dashboard widget
+      graphHeight = widget.innerHeight() - 45;
+    } else if (el.attr('vgraph-chart') === 'graph.zoom') { // zoom graph
+      graphHeight = 100;
+    } else { // default graph
+      graphHeight = el.outerHeight(true);
+    }
 
 		extend( this, {
 			outer: {
-				width : el.outerWidth( true ),
-				height : el.outerHeight( true )
+				width: el.parent().width(),
+				height: graphHeight
 			},
 			margin : {
 				top : el.css('margin-top'),

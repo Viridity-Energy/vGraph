@@ -16,14 +16,14 @@ module.exports = {
     }],
   },
   output: {
-    filename: './dist/vgraph.min.js',
+    filename: './dist/vgraph.module.js',
     library: 'vGraph',
     libraryTarget: "var"
   },
   plugins: [
     new webpack.optimize.DedupePlugin(),
     new webpack.optimize.OccurenceOrderPlugin(),
-    new webpack.optimize.UglifyJsPlugin({ mangle: false, sourcemap: false }),
+    // new webpack.optimize.UglifyJsPlugin({ mangle: false, sourcemap: false }),
 ],
   externals: {
     'd3': 'd3',
