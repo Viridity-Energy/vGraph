@@ -68,8 +68,8 @@ function extend( model, settings ){
 
   // model.center = ( model.left + model.right ) / 2;
   // updated logic for find graph center position
-  model.center = (model.outer.width + oMargin.right + oMargin.left + oPadding.right + oPadding.left) / 2;
-	model.middle = ( model.top + model.bottom ) / 2;
+  model.center = ((model.outer.width + oPadding.right + oPadding.left) / 2) - 5;
+  model.middle = ((model.top + model.bottom) / 2) - 5;
 
 	// where are the inners
 	model.inner = {
