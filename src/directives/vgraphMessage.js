@@ -23,15 +23,17 @@ angular.module( 'vgraph' ).directive( 'vgraphMessage',
 						$outline.attr( 'transform', 'translate('+box.inner.left+','+box.inner.top+')' )
 							.attr( 'width', box.inner.width )
 							.attr( 'height', box.inner.height );
-						
+
 						try {
-							$text.attr( 'text-anchor', 'middle' )
-								.attr( 'x', box.center )
-								.attr( 'y', box.middle + $text.node().getBBox().height / 2 );
+              $text.attr('text-anchor', 'middle')
+                  .attr('x', box.center)
+                  .attr('y', box.middle + $text.node().getBBox().height / 2)
+                  .attr('textLength', box.inner.width);
 						}catch( ex ){
-							$text.attr( 'text-anchor', 'middle' )
-								.attr( 'x', box.center )
-								.attr( 'y', box.middle );
+              $text.attr('text-anchor', 'middle')
+                  .attr('x', box.center)
+                  .attr('y', box.middle)
+                  .attr('textLength', box.inner.width);
 						}
 					}
 				});
