@@ -28,12 +28,12 @@ angular.module( 'vgraph' ).directive( 'vgraphMessage',
               $text.attr('text-anchor', 'middle')
                   .attr('x', box.center)
                   .attr('y', box.middle + $text.node().getBBox().height / 2)
-                  .attr('textLength', box.inner.width);
+                  .attr('textLength', box.inner.width - 60);
 						}catch( ex ){
               $text.attr('text-anchor', 'middle')
                   .attr('x', box.center)
                   .attr('y', box.middle)
-                  .attr('textLength', box.inner.width);
+                  .attr('textLength', box.inner.width - 60);
 						}
 					}
 				});
