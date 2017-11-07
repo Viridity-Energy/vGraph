@@ -109,7 +109,7 @@ class Box {
     el[0].style.cssText = null;
 
     if (widget.length) { // dashboard widget
-      graphHeight = widget.innerHeight() - 45;
+      graphHeight = widget.innerHeight() + (widget.offset().top - el.offset().top);
     } else if (el.attr('vgraph-chart') === 'graph.zoom') { // zoom graph
       graphHeight = 100;
     } else { // default graph
