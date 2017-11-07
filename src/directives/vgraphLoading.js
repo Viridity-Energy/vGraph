@@ -67,7 +67,7 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
 							.attr( 'width', 0 )
 							.ease( 'sine' );
 				}
-				
+
 				function startPulse(){
 					if ( !pulsing && graph.loading ){
 						$text.text( 'Loading Data' );
@@ -92,23 +92,23 @@ angular.module( 'vgraph' ).directive( 'vgraphLoading',
 					left = box.inner.left + box.inner.width / 5;
 					width = box.inner.width * 3 / 5;
 					right = left + width;
-					
-					if ( width ){
-						$filling.attr( 'x', left )
-							.attr( 'y', box.middle - 10 );
 
-						$outline.attr( 'x', left )
-							.attr( 'y', box.middle - 10 )
-							.attr( 'width', width );
+					if ( width ){
+            $filling.attr('x', left)
+              .attr('y', box.middle - 20);
+
+            $outline.attr('x', left)
+              .attr('y', box.middle - 20)
+              .attr('width', width);
 
 						try {
-							$text.attr( 'text-anchor', 'middle' )
-								.attr( 'x', box.center )
-								.attr( 'y', box.middle + $text.node().getBBox().height / 2 - 2 );
+              $text.attr('text-anchor', 'middle')
+                .attr('x', box.center)
+                .attr('y', box.middle + ($text.node().getBBox().height / 2) - 15);
 						}catch( ex ){
-							$text.attr( 'text-anchor', 'middle' )
-								.attr( 'x', box.center )
-								.attr( 'y', box.middle );
+              $text.attr('text-anchor', 'middle')
+                .attr('x', box.center)
+                .attr('y', box.middle - 15);
 						}
 
 						startPulse();
