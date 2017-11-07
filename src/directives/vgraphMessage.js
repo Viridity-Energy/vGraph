@@ -24,17 +24,18 @@ angular.module( 'vgraph' ).directive( 'vgraphMessage',
 							.attr( 'width', box.inner.width )
 							.attr( 'height', box.inner.height );
 
+            // different offset for zoom bar graph
+            var center = box.center === 100 ? box.center - 10 : box.center;
+
 						try {
-              $text.attr('text-anchor', 'middle')
-                  .attr('x', box.center)
-                  .attr('y', box.middle + $text.node().getBBox().height / 2)
-                  .attr('textLength', box.inner.width - 60);
+              $text.attr('text-anchor', 'middle').attr('x', center).attr('y', box.middle + $text.node().getBBox().height / 2);
 						}catch( ex ){
-              $text.attr('text-anchor', 'middle')
-                  .attr('x', box.center)
-                  .attr('y', box.middle)
-                  .attr('textLength', box.inner.width - 60);
-						}
+              $text.attr('text-anchor', 'middle').attr('x', center).attr('y', box.middle);
+            }
+
+            if (box.inner.width <= 460) {
+              $text.attr('textLength', box.inner.width - 60);
+            }
 					}
 				});
 
