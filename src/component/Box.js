@@ -66,11 +66,6 @@ function extend( model, settings ){
 	model.width = model.right - model.left;
 	model.height = model.bottom - model.top;
 
-  // model.center = ( model.left + model.right ) / 2;
-  // updated logic for find graph center position
-  model.center = ((model.outer.width + oPadding.right + oPadding.left) / 2) - 5;
-  model.middle = ((model.top + model.bottom) / 2) - 5;
-
 	// where are the inners
 	model.inner = {
 		top: model.top + oPadding.top,
@@ -83,6 +78,10 @@ function extend( model, settings ){
 	model.inner.middle = (model.inner.bottom + model.inner.top) / 2;
 	model.inner.width = model.inner.right - model.inner.left;
 	model.inner.height = model.inner.bottom - model.inner.top;
+
+  // get center/middle position
+  model.center = model.inner.center;
+  model.middle = (model.top + model.bottom) / 2;
 
 	model.ratio = model.outer.width + ' x ' + model.outer.height;
 }
