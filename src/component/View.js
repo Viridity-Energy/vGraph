@@ -1,7 +1,7 @@
 var id = 1,
 	angular = require('angular'),
-	ComponentPane = require('./Pane.js'), 
-	DataNormalizer = require('../data/Normalizer.js'), 
+	ComponentPane = require('./Pane.js'),
+	DataNormalizer = require('../data/Normalizer.js'),
 	calculationsCompile = require('../calculations.js').compile;
 
 function parseSettings( settings, old ){
@@ -124,7 +124,7 @@ class View {
 			for( i = 2, c = data.length; i < c; i++ ){
 				t = data[i]._$index;
 				diff = t - last;
-				
+
 				if ( diff < interval ){
 					interval = diff;
 				}
@@ -148,13 +148,13 @@ class View {
 
 		this.x = View.parseSettingsX( chartSettings.x, this.x );
 		View.parseSettingsX( settings.x, this.x );
-		
+
 		this.y = View.parseSettingsY( chartSettings.y, this.y );
 		View.parseSettingsY( settings.y, this.y );
-		
+
 		this.box = box;
 		this.dataManager = page.getManager( settings.manager );
-		this.normalizer = normalizer = settings.normalizer || 
+		this.normalizer = normalizer = settings.normalizer ||
 			new DataNormalizer(function(index){
 				return Math.round(index);
 			});
@@ -178,18 +178,18 @@ class View {
 		}else{
 			this.adjustSettings = chartSettings.adjustSettings;
 		}
-		
+
 		this.pane = new ComponentPane( settings.fitToPane||chartSettings.fitToPane, this.x, this.y );
 
 		if ( this.x.max ){
 			this.pane.setBounds({
-				min: this.x.min, 
-				max: this.x.max 
+				min: this.x.min,
+				max: this.x.max
 			});
 		}
 
 		this.pane.setPane({
-			min: zoom.left, 
+			min: zoom.left,
 			max: zoom.right
 		});
 
@@ -199,7 +199,7 @@ class View {
 	registerComponent( component ){
 		var normalizer = this.normalizer,
 			refs = this.references;
-		
+
 		this.components.push( component );
 
 		if ( component.references ){
@@ -229,7 +229,7 @@ class View {
 	}
 
 	getLeading(){
-		return this.normalizer[this.normalizer.length-1]; 
+		return this.normalizer[this.normalizer.length-1];
 	}
 
 	setViewportValues( min, max ){
@@ -240,16 +240,16 @@ class View {
 		if ( this.y.padding ){
 			if ( angular.isObject(this.y.padding) ){
 				if ( this.y.padding.max ){
-					step = angular.isFunction(this.y.padding.max) ? this.y.padding.max(spread,min,max) : 
+					step = angular.isFunction(this.y.padding.max) ? this.y.padding.max(spread,min,max) :
 						spread * this.y.padding.max;
 
 					if ( typeof(step) === 'number' ){
 						max = max + step;
 					}
 				}
-				
+
 				if ( this.y.padding.min ){
-					step = angular.isFunction(this.y.padding.min) ? this.y.padding.min(spread,min,max) : 
+					step = angular.isFunction(this.y.padding.min) ? this.y.padding.min(spread,min,max) :
 						spread * this.y.padding.min;
 
 					if ( typeof(step) === 'number' ){
@@ -257,7 +257,7 @@ class View {
 					}
 				}
 			}else{
-				step = angular.isFunction(this.y.padding) ? this.y.padding(spread,min,max) : 
+				step = angular.isFunction(this.y.padding) ? this.y.padding(spread,min,max) :
 					( spread ? spread * this.y.padding : min * this.y.padding );
 
 				max = max + step;
@@ -273,6 +273,7 @@ class View {
 			max = this.y.max;
 		}
 
+    this.viewport = this.viewport || {};
 		this.viewport.minValue = min;
 		this.viewport.maxValue = max;
 
@@ -308,11 +309,11 @@ class View {
 		this.offset = {};
 		this.filtered = this.pane.filter( this.dataManager, this.offset );
 	}
-	
+
 	normalize(){
 		if ( this.dataManager ){
 			this._sample(); // defines offset
-			
+
 			if ( this.filtered ){
 				if ( !this.viewport ){
 					this.viewport = {};
@@ -360,9 +361,9 @@ class View {
 					}
 				}
 			});
-			
+
 			if ( min !== undefined ){
-				this.setViewportValues( min, max );	
+				this.setViewportValues( min, max );
 
 				if ( this.adjustSettings ){
 					this.adjustSettings(
@@ -407,7 +408,7 @@ class View {
 		var point,
 			p = this.normalizer.$getClosest(pos,'$x'),
 			references = this.references;
-		
+
 		if ( p ){
 			point = Object.create( p );
 
@@ -426,7 +427,7 @@ class View {
 				}
 			});
 		}
-		
+
 		return point;
 	}
 
