@@ -117,9 +117,11 @@ class Heatmap{
 				});
 			});
 		}
+
 		yLabels.sort(function (y1, y2) {
 			return y1.value - y2.value;
 		});
+		
 		xCount = xLabels.length;
 		yCount = yLabels.length;
 
