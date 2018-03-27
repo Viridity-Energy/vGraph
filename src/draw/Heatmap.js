@@ -119,7 +119,11 @@ class Heatmap{
 		}
 
 		yLabels.sort(function (y1, y2) {
-			return y1.value - y2.value;
+			if (y1.value < y2.value)
+				return -1
+			if (y1.value > y2.value)
+				return 1
+			return 0
 		});
 		
 		xCount = xLabels.length;

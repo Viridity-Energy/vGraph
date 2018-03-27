@@ -837,7 +837,18 @@ class Chart{
 		}
 
 		content.unshift( headers );
-
+		for (var i = 0; i < content.length; i++) {
+			var isnull = true;
+			for (var j = 0; j < content[i].length; j++) {
+				if (content[i][j]) {
+					isnull = false;
+				}
+			}
+			if (isnull) {
+				content.splice(i, 1);
+				i--;
+			}
+		}
 		return content;
 	}
 }
