@@ -823,6 +823,29 @@ class Chart{
 						}
 
 						content[row][pos] = t;
+					} else {
+
+						if (cfg.format) {
+							t = cfg.format(i);
+						}
+						if (view) {
+							// map to indexes
+							if (index && typeof viewIndexes[view].map.byIndex[i.toString() || i] === 'number') {
+								row = viewIndexes[view].map.byIndex[i.toString() || i];
+							} else if (typeof viewIndexes[view].map.byUnit[i.toString() || i] === 'number') {
+								row = viewIndexes[view].map.byUnit[i.toString() || i];
+							}
+
+							// otherwise spread them out
+						} else {
+							row = Math.floor((i - min) / (max - min) * maxCell + 0.5);
+						}
+
+						if (!maxRow || maxRow < row) {
+							maxRow = row;
+						}
+
+						content[row][pos] = t;
 					}
 				}
 			}else if ( cfg.value ){
@@ -837,18 +860,7 @@ class Chart{
 		}
 
 		content.unshift( headers );
-		for (var i = 0; i < content.length; i++) {
-			var isnull = true;
-			for (var j = 0; j < content[i].length; j++) {
-				if (content[i][j]) {
-					isnull = false;
-				}
-			}
-			if (isnull) {
-				content.splice(i, 1);
-				i--;
-			}
-		}
+
 		return content;
 	}
 }
