@@ -42,7 +42,7 @@ angular.module( 'vgraph' ).directive( 'vgraphMessage',
 				function checkMessage(){
 					var msg = graph.message;
 
-					if ( msg ){
+					if (msg && (Object.keys(graph.views).length === Object.keys(graph.waitingOn).length)) {
 						$el.attr( 'visibility', 'visible' );
 						$text.text( msg );
 					}else{
