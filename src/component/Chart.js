@@ -375,6 +375,18 @@ class Chart{
 			hasViews = 0;
 
 		dis.$trigger('render');
+
+		function setElementVisiblity( component, visible ) {
+			angular.forEach( component, function ( component ) {
+				if ( component.element ) {
+					if ( visible ) {
+						component.element.removeAttribute( 'visibility' );
+					} else {
+						component.element.setAttribute( 'visibility', 'hidden' );
+					}
+				}
+			});
+		}
 		
 		try{
 			angular.forEach( this.views, function( view, name ){
@@ -398,10 +410,14 @@ class Chart{
 			angular.forEach( this.views, function( view, name ){
 				currentView = name;
 				if ( view.hasData() ){
+					setElementVisiblity( view.components, true );
 					activeViews.push( view );
 					isReady = true;
 				}else if ( view.isReady() ){
+					setElementVisiblity( view.components, false );
 					isReady = true;
+				}else{
+					setElementVisiblity( view.components, false );
 				}
 			});
 
