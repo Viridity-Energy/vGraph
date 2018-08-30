@@ -22,13 +22,15 @@ require('angular').module('vgraph').directive('vgraphAxis', [
       scope: {
         orient: '=vgraphAxis',
         adjust: '=axisAdjust',
-        rotation: '=tickRotation'
+        rotation: '=tickRotation',
+        viewVisiblity: '@viewVisiblity',
+        view: '@view'
       },
       require: ['^vgraphChart'],
       link: function (scope, el, attrs, requirements) {
         // I'd like to not do it this way, but can't think of a good way how not to.
         var graph = requirements[0],
-          view = graph.getView(attrs.view || 'default'),
+          view = graph.getView(scope.view || 'default'),
           express,
           makeTicks,
           box = graph.box,
@@ -76,6 +78,12 @@ require('angular').module('vgraph').directive('vgraphAxis', [
 
         if (attrs.labelEndpoints) {
           labelEndpoints = scope.$eval(attrs.labelEndpoints);
+        }
+
+        if (scope.view) {
+        	scope.$watch('view', function (viewName) {
+        		view = graph.getView(viewName || 'default');
+        	});
         }
 
         if (attrs.axisLabel) {
@@ -491,7 +499,9 @@ require('angular').module('vgraph').directive('vgraphAxis', [
         }
 
         function hide() {
-          $el.attr('visibility', 'hidden');
+        	if (!scope.viewVisiblity) {
+        		$el.attr('visibility', 'hidden');
+        	}
         }
 
         scope.$on('$destroy',
@@ -553,7 +563,7 @@ require('angular').module('vgraph').directive('vgraphAxis', [
               change,
               boundry = {};
 
-            if (!data) {
+            if (!data && !scope.viewVisiblity) {
               $el.attr('visibility', 'hidden');
               return;
             }

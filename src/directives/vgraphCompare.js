@@ -40,10 +40,12 @@ require('angular').module( 'vgraph' ).directive( 'vgraphCompare',
 									y: ( view1.y.scale(v1) + view2.y.scale(v2) ) / 2,
 									x: ( p1.$x + p2.$x ) / 2
 								};
-							}else{
-								t = {
-									x: ( p1.$x + p2.$x ) / 2
-								};
+							} else {
+								if (p1 && p2) {
+									t = {
+										x: (p1.$x + p2.$x) / 2
+									};
+								}
 							}
 
 							point[ attrs.reference || 'compare' ] = t;

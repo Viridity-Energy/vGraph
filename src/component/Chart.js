@@ -604,9 +604,9 @@ class Chart{
 		});
 
 		viewModel.dataManager.$on('data',function(){
-			if ( Object.keys(dis.waitingOn).length === 0 ){
+			//if ( Object.keys(dis.waitingOn).length === 0 ){
 				dis.needsRender(viewModel,300);
-			}
+			//}
 		});
 	}
 
