@@ -5,6 +5,9 @@ angular.module( 'vgraph' ).directive( 'vgraphMessage',
 	[
 	function(){
 		return {
+			scope:{
+				customMessage:'=customMessage',
+			},
 			require : ['^vgraphChart'],
 			link : function( scope, el, attrs, requirements ){
 				var unsubscribe,
@@ -36,6 +39,13 @@ angular.module( 'vgraph' ).directive( 'vgraphMessage',
             if (box.inner.width <= 460) {
               $text.attr('textLength', box.inner.width - 60);
             }
+					}
+				});
+
+				scope.$watch('customMessage',function(msg){
+					if(msg){
+						$text.text( msg );
+						$el.attr( 'visibility', 'visible' );
 					}
 				});
 
