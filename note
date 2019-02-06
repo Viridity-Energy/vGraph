@@ -1,0 +1,7 @@
+To build for production run:
+./node_modules/webpack/bin/webpack.js
+
+For security reasons, removed:
+gulp, gulp-webserver, karma, jasmine, gulp-karma, karma-jasmine, karma-phantomjs-launcher,
+phantomjs-polyfill, phantomjs-prebuilt, gulp-jsdoc3, gulp-jshint, gulp-load-plugins, jshint,
+jshint-stylish, karma-chrome-launcher, map-stream
