@@ -59,10 +59,27 @@ angular.module("vgraph").directive("vgraphMessage", [
         });
 
         function checkMessage() {
-          scope.customMessage = graph.message;
+          if (scope.customMessage == undefined) {
+            var msg = graph.message;
+
+            if (msg) {
+              $el.attr("visibility", "visible");
+              $text.text(msg);
+            } else {
+              $el.attr("visibility", "hidden");
+            }
+          } else {
+            scope.customMessage = graph.message;
+          }
+        }
+        function configMessage() {
+          if (scope.customMessage == undefined) {
+            $el.attr("visibility", "hidden");
+          }
         }
         unsubscribe = graph.$subscribe({
-          error: checkMessage
+          error: checkMessage,
+          configured: configMessage
         });
       }
     };
