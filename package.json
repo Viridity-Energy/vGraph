@@ -8,10 +8,12 @@
   "author": "Brian Heilman <das.ist.junk@gmail.com>",
   "description": "A modular way to consume and graph data",
   "license": "MIT",
+  "private": true,
   "main": "vgraph.js",
   "scripts": {
     "demo": "gulp serve",
-    "build": "gulp build"
+    "build": "BUILD_TARGET=global webpack",
+    "build:var": "BUILD_TARGET=var webpack"
   },
   "dependencies": {
     "angular": "1.5.8",

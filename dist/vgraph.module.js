@@ -1,4 +1,4 @@
-var vGraph =
+global["vGraph"] =
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -85,13 +85,13 @@ var vGraph =
 /* 1 */
 /***/ function(module, exports) {
 
-	module.exports = angular;
+	(function() { module.exports = global["angular"]; }());
 
 /***/ },
 /* 2 */
 /***/ function(module, exports) {
 
-	module.exports = d3;
+	(function() { module.exports = global["d3"]; }());
 
 /***/ },
 /* 3 */
@@ -13831,7 +13831,7 @@ var vGraph =
 /* 113 */
 /***/ function(module, exports) {
 
-	module.exports = jQuery;
+	(function() { module.exports = global["jQuery"]; }());
 
 /***/ },
 /* 114 */
