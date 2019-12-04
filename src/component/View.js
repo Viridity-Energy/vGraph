@@ -360,7 +360,13 @@ class View {
 						max = t.max;
 					}
 				}
-			});
+            });
+            
+             // If min is undefined but we have all null values, we still need
+             // to run adjustSettings so that proper timezone adjustments are made.
+            if (min === undefined && this.normalizer.length > 0) {
+                min = 0;
+            }
 
 			if ( min !== undefined ){
 				this.setViewportValues( min, max );
