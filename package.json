@@ -20,7 +20,7 @@
     "bmoor": "0.3.19",
     "bmoor-data": "0.3.1",
     "d3": "3.5.4",
-    "jquery": "^3.1.0"
+    "jquery": "^3.4.0"
   },
   "devDependencies": {
     "babel": "6.5.2",
